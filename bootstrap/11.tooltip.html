@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Bootstrap Tooltip Extended Examples</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      padding: 2rem;
+      background: #fefefe;
+    }
+  </style>
+</head>
+<body>
+
+  <h1 class="text-center mb-5"> Bootstrap Tooltip Examples</h1>
+
+  <!-- 1 Title attribute WITHOUT tooltip -->
+  <p>
+    <!-- No tooltip because no data-bs-toggle -->
+    <button type="button" class="btn btn-outline-secondary" title="I am a plain HTML title">
+      1. Hover to see plain title (no Bootstrap tooltip)
+    </button>
+  </p>
+
+  <!-- 2. Tooltips on all sides -->
+  <div class="d-flex gap-3 my-4">
+    <button class="btn btn-secondary" data-bs-toggle="tooltip" data-bs-placement="top" title="Tooltip on top">Top</button>
+    <button class="btn btn-secondary" data-bs-toggle="tooltip" data-bs-placement="right" title="Tooltip on right">Right</button>
+    <button class="btn btn-secondary" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Tooltip on bottom">Bottom</button>
+    <button class="btn btn-secondary" data-bs-toggle="tooltip" data-bs-placement="left" title="Tooltip on left">Left</button>
+  </div>
+
+
+  <!-- Bootstrap JS and Tooltip initialization -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- https://getbootstrap.com/docs/5.3/components/tooltips/ -->
+  <script>
+    const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+    const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+  </script>
+</body>
+</html>

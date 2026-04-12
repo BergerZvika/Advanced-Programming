@@ -1,0 +1,103 @@
+<!-- https://www.w3schools.com/bootstrap/bootstrap_ref_all_classes.asp -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hello Bootstrap - Text Utilities</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    .example-box {
+      border: 1px solid #ccc;
+      padding: 1rem;
+      margin-bottom: 1.5rem;
+      background-color: #f9f9f9;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1 class="text-center">Bootstrap Text Utilities - Examples</h1>
+
+    <!-- 1. Left-aligned text + Bold -->
+    <p><strong>0. Normal </strong></p>
+    <p>
+      <!-- .text-start aligns the text to the left, .fw-bold makes the text bold -->
+      This paragraph is normal.
+    </p>
+
+    <!-- 1. Left-aligned text + Bold -->
+    <p><strong>1. Left-aligned text + Bold</strong></p>
+    <p class="text-center fw-bold">
+      <!-- .text-start aligns the text to the left, .fw-bold makes the text bold -->
+      This paragraph is left aligned and uses <code>.fw-bold</code> to make the text bold.
+    </p>
+
+    <!-- 2. Center-aligned text + Light weight -->
+    <p><strong>2. Center-aligned text + Light weight</strong></p>
+      <!-- font-weight-bold, font-weight-bolder, font-weight-normal, font-weight-light, font-weight-lighter -->
+    <p class="text-center fw-light">
+      <!-- .text-center centers the text, .fw-light makes the font weight light -->
+      This paragraph is center aligned and uses <code>.fw-light</code> for light text weight.
+    </p>
+
+    <!-- 3. Right-aligned text + Italic -->
+    <p><strong>3. Right-aligned text + Italic</strong></p>
+    <p class="text-end fst-italic">
+      <!-- .text-end aligns text to the right, .fst-italic makes it italic -->
+      This paragraph is right aligned and uses <code>.fst-italic</code> for italic text.
+    </p>
+
+    <!-- 4. Underlined text -->
+    <p><strong>4. Underlined text</strong></p>
+      <!-- text-decoration-none, text-decoration-underline -->
+    <p class="text-decoration-underline"> 
+      <!-- .text-decoration-underline underlines the text -->
+      This text uses <code>.text-decoration-underline</code> to appear underlined.
+    </p>
+    <!-- 5. Uppercase transformation -->
+    <p><strong>5. Uppercase transformation</strong></p>
+    <!-- text-lowercase, text-uppercase, text-capitalize  -->
+    <p class="text-lowercase">
+      <!-- .text-uppercase transforms all text to uppercase -->
+      This paragraph uses <code>.text-uppercase</code> to make all letters uppercase.
+    </p>
+
+    <!-- 6. Muted (faded) text -->
+    <p><strong>6. Muted (faded) text</strong></p>
+    <p class="text-muted">
+      <!-- .text-muted gives the text a faded appearance -->
+      This paragraph uses <code>.text-muted</code> to make the text look faded or less prominent.
+    </p>
+  </div>
+
+    <!-- 7. Headings using .h1 to .h6 -->
+  <div class="example-box">
+    <!-- Example 7: .h1 to .h6 -->
+    <strong>7. Heading Utilities (.h1 to .h6)</strong>
+    <p class="h1">.h1 Bootstrap heading</p>
+    <p class="h2">.h2 Bootstrap heading</p>
+    <p class="h3">.h3 Bootstrap heading</p>
+    <p class="h4">.h4 Bootstrap heading</p>
+    <p class="h5">.h5 Bootstrap heading</p>
+    <p class="h6">.h6 Bootstrap heading</p>
+    <!-- These use <p> tags styled like headings -->
+  </div>
+
+  <!-- 8. Display headings -->
+  <div class="example-box">
+    <!-- Example 8: .display-1 to .display-6 -->
+    <strong>8. Display Utilities (.display-1 to .display-6)</strong>
+    <h1 class="display-1">.display-1</h1>
+    <h1 class="display-2">.display-2</h1>
+    <h1 class="display-3">.display-3</h1>
+    <h1 class="display-4">.display-4</h1>
+    <h1 class="display-5">.display-5</h1>
+    <h1 class="display-6">.display-6</h1>
+    <!-- These are for extra-large, prominent headings -->
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

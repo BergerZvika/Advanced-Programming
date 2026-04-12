@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Bootstrap Tables</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="p-4">
+
+  <h1 class="mb-4">Bootstrap Table Examples</h1>
+
+  <!-- 1. Basic Table -->
+  <h5>1. Basic Table</h5>
+  <!-- .table adds base styles for tables -->
+  <table class="table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>First</th>
+        <th>Last</th>
+        <th>Handle</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th>1</th>
+        <td>John</td>
+        <td>Doe</td>
+        <td>@jdoe</td>
+      </tr>
+      <tr>
+        <th>2</th>
+        <td>Jane</td>
+        <td>Smith</td>
+        <td>@jsmith</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- 2. Striped Table -->
+  <h5>2. Striped Table</h5>
+  <!-- .table-striped adds zebra-striping to rows -->
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>First</th>
+        <th>Last</th>
+        <th>Handle</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th>1</th>
+        <td>Anna</td>
+        <td>Lee</td>
+        <td>@alee</td>
+      </tr>
+      <tr>
+        <th>2</th>
+        <td>Mike</td>
+        <td>Jordan</td>
+        <td>@mj</td>
+      </tr>
+      <tr>
+        <th>3</th>
+        <td>Mike</td>
+        <td>Jordan</td>
+        <td>@mj</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- 3. Bordered Table -->
+  <h5>3. Bordered Table</h5>
+  <!-- .table-bordered adds borders to all cells -->
+  <table class="table table-bordered">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Item</th>
+        <th>Qty</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th>1</th>
+        <td>Apples</td>
+        <td>10</td>
+      </tr>
+      <tr>
+        <th>2</th>
+        <td>Oranges</td>
+        <td>8</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- 4. Hoverable Table -->
+  <h5>4. Hoverable Table</h5>
+  <!-- .table-hover adds a hover effect on rows -->
+  <table class="table table-hover">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>City</th>
+        <th>Country</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th>1</th>
+        <td>Paris</td>
+        <td>France</td>
+      </tr>
+      <tr>
+        <th>2</th>
+        <td>Tokyo</td>
+        <td>Japan</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- 5. Responsive Table -->
+  <h5>5. Responsive Table</h5>
+  <!-- .table-responsive makes table scrollable on small screens -->
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Product</th>
+          <th>Description</th>
+          <th>Price</th>
+          <th>Stock</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th>1</th>
+          <td>Phone</td>
+          <td>Smartphone with OLED</td>
+          <td>$699</td>
+          <td>34</td>
+        </tr>
+        <tr>
+          <th>2</th>
+          <td>Laptop</td>
+          <td>High-end model</td>
+          <td>$1299</td>
+          <td>15</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 6. Contextual Table Rows -->
+  <h5>6. Contextual Colors</h5>
+  <!-- Add classes like .table-success, .table-danger, etc. to rows -->
+  <table class="table ">
+    <thead>
+      <tr>
+        <th>Status</th>
+        <th>Message</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="table-success">
+        <td>Success</td>
+        <td>Operation completed successfully</td>
+      </tr>
+      <tr class="table-danger">
+        <td>Error</td>
+        <td>Something went wrong</td>
+      </tr>
+      <tr class="table-warning">
+        <td>Warning</td>
+        <td>Be careful with this action</td>
+      </tr>
+      <tr class="table-info">
+        <td>Info</td>
+        <td>This is an informational note</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- 7. This is a dark-themed table using the .table-dark class -->
+  <h5> 7 Dark Table</h5>
+
+  <!-- It gives the table a dark background and light text for contrast -->
+  <table class="table table-dark">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>First Name</th>
+        <th>Last Name</th>
+        <th>Username</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th>1</th>
+        <td>Sarah</td>
+        <td>Connor</td>
+        <td>@sconnor</td>
+      </tr>
+      <tr>
+        <th>2</th>
+        <td>John</td>
+        <td>Doe</td>
+        <td>@jdoe</td>
+      </tr>
+    </tbody>
+  </table>
+
+</body>
+</html>
