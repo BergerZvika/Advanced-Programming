@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CSS Gradient Examples</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 2rem;
+      background-color: #f5f5f5;
+      max-width: 800px;
+      margin: auto;
+    }
+
+    h1, h2 {
+      text-align: center;
+      color: #333;
+    }
+
+    .gradient {
+      height: 150px;
+      margin: 2rem 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      border-radius: 10px;
+      border: 2px solid #ccc;
+    }
+
+    /*  */
+
+    .linear {
+      background: linear-gradient(to right, #ff7e5f, #feb47b);
+    }
+
+    .radial {
+      background: radial-gradient(circle, #6a11cb, #2575fc);
+    }
+
+    .conic {
+      background: conic-gradient(from 0deg, red, yellow, green, cyan, blue, magenta, red);
+    }
+  </style>
+</head>
+<body>
+
+  <h1>CSS Gradients</h1>
+
+  <h2>Linear Gradient</h2>
+  <div class="gradient linear">Linear Gradient</div>
+
+  <h2>Radial Gradient</h2>
+  <div class="gradient radial">Radial Gradient</div>
+
+  <h2>Conic Gradient</h2>
+  <div class="gradient conic">Conic Gradient</div>
+
+</body>
+</html>

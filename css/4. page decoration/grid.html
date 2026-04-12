@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Learn CSS Grid</title>
+  <style>
+    /* === Base Styles === */
+    body {
+      font-family: sans-serif;
+      margin: 2rem;
+      background: #f9f9f9;
+      color: #333;
+    }
+
+    h1 {
+      text-align: center;
+    }
+
+    /* === Numbered section headings === */
+    h2 {
+      margin-top: 3rem;
+      color: #2196f3;
+      position: relative;
+      padding-left: 2.5rem;
+    }
+
+    h2::before {
+      content: attr(data-number) ".";
+      position: absolute;
+      left: 0;
+      top: 0;
+      color: #1565c0;
+      font-weight: bold;
+      width: 2rem;
+      text-align: right;
+    }
+
+    /* === Grid container shared styles === */
+    .grid-demo {
+      display: grid;
+      gap: 10px;
+      margin: 1rem 0;
+      background: #e0e0e0;
+      padding: 1rem;
+    }
+
+    /* === Grid item styles === */
+    .grid-demo > div {
+      background: #2196f3;
+      color: white;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      border-radius: 5px;
+    }
+
+    /* 1. Two equal columns */
+    .grid-2-cols {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    /* 2. Three unequal columns */
+    .grid-3-cols {
+      grid-template-columns: 1fr 2fr 1fr;
+    }
+
+    /* 3. Fixed + flexible columns */
+    .grid-fixed {
+      grid-template-columns: 100px 200px 1fr;
+    }
+
+    /* 4. Column span example */
+    .grid-span {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    .grid-span .item-1 {
+      grid-column: span 2;
+    }
+
+    .grid-span .item-2 {
+      grid-column: span 1;
+    }
+
+    /* 5. Grid alignment */
+    .grid-align {
+      grid-template-columns: repeat(3, 100px);
+      grid-template-rows: 100px;
+      justify-content: center;
+      align-items: center;
+    }
+
+    /* 6. 4 Rows × 3 Columns Grid */
+    .grid-4x3 {
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(4, 80px);
+    }
+  </style>
+</head>
+<body>
+  <h1>Learn CSS Grid</h1>
+
+  <h2 data-number="1">Two Equal Columns</h2>
+  <div class="grid-demo grid-2-cols">
+    <div>1</div>
+    <div>2</div>
+  </div>
+
+  <h2 data-number="2">Three Unequal Columns</h2>
+  <div class="grid-demo grid-3-cols">
+    <div>A</div>
+    <div>B</div>
+    <div>C</div>
+  </div>
+
+  <h2 data-number="3">Fixed and Flexible Columns</h2>
+  <div class="grid-demo grid-fixed">
+    <div>100px</div>
+    <div>200px</div>
+    <div>flexible</div>
+  </div>
+
+  <h2 data-number="4">Grid Column Span</h2>
+  <div class="grid-demo grid-span">
+    <div class="item-1">Span 2 columns</div>
+    <div class="item-2">Normal</div>
+    <div>Another</div>
+  </div>
+
+  <h2 data-number="5">Grid Alignment</h2>
+  <div class="grid-demo grid-align">
+    <div>Centered</div>
+    <div>Centered</div>
+    <div>Centered</div>
+  </div>
+
+  <h2 data-number="6">4 Rows × 3 Columns Grid</h2>
+  <div class="grid-demo grid-4x3">
+    <div>1</div><div>2</div><div>3</div>
+    <div>4</div><div>5</div><div>6</div>
+    <div>7</div><div>8</div><div>9</div>
+    <div>10</div><div>11</div><div>12</div>
+  </div>
+
+
+</body>
+</html>

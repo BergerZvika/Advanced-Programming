@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Learn CSS Fonts with Ordered CSS</title>
+
+  <!-- Google Fonts: Roboto and Playfair Display -->
+   <link rel="preconnect" href="https://fonts.googleapis.com">
+   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+   <link href="https://fonts.googleapis.com/css2?family=Playwrite+MX+Guides&display=swap" rel="stylesheet">
+
+  <style>
+    /* Base styling for the page */
+    body {
+      font-family: Arial, sans-serif; /* default font if none specified */
+      padding: 20px;
+      line-height: 1.5; 
+    }
+
+    h1 {
+      text-align: center; 
+      margin-bottom: 30px; 
+    }
+
+    .section {
+      margin-bottom: 40px;
+    }
+
+    .example {
+      background: #f2f2f2; 
+      padding: 15px; 
+      border-left: 4px solid #3498db; 
+      margin-top: 10px;
+    }
+
+    /* 1. System font example (Georgia) */
+    .system-fonts {
+      font-family: Georgia, serif;
+    }
+
+    /* 2. Google font example (Playfair Display italic) */
+    /* https://fonts.google.com/ */
+    /* panagram: https://he.wikipedia.org/wiki/%D7%A4%D7%A0%D7%92%D7%A8%D7%9E%D7%94 */
+    .google-font {
+      font-family: "Playwrite MX Guides", cursive;
+    }
+
+    /* 3. Font size examples */
+    .small {
+      font-size: 12px;
+    }
+
+    .large {
+      font-size: 24px;
+    }
+
+    /* 4. Font weight and font style */
+    .bold {
+      font-weight: 700; /* normal = 200, bold = 700 */
+    }
+
+    .italic {
+      font-style: italic; /* oblique */
+    }
+
+    /* 5. Font spacing: letter and word spacing */
+    .spacing {
+      letter-spacing: 2px;
+      word-spacing: 10px;
+    }
+
+    /* 6. Line height */
+    .line-height {
+      line-height: 2;
+    }
+
+    /* 7. Text transform */
+    .transform {
+      text-transform: capitalize; /* lowercase, capitalize */
+    }
+
+    /* 8. Font variant */
+    .variant {
+      font-variant: small-caps;
+    }
+  </style>
+</head>
+<body>
+  <h1>CSS Fonts: Learn by Example</h1>
+
+  <div class="section">
+    <h2>1. System Font</h2>
+    <p class="example system-fonts">This text uses the Georgia system font.</p>
+  </div>
+
+  <div class="section">
+    <h2>2. Google Font</h2>
+    <p class="example google-font">
+      This text uses a Google Font (Playfair Display, italic).
+    </p>
+  </div>
+
+  <div class="section">
+    <h2>3. Font Size</h2>
+    <p class="example small">Small font size (12px).</p>
+    <p class="example large">Large font size (24px).</p>
+  </div>
+
+  <div class="section">
+    <h2>4. Font Weight and Style</h2>
+    <p class="example bold">Bold text using <code>font-weight: bold</code>.</p>
+    <p class="example italic">Italic text using <code>font-style: italic</code>.</p>
+  </div>
+
+  <div class="section">
+    <h2>5. Font Spacing</h2>
+    <p class="example spacing">Letter and word spacing example.</p>
+  </div>
+
+  <div class="section">
+    <h2>6. Line Height</h2>
+    <p class="example line-height">
+      This paragraph has a large line height.<br />
+      Each line is spaced out using <code>line-height: 2</code>.
+    </p>
+  </div>
+
+  <div class="section">
+    <h2>7. Text Transform</h2>
+    <p class="example transform">uppercase transformation</p>
+  </div>
+
+  <div class="section">
+    <h2>8. Font Variant</h2>
+    <p class="example variant">This uses <code>font-variant: small-caps</code>.</p>
+  </div>
+  </div>
+</body>
+</html>

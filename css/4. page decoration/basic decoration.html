@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>CSS: Align, Margin, Padding, Decoration, Gap</title>
+  <style>
+    /* === Example 1: Text Alignment === */
+    .alignment {
+      text-align: center; 
+      background-color: #eef;
+      padding: 10px; 
+      margin-bottom: 20px; 
+    }
+
+    /* === Example 2: Margin === */
+    .margin-example {
+      background-color: #cde;
+      margin: 40px; 
+      padding: 10px; 
+    }
+
+    /* === Example 3: Padding === */
+    .padding-example {
+      background-color: #def; 
+      padding: 30px; 
+      margin-bottom: 20px; 
+    }
+
+    /* === Example 4: Gap === */
+    .gap-container {
+      display: flex;
+      gap: 20px; /* space between children */
+      background-color: #eef;
+      padding: 20px;
+      margin-top: 30px;
+      margin-bottom: 20px;
+    }
+
+    .gap-box {
+      background-color: #ccf;
+      padding: 20px;
+      flex: 1;
+      text-align: center;
+    }
+
+    /* === Base Page Styling === */
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Learn Align, Margin, Padding, Gap</h1>
+
+  <!-- Example 1 -->
+  <div class="alignment">
+    <strong>Example 1: Text Align - Center</strong><br>
+    This text is centered using <code>text-align: center;</code>
+  </div>
+
+  <!-- Example 2 -->
+  <div class="margin-example">
+    <strong>Example 2: Margin</strong><br>
+    This box has <code>margin: 40px;</code> around it.
+  </div>
+
+  <!-- Example 3 -->
+  <div class="padding-example">
+    <strong>Example 3: Padding</strong><br>
+    This box has <code>padding: 30px;</code> inside it.
+  </div>
+  <div class="gap-container">
+    <div class="gap-box">Item 1</div>
+    <div class="gap-box">Item 2</div>
+    <div class="gap-box">Item 3</div>
+  </div>
+</body>
+</html>

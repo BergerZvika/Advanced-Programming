@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dark Mode Landing Page</title>
+  <style>
+    :root {
+      --bg-color: #ffffff;
+      --text-color: #000000;
+      --accent-color: #3498db;
+      --header-footer-bg: #f0f0f0;
+    }
+
+    body.dark {
+      --bg-color: #121212;
+      --text-color: #f5f5f5;
+      --accent-color: #9b59b6;
+      --header-footer-bg: #1e1e1e;
+    }
+
+    * {
+      box-sizing: border-box;
+      transition: background 0.4s, color 0.4s;
+    }
+
+    body {
+      margin: 0;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      font-family: Arial, sans-serif;
+    }
+
+    header, footer {
+      background-color: var(--header-footer-bg);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    header h1, footer p {
+      margin: 0;
+    }
+
+    main {
+      padding: 2rem;
+      max-width: 800px;
+      margin: auto;
+    }
+
+    button.toggle-btn {
+      background: var(--accent-color);
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    button.toggle-btn:hover {
+      opacity: 0.9;
+    }
+
+    .card {
+      margin-top: 2rem;
+      background: var(--header-footer-bg);
+      padding: 1rem;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>My Cool Site</h1>
+    <button class="toggle-btn" onclick="toggleDarkMode()">Toggle Dark Mode</button>
+  </header>
+
+  <main>
+    <article>
+      <h2>Welcome to the Dark Mode Demo</h2>
+      <p>
+        This page demonstrates how to switch between light and dark themes using just CSS variables and a little JavaScript. The entire layout adjusts smoothly, making it perfect for modern websites.
+      </p>
+      <div class="card">
+        <h3>Bonus Tip</h3>
+        <p>You can store theme preferences in localStorage to remember user choices across visits.</p>
+      </div>
+    </article>
+  </main>
+
+  <footer>
+    <p>&copy; 2025 Your Name</p>
+    <span>CSS Demo</span>
+  </footer>
+
+  <script>
+    function toggleDarkMode() {
+      document.body.classList.toggle('dark');
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Learn CSS Flexbox - New</title>
+  <style>
+    /* === Base styles === */
+    body {
+      font-family: Arial, sans-serif;
+      margin: 2rem;
+      background: #fafafa;
+      color: #222;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    /* Numbered section headings with justified numbers */
+    h2 {
+      margin-top: 3rem;
+      color: #007acc;
+      position: relative;
+      padding-left: 2.5rem;
+      font-weight: 700;
+    }
+    h2::before {
+      content: attr(data-number) ".";
+      position: absolute;
+      left: 0;
+      top: 0;
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #004a99;
+      width: 2rem;
+      text-align: right;
+    }
+
+    /* Flex container base */
+    .flex-container {
+      display: flex;
+      background: #e0e7ff;
+      padding: 1rem;
+      gap: 1rem;
+      border-radius: 8px;
+      border: 1px solid #aac;
+      margin-top: 1rem;
+    }
+
+    /* Flex items base */
+    .flex-item {
+      background: #007acc;
+      color: white;
+      padding: 1rem;
+      border-radius: 5px;
+      font-weight: bold;
+      text-align: center;
+      flex: 1; /* Default grow */
+      min-width: 50px;
+    }
+
+    /* 1. Flex Direction: Row (default) */
+    .flex-row {
+      flex-direction: row;
+    }
+
+    /* 2. Flex Direction: Column */
+    .flex-column {
+      flex-direction: column;
+      height: 180px; /* Set height so vertical stacking is visible */
+    }
+
+    /* 3. Justify Content: Center */
+    .justify-center {
+      justify-content: center;  /* flex-start | flex-end */
+    }
+    /* Fix fixed width boxes for example 3 */
+    .justify-center .flex-item {
+      flex: 0 0 100px;
+    }
+
+    /* 4. Justify Content: Space Between */
+    .justify-between {
+      justify-content: space-between; /* space-around | space-evenly */
+    }
+    /* Fixed width boxes for example 4 */
+    .justify-between .flex-item {
+      flex: 0 0 80px;
+    }
+
+    /* 5. Align Items: Center */
+    .align-center {
+      align-items: center; /* Remove align-items: center to see default stretch behavior */
+      height: 200px; 
+    }
+    /* Specific heights for flex items in example 5 */
+    .align-center .flex-item:first-child {
+      height: 100px;
+    }
+    .align-center .flex-item:last-child {
+      height: 40px;
+    }
+
+    /* 6. Flex Wrap */
+    .flex-wrap {
+      flex-wrap: wrap;   /* Remove flex-wrap to prevent wrapping */
+      max-width: 300px;
+    }
+    /* Fixed widths for flex items in example 6 */
+    .flex-wrap .flex-item:nth-child(1) {
+      width: 100px;
+    }
+    .flex-wrap .flex-item:nth-child(2) {
+      width: 120px;
+    }
+    .flex-wrap .flex-item:nth-child(3) {
+      width: 160px;
+    }
+    .flex-wrap .flex-item:nth-child(4) {
+      width: 140px;
+    }
+
+    /* 7. Flex Grow */
+    .flex-grow {
+      flex-grow: 3;    /* Adjust flex-grow value to see different growth rates */
+    }
+    /* Specific grow values for example 7 */
+    .flex-grow-example .flex-item:nth-child(1),
+    .flex-grow-example .flex-item:nth-child(3) {
+      flex-grow: 1;
+    }
+    .flex-grow-example .flex-item:nth-child(2) {
+      flex-grow: 3; /* same as .flex-grow */
+    }
+
+    /* 8. Flex Shrink */
+    /* Change flex-shrink to 0 to prevent shrinking */
+    .flex-shrink {
+      flex-basis: 200px;
+      flex-shrink: 1;
+      width: 10px;
+    }
+    /* Container width smaller to see shrinking effect */
+    .flex-shrink-container {
+      max-width: 500px;
+    }
+    /* Override shrink for last item */
+    .flex-shrink-container .flex-item:last-child {
+      flex-basis: 200px;
+      flex-shrink: 3;
+    }
+
+    /* 9. Center Content Vertically and Horizontally */
+    .center-content {
+      justify-content: center;  /* Remove either justify-content or align-items to see effect */
+      align-items: center;
+      height: 150px;
+    }
+    /* Fixed size box inside center content example */
+    .center-content .flex-item {
+      flex: none;
+      width: 120px;
+      height: 80px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Learn CSS Flexbox</h1>
+
+  <h2 data-number="1">Flex Direction: Row (default)</h2>
+  <div class="flex-container flex-row">
+    <div class="flex-item">Item 1</div>
+    <div class="flex-item">Item 2</div>
+    <div class="flex-item">Item 3</div>
+  </div>
+
+  <h2 data-number="2">Flex Direction: Column</h2>
+  <div class="flex-container flex-column">
+    <div class="flex-item">Item A</div>
+    <div class="flex-item">Item B</div>
+    <div class="flex-item">Item C</div>
+  </div>
+
+  <h2 data-number="3">Justify Content: Center</h2>
+  <div class="flex-container flex-row justify-center">
+    <div class="flex-item">Box 1</div>
+    <div class="flex-item">Box 2</div>
+  </div>
+
+  <h2 data-number="4">Justify Content: Space Between</h2>
+  <div class="flex-container flex-row justify-between">
+    <div class="flex-item">Left</div>
+    <div class="flex-item">Center</div>
+    <div class="flex-item">Right</div>
+  </div>
+
+  <h2 data-number="5">Align Items: Center</h2>
+  <div class="flex-container flex-row align-center">
+    <div class="flex-item">Tall Box</div>
+    <div class="flex-item">Short Box</div>
+  </div>
+
+  <h2 data-number="6">Flex Wrap</h2>
+  <div class="flex-container flex-row flex-wrap">
+    <div class="flex-item">Box 1</div>
+    <div class="flex-item">Box 2</div>
+    <div class="flex-item">Box 3</div>
+    <div class="flex-item">Box 4</div>
+  </div>
+
+  <h2 data-number="7">Flex Grow</h2>
+  <div class="flex-container flex-row flex-grow-example">
+    <div class="flex-item">Grow 1</div>
+    <div class="flex-item flex-grow">Grow 2 (flex-grow: 3)</div>
+    <div class="flex-item">Grow 3</div>
+  </div>
+
+  <h2 data-number="8">Flex Shrink</h2>
+  <div class="flex-container flex-row flex-shrink-container">
+    <div class="flex-item flex-shrink">Shrink 1</div>
+    <div class="flex-item flex-shrink">Shrink 2</div>
+    <div class="flex-item flex-shrink">No Shrink 3</div>
+  </div>
+
+  <h2 data-number="9">Center Content Both Ways</h2>
+  <div class="flex-container flex-row center-content">
+    <div class="flex-item">
+      I'm perfectly centered!
+    </div>
+  </div>
+</body>
+</html>

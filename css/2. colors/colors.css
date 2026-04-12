@@ -1,0 +1,86 @@
+body {
+  font-family: sans-serif;
+  padding: 2rem;
+  line-height: 1.6;
+}
+
+section {
+  margin-bottom: 2rem;
+}
+
+div {
+  padding: 1rem;
+  margin: 0.5rem 0;
+  color: white;
+}
+
+/* 1. Named colors */
+/* 140 colors: https://www.w3schools.com/cssref/css_colors.php */
+.named-red {
+  background-color: red;
+}
+.named.blue {
+  background-color: blue;
+}
+.named.salmon {
+  background-color: salmon;
+}
+
+/* 2. Hex colors */
+/* https://www.w3schools.com/colors/colors_hexadecimal.asp */
+.hex.color1 {
+  background-color: #ff0000;
+}
+.hex.color2 {
+  background-color: #00ff00;
+}
+.hex.color3 {
+  background-color: #0000ff;
+}
+
+/* 3. RGB */
+/* https://www.w3schools.com/colors/colors_rgb.asp */
+.rgb.rgb1 {
+  background-color: rgb(255, 0, 0);
+}
+.rgb.rgb2 {
+  background-color: rgb(0, 255, 0);
+}
+.rgb.rgb3 {
+  background-color: rgb(0, 0, 255);
+}
+
+/* 4. RGBA */
+/* https://www.w3schools.com/html/html_colors_rgb.asp */
+.rgba.rgba1 {
+  background-color: rgba(255, 0, 0, 0.5);
+}
+.rgba.rgba2 {
+  background-color: rgba(0, 255, 0, 0.5);
+}
+.rgba.rgba3 {
+  background-color: rgba(0, 0, 255, 0.5);
+}
+
+/* 5. HSL */
+/* https://www.w3schools.com/colors/colors_hsl.asp */
+.hsl.hsl1 {
+  background-color: hsl(0, 100%, 50%);
+}
+.hsl.hsl2 {
+  background-color: hsl(120, 100%, 50%);
+}
+.hsl.hsl3 {
+  background-color: hsl(240, 100%, 50%);
+}
+
+/* 6. HSLA */
+.hsla.hsla1 {
+  background-color: hsla(0, 100%, 50%, 0.5);
+}
+.hsla.hsla2 {
+  background-color: hsla(120, 100%, 50%, 0.5);
+}
+.hsla.hsla3 {
+  background-color: hsla(240, 100%, 50%, 0.5);
+}

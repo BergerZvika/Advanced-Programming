@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>More CSS Transitions</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #f0f0f0;
+      padding: 2rem;
+      max-width: 900px;
+      margin: auto;
+      color: #333;
+    }
+
+    h1 {
+      text-align: center;
+    }
+
+    .section {
+      margin-bottom: 2rem;
+    }
+
+    .label {
+      font-weight: bold;
+      margin-bottom: 0.5rem;
+    }
+
+    .box {
+      width: 150px;
+      height: 150px;
+      background-color: #007bff;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      margin-top: 0.5rem;
+      /* transition: all 0.5s ease; */
+    }
+
+    .box:hover {
+      cursor: pointer;
+    }
+
+    /* 1. Opacity Transition */
+    .opacity-box {
+      transition: opacity 0.5s;
+    }
+
+    .opacity-box:hover {
+      opacity: 0.3;
+    }
+
+    /* 2. Width and Height Transition */
+    .size-box {
+      transition: width 0.5s, height 0.5s;
+      /* transition: width 1s 1s; */
+    }
+
+    .size-box:hover {
+      width: 200px;
+      height: 200px;
+    }
+
+    /* 3. Color and Background Transition */
+    .color-box {
+      transition: background-color 0.5s, color 0.5s;
+    }
+
+    .color-box:hover {
+      background-color: #ffc107;
+      color: #000;
+    }
+
+    /* 4. Border and Border-Radius */
+    .border-box {
+      transition: border 1s, border-radius 1s;
+    }
+
+    .border-box:hover {
+      border: 5px solid #28a745;
+      border-radius: 50%;
+    }
+
+    /* 5. Multiple Sequential Effects */
+    .multi-step-box {
+      transition: transform 0.3s, background-color 3s 0.3s;
+    }
+
+    .multi-step-box:hover {
+      transform: scale(1.2);
+      background-color: #e91e63;
+    }
+
+    /* 6. Transition with Visibility (requires JavaScript normally) */
+    .fade-toggle {
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 1s;
+    }
+
+    .fade-toggle.show {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    button {
+      padding: 0.5rem 1rem;
+      font-size: 1rem;
+      margin-bottom: 1rem;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Advanced CSS Transitions</h1>
+
+  <div class="section">
+    <div class="label">1. Opacity</div>
+    <div class="box opacity-box">Fade</div>
+  </div>
+
+  <div class="section">
+    <div class="label">2. Width & Height</div>
+    <div class="box size-box">Resize</div>
+  </div>
+
+  <div class="section">
+    <div class="label">3. Background & Text Color</div>
+    <div class="box color-box">Color Shift</div>
+  </div>
+
+  <div class="section">
+    <div class="label">4. Border & Border Radius</div>
+    <div class="box border-box">Border Morph</div>
+  </div>
+
+  <div class="section">
+    <div class="label">5. Multiple Steps (Delayed)</div>
+    <div class="box multi-step-box">Step Effect</div>
+  </div>
+
+  <div class="section">
+    <div class="label">6. Toggle Visibility (with JS)</div>
+    <button onclick="toggleFade()">Toggle Box</button>
+    <div id="fadeBox" class="box fade-toggle">I'm fading!</div>
+  </div>
+
+  <script>
+    function toggleFade() {
+      const box = document.getElementById('fadeBox');
+      box.classList.toggle('show');
+    }
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CSS Selectors: Child, Descendant & Advanced Attribute</title>
+  <style>
+    /* Child selector */
+    div > p {
+      color: blue;
+    }
+
+    /* Descendant selector */
+    div p {
+      background-color: yellow;
+    }
+
+    /* Attribute selector: exact match */
+    input[type="text"] {
+      color: yellow;
+    }
+
+    /* Attribute selector: has placeholder */
+    input[placeholder] {
+      background-color: #00e1ff;
+    }
+
+    /* Attribute selector: placeholder starts with "Enter" */
+    input[placeholder^="Enter"] {
+      border: 2px solid blue;
+    }
+
+    /* Attribute selector: placeholder ends with "name" */
+    input[placeholder$="name"] {
+      border: 2px dashed orange; /* dotted, double */
+    }
+  </style>
+</head>
+<body>
+  <h2>CSS Selectors Demo</h2>
+
+  <div>
+    <p>This is a direct child of div – blue text + yellow background</p>
+
+    <section>
+      <p>This is a nested descendant – yellow background only</p>
+    </section>
+  </div>
+
+  <p>This paragraph is outside div – not selected</p>
+
+  <hr>
+
+  <h3>Attribute Selectors</h3>
+
+  <input type="text" placeholder="Enter your name"><br><br>
+  <input type="text" placeholder="Username"><br><br>
+  <input type="text" placeholder="Enter email"><br><br>
+  <input type="password" placeholder="Enter password"><br><br>
+  <input type="text"><br><br>
+</body>
+</html>

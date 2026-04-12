@@ -1,0 +1,54 @@
+/* html {
+    font-size: 8px;
+} */
+
+body {
+  font-family: sans-serif;
+  padding: 2rem;
+  max-width: 1200px;
+  margin: auto;
+  font-size: px;
+}
+
+h1 {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.example {
+  margin: 1rem 0;
+  padding: 1rem;
+  background-color: #4caf50;
+  color: white;
+  border: 1px solid #333;
+  font-size: 1rem;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+/* 1. px */
+.px {
+  width: 100px;
+}
+
+/* 2. % */
+.percent {
+  width: 50%;
+}
+
+/* 3. em */
+.em {
+  width: 20em;
+  font-size: 1em;
+}
+
+/* 4. rem - root (html) em*/
+.rem {
+  width: 20rem;
+}
+
+/* 5. auto */
+.auto {
+  width: auto;
+}
+

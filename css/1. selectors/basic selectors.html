@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CSS Selector Precedence</title>
+  <style>
+    /* Type selector */
+    p {
+      color: blue;
+    }
+
+    /* Class selector */
+    .my-class {
+      color: green ; /* !important */
+    }
+
+    /* ID selector */
+    #my-id {
+      color: red;
+    }
+
+    #inline {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <h2>CSS Selector Precedence Demo</h2>
+
+  <p>This paragraph is styled by <strong>type selector</strong> (blue).</p>
+
+  <p class="my-class">This paragraph is styled by <strong>class selector</strong> (green overrides type).</p>
+
+  <p id="my-id">This paragraph is styled by <strong>ID selector</strong> (red overrides class and type).</p>
+
+  <p id="inline" class="my-class" style="color: black;">
+    This paragraph uses <strong>inline style</strong> (black overrides everything).
+  </p>
+</body>
+</html>

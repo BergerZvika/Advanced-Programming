@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CSS: vh vs vw vs percent</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+
+    header {
+      background-color: #333;
+      color: white;
+      padding: 10px;
+      text-align: center;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      padding: 20px;
+    }
+
+    .section {
+      width: 80%;
+      padding: 10px;
+      border: 2px dashed #aaa;
+      background-color: #f9f9f9;
+    }
+
+    .box {
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      font-weight: bold;
+    }
+
+    .vh-box {
+      height: 30vh;
+      background-color: #2196f3;
+    }
+
+    .vw-box {
+      width: 50vw;
+      height: 100px;
+      background-color: #4caf50;
+    }
+
+    .percent-box {
+      width: 50%;
+      height: 100px;
+      background-color: #f44336;
+    }
+
+    .notes {
+      margin-top: 10px;
+      font-size: 0.95rem;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Learning CSS Units: <code>vh</code>, <code>vw</code>, and <code>%</code></h1>
+  </header>
+
+  <div class="container">
+    
+    <div class="section">
+      <h2><code>%</code> - Percentage of Parent</h2>
+      <div class="box percent-box">Width = 50%</div>
+      <p class="notes">
+        <strong>50%</strong> width means 50% of the width of its parent element (in this case, the section box). It depends on parent size.
+      </p>
+    </div>
+
+    <div class="section">
+      <h2><code>vw</code> - Viewport Width</h2>
+      <div class="box vw-box">Width = 50vw</div>
+      <p class="notes">
+        <strong>50vw</strong> means the width is 50% of the browser's viewport width. Resize the window horizontally to see it change.
+      </p>
+    </div>
+
+    <div class="section">
+      <h2><code>vh</code> - Viewport Height</h2>
+      <div class="box vh-box">Height = 30vh</div>
+      <p class="notes">
+        <strong>30vh</strong> means the height is 30% of the browser's viewport height (screen height), not of the parent element.
+        Try resizing the window vertically!
+      </p>
+    </div>
+
+  </div>
+
+</body>
+</html>

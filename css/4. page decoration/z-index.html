@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Z-Index Examples</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 2rem;
+      background: #f4f4f4;
+    }
+
+    h1 {
+      text-align: center;
+    }
+
+    .example {
+      margin: 3rem 0;
+      padding: 1rem;
+      border: 1px solid #ccc;
+      background: white;
+    }
+
+    .stack-container {
+      position: relative;
+      width: 300px;
+      height: 200px;
+      margin-top: 1rem;
+      border: 2px dashed gray;
+    }
+
+    .box {
+      position: absolute;
+      width: 150px;
+      height: 150px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      color: white;
+    }
+
+    .red-box {
+      background: red;
+      top: 0;
+      left: 0;
+      z-index: 1;
+    }
+
+    .blue-box {
+      background: blue;
+      top: 30px;
+      left: 30px;
+      z-index: 2;
+    }
+
+    .green-box {
+      background: green;
+      top: 60px;
+      left: 60px;
+      z-index: 3;
+    }
+
+    .invisible-blocker {
+      background: black;
+      opacity: 0;
+      z-index: 999;
+      top: 60px;
+      left: 60px;
+      pointer-events: auto; /* Still intercepts clicks */
+    }
+
+    .click-box {
+      background: orange;
+      top: 60px;
+      left: 60px;
+      z-index: 1;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Z-Index Demonstration</h1>
+
+  <div class="example">
+    <h2>1. Basic Z-Index Stacking</h2>
+    <p>This shows how elements with higher z-index appear on top.</p>
+
+    <div class="stack-container">
+      <!-- Red box with z-index: 1 -->
+      <div class="box red-box">Z = 1</div>
+      <!-- Blue box with z-index: 2 -->
+      <div class="box blue-box">Z = 2</div>
+      <!-- Green box with z-index: 3 -->
+      <div class="box green-box">Z = 3</div>
+    </div>
+  </div>
+
+  <div class="example">
+    <h2>2. Z-Index with Opacity 0</h2>
+    <p>
+      The invisible black box has a high z-index and opacity 0. Try clicking the orange box — it won't work because the invisible box is blocking it.
+    </p>
+
+    <div class="stack-container">
+      <!-- Clickable orange box (visible) -->
+      <div class="box click-box" onclick="alert('You clicked the orange box!')">Click me</div>
+
+      <!-- Invisible overlay with high z-index that blocks clicks -->
+      <div class="box invisible-blocker"></div>
+    </div>
+  </div>
+
+</body>
+</html>

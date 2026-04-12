@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CSS clamp(), calc(), and aspect-ratio Demo</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      line-height: 1.6;
+      background-color: #fafafa;
+    }
+
+    h1 {
+      font-size: clamp(24px, 5vw, 48px);
+      color: #2c3e50;
+      border-bottom: 2px solid #ccc;
+      padding-bottom: 10px;
+      margin-bottom: 20px;
+    }
+
+    /* clamp() section */
+    .clamp-section {
+      background-color: #f0f0f0;
+      padding: 20px;
+      border: 2px dashed #333;
+      margin-bottom: 30px;
+    }
+
+    .clamp-text {
+      font-size: clamp(8px, 3vw, 30px);
+      color: #2e7d32;
+    }
+
+    /* calc() section */
+    .calc-section {
+      background-color: #d0f0d8;
+      padding: 20px;
+      border: 2px solid #3c763d;
+      margin-bottom: 30px;
+    }
+
+    .calc-box {
+      width: calc(100% - 200px);
+      padding: 20px;
+      background-color: #b2dfdb;
+      color: #004d40;
+    }
+
+    /* aspect-ratio section */
+    .aspect-section {
+      background-color: #e3f2fd;
+      padding: 20px;
+      border: 2px solid #2196f3;
+    }
+
+    .aspect-box {
+      aspect-ratio: 16 / 9;
+      width: 300%;
+      max-width: 400px;
+      background-color: #bbdefb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid #1565c0;
+      margin-bottom: 20px;
+      color: #0d47a1;
+    }
+
+    .aspect-square {
+      aspect-ratio: 1 / 1;
+      width: 200px;
+      background-color: #fff9c4;
+      border: 2px solid #fbc02d;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #f57f17;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>CSS clamp(), calc(), and aspect-ratio Demo</h1>
+
+  <!-- clamp() section -->
+  <section class="clamp-section">
+    <h2>clamp()</h2>
+    <p class="clamp-text">
+      This text uses <code>font-size: clamp(8px, 3vw, 30px);</code><br>
+      Try resizing the window! It scales fluidly between 8px and 30px based on viewport width.
+    </p>
+  </section>
+
+  <!-- calc() section -->
+  <section class="calc-section">
+    <h2>calc()</h2>
+    <div class="calc-box">
+      This box uses <code>width: calc(100% - 120px);</code><br>
+      The width adjusts dynamically based on available space.
+    </div>
+  </section>
+
+  <!-- aspect-ratio section -->
+  <section class="aspect-section">
+    <h2>aspect-ratio</h2>
+    <div class="aspect-box">16:9 Box</div>
+    <div class="aspect-square">1:1 Box (Square)</div>
+  </section>
+
+</body>
+</html>

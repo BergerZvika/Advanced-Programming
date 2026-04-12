@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CSS Transitions</title>
+  <style>
+    /* === Base Styles === */
+    body {
+      font-family: sans-serif;
+      max-width: 900px;
+      margin: auto;
+      padding: 2rem;
+      background: #f9f9f9;
+      color: #333;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    /* === Shared Box Style === */
+    .box {
+      width: 150px;
+      height: 150px;
+      margin: 1.5rem 0;
+      background: #2196f3;
+      border-radius: 8px;
+      transition: all 0.3s ease;  /* Default transition */
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* === Hover effect shared by all boxes === */
+    .box:hover {
+      background: #f44336;
+      transform: scale(1.2) rotate(5deg);
+    }
+
+    /* === 2. Transition Duration === */
+    .transition-duration {
+      transition-duration: 1s;
+    }
+
+    /* === 3. Transition Delay === */
+    .transition-delay {
+      transition-delay: 0.5s;
+    }
+
+    /* === 4. Timing Function: ease-in === */
+    .timing-ease-in {
+      transition-timing-function: ease-in;
+    }
+
+    /* === 5. Timing Function: ease-out === */
+    .timing-ease-out {
+      transition-timing-function: ease-out;
+    }
+
+    /* === 6. Timing Function: linear === */
+    .timing-linear {
+      transition-timing-function: linear;
+    }
+
+    /* === 7. Multiple Transitions === */
+    .multi {
+      transition: background 0.5s ease, transform 1s ease-in-out;
+    }
+
+    /* === Labels for sections === */
+    .label {
+      margin: 0.5rem 0;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>CSS Transitions Examples</h1>
+
+  <!-- 1. Default transition -->
+  <div class="label">1. Default Transition (0.3s ease)</div>
+  <div class="box">Hover me</div>
+
+  <!-- 2. Longer duration -->
+  <div class="label">2. Transition Duration: 1s</div>
+  <div class="box transition-duration">Hover me</div>
+
+  <!-- 3. Delayed transition -->
+  <div class="label">3. Transition Delay: 0.5s</div>
+  <div class="box transition-delay">Hover me</div>
+
+  <!-- 4. Custom timing function: ease-in -->
+  <div class="label">4. Timing Function: ease-in</div>
+  <div class="box timing-ease-in">Hover me</div>
+
+  <!-- 5. Custom timing function: ease-out -->
+  <div class="label">5. Timing Function: ease-out</div>
+  <div class="box timing-ease-out">Hover me</div>
+
+  <!-- 6. Custom timing function: linear -->
+  <div class="label">6. Timing Function: linear</div>
+  <div class="box timing-linear">Hover me</div>
+
+  <!-- 7. Multiple transition properties -->
+  <div class="label">7. Multiple Transitions (background & transform)</div>
+  <div class="box multi">Hover me</div>
+
+</body>
+</html>
