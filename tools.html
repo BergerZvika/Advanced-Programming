@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>BergerOverflow — 80+ Tools for Developers</title>
+<title>BergerOverflow</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -626,6 +626,75 @@ input[type=color]{width:60px;height:36px;border:none;background:transparent;curs
 .mt-2{margin-top:8px}.mt-3{margin-top:12px}.mt-4{margin-top:16px}
 .gap-2{gap:8px}
 .flex{display:flex}.flex-wrap{flex-wrap:wrap}.items-center{align-items:center}
+
+/* Star + custom-category controls on tool cards */
+.card-actions{position:absolute;top:10px;right:10px;display:flex;gap:4px;z-index:2}
+.card-btn{
+  width:28px;height:28px;border-radius:8px;padding:0;
+  background:rgba(0,0,0,0.35);border:1px solid var(--border);color:var(--text-dim);
+  display:flex;align-items:center;justify-content:center;font-size:15px;line-height:1;
+  cursor:pointer;transition:all .15s ease;
+}
+.card-btn:hover{background:rgba(124,92,255,0.25);color:#fff;border-color:rgba(124,92,255,0.4)}
+.card-btn.active{
+  background:linear-gradient(135deg,#ffb547,#ff6ec7);color:#fff;border-color:transparent;
+  box-shadow:0 4px 12px -4px rgba(255,181,71,0.6);
+}
+.card h3{padding-right:6px}
+
+/* Popover for assigning a tool to custom collections */
+.cat-popover{
+  position:fixed;z-index:200;min-width:240px;max-width:320px;
+  background:linear-gradient(180deg,#14141f,#0f0f1a);
+  border:1px solid var(--border-strong);border-radius:12px;
+  padding:10px;box-shadow:var(--shadow-lg);
+  animation:fadeIn .15s ease;
+}
+.cat-popover h4{margin:4px 6px 8px;font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--text-faint);font-weight:600}
+.cat-popover .cp-item{
+  display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:8px;
+  cursor:pointer;font-size:13px;color:var(--text);
+}
+.cat-popover .cp-item:hover{background:var(--surface)}
+.cat-popover .cp-item input{accent-color:var(--accent);cursor:pointer;margin:0}
+.cat-popover .cp-empty{padding:10px 8px;color:var(--text-faint);font-size:12px;text-align:center}
+.cat-popover .cp-divider{height:1px;background:var(--border);margin:8px 0}
+.cat-popover .cp-new{display:flex;gap:6px}
+.cat-popover .cp-new input{
+  flex:1;min-width:0;background:rgba(0,0,0,0.35);border:1px solid var(--border);
+  border-radius:8px;padding:7px 10px;color:var(--text);font-size:13px;outline:none;
+}
+.cat-popover .cp-new input:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(124,92,255,0.2)}
+.cat-popover .cp-new button{
+  background:linear-gradient(135deg,var(--accent),var(--accent-2));
+  border:none;color:#fff;border-radius:8px;padding:0 12px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;
+}
+
+/* Sidebar: collections divider + new button */
+.cat-list .cat-divider{
+  margin:12px 10px 4px;padding:10px 4px 4px;
+  font-size:10.5px;text-transform:uppercase;letter-spacing:.12em;color:var(--text-faint);
+  border-top:1px solid var(--border);font-weight:600;
+}
+.new-cat-btn{
+  width:100%;padding:9px 12px;border-radius:10px;
+  background:transparent;border:1px dashed var(--border-strong);color:var(--text-dim);
+  font-size:13px;font-weight:500;cursor:pointer;transition:all .15s ease;text-align:left;
+}
+.new-cat-btn:hover{border-color:var(--accent);color:var(--text);background:rgba(124,92,255,0.08)}
+
+/* Custom-category section rename/delete controls */
+.section-title .sec-actions{margin-left:auto;display:flex;gap:6px}
+.section-title .sec-actions button{
+  background:transparent;border:1px solid var(--border);color:var(--text-faint);
+  border-radius:6px;padding:3px 9px;font-size:11px;cursor:pointer;
+  text-transform:none;letter-spacing:0;font-family:inherit;
+}
+.section-title .sec-actions button:hover{color:#fff;border-color:var(--border-strong);background:rgba(255,255,255,0.04)}
+.empty-collection{
+  grid-column:1/-1;padding:18px;border-radius:12px;
+  border:1px dashed var(--border);color:var(--text-faint);font-size:13px;text-align:center;
+}
 </style>
 </head>
 <body>
@@ -777,21 +846,231 @@ $('#workspace').addEventListener('click', (e) => { if (e.target.id === 'workspac
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeTool(); });
 
 /* ==========================================================================
+   FAVORITES + CUSTOM COLLECTIONS (persisted)
+   ========================================================================== */
+const FAVS = new Set();
+const CUSTOM_CATS = []; // [{id, name, icon, toolIds:[]}]
+const STATE_KEY = 'bergeroverflow.userCats.v1';
+
+function loadUserState(){
+  try {
+    const raw = localStorage.getItem(STATE_KEY);
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    if (Array.isArray(data.favs)) data.favs.forEach(id => FAVS.add(id));
+    if (Array.isArray(data.customCats)){
+      for (const c of data.customCats){
+        if (c && typeof c.id === 'string' && typeof c.name === 'string'){
+          CUSTOM_CATS.push({
+            id: c.id,
+            name: c.name,
+            icon: c.icon || '★',
+            toolIds: Array.isArray(c.toolIds) ? [...c.toolIds] : []
+          });
+        }
+      }
+    }
+  } catch(e){ /* corrupt state — ignore */ }
+}
+function saveUserState(){
+  try {
+    localStorage.setItem(STATE_KEY, JSON.stringify({
+      favs: [...FAVS],
+      customCats: CUSTOM_CATS
+    }));
+  } catch(e){ /* quota/security — ignore */ }
+}
+loadUserState();
+
+function toggleFav(toolId){
+  if (FAVS.has(toolId)){ FAVS.delete(toolId); toast('☆ Removed from favorites'); }
+  else { FAVS.add(toolId); toast('⭐ Added to favorites'); }
+  saveUserState();
+  renderUI($('#search').value || '');
+}
+function createCustomCat(name){
+  const n = (name || '').trim();
+  if (!n) return null;
+  const id = 'u_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const cat = { id, name: n, icon: '★', toolIds: [] };
+  CUSTOM_CATS.push(cat);
+  saveUserState();
+  return cat;
+}
+function renameCustomCat(id, newName){
+  const c = CUSTOM_CATS.find(x => x.id === id);
+  const n = (newName || '').trim();
+  if (c && n){ c.name = n; saveUserState(); }
+}
+function deleteCustomCat(id){
+  const i = CUSTOM_CATS.findIndex(x => x.id === id);
+  if (i >= 0){ CUSTOM_CATS.splice(i, 1); saveUserState(); }
+}
+function toggleToolInCustomCat(catId, toolId){
+  const c = CUSTOM_CATS.find(x => x.id === catId);
+  if (!c) return;
+  const i = c.toolIds.indexOf(toolId);
+  if (i >= 0) c.toolIds.splice(i, 1);
+  else c.toolIds.push(toolId);
+  saveUserState();
+}
+
+/* Floating popover: pick collections for a tool, or create a new one inline. */
+function openCatPopover(anchor, toolId){
+  closeCatPopover();
+  const pop = el('div', {class:'cat-popover', id:'catPopover'});
+  pop.appendChild(el('h4', {}, 'Add to collection'));
+  const listEl = el('div');
+  pop.appendChild(listEl);
+  pop.appendChild(el('div', {class:'cp-divider'}));
+  const nameInp = el('input', {type:'text', placeholder:'New collection name', maxlength:'40'});
+  const addBtn = el('button', {type:'button'}, '+ Add');
+  pop.appendChild(el('div', {class:'cp-new'}, nameInp, addBtn));
+
+  const refresh = () => {
+    listEl.innerHTML = '';
+    if (!CUSTOM_CATS.length){
+      listEl.appendChild(el('div', {class:'cp-empty'}, 'No collections yet — create one below.'));
+      return;
+    }
+    for (const c of CUSTOM_CATS){
+      const cb = el('input', {type:'checkbox'});
+      cb.checked = c.toolIds.includes(toolId);
+      cb.addEventListener('change', () => {
+        toggleToolInCustomCat(c.id, toolId);
+        renderUI($('#search').value || '');
+      });
+      listEl.appendChild(el('label', {class:'cp-item'}, cb, el('span', {}, c.name)));
+    }
+  };
+  refresh();
+
+  const doAdd = () => {
+    const cat = createCustomCat(nameInp.value);
+    if (!cat){ nameInp.focus(); return; }
+    toggleToolInCustomCat(cat.id, toolId);
+    nameInp.value = '';
+    refresh();
+    renderUI($('#search').value || '');
+    // Re-anchor since list grew
+    setTimeout(() => positionPopover(pop, anchor), 0);
+  };
+  addBtn.addEventListener('click', doAdd);
+  nameInp.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter'){ e.preventDefault(); doAdd(); }
+  });
+
+  document.body.appendChild(pop);
+  positionPopover(pop, anchor);
+
+  const onDocClick = (e) => {
+    if (pop.contains(e.target) || anchor.contains(e.target)) return;
+    closeCatPopover();
+  };
+  const onKey = (e) => { if (e.key === 'Escape') closeCatPopover(); };
+  setTimeout(() => {
+    document.addEventListener('mousedown', onDocClick, true);
+    document.addEventListener('keydown', onKey);
+  }, 0);
+  pop._cleanup = () => {
+    document.removeEventListener('mousedown', onDocClick, true);
+    document.removeEventListener('keydown', onKey);
+  };
+}
+function positionPopover(pop, anchor){
+  const r = anchor.getBoundingClientRect();
+  const pw = pop.offsetWidth, ph = pop.offsetHeight;
+  let left = r.right - pw;
+  let top  = r.bottom + 6;
+  if (left < 8) left = 8;
+  if (left + pw > window.innerWidth - 8) left = window.innerWidth - pw - 8;
+  if (top + ph > window.innerHeight - 8) top = Math.max(8, r.top - ph - 6);
+  pop.style.left = left + 'px';
+  pop.style.top  = top  + 'px';
+}
+function closeCatPopover(){
+  const pop = $('#catPopover');
+  if (pop){ pop._cleanup && pop._cleanup(); pop.remove(); }
+}
+
+/* ==========================================================================
    RENDER SIDEBAR + GRID
    ========================================================================== */
 function renderUI(filter=''){
-  // Sidebar
+  closeCatPopover();
   const list = $('#catList'); list.innerHTML = '';
   const f = filter.trim().toLowerCase();
   const counts = {};
   for (const t of TOOLS){ counts[t.cat] = (counts[t.cat]||0) + (matches(t,f)?1:0); }
   const all = TOOLS.filter(t=>matches(t,f)).length;
   list.appendChild(catLi('all','All Tools','◉', all, true));
+
+  const favList = TOOLS.filter(t => FAVS.has(t.id) && matches(t, f));
+  list.appendChild(catLi('favs','Favorites','★', favList.length, false));
+
   for (const c of CATS){
     list.appendChild(catLi(c.id, c.name, c.icon, counts[c.id]||0, false));
   }
+
+  // My collections (sidebar)
+  const divider = el('li', {class:'cat-divider'}, 'My collections');
+  list.appendChild(divider);
+  for (const cc of CUSTOM_CATS){
+    const items = TOOLS.filter(t => cc.toolIds.includes(t.id) && matches(t, f));
+    list.appendChild(catLi('u:' + cc.id, cc.name, cc.icon || '★', items.length, false));
+  }
+  const addLi = el('li', {},
+    el('button', {class:'new-cat-btn', type:'button',
+      onclick: () => {
+        const name = prompt('Name your collection:');
+        if (name && name.trim()){
+          createCustomCat(name.trim());
+          renderUI($('#search').value || '');
+        }
+      }
+    }, '+ New collection')
+  );
+  list.appendChild(addLi);
+
   // Sections
   const sec = $('#sections'); sec.innerHTML = '';
+
+  if (favList.length){
+    sec.appendChild(el('div', {class:'section-title', 'data-cat': 'favs'}, 'Favorites'));
+    const g = el('div', {class:'grid'});
+    for (const t of favList) g.appendChild(toolCard(t));
+    sec.appendChild(g);
+  }
+
+  // One section per custom collection (always rendered so rename/delete stays reachable)
+  for (const cc of CUSTOM_CATS){
+    const items = TOOLS.filter(t => cc.toolIds.includes(t.id) && matches(t, f));
+    const h = el('div', {class:'section-title', 'data-cat': 'u:' + cc.id}, cc.name);
+    const actions = el('div', {class:'sec-actions'});
+    const renameBtn = el('button', {type:'button'}, '✎ Rename');
+    const deleteBtn = el('button', {type:'button'}, '✕ Delete');
+    renameBtn.addEventListener('click', () => {
+      const name = prompt('Rename collection:', cc.name);
+      if (name && name.trim()){ renameCustomCat(cc.id, name); renderUI($('#search').value || ''); }
+    });
+    deleteBtn.addEventListener('click', () => {
+      if (confirm(`Delete collection "${cc.name}"? The tools themselves stay, only this collection is removed.`)){
+        deleteCustomCat(cc.id); renderUI($('#search').value || '');
+      }
+    });
+    actions.appendChild(renameBtn); actions.appendChild(deleteBtn);
+    h.appendChild(actions);
+    sec.appendChild(h);
+    const g = el('div', {class:'grid'});
+    if (items.length){
+      for (const t of items) g.appendChild(toolCard(t));
+    } else {
+      g.appendChild(el('div', {class:'empty-collection'},
+        'No tools here yet — click the 🏷 icon on any tool card to add it.'));
+    }
+    sec.appendChild(g);
+  }
+
   for (const c of CATS){
     const items = TOOLS.filter(t => t.cat === c.id && matches(t, f));
     if (!items.length) continue;
@@ -800,15 +1079,16 @@ function renderUI(filter=''){
     for (const t of items) g.appendChild(toolCard(t));
     sec.appendChild(h); sec.appendChild(g);
   }
+
   $('#toolCount').textContent = TOOLS.length;
-  const catEl = $('#catCount'); if (catEl) catEl.textContent = CATS.length;
+  const catEl = $('#catCount'); if (catEl) catEl.textContent = CATS.length + CUSTOM_CATS.length;
 }
 function matches(t, f){
   if (!f) return true;
   return (t.name + ' ' + t.desc + ' ' + (t.keywords||'')).toLowerCase().includes(f);
 }
 function catLi(id, name, icon, count, active){
-  const btn = el('button', {class:'cat-btn' + (active?' active':''), 'data-cat':id},
+  const btn = el('button', {class:'cat-btn' + (active?' active':''), 'data-cat':id, type:'button'},
     el('span', {class:'ico'}, icon||'◆'),
     el('span', {}, name),
     el('span', {class:'count'}, String(count))
@@ -824,7 +1104,27 @@ function catLi(id, name, icon, count, active){
   return btn;
 }
 function toolCard(t){
+  const isFav = FAVS.has(t.id);
+  const starBtn = el('button', {
+    class: 'card-btn' + (isFav ? ' active' : ''),
+    type:'button',
+    title: isFav ? 'Remove from favorites' : 'Add to favorites',
+    'aria-pressed': isFav ? 'true' : 'false'
+  }, '★');
+  starBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleFav(t.id); });
+
+  const tagBtn = el('button', {
+    class: 'card-btn',
+    type:'button',
+    title: 'Add to a custom collection'
+  }, '🏷');
+  tagBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    openCatPopover(tagBtn, t.id);
+  });
+
   const card = el('div', {class:'card', tabindex:'0'},
+    el('div', {class:'card-actions'}, starBtn, tagBtn),
     el('div', {class:'card-icon'}, t.icon||'◆'),
     el('h3', {}, t.name),
     el('p', {}, t.desc),
@@ -7939,6 +8239,218 @@ tool({
 });
 
 tool({
+  id:'calc', cat:'dev', name:'Calculator', icon:'🧮',
+  desc:'Scientific calculator with full expression input, common math functions, and history of recent calculations.',
+  keywords:'calculator math arithmetic scientific compute sin cos tan log sqrt',
+  render(root){
+    const style = el('style', {}, `
+      .calc-wrap{display:grid;grid-template-columns:minmax(0,1fr) 240px;gap:16px;align-items:start}
+      @media (max-width:760px){ .calc-wrap{grid-template-columns:1fr} }
+      .calc-display{
+        background:rgba(0,0,0,0.45);border:1px solid var(--border);border-radius:12px;padding:12px 14px;
+      }
+      .calc-display input{
+        width:100%;background:transparent;border:none;color:var(--text);
+        font-family:'JetBrains Mono',monospace;font-size:18px;padding:4px 2px;outline:none;
+      }
+      .calc-result{
+        margin-top:6px;text-align:right;font-family:'JetBrains Mono',monospace;
+        color:var(--accent-2);font-size:22px;font-weight:600;min-height:28px;
+        overflow-x:auto;white-space:nowrap;
+      }
+      .calc-result.err{color:var(--error);font-size:13px;font-weight:500}
+      .calc-pad{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}
+      .calc-pad button{
+        padding:14px 0;border-radius:10px;border:1px solid var(--border);
+        background:rgba(255,255,255,0.04);color:var(--text);
+        font-family:'JetBrains Mono',monospace;font-size:15px;cursor:pointer;
+        transition:all .12s ease;font-weight:500;
+      }
+      .calc-pad button:hover{background:rgba(255,255,255,0.09);transform:translateY(-1px);border-color:var(--border-strong)}
+      .calc-pad button.op{background:rgba(124,92,255,0.14);border-color:rgba(124,92,255,0.35);color:#cfc2ff}
+      .calc-pad button.fn{background:rgba(53,208,255,0.10);border-color:rgba(53,208,255,0.28);color:#b4e8ff;font-size:13px}
+      .calc-pad button.eq{background:linear-gradient(135deg,#7c5cff,#35d0ff);border:none;color:#fff;font-weight:700;
+        box-shadow:0 6px 18px -8px rgba(124,92,255,0.7)}
+      .calc-pad button.clr{background:rgba(255,90,122,0.12);border-color:rgba(255,90,122,0.3);color:#ff9aae}
+      .calc-history{
+        background:rgba(0,0,0,0.35);border:1px solid var(--border);border-radius:12px;
+        padding:10px;max-height:380px;overflow-y:auto;
+      }
+      .calc-history h4{margin:2px 4px 8px;font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--text-faint);display:flex;align-items:center}
+      .calc-history h4 button{margin-left:auto;background:transparent;border:none;color:var(--text-faint);cursor:pointer;font-size:11px}
+      .calc-history h4 button:hover{color:#fff}
+      .calc-history .empty{padding:10px;color:var(--text-faint);font-size:12px;text-align:center}
+      .calc-history .hist-item{padding:7px 8px;border-radius:8px;cursor:pointer;font-family:'JetBrains Mono',monospace;font-size:12px;margin-bottom:4px}
+      .calc-history .hist-item:hover{background:var(--surface)}
+      .calc-history .hist-expr{color:var(--text-dim);word-break:break-all}
+      .calc-history .hist-res{color:var(--accent-2);font-weight:600;margin-top:2px}
+    `);
+    root.appendChild(style);
+
+    const HIST_KEY = 'bergeroverflow.calc.history.v1';
+    let history = [];
+    try { const raw = localStorage.getItem(HIST_KEY); if (raw) history = JSON.parse(raw) || []; } catch(e){}
+    const saveHist = () => { try { localStorage.setItem(HIST_KEY, JSON.stringify(history.slice(0, 25))); } catch(e){} };
+
+    const expr = el('input', {type:'text', placeholder:'Type or click buttons… e.g. 2*(3+4)^2'});
+    const res  = el('div', {class:'calc-result'}, '0');
+    const display = el('div', {class:'calc-display'}, expr, res);
+
+    const preprocess = (s) => s
+      .replace(/×/g, '*')
+      .replace(/÷/g, '/')
+      .replace(/−/g, '-')
+      .replace(/π/g, '(3.141592653589793)')
+      .replace(/(^|[^0-9a-zA-Z_])e(?![0-9])/g, '$1(2.718281828459045)')
+      .replace(/\^/g, '**')
+      .replace(/\bsin\s*\(/g, 'Math.sin(')
+      .replace(/\bcos\s*\(/g, 'Math.cos(')
+      .replace(/\btan\s*\(/g, 'Math.tan(')
+      .replace(/\bln\s*\(/g, 'Math.log(')
+      .replace(/\blog\s*\(/g, 'Math.log10(')
+      .replace(/\bsqrt\s*\(/g, 'Math.sqrt(')
+      .replace(/√\s*\(/g, 'Math.sqrt(')
+      .replace(/√/g, 'Math.sqrt');
+
+    const fmt = (n) => {
+      if (!Number.isFinite(n)) return String(n);
+      if (n === 0) return '0';
+      const abs = Math.abs(n);
+      if (abs < 1e-9 || abs >= 1e15) return n.toExponential(8).replace(/\.?0+e/, 'e');
+      return Number(n.toPrecision(12)).toString();
+    };
+
+    const evaluate = (s) => {
+      const trimmed = (s || '').trim();
+      if (!trimmed) return null;
+      const code = preprocess(trimmed);
+      const v = Function('"use strict"; return (' + code + ')')();
+      if (typeof v !== 'number' || Number.isNaN(v)) throw new Error('Invalid result');
+      return v;
+    };
+
+    const live = () => {
+      try {
+        const v = evaluate(expr.value);
+        res.classList.remove('err');
+        res.textContent = v === null ? '0' : fmt(v);
+      } catch(e){
+        res.classList.add('err');
+        res.textContent = '⚠ ' + e.message;
+      }
+    };
+    expr.addEventListener('input', live);
+
+    const histList = el('div');
+    const renderHistory = () => {
+      histList.innerHTML = '';
+      if (!history.length){
+        histList.appendChild(el('div', {class:'empty'}, 'No calculations yet.'));
+        return;
+      }
+      for (const h of history){
+        const item = el('div', {class:'hist-item'},
+          el('div', {class:'hist-expr'}, h.expr),
+          el('div', {class:'hist-res'}, '= ' + h.result)
+        );
+        item.addEventListener('click', () => {
+          expr.value = h.expr;
+          live();
+          expr.focus();
+        });
+        histList.appendChild(item);
+      }
+    };
+    renderHistory();
+
+    const clearHistBtn = el('button', {type:'button'}, 'Clear');
+    clearHistBtn.addEventListener('click', () => { history = []; saveHist(); renderHistory(); });
+    const historyPane = el('div', {class:'calc-history'},
+      el('h4', {}, 'History', clearHistBtn),
+      histList
+    );
+
+    const commit = () => {
+      try {
+        const v = evaluate(expr.value);
+        if (v === null) return;
+        const out = fmt(v);
+        history.unshift({expr: expr.value.trim(), result: out});
+        history = history.slice(0, 25);
+        saveHist();
+        renderHistory();
+        expr.value = out;
+        live();
+      } catch(e){
+        res.classList.add('err');
+        res.textContent = '⚠ ' + e.message;
+      }
+    };
+
+    const insert = (text) => {
+      const s = expr.selectionStart ?? expr.value.length;
+      const e = expr.selectionEnd ?? expr.value.length;
+      expr.value = expr.value.slice(0, s) + text + expr.value.slice(e);
+      const caret = s + text.length;
+      expr.setSelectionRange(caret, caret);
+      expr.focus();
+      live();
+    };
+    const backspace = () => {
+      const s = expr.selectionStart ?? expr.value.length;
+      const e = expr.selectionEnd ?? expr.value.length;
+      if (s !== e){
+        expr.value = expr.value.slice(0, s) + expr.value.slice(e);
+        expr.setSelectionRange(s, s);
+      } else if (s > 0){
+        expr.value = expr.value.slice(0, s-1) + expr.value.slice(s);
+        expr.setSelectionRange(s-1, s-1);
+      }
+      expr.focus();
+      live();
+    };
+    const clearAll = () => { expr.value = ''; expr.focus(); live(); };
+    const toggleSign = () => {
+      const m = expr.value.match(/(-?\d+\.?\d*)$/);
+      if (m){
+        const start = expr.value.length - m[1].length;
+        const neg = m[1].startsWith('-') ? m[1].slice(1) : '-' + m[1];
+        expr.value = expr.value.slice(0, start) + neg;
+      } else {
+        expr.value = '-(' + expr.value + ')';
+      }
+      expr.focus(); live();
+    };
+
+    const keys = [
+      ['sin','fn',()=>insert('sin(')], ['cos','fn',()=>insert('cos(')], ['tan','fn',()=>insert('tan(')], ['log','fn',()=>insert('log(')],
+      ['ln','fn',()=>insert('ln(')],   ['√','fn',()=>insert('sqrt(')], ['x²','fn',()=>insert('^2')],   ['x^y','fn',()=>insert('^')],
+      ['π','fn',()=>insert('π')],      ['e','fn',()=>insert('e')],    ['(','fn',()=>insert('(')],     [')','fn',()=>insert(')')],
+      ['C','clr',clearAll],            ['⌫','clr',backspace],          ['%','op',()=>insert('%')],    ['÷','op',()=>insert('÷')],
+      ['7','', ()=>insert('7')],       ['8','', ()=>insert('8')],      ['9','', ()=>insert('9')],     ['×','op',()=>insert('×')],
+      ['4','', ()=>insert('4')],       ['5','', ()=>insert('5')],      ['6','', ()=>insert('6')],     ['−','op',()=>insert('-')],
+      ['1','', ()=>insert('1')],       ['2','', ()=>insert('2')],      ['3','', ()=>insert('3')],     ['+','op',()=>insert('+')],
+      ['±','',toggleSign],             ['0','', ()=>insert('0')],      ['.','', ()=>insert('.')],     ['=','eq',commit],
+    ];
+    const pad = el('div', {class:'calc-pad'});
+    for (const [label, kind, fn] of keys){
+      const b = el('button', {type:'button', class:kind||''}, label);
+      b.addEventListener('click', fn);
+      pad.appendChild(b);
+    }
+
+    expr.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter'){ e.preventDefault(); commit(); }
+    });
+
+    const left = el('div', {}, display, pad);
+    root.appendChild(el('div', {class:'calc-wrap'}, left, historyPane));
+
+    setTimeout(() => expr.focus(), 50);
+  }
+});
+
+tool({
   id:'aspect', cat:'dev', name:'Aspect Ratio Calculator', icon:'▭',
   desc:'Calculate aspect ratios or compute a matching dimension from the other.',
   keywords:'aspect ratio calculator',
@@ -8114,7 +8626,7 @@ tool({
 });
 
 tool({
-  id:'image-convert', cat:'dev', name:'Image Converter', icon:'🖼',
+  id:'image-convert', cat:'converters', name:'Image Converter', icon:'🖼',
   desc:'Convert images between PNG, JPEG, and WebP formats, fully in the browser.',
   keywords:'image convert png jpeg webp',
   render(root){
