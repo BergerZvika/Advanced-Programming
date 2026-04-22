@@ -2655,6 +2655,131 @@ tool({
   }
 });
 
+tool({
+  id:'html-md', cat:'converters', name:'HTML → Markdown', icon:'⇣',
+  desc:'Convert HTML (or a full page) into clean Markdown. GFM-aware: tables, task lists, strikethrough. Upload .html files and download the result as .md.',
+  keywords:'html markdown md convert turndown gfm document',
+  render(root){
+    const inp = el('textarea', {class:'code', placeholder:'<h1>Your HTML here</h1>…'});
+    const out = outBlock(); out.style.minHeight = '200px'; out.style.maxHeight = '440px';
+    const preview = el('div', {class:'out', style:{background:'#fff', color:'#111', padding:'20px', minHeight:'200px', maxHeight:'440px', overflow:'auto'}});
+
+    const headingStyle = el('select', {},
+      el('option', {value:'atx'}, 'ATX (# Heading)'),
+      el('option', {value:'setext'}, 'Setext (===, ---)')
+    );
+    const bulletMarker = el('select', {},
+      el('option', {value:'-'}, '- Dash'),
+      el('option', {value:'*'}, '* Asterisk'),
+      el('option', {value:'+'}, '+ Plus')
+    );
+    const emDelimiter = el('select', {},
+      el('option', {value:'*'}, '* Asterisk'),
+      el('option', {value:'_'}, '_ Underscore')
+    );
+    const strongDelimiter = el('select', {},
+      el('option', {value:'**'}, '** Asterisks'),
+      el('option', {value:'__'}, '__ Underscores')
+    );
+    const codeBlockStyle = el('select', {},
+      el('option', {value:'fenced'}, 'Fenced (```)'),
+      el('option', {value:'indented'}, 'Indented (4 spaces)')
+    );
+
+    const stripJunkCb = el('input', {type:'checkbox', checked:true});
+    const keepImagesCb = el('input', {type:'checkbox', checked:true});
+    const stripJunkLbl = el('label', {style:{display:'flex',alignItems:'center',gap:'6px',fontSize:'12px'}}, stripJunkCb, ' Remove <script> / <style> / comments');
+    const keepImagesLbl = el('label', {style:{display:'flex',alignItems:'center',gap:'6px',fontSize:'12px'}}, keepImagesCb, ' Keep images');
+
+    const fileInput = el('input', {type:'file', accept:'.html,.htm,text/html', style:{display:'none'}});
+    const uploadBtn = el('button', {class:'btn ghost', type:'button',
+      onclick:() => fileInput.click()
+    }, '📄 Upload .html');
+    fileInput.addEventListener('change', () => {
+      const f = fileInput.files && fileInput.files[0];
+      if (!f) return;
+      const rd = new FileReader();
+      rd.onload = () => { inp.value = String(rd.result || ''); run(); };
+      rd.readAsText(f);
+    });
+
+    const sanitize = (html) => {
+      if (!stripJunkCb.checked) return html;
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      doc.querySelectorAll('script, style, noscript, iframe, svg, link, meta').forEach(n => n.remove());
+      // Remove HTML comments
+      const walker = doc.createTreeWalker(doc, NodeFilter.SHOW_COMMENT);
+      const comments = [];
+      while (walker.nextNode()) comments.push(walker.currentNode);
+      comments.forEach(c => c.parentNode && c.parentNode.removeChild(c));
+      if (!keepImagesCb.checked) doc.querySelectorAll('img').forEach(n => n.remove());
+      // Prefer <main>/<article>/<body> content when the input looks like a full document
+      const picked = doc.querySelector('main') || doc.querySelector('article') || doc.body || doc.documentElement;
+      return picked ? picked.innerHTML : html;
+    };
+
+    async function run(){
+      try {
+        if (!inp.value.trim()){ out.textContent = ''; preview.innerHTML = ''; return; }
+        if (!window.TurndownService){
+          out.textContent = '📦 Loading Turndown library…';
+          await loadScriptOnce('https://cdn.jsdelivr.net/npm/turndown@7.1.2/dist/turndown.min.js');
+          await loadScriptOnce('https://cdn.jsdelivr.net/npm/turndown-plugin-gfm@1.0.2/dist/turndown-plugin-gfm.js');
+        }
+        const td = new window.TurndownService({
+          headingStyle: headingStyle.value,
+          codeBlockStyle: codeBlockStyle.value,
+          bulletListMarker: bulletMarker.value,
+          emDelimiter: emDelimiter.value,
+          strongDelimiter: strongDelimiter.value,
+          hr: '---',
+          linkStyle: 'inlined'
+        });
+        if (window.turndownPluginGfm) td.use(window.turndownPluginGfm.gfm);
+        const cleaned = sanitize(inp.value);
+        const md = td.turndown(cleaned);
+        out.textContent = md;
+        out.style.color = '';
+        preview.innerHTML = marked.parse(md);
+      } catch(e){
+        out.textContent = '⚠ ' + e.message;
+        out.style.color = 'var(--error)';
+      }
+    }
+
+    [inp, headingStyle, bulletMarker, emDelimiter, strongDelimiter, codeBlockStyle, stripJunkCb, keepImagesCb]
+      .forEach(e => e.addEventListener('input', run));
+    [headingStyle, bulletMarker, emDelimiter, strongDelimiter, codeBlockStyle, stripJunkCb, keepImagesCb]
+      .forEach(e => e.addEventListener('change', run));
+
+    root.appendChild(el('div', {class:'row cols-3'},
+      field('Heading style', headingStyle),
+      field('Bullet marker', bulletMarker),
+      field('Code blocks', codeBlockStyle),
+    ));
+    root.appendChild(el('div', {class:'row cols-3 mt-3'},
+      field('Emphasis', emDelimiter),
+      field('Strong', strongDelimiter),
+      el('div', {class:'field'},
+        el('label', {class:'label'}, 'Options'),
+        el('div', {style:{display:'flex',flexDirection:'column',gap:'4px'}}, stripJunkLbl, keepImagesLbl)
+      ),
+    ));
+    root.appendChild(el('div', {class:'split mt-3'}, field('HTML input', inp), field('Markdown output', out)));
+    root.appendChild(el('div', {class:'mt-3'}, field('Rendered preview', preview)));
+    root.appendChild(el('div', {class:'btn-row'},
+      uploadBtn,
+      fileInput,
+      copyBtn(() => out.textContent),
+      el('button', {class:'btn', onclick:() => { if (out.textContent) dl('document.md', out.textContent, 'text/markdown'); }}, '⤓ Download .md'),
+      clearBtn(inp)
+    ));
+
+    inp.value = '<h1>BergerOverflow</h1>\n<p>A <strong>beautiful</strong> collection of dev tools.</p>\n<ul>\n  <li>Paste any HTML here</li>\n  <li>Get clean <em>Markdown</em> in real time</li>\n  <li>Supports <a href="https://github.github.com/gfm/">GFM</a> tables, task lists, and <del>strikethrough</del></li>\n</ul>\n<pre><code class="language-js">console.log("hello, world");</code></pre>\n<blockquote>Edit this HTML on the left — Markdown appears on the right.</blockquote>';
+    run();
+  }
+});
+
 /* ==========================================================================
    GENERATORS
    ========================================================================== */
