@@ -141,6 +141,125 @@ body::after{
   padding:2px 7px;border-radius:20px;background:rgba(255,255,255,0.05)}
 .cat-btn .ico{width:18px;text-align:center;opacity:.85}
 
+/* "More of my work" sidebar button */
+.my-work-btn{
+  margin:18px 0 6px;width:100%;
+  display:flex;align-items:center;gap:10px;
+  padding:11px 14px;border-radius:12px;
+  background:linear-gradient(135deg,rgba(124,92,255,0.20),rgba(53,208,255,0.14) 60%,rgba(255,110,199,0.16));
+  border:1px solid rgba(124,92,255,0.35);
+  color:#fff;font-size:13px;font-weight:600;letter-spacing:.01em;
+  cursor:pointer;transition:all .18s ease;position:relative;overflow:hidden;
+  box-shadow:0 6px 20px -10px rgba(124,92,255,0.55);
+}
+.my-work-btn:hover{
+  transform:translateY(-1px);
+  box-shadow:0 10px 26px -10px rgba(124,92,255,0.8);
+  border-color:rgba(124,92,255,0.6);
+}
+.my-work-btn .mw-ico{font-size:16px;color:var(--accent-2);filter:drop-shadow(0 0 8px rgba(53,208,255,0.6))}
+.my-work-btn .mw-lbl{flex:1;text-align:left}
+.my-work-btn .mw-arrow{color:var(--accent-2);font-weight:500;transition:transform .18s ease}
+.my-work-btn:hover .mw-arrow{transform:translate(2px,-2px)}
+
+/* Modal — link grid */
+.my-work-modal{
+  position:fixed;inset:0;z-index:110;display:none;
+  background:rgba(5,5,10,0.78);backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+  align-items:center;justify-content:center;padding:24px;
+  animation:fadeIn .2s ease;
+}
+.my-work-modal.open{display:flex}
+.my-work-panel{
+  width:min(960px,100%);max-height:92vh;overflow:auto;
+  background:linear-gradient(180deg,#14142a,#0c0c18);
+  border:1px solid var(--border-strong);border-radius:20px;
+  box-shadow:var(--shadow-lg);
+  position:relative;
+}
+.my-work-panel::before{
+  content:"";position:absolute;inset:0;border-radius:20px;pointer-events:none;
+  background:
+    radial-gradient(420px 180px at 15% 0%,rgba(124,92,255,0.22),transparent 70%),
+    radial-gradient(420px 180px at 85% 0%,rgba(53,208,255,0.16),transparent 70%),
+    radial-gradient(360px 220px at 50% 100%,rgba(255,110,199,0.12),transparent 70%);
+  z-index:0;
+}
+.my-work-head{
+  position:relative;z-index:1;
+  display:flex;align-items:flex-start;gap:16px;padding:24px 28px 14px;
+  border-bottom:1px solid var(--border);
+}
+.my-work-title{display:flex;align-items:center;gap:14px;flex:1}
+.my-work-title .my-work-spark{
+  width:44px;height:44px;border-radius:12px;
+  background:linear-gradient(135deg,#7c5cff,#35d0ff);
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;color:#fff;
+  box-shadow:0 8px 20px -8px rgba(124,92,255,0.8);
+}
+.my-work-title h3{margin:0;font-size:18px;font-weight:700;letter-spacing:-0.01em}
+.my-work-title p{margin:3px 0 0;font-size:12.5px;color:var(--text-dim);line-height:1.5;max-width:560px}
+.my-work-close{
+  background:rgba(255,255,255,0.05);border:1px solid var(--border);color:var(--text-dim);
+  width:34px;height:34px;border-radius:10px;font-size:20px;cursor:pointer;line-height:1;
+  display:flex;align-items:center;justify-content:center;
+}
+.my-work-close:hover{color:#fff;background:rgba(255,90,122,0.14);border-color:rgba(255,90,122,0.3)}
+.my-work-grid{
+  position:relative;z-index:1;
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px;
+  padding:22px 28px;
+}
+.my-work-card{
+  position:relative;overflow:hidden;
+  display:flex;flex-direction:column;gap:8px;
+  padding:20px;border-radius:16px;text-decoration:none;
+  background:linear-gradient(135deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02));
+  border:1px solid var(--border);
+  color:var(--text);
+  transition:all .22s cubic-bezier(.2,.8,.2,1);
+}
+.my-work-card::before{
+  content:"";position:absolute;inset:-1px;border-radius:inherit;pointer-events:none;
+  background:conic-gradient(from var(--a,0deg),transparent,rgba(124,92,255,.35),transparent 30%);
+  opacity:0;transition:opacity .3s;
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor;mask-composite:exclude;padding:1px;
+}
+.my-work-card:hover{
+  transform:translateY(-4px);
+  border-color:var(--border-strong);
+  box-shadow:var(--shadow-md);
+}
+.my-work-card:hover::before{opacity:1;animation:rot 3s linear infinite}
+.mw-card-icon{
+  width:48px;height:48px;border-radius:13px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;font-weight:700;margin-bottom:6px;
+  border:1px solid rgba(255,255,255,0.12);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.15),0 8px 22px -10px rgba(124,92,255,0.6);
+}
+.mw-card-icon[data-accent="a"]{background:linear-gradient(135deg,rgba(124,92,255,0.35),rgba(124,92,255,0.1));color:#cfc2ff}
+.mw-card-icon[data-accent="b"]{background:linear-gradient(135deg,rgba(53,208,255,0.30),rgba(53,208,255,0.1));color:#a4e2ff}
+.mw-card-icon[data-accent="c"]{background:linear-gradient(135deg,rgba(255,110,199,0.30),rgba(255,110,199,0.1));color:#ffc2e4}
+.mw-card-icon[data-accent="d"]{background:linear-gradient(135deg,rgba(255,181,71,0.32),rgba(255,181,71,0.08));color:#ffd08c}
+.my-work-card h4{margin:0;font-size:14.5px;font-weight:700;letter-spacing:-0.01em;color:#fff}
+.my-work-card p{margin:0;font-size:12.5px;color:var(--text-dim);line-height:1.5;flex:1}
+.my-work-card .mw-card-cta{
+  margin-top:4px;display:inline-flex;align-items:center;gap:6px;
+  font-size:12px;font-weight:600;color:var(--accent-2);
+}
+.my-work-card .mw-card-cta span{transition:transform .18s ease}
+.my-work-card:hover .mw-card-cta span{transform:translate(2px,-2px)}
+.my-work-foot{
+  position:relative;z-index:1;
+  padding:14px 28px 22px;font-size:12px;color:var(--text-faint);
+  border-top:1px solid var(--border);text-align:center;
+}
+
 /* Main */
 .main{padding:36px 44px 80px;max-width:1400px;width:100%}
 @media (max-width: 740px){ .main{padding:24px 18px 60px} }
@@ -756,7 +875,54 @@ input[type=color]{width:60px;height:36px;border:none;background:transparent;curs
     </div>
     <input type="search" id="search" class="search" placeholder="Search tools…" />
     <ul class="cat-list" id="catList"></ul>
+    <button id="myWorkBtn" class="my-work-btn" type="button" title="See more projects by Zvika Berger">
+      <span class="mw-ico">⚛</span>
+      <span class="mw-lbl">More of my work</span>
+      <span class="mw-arrow">↗</span>
+    </button>
   </aside>
+
+  <div class="my-work-modal" id="myWorkModal">
+    <div class="my-work-panel">
+      <div class="my-work-head">
+        <div class="my-work-title">
+          <span class="my-work-spark">✦</span>
+          <div>
+            <h3>More of my work</h3>
+            <p>A handful of other projects I've built — mostly interactive, all hosted at bergerzvika.github.io.</p>
+          </div>
+        </div>
+        <button id="myWorkClose" class="my-work-close" type="button" title="Close (Esc)">×</button>
+      </div>
+      <div class="my-work-grid">
+        <a class="my-work-card" href="https://bergerzvika.github.io/Automated-Reasoning-Course/index.html" target="_blank" rel="noopener">
+          <div class="mw-card-icon" data-accent="a">∀∃</div>
+          <h4>Automated Reasoning · Course</h4>
+          <p>Interactive course materials on automated reasoning — SAT/SMT solvers, decision procedures, and proof generation, with step-by-step walkthroughs.</p>
+          <div class="mw-card-cta">Open <span>↗</span></div>
+        </a>
+        <a class="my-work-card" href="https://bergerzvika.github.io/pbv-visual/" target="_blank" rel="noopener">
+          <div class="mw-card-icon" data-accent="b">⬣</div>
+          <h4>PBV Visual</h4>
+          <p>A visual playground for Parametric Bit-Vectors — see how bit-width parameters propagate through SMT operations and rewrite rules in real time.</p>
+          <div class="mw-card-cta">Open <span>↗</span></div>
+        </a>
+        <a class="my-work-card" href="https://bergerzvika.github.io/AI-Lab/mdp_tutorial.html" target="_blank" rel="noopener">
+          <div class="mw-card-icon" data-accent="c">◊</div>
+          <h4>MDP Tutorial · AI Lab</h4>
+          <p>Step-by-step tutorial on Markov Decision Processes — value iteration, policy iteration, and the Bellman equations, animated on a grid-world.</p>
+          <div class="mw-card-cta">Open <span>↗</span></div>
+        </a>
+        <a class="my-work-card" href="https://bergerzvika.github.io/Prompt-Injection/" target="_blank" rel="noopener">
+          <div class="mw-card-icon" data-accent="d">⚠</div>
+          <h4>Prompt Injection</h4>
+          <p>A showcase of prompt-injection attacks against LLMs — concrete examples, categories, and notes on mitigation patterns.</p>
+          <div class="mw-card-cta">Open <span>↗</span></div>
+        </a>
+      </div>
+      <div class="my-work-foot">Made by <b>Zvika Berger</b> · <a href="mailto:zvbe10@gmail.com" style="color:var(--accent-2)">zvbe10@gmail.com</a></div>
+    </div>
+  </div>
   <main class="main">
     <div class="hero">
       <div class="hero-grid"></div>
@@ -910,6 +1076,18 @@ function closeTool(){
   if (location.hash) history.replaceState(null,'',' ');
 }
 $('#wsClose').addEventListener('click', closeTool);
+
+// "More of my work" modal
+(() => {
+  const btn = $('#myWorkBtn'), modal = $('#myWorkModal'), close = $('#myWorkClose');
+  if (!btn || !modal || !close) return;
+  const open = () => modal.classList.add('open');
+  const hide = () => modal.classList.remove('open');
+  btn.addEventListener('click', open);
+  close.addEventListener('click', hide);
+  modal.addEventListener('click', (e) => { if (e.target === modal) hide(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && modal.classList.contains('open')) hide(); });
+})();
 $('#dlSource').addEventListener('click', async () => {
   let ok = false;
   try {
