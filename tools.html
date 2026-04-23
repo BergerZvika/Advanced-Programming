@@ -143,24 +143,17 @@ body::after{
 
 /* "More of my work" sidebar button */
 .my-work-btn{
-  margin:18px 0 6px;width:100%;
+  margin:14px 0 6px;width:100%;
   display:flex;align-items:center;gap:10px;
-  padding:11px 14px;border-radius:12px;
-  background:linear-gradient(135deg,rgba(124,92,255,0.20),rgba(53,208,255,0.14) 60%,rgba(255,110,199,0.16));
-  border:1px solid rgba(124,92,255,0.35);
-  color:#fff;font-size:13px;font-weight:600;letter-spacing:.01em;
-  cursor:pointer;transition:all .18s ease;position:relative;overflow:hidden;
-  box-shadow:0 6px 20px -10px rgba(124,92,255,0.55);
+  padding:9px 12px;border-radius:10px;
+  background:transparent;border:1px solid var(--border);
+  color:var(--text-dim);font-size:13.5px;font-weight:500;
+  cursor:pointer;transition:all .15s ease;font-family:inherit;text-align:left;
 }
-.my-work-btn:hover{
-  transform:translateY(-1px);
-  box-shadow:0 10px 26px -10px rgba(124,92,255,0.8);
-  border-color:rgba(124,92,255,0.6);
-}
-.my-work-btn .mw-ico{font-size:16px;color:var(--accent-2);filter:drop-shadow(0 0 8px rgba(53,208,255,0.6))}
-.my-work-btn .mw-lbl{flex:1;text-align:left}
-.my-work-btn .mw-arrow{color:var(--accent-2);font-weight:500;transition:transform .18s ease}
-.my-work-btn:hover .mw-arrow{transform:translate(2px,-2px)}
+.my-work-btn:hover{background:var(--surface);color:var(--text);border-color:var(--border-strong)}
+.my-work-btn .mw-ico{width:18px;text-align:center;opacity:.85}
+.my-work-btn .mw-lbl{flex:1}
+.my-work-btn .mw-arrow{color:var(--text-faint);font-size:11px}
 
 /* Modal — link grid */
 .my-work-modal{
