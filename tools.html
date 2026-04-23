@@ -17041,6 +17041,13 @@ const IDE_LANGS = [
       {name:'Aggregation', code:`CREATE TABLE sales (product TEXT, amount REAL);\nINSERT INTO sales VALUES\n  ('Apple', 10.5), ('Banana', 20.0),\n  ('Apple', 15.0), ('Banana', 5.5);\n\nSELECT product, ROUND(SUM(amount), 2) AS total\nFROM sales\nGROUP BY product\nORDER BY total DESC;`},
       {name:'Function returns', code:`-- Using a CTE (common table expression) as a named "function"\nWITH greeting(msg) AS (VALUES ('hello SQLite'))\nSELECT msg FROM greeting;`},
     ]},
+  {id:'matlab', name:'MATLAB', icon:'ML', prism:'matlab', file:'main.m', noRun:true,
+    samples:[
+      {name:'Roll-call of names', code:`% Roll-call of names\nnames = {'Tom', 'Lucy', 'Frank', 'Jane', 'Robert'};\n\nfprintf('Roll-call of %d:\\n', length(names));\nfor i = 1:length(names)\n    fprintf('  %d. %s\\n', i, names{i});\nend`},
+      {name:'Vector / matrix ops', code:`% Basic linear algebra\nA = [1 2 3; 4 5 6; 7 8 10];   % 3x3 matrix\nb = [6; 15; 25];               % column vector\n\n% Solve the linear system A*x = b\nx = A \\ b;\nfprintf('Solution x:\\n');\ndisp(x);\n\nfprintf('det(A) = %.4f\\n', det(A));\nfprintf('rank(A) = %d\\n', rank(A));`},
+      {name:'Plot a sine wave', code:`% Generate and plot y = sin(x)\nx = linspace(0, 2 * pi, 200);\ny = sin(x);\n\nplot(x, y, 'b-', 'LineWidth', 1.5);\ntitle('y = sin(x)');\nxlabel('x');\nylabel('sin(x)');\ngrid on;`},
+      {name:'Function returns', code:`% Define a simple function and call it\nfunction s = hello(who)\n    s = sprintf('hello, %s!', who);\nend\n\ndisp(hello('MATLAB'));\ndisp(hello('Zvika'));`},
+    ]},
 ];
 
 for (const lang of IDE_LANGS){
