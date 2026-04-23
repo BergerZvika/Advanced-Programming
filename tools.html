@@ -799,59 +799,39 @@ const tool = (def) => { TOOLS.push(def); return def; };
    ========================================================================== */
 // --- Global usage stats (shared across ALL visitors) ---
 // Uses abacus.jasoncameron.dev — a free public counter service (no auth, no PAT).
-// Every visitor reads the current totals on load; each tool-open/download increments.
+// The displayed number is ALWAYS whatever the server most recently returned.
+// (No optimistic local-only increments — so a network / CORS failure is obvious
+// instead of silently drifting into a per-browser local count.)
 const STATS_NAMESPACE = 'bergeroverflow-zvbe10';
 const STATS_URL = (key, mode) => `https://abacus.jasoncameron.dev/${mode}/${STATS_NAMESPACE}/${key}`;
-const LOCAL_STATS_KEY = 'bergeroverflow.usage.v2';
-const localCache = (() => {
-  try { return JSON.parse(localStorage.getItem(LOCAL_STATS_KEY) || '{}') || {}; }
-  catch(e){ return {}; }
-})();
-const usage = {
-  opens: Number.isFinite(localCache.opens) ? localCache.opens : 0,
-  downloads: Number.isFinite(localCache.downloads) ? localCache.downloads : 0,
-};
+const usage = { opens: null, downloads: null };
 function refreshUsageUI(){
-  const dEl = $('#dlCount'); if (dEl) dEl.textContent = String(usage.downloads);
-  const oEl = $('#openCount'); if (oEl) oEl.textContent = String(usage.opens);
+  const dEl = $('#dlCount'); if (dEl) dEl.textContent = usage.downloads === null ? '…' : String(usage.downloads);
+  const oEl = $('#openCount'); if (oEl) oEl.textContent = usage.opens === null ? '…' : String(usage.opens);
 }
-function cacheUsage(){
-  try { localStorage.setItem(LOCAL_STATS_KEY, JSON.stringify(usage)); } catch(e){}
-}
-async function readGlobalCount(key){
+async function statsFetch(key, mode){
   try {
-    const r = await fetch(STATS_URL(key, 'get'));
-    if (!r.ok) return null;
+    const r = await fetch(STATS_URL(key, mode), {cache:'no-store'});
+    if (!r.ok){ console.warn('[stats] ' + mode + '/' + key + ' HTTP ' + r.status); return null; }
     const j = await r.json();
     return typeof j.value === 'number' ? j.value : null;
-  } catch(e){ return null; }
+  } catch(e){ console.warn('[stats] ' + mode + '/' + key + ' failed', e); return null; }
 }
-async function hitGlobalCount(key){
-  try {
-    const r = await fetch(STATS_URL(key, 'hit'));
-    if (!r.ok) return null;
-    const j = await r.json();
-    return typeof j.value === 'number' ? j.value : null;
-  } catch(e){ return null; }
-}
-// Initial display uses last known local cache (instant), then syncs from the server.
-refreshUsageUI();
-(async () => {
-  const [o, d] = await Promise.all([readGlobalCount('tool-opens'), readGlobalCount('downloads')]);
+async function syncStats(){
+  const [o, d] = await Promise.all([statsFetch('tool-opens', 'get'), statsFetch('downloads', 'get')]);
   if (typeof o === 'number') usage.opens = o;
   if (typeof d === 'number') usage.downloads = d;
-  cacheUsage(); refreshUsageUI();
-})();
+  refreshUsageUI();
+}
+refreshUsageUI();           // initial "…"
+syncStats();                 // first fetch from server
+setInterval(syncStats, 30000); // keep in sync with other users
 
 function openTool(id){
   const t = TOOLS.find(x=>x.id===id);
   if (!t) return;
-  // Optimistic local increment for instant UI feedback; sync with server afterward.
-  usage.opens = (usage.opens || 0) + 1;
-  refreshUsageUI();
-  cacheUsage();
-  hitGlobalCount('tool-opens').then(v => {
-    if (typeof v === 'number'){ usage.opens = v; refreshUsageUI(); cacheUsage(); }
+  statsFetch('tool-opens', 'hit').then(v => {
+    if (typeof v === 'number'){ usage.opens = v; refreshUsageUI(); }
   });
   const catName = (CATS.find(c=>c.id===t.cat)?.name || '');
   $('#wsTitle').textContent = t.name;
@@ -902,10 +882,8 @@ $('#dlSource').addEventListener('click', async () => {
     }
   }
   if (ok){
-    usage.downloads = (usage.downloads || 0) + 1;
-    refreshUsageUI(); cacheUsage();
-    hitGlobalCount('downloads').then(v => {
-      if (typeof v === 'number'){ usage.downloads = v; refreshUsageUI(); cacheUsage(); }
+    statsFetch('downloads', 'hit').then(v => {
+      if (typeof v === 'number'){ usage.downloads = v; refreshUsageUI(); }
     });
   }
 });
