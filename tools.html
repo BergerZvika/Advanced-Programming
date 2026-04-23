@@ -2379,15 +2379,16 @@ tool({
 
     // Per-character Caesar shift. Latin uses mod 26, Hebrew uses mod 22.
     // After shifting, letters at the end of a Hebrew word get their final form back.
-    const shift = (s, n) => {
+    // `which` restricts which alphabet to shift: 'en' | 'he' | 'both'.
+    const shift = (s, n, which = 'both') => {
       const out = [];
       for (let i = 0; i < s.length; i++){
         const ch = s[i];
-        if (/[A-Za-z]/.test(ch)){
+        if ((which === 'en' || which === 'both') && /[A-Za-z]/.test(ch)){
           const base = ch <= 'Z' ? 65 : 97;
           const k = ((n % 26) + 26) % 26;
           out.push(String.fromCharCode(((ch.charCodeAt(0) - base + k) % 26) + base));
-        } else if (HEB.includes(ch) || HEB_FINAL_TO_BASE[ch]){
+        } else if ((which === 'he' || which === 'both') && (HEB.includes(ch) || HEB_FINAL_TO_BASE[ch])){
           const baseCh = HEB_FINAL_TO_BASE[ch] || ch;
           const idx = HEB.indexOf(baseCh);
           const k = ((n % 22) + 22) % 22;
@@ -2396,9 +2397,10 @@ tool({
           out.push(ch);
         }
       }
-      // Re-apply Hebrew final forms at word endings
       let result = out.join('');
-      result = result.replace(/([כמנפצ])(?![א-ת])/g, (_, c) => HEB_BASE_TO_FINAL[c] || c);
+      if (which === 'he' || which === 'both'){
+        result = result.replace(/([כמנפצ])(?![א-ת])/g, (_, c) => HEB_BASE_TO_FINAL[c] || c);
+      }
       return result;
     };
 
@@ -2413,34 +2415,38 @@ tool({
       el('option', {value:'dec'}, 'Decode (shift ←)')
     );
     const alpha = el('select', {},
-      el('option', {value:'auto'}, 'Auto (both)'),
       el('option', {value:'en'},   'English (A–Z, 26 letters)'),
-      el('option', {value:'he'},   'Hebrew (א–ת, 22 letters)')
+      el('option', {value:'he'},   'Hebrew (א–ת, 22 letters)'),
+      el('option', {value:'auto'}, 'Auto (both)')
     );
+    alpha.value = 'en';
     const bruteBox = el('div', {class:'out', style:{fontFamily:"'JetBrains Mono',ui-monospace,monospace",fontSize:'12.5px',lineHeight:'1.55',maxHeight:'320px',overflow:'auto',whiteSpace:'pre'}});
+
+    const whichFor = () => {
+      const a = alpha.value;
+      if (a === 'en' || a === 'he') return a;
+      // auto
+      if (hasHebrew(inp.value) && !hasLatin(inp.value)) return 'he';
+      if (hasLatin(inp.value) && !hasHebrew(inp.value)) return 'en';
+      return 'both';
+    };
 
     const run = () => {
       const n = parseInt(shiftIn.value, 10);
       if (!Number.isFinite(n)){ out.textContent = '⚠ shift must be a number'; return; }
       const k = mode.value === 'enc' ? n : -n;
-      out.textContent = shift(inp.value, k);
+      out.textContent = shift(inp.value, k, whichFor());
     };
 
-    // Brute-force iterates up to the alphabet's size minus one.
-    // "auto" picks Hebrew range if the text is Hebrew-only, else 25.
-    const bruteCount = () => {
-      const a = alpha.value;
-      if (a === 'en') return 25;
-      if (a === 'he') return 21;
-      return hasHebrew(inp.value) && !hasLatin(inp.value) ? 21 : 25;
-    };
+    const bruteCount = () => whichFor() === 'he' ? 21 : 25;
 
     const buildBrute = () => {
       const lines = [];
       const max = bruteCount();
+      const w = whichFor();
       for (let i = 1; i <= max; i++){
         const prefix = `shift ${String(i).padStart(2,' ')}: `;
-        lines.push(prefix + shift(inp.value, -i));
+        lines.push(prefix + shift(inp.value, -i, w));
       }
       bruteBox.textContent = lines.join('\n');
     };
@@ -2468,7 +2474,7 @@ tool({
     root.appendChild(el('div', {class:'muted mt-2', style:{fontSize:'12px'}},
       'Handles English (A–Z, 26 letters) and Hebrew (א–ת, 22 letters) — including mixed text. Hebrew final forms (ך ם ן ף ץ) are normalized before shifting and re-applied at word endings. ROT13 is self-inverse for English; ROT11 is self-inverse for Hebrew.'
     ));
-    inp.value = 'Hello BergerOverflow\nשלום עולם'; run(); buildBrute();
+    inp.value = 'Hello BergerOverflow'; run(); buildBrute();
   }
 });
 
