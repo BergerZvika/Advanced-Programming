@@ -16602,6 +16602,329 @@ function parseCliArgs(str){
   return out;
 }
 
+// ===== Minimal MATLAB-lite interpreter (in-browser) =====
+// Supports: comments, strings, numbers, row/matrix literals, cell literals,
+// assignment, 1-based indexing (calls + array index via one helper),
+// for/while/if-elseif-else, function definitions (single return), and
+// common built-ins: fprintf, disp, sprintf, length, numel, size,
+// zeros, ones, linspace, sin/cos/tan/exp/log/sqrt/abs/pi/e, round/floor/ceil,
+// sum/mean/max/min, mod, rem, char, num2str.  No plotting, no complex
+// indexing, no transpose — unsupported constructs surface as JS errors.
+async function runMatlabLite(source, writeOut){
+  const fmt = (x) => {
+    if (typeof x === 'number') return Number.isInteger(x) ? String(x) : String(+x.toFixed(4));
+    if (typeof x === 'string') return x;
+    if (x == null) return String(x);
+    if (Array.isArray(x)){
+      if (x.length === 0) return '[]';
+      if (Array.isArray(x[0])) return x.map(r => '  ' + r.map(fmt).join('  ')).join('\n');
+      return '  ' + x.map(fmt).join('  ');
+    }
+    return String(x);
+  };
+  const mSprintf = (fmtStr, ...args) => {
+    let out = '', ai = 0, i = 0;
+    const s = String(fmtStr);
+    while (i < s.length){
+      const c = s[i];
+      if (c === '\\' && i + 1 < s.length){
+        const n = s[i+1];
+        if (n === 'n') out += '\n'; else if (n === 't') out += '\t';
+        else if (n === 'r') out += '\r'; else if (n === '\\') out += '\\';
+        else if (n === "'") out += "'"; else out += n;
+        i += 2; continue;
+      }
+      if (c === '%' && i + 1 < s.length){
+        let j = i + 1;
+        while (j < s.length && !'diouxXfeEgGsc%'.includes(s[j])) j++;
+        if (j >= s.length){ out += c; i++; continue; }
+        const spec = s.substring(i + 1, j);
+        const tp = s[j];
+        if (tp === '%'){ out += '%'; i = j + 1; continue; }
+        const arg = args[ai++];
+        if (tp === 'd' || tp === 'i'){
+          out += String(Math.trunc(Number(arg)));
+        } else if (tp === 'f' || tp === 'e' || tp === 'E' || tp === 'g' || tp === 'G'){
+          const m = /^(?:(-?\d+))?(?:\.(\d+))?$/.exec(spec);
+          const prec = m && m[2] ? parseInt(m[2]) : 6;
+          out += Number(arg).toFixed(prec);
+        } else if (tp === 's'){
+          out += String(arg);
+        } else if (tp === 'c'){
+          out += typeof arg === 'number' ? String.fromCharCode(arg) : String(arg);
+        }
+        i = j + 1; continue;
+      }
+      out += c; i++;
+    }
+    return out;
+  };
+
+  // Output — buffer to stitch same-line fprintf calls together
+  let lineBuf = '';
+  const _emit = (text) => {
+    lineBuf += String(text);
+    let idx;
+    while ((idx = lineBuf.indexOf('\n')) !== -1){
+      writeOut(lineBuf.slice(0, idx));
+      lineBuf = lineBuf.slice(idx + 1);
+    }
+  };
+  const flush = () => { if (lineBuf){ writeOut(lineBuf); lineBuf = ''; } };
+
+  // Runtime helpers
+  const __idx = (x, ...args) => {
+    if (typeof x === 'function') return x(...args);
+    if (Array.isArray(x)){
+      if (args.length === 1){
+        const i = args[0];
+        if (Array.isArray(i)) return i.map(ii => Array.isArray(x[0]) ? x[ii - 1] : x[ii - 1]);
+        return x[i - 1];
+      }
+      if (args.length === 2){
+        return x[args[0] - 1][args[1] - 1];
+      }
+    }
+    throw new Error('Cannot call or index: ' + typeof x);
+  };
+  const __iter = (x) => (Array.isArray(x) ? x : [x]);
+  const __t = (x) => Array.isArray(x) ? (x.length > 0 && x.every(Boolean)) : !!x;
+
+  // Built-ins
+  const B = {
+    length: (x) => Array.isArray(x) ? x.length : (typeof x === 'string' ? x.length : 1),
+    numel: (x) => Array.isArray(x) ? x.flat(Infinity).length : 1,
+    size: (x, d) => {
+      if (!Array.isArray(x)) return d ? 1 : [1, 1];
+      const rows = x.length;
+      const cols = Array.isArray(x[0]) ? x[0].length : 1;
+      return d === 1 ? rows : d === 2 ? cols : [rows, cols];
+    },
+    zeros: (n, m) => (m === undefined && (m = n), Array.from({length:n}, () => Array.from({length:m}, () => 0))),
+    ones:  (n, m) => (m === undefined && (m = n), Array.from({length:n}, () => Array.from({length:m}, () => 1))),
+    linspace: (a, b, n) => { n = n || 100; if (n === 1) return [b]; const st = (b - a) / (n - 1); return Array.from({length:n}, (_,i) => a + st * i); },
+    pi: Math.PI, e: Math.E,
+    sin: Math.sin, cos: Math.cos, tan: Math.tan,
+    exp: Math.exp, log: Math.log, log2: Math.log2, log10: Math.log10,
+    sqrt: Math.sqrt, abs: Math.abs,
+    round: Math.round, floor: Math.floor, ceil: Math.ceil,
+    mod: (a, b) => ((a % b) + b) % b,
+    rem: (a, b) => a - Math.trunc(a / b) * b,
+    sum: (x) => Array.isArray(x) ? x.flat(Infinity).reduce((a, b) => a + b, 0) : x,
+    mean: (x) => { const a = Array.isArray(x) ? x.flat(Infinity) : [x]; return a.reduce((p, q) => p + q, 0) / a.length; },
+    max: (...args) => { if (args.length === 1 && Array.isArray(args[0])) return Math.max(...args[0].flat(Infinity)); return Math.max(...args); },
+    min: (...args) => { if (args.length === 1 && Array.isArray(args[0])) return Math.min(...args[0].flat(Infinity)); return Math.min(...args); },
+    char: (x) => typeof x === 'number' ? String.fromCharCode(x) : String(x),
+    num2str: (x) => fmt(x),
+    disp: (x) => _emit(fmt(x) + '\n'),
+    fprintf: (s, ...args) => _emit(mSprintf(s, ...args)),
+    sprintf: (s, ...args) => mSprintf(s, ...args),
+    // Linear-algebra stubs
+    det: function(A){ if (!Array.isArray(A) || !Array.isArray(A[0])) throw new Error('det: need matrix');
+      const n = A.length; if (n === 1) return A[0][0];
+      if (n === 2) return A[0][0]*A[1][1] - A[0][1]*A[1][0];
+      let d = 0;
+      for (let j = 0; j < n; j++){
+        const minor = A.slice(1).map(r => r.filter((_, k) => k !== j));
+        d += ((j % 2 === 0) ? 1 : -1) * A[0][j] * this.det(minor);
+      }
+      return d;
+    },
+    rank: () => { throw new Error('rank not implemented'); },
+    // Plot stubs
+    plot: () => _emit('[plot() not supported — use the Font Preview or external tools]\n'),
+    title: () => {}, xlabel: () => {}, ylabel: () => {}, grid: () => {}, figure: () => {},
+  };
+
+  // Transpile MATLAB source to JS
+  const js = mlTranspile(source);
+
+  const fn = new Function('__B', '__idx', '__iter', '__t', '__fmt',
+    `"use strict";\n`
+    + Object.keys(B).map(k => `var ${k} = __B['${k}'];`).join('\n') + '\n'
+    + js
+  );
+  try {
+    fn(B, __idx, __iter, __t, fmt);
+  } finally { flush(); }
+}
+
+// MATLAB → JS transpiler (line-based; best-effort)
+function mlTranspile(src){
+  const lines = src.split('\n');
+  const out = [];
+  const stack = [];
+
+  const stripComment = (line) => {
+    let r = '', inStr = false;
+    for (let i = 0; i < line.length; i++){
+      const c = line[i];
+      if (inStr){
+        if (c === "'"){ if (line[i+1] === "'"){ r += "''"; i++; } else { r += c; inStr = false; } }
+        else r += c;
+        continue;
+      }
+      if (c === "'"){ r += c; inStr = true; continue; }
+      if (c === '%') return r;
+      r += c;
+    }
+    return r;
+  };
+  const findAssign = (ln) => {
+    let inStr = false, depth = 0;
+    for (let i = 0; i < ln.length; i++){
+      const c = ln[i], n = ln[i+1], p = ln[i-1];
+      if (inStr){ if (c === "'") { if (n === "'") i++; else inStr = false; } continue; }
+      if (c === "'"){ inStr = true; continue; }
+      if ('([{'.includes(c)) depth++;
+      else if (')]}'.includes(c)) depth--;
+      else if (c === '=' && depth === 0 && n !== '=' && p !== '=' && p !== '~' && p !== '<' && p !== '>'){
+        return i;
+      }
+    }
+    return -1;
+  };
+  const splitColon = (str) => {
+    const parts = [];
+    let cur = '', d = 0, s = false;
+    for (let i = 0; i < str.length; i++){
+      const c = str[i];
+      if (s){ cur += c; if (c === "'") s = false; continue; }
+      if (c === "'"){ cur += c; s = true; continue; }
+      if ('([{'.includes(c)) d++;
+      else if (')]}'.includes(c)) d--;
+      if (c === ':' && d === 0){ parts.push(cur.trim()); cur = ''; continue; }
+      cur += c;
+    }
+    if (cur.trim()) parts.push(cur.trim());
+    return parts;
+  };
+  const expandMatrixLiterals = (expr) => {
+    // Innermost [ ... ] with no nested [ ]
+    let prev = null;
+    while (prev !== expr){
+      prev = expr;
+      expr = expr.replace(/\[([^\[\]]*)\]/g, (m, content) => {
+        const trimmed = content.trim();
+        if (!trimmed) return '[]';
+        // Already JS-style (has commas and no semicolons and no weird whitespace)?
+        if (!trimmed.includes(';') && trimmed.includes(',')) return '[' + trimmed + ']';
+        // Needs expansion
+        const rows = trimmed.split(';').map(row => {
+          // Split by whitespace (preserving strings)
+          const cells = [];
+          let cur = '', s = false, d = 0;
+          for (let i = 0; i < row.length; i++){
+            const c = row[i];
+            if (s){ cur += c; if (c === "'" && row[i+1] !== "'") s = false; else if (c === "'" && row[i+1] === "'") { cur += "'"; i++; } continue; }
+            if (c === "'"){ cur += c; s = true; continue; }
+            if ('([{'.includes(c)){ d++; cur += c; continue; }
+            if (')]}'.includes(c)){ d--; cur += c; continue; }
+            if (d === 0 && /[\s,]/.test(c)){ if (cur.trim()) cells.push(cur.trim()); cur = ''; continue; }
+            cur += c;
+          }
+          if (cur.trim()) cells.push(cur.trim());
+          return '[' + cells.join(', ') + ']';
+        });
+        return rows.length === 1 ? rows[0] : '[' + rows.join(', ') + ']';
+      });
+    }
+    return expr;
+  };
+  const transpileExpr = (expr) => {
+    // 1. Expand matrix literals
+    expr = expandMatrixLiterals(expr);
+    // 2. Cell indexing x{i,j} → __idx(x, i, j); then cell literals
+    let prev = null;
+    while (prev !== expr){
+      prev = expr;
+      expr = expr.replace(/([a-zA-Z_]\w*)\s*\{([^{}]*)\}/g, '__idx($1, $2)');
+    }
+    expr = expr.replace(/\{/g, '[').replace(/\}/g, ']');
+    // 3. Function calls / indexing: name( → __idx(name,
+    expr = expr.replace(/([a-zA-Z_]\w*)\s*\(/g, (m, name) => {
+      // Skip if name is a JS keyword we need as-is (none relevant here)
+      return `__idx(${name}, `;
+    });
+    // 4. Operators
+    expr = expr.replace(/~=/g, '!==');
+    expr = expr.replace(/~(?=[^=])/g, '!');
+    expr = expr.replace(/\.\^/g, '**');
+    expr = expr.replace(/\^/g, '**');
+    expr = expr.replace(/\.\*/g, '*');
+    expr = expr.replace(/\.\//g, '/');
+    return expr;
+  };
+
+  for (let raw of lines){
+    let ln = stripComment(raw).trim();
+    if (!ln){ out.push(''); continue; }
+    let suppressed = false;
+    if (ln.endsWith(';') || ln.endsWith(',')){ suppressed = ln.endsWith(';'); ln = ln.slice(0, -1).trim(); }
+
+    let m;
+    if (m = /^function\s+(.*)$/.exec(ln)){
+      const sig = m[1];
+      const eq = sig.indexOf('=');
+      let ret = '', body = sig;
+      if (eq !== -1){ ret = sig.substring(0, eq).trim(); body = sig.substring(eq + 1).trim(); }
+      const m2 = /^(\w+)\s*\(([^)]*)\)\s*$/.exec(body);
+      if (m2){
+        out.push(`function ${m2[1]}(${m2[2]}) { var ${ret || '__ret'};`);
+        stack.push({type:'function', ret: ret || '__ret'});
+      } else {
+        out.push('/* bad function signature */');
+      }
+      continue;
+    }
+    if (m = /^for\s+(\w+)\s*=\s*(.+)$/.exec(ln)){
+      const v = m[1], rangeRaw = m[2];
+      const parts = splitColon(rangeRaw);
+      if (parts.length >= 2){
+        const a = transpileExpr(parts[0]);
+        const b = transpileExpr(parts[parts.length - 1]);
+        const s = parts.length === 3 ? transpileExpr(parts[1]) : '1';
+        out.push(`for (let ${v} = ${a}, __b = ${b}, __s = ${s}; (__s >= 0) ? ${v} <= __b + 1e-9 : ${v} >= __b - 1e-9; ${v} += __s) {`);
+      } else {
+        out.push(`for (const ${v} of __iter(${transpileExpr(rangeRaw)})) {`);
+      }
+      stack.push({type:'for'});
+      continue;
+    }
+    if (m = /^while\s+(.+)$/.exec(ln)){ out.push(`while (__t(${transpileExpr(m[1])})) {`); stack.push({type:'while'}); continue; }
+    if (m = /^if\s+(.+)$/.exec(ln)){ out.push(`if (__t(${transpileExpr(m[1])})) {`); stack.push({type:'if'}); continue; }
+    if (m = /^elseif\s+(.+)$/.exec(ln)){ out.push(`} else if (__t(${transpileExpr(m[1])})) {`); continue; }
+    if (ln === 'else'){ out.push('} else {'); continue; }
+    if (/^end(if|for|while|function)?$/.test(ln)){
+      const b = stack.pop();
+      if (b && b.type === 'function') out.push(`return ${b.ret}; }`);
+      else out.push('}');
+      continue;
+    }
+    if (ln === 'break'){ out.push('break;'); continue; }
+    if (ln === 'continue'){ out.push('continue;'); continue; }
+
+    const aIdx = findAssign(ln);
+    if (aIdx >= 0){
+      const lhs = ln.slice(0, aIdx).trim();
+      const rhs = ln.slice(aIdx + 1).trim();
+      if (/^\w+$/.test(lhs)){
+        out.push(`var ${lhs} = ${transpileExpr(rhs)};`);
+        if (!suppressed) out.push(`__idx(__B.disp, ${lhs});`);
+      } else if (/^\[.*\]$/.test(lhs)){
+        out.push(`/* multi-return assignment not supported */`);
+      } else {
+        out.push(`/* unsupported lhs: ${JSON.stringify(lhs)} */`);
+      }
+    } else {
+      const exprJs = transpileExpr(ln);
+      if (suppressed) out.push(`(${exprJs});`);
+      else out.push(`__idx(__B.disp, (${exprJs}));`);
+    }
+  }
+  return out.join('\n');
+}
+
 function renderIDE(root, lang){
   const ta = el('textarea', {spellcheck:'false', autocomplete:'off', autocorrect:'off'});
   const code = el('code', {class:'language-'+lang.prism});
@@ -16766,6 +17089,20 @@ function renderIDE(root, lang){
           }
         } catch(e){
           writeOut((e && e.message) || String(e), 'stderr');
+        }
+      } else if (lang.local === 'matlab'){
+        progressive = true;
+        where = 'browser (MATLAB-lite)';
+        runHeader.remove();
+        const writeOut = (text, cls='stdout') => {
+          const d = el('div', {class: cls}, String(text));
+          output.appendChild(d);
+          output.scrollTop = output.scrollHeight;
+        };
+        try {
+          await runMatlabLite(ta.value, writeOut);
+        } catch(e){
+          writeOut('⚠ ' + (e && e.message || String(e)), 'stderr');
         }
       } else if (lang.local === 'js' || lang.local === 'ts'){
         progressive = true;
@@ -17041,7 +17378,7 @@ const IDE_LANGS = [
       {name:'Aggregation', code:`CREATE TABLE sales (product TEXT, amount REAL);\nINSERT INTO sales VALUES\n  ('Apple', 10.5), ('Banana', 20.0),\n  ('Apple', 15.0), ('Banana', 5.5);\n\nSELECT product, ROUND(SUM(amount), 2) AS total\nFROM sales\nGROUP BY product\nORDER BY total DESC;`},
       {name:'Function returns', code:`-- Using a CTE (common table expression) as a named "function"\nWITH greeting(msg) AS (VALUES ('hello SQLite'))\nSELECT msg FROM greeting;`},
     ]},
-  {id:'matlab', name:'MATLAB', icon:'ML', prism:'matlab', file:'main.m', noRun:true,
+  {id:'matlab', name:'MATLAB', icon:'ML', prism:'matlab', file:'main.m', local:'matlab', noInput:true,
     samples:[
       {name:'Roll-call of names', code:`% Roll-call of names\nnames = {'Tom', 'Lucy', 'Frank', 'Jane', 'Robert'};\n\nfprintf('Roll-call of %d:\\n', length(names));\nfor i = 1:length(names)\n    fprintf('  %d. %s\\n', i, names{i});\nend`},
       {name:'Vector / matrix ops', code:`% Basic linear algebra\nA = [1 2 3; 4 5 6; 7 8 10];   % 3x3 matrix\nb = [6; 15; 25];               % column vector\n\n% Solve the linear system A*x = b\nx = A \\ b;\nfprintf('Solution x:\\n');\ndisp(x);\n\nfprintf('det(A) = %.4f\\n', det(A));\nfprintf('rank(A) = %d\\n', rank(A));`},
@@ -17060,6 +17397,8 @@ for (const lang of IDE_LANGS){
       ? `Write ${lang.name} with syntax highlighting. Editor only — execution isn't available in the browser; copy your code to run it with a local compiler.`
       : lang.local === 'sml'
       ? `Write ${lang.name} with syntax highlighting and execute it via the SOSML interpreter — runs 100% in your browser.`
+      : lang.local === 'matlab'
+      ? `Write ${lang.name} with syntax highlighting and run it via a built-in MATLAB-lite interpreter — runs 100% in your browser. Supports assignments, cell/matrix literals, fprintf/disp/sprintf, 1-based indexing, for/while/if, function definitions, and common math built-ins. Full MATLAB Toolboxes (e.g. plotting, image processing) are not emulated.`
       : lang.local
       ? `Write ${lang.name} with live syntax highlighting and run it directly in your browser. Nothing leaves this page.`
       : `Write ${lang.name} with syntax highlighting and execute it via the public Judge0 CE API (ce.judge0.com). Source is sent over the network — avoid sensitive data.`,
