@@ -2368,6 +2368,65 @@ tool({
 });
 
 tool({
+  id:'caesar', cat:'encoders', name:'Caesar Cipher', icon:'🔤',
+  desc:'Encode or decode text with a Caesar shift. Preserves case, leaves non-letters untouched, offers a one-click ROT13 and a brute-force view that shows every 1–25 shift.',
+  keywords:'caesar cipher shift rot rot13 encrypt decrypt classical',
+  render(root){
+    const shift = (s, n) => {
+      const k = ((n % 26) + 26) % 26;
+      return s.replace(/[A-Za-z]/g, (c) => {
+        const base = c <= 'Z' ? 65 : 97;
+        return String.fromCharCode(((c.charCodeAt(0) - base + k) % 26) + base);
+      });
+    };
+
+    const inp = el('textarea', {class:'code'});
+    const out = outBlock();
+    const shiftIn = el('input', {type:'number', min:'-25', max:'25', value:'3', style:{width:'90px'}});
+    const mode = el('select', {},
+      el('option', {value:'enc'}, 'Encode (shift →)'),
+      el('option', {value:'dec'}, 'Decode (shift ←)')
+    );
+    const bruteBox = el('div', {class:'out', style:{fontFamily:"'JetBrains Mono',ui-monospace,monospace",fontSize:'12.5px',lineHeight:'1.55',maxHeight:'320px',overflow:'auto',whiteSpace:'pre'}});
+
+    const run = () => {
+      const n = parseInt(shiftIn.value, 10);
+      if (!Number.isFinite(n)){ out.textContent = '⚠ shift must be a number'; return; }
+      const k = mode.value === 'enc' ? n : -n;
+      out.textContent = shift(inp.value, k);
+    };
+
+    const buildBrute = () => {
+      const lines = [];
+      for (let i = 1; i <= 25; i++){
+        const prefix = `shift ${String(i).padStart(2,' ')}: `;
+        lines.push(prefix + shift(inp.value, -i));
+      }
+      bruteBox.textContent = lines.join('\n');
+    };
+
+    [inp, shiftIn, mode].forEach(e => e.addEventListener('input', run));
+
+    const rot13Btn = el('button', {class:'btn', type:'button', onclick:() => { shiftIn.value = 13; mode.value = 'enc'; run(); }}, 'ROT13');
+    const swapBtn = el('button', {class:'btn ghost', type:'button', onclick:() => { inp.value = out.textContent; mode.value = mode.value === 'enc' ? 'dec' : 'enc'; run(); }}, '⇅ Swap');
+    const bruteBtn = el('button', {class:'btn', type:'button', onclick:buildBrute}, '🕵 Try all 25 shifts');
+
+    root.appendChild(el('div', {class:'split'}, field('Input', inp), field('Output', out)));
+    root.appendChild(el('div', {class:'row cols-3 mt-3'},
+      field('Shift (0–25)', shiftIn),
+      field('Mode', mode),
+      field('Shortcuts', el('div', {class:'btn-row'}, rot13Btn, swapBtn, bruteBtn))
+    ));
+    root.appendChild(el('div', {class:'btn-row mt-2'}, copyBtn(() => out.textContent), clearBtn(inp)));
+    root.appendChild(el('div', {class:'mt-3'}, field('Brute-force (treat input as ciphertext, show every possible plaintext)', bruteBox)));
+    root.appendChild(el('div', {class:'muted mt-2', style:{fontSize:'12px'}},
+      'A Caesar cipher shifts each letter by a fixed amount. Encoding with shift k is the inverse of decoding with shift k. ROT13 is just shift = 13, which is its own inverse.'
+    ));
+    inp.value = 'Hello BergerOverflow'; run(); buildBrute();
+  }
+});
+
+tool({
   id:'url-encode', cat:'encoders', name:'URL Encode / Decode', icon:'🔗',
   desc:'Percent-encode URLs or decode %XX sequences back to characters.',
   keywords:'url encodeURIComponent decode percent',
