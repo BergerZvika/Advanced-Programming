@@ -722,6 +722,7 @@ input[type=color]{width:60px;height:36px;border:none;background:transparent;curs
       <div class="float-shape shape-2"></div>
       <div class="hero-inner">
         <h2>Every developer tool you need,<br/><span class="grad">in one beautiful place.</span></h2>
+        <p style="margin-top:8px;font-size:15px;font-style:italic;color:var(--accent-2);font-weight:600;letter-spacing:.02em">“One page to rule them all.”</p>
         <p>Online IDEs · Command Builders · Generators · Converters · Encoders &amp; Decoders · Text Utilities · Testers &amp; Viewers · Formatters · CSS Visual Tools · Colors · Bits &amp; Bytes · Dev Utilities.</p>
         <p style="margin-top:10px;font-size:13px;color:var(--text-faint)">Crafted by <b style="color:var(--text)">Zvika Berger</b></p>
         <p style="margin-top:12px;font-size:12px;color:var(--text);max-width:680px;line-height:1.5;padding:8px 12px;border-radius:8px;background:rgba(124,92,255,0.10);border:1px solid rgba(124,92,255,0.30)">Want a new tool, a new feature, or hit something that doesn't work? Drop me a line at <a href="mailto:zvbe10@gmail.com?subject=BergerOverflow%20feedback" style="color:var(--accent-2);font-weight:600">zvbe10@gmail.com</a> — happy to hear from you.</p>
@@ -16603,62 +16604,355 @@ function parseCliArgs(str){
   return out;
 }
 
-// ===== MongoDB-lite shell (backed by mingo for queries/aggregations) =====
+// ===== MongoDB-lite shell (self-contained, no external libraries) =====
 async function runMongoLite(source, writeOut){
-  const mingo = window.mingo;
-  if (!mingo) throw new Error('mingo not loaded');
+  // ---------- Field access ----------
+  const getField = (doc, path) => {
+    if (doc == null) return undefined;
+    if (!String(path).includes('.')) return doc[path];
+    let cur = doc;
+    for (const p of String(path).split('.')){ if (cur == null) return undefined; cur = cur[p]; }
+    return cur;
+  };
+  const setField = (doc, path, value) => {
+    if (!String(path).includes('.')){ doc[path] = value; return; }
+    const parts = String(path).split('.');
+    let cur = doc;
+    for (let i = 0; i < parts.length - 1; i++){
+      if (cur[parts[i]] == null || typeof cur[parts[i]] !== 'object') cur[parts[i]] = {};
+      cur = cur[parts[i]];
+    }
+    cur[parts[parts.length - 1]] = value;
+  };
+  const deepEq = (a, b) => {
+    if (a === b) return true;
+    if (a == null || b == null) return false;
+    if (typeof a !== typeof b) return false;
+    if (a instanceof Date && b instanceof Date) return a.getTime() === b.getTime();
+    if (Array.isArray(a) && Array.isArray(b)){
+      if (a.length !== b.length) return false;
+      return a.every((v, i) => deepEq(v, b[i]));
+    }
+    if (typeof a === 'object'){
+      const ak = Object.keys(a), bk = Object.keys(b);
+      if (ak.length !== bk.length) return false;
+      return ak.every(k => deepEq(a[k], b[k]));
+    }
+    return false;
+  };
 
+  // ---------- Query matcher (find/count/delete/update filters) ----------
+  const matchField = (val, spec) => {
+    // If spec is a primitive, null, Array, RegExp, or object with no $-keys: equality
+    if (spec === null || spec instanceof RegExp || Array.isArray(spec) || typeof spec !== 'object'){
+      if (spec instanceof RegExp) return typeof val === 'string' && spec.test(val);
+      return deepEq(val, spec);
+    }
+    const keys = Object.keys(spec);
+    if (!keys.length) return deepEq(val, {});
+    if (!keys.every(k => k.startsWith('$'))) return deepEq(val, spec);
+    for (const op of keys){
+      const v = spec[op];
+      switch(op){
+        case '$eq': if (!deepEq(val, v)) return false; break;
+        case '$ne': if (deepEq(val, v)) return false; break;
+        case '$gt': if (!(val > v)) return false; break;
+        case '$gte': if (!(val >= v)) return false; break;
+        case '$lt': if (!(val < v)) return false; break;
+        case '$lte': if (!(val <= v)) return false; break;
+        case '$in': if (!Array.isArray(v) || !v.some(x => deepEq(val, x))) return false; break;
+        case '$nin': if (Array.isArray(v) && v.some(x => deepEq(val, x))) return false; break;
+        case '$exists': if ((val !== undefined) !== !!v) return false; break;
+        case '$regex': {
+          const re = v instanceof RegExp ? v : new RegExp(v, spec.$options || '');
+          if (typeof val !== 'string' || !re.test(val)) return false;
+          break;
+        }
+        case '$options': break; // handled with $regex
+        case '$not': if (matchField(val, v)) return false; break;
+        case '$size': if (!Array.isArray(val) || val.length !== v) return false; break;
+        case '$all': if (!Array.isArray(val) || !v.every(x => val.some(y => deepEq(x, y)))) return false; break;
+        case '$elemMatch': if (!Array.isArray(val) || !val.some(x => matchField(x, v) || matchQuery(x, v))) return false; break;
+        case '$type': if (typeof val !== v) return false; break;
+        default:
+          // Unknown operator — treat object as equality fallback
+          return deepEq(val, spec);
+      }
+    }
+    return true;
+  };
+  const matchQuery = (doc, query) => {
+    if (!query || Object.keys(query).length === 0) return true;
+    for (const [key, spec] of Object.entries(query)){
+      if (key === '$and'){ if (!spec.every(q => matchQuery(doc, q))) return false; continue; }
+      if (key === '$or'){ if (!spec.some(q => matchQuery(doc, q))) return false; continue; }
+      if (key === '$nor'){ if (spec.some(q => matchQuery(doc, q))) return false; continue; }
+      if (key === '$not'){ if (matchQuery(doc, spec)) return false; continue; }
+      if (key === '$expr'){ if (!evalExpr(spec, doc)) return false; continue; }
+      const v = getField(doc, key);
+      if (!matchField(v, spec)) return false;
+    }
+    return true;
+  };
+
+  // ---------- Expression evaluator (for $group / $project / $addFields) ----------
+  const evalExpr = (expr, doc) => {
+    if (expr === null || expr === undefined) return expr;
+    if (typeof expr === 'string'){
+      if (expr.startsWith('$$')) return expr; // system var — pass-through for simplicity
+      if (expr.startsWith('$')) return getField(doc, expr.substring(1));
+      return expr;
+    }
+    if (typeof expr !== 'object' || Array.isArray(expr)){
+      if (Array.isArray(expr)) return expr.map(e => evalExpr(e, doc));
+      return expr;
+    }
+    const keys = Object.keys(expr);
+    if (keys.length === 1 && keys[0].startsWith('$')){
+      const op = keys[0]; const a = expr[op];
+      const E = (x) => evalExpr(x, doc);
+      switch(op){
+        case '$literal': return a;
+        case '$add': return a.reduce((s, x) => s + E(x), 0);
+        case '$subtract': return E(a[0]) - E(a[1]);
+        case '$multiply': return a.reduce((s, x) => s * E(x), 1);
+        case '$divide': return E(a[0]) / E(a[1]);
+        case '$mod': return E(a[0]) % E(a[1]);
+        case '$abs': return Math.abs(E(a));
+        case '$ceil': return Math.ceil(E(a));
+        case '$floor': return Math.floor(E(a));
+        case '$round': return Math.round(E(a));
+        case '$sqrt': return Math.sqrt(E(a));
+        case '$pow': return Math.pow(E(a[0]), E(a[1]));
+        case '$eq': return deepEq(E(a[0]), E(a[1]));
+        case '$ne': return !deepEq(E(a[0]), E(a[1]));
+        case '$gt': return E(a[0]) > E(a[1]);
+        case '$gte': return E(a[0]) >= E(a[1]);
+        case '$lt': return E(a[0]) < E(a[1]);
+        case '$lte': return E(a[0]) <= E(a[1]);
+        case '$and': return a.every(x => !!E(x));
+        case '$or': return a.some(x => !!E(x));
+        case '$not': return !E(Array.isArray(a) ? a[0] : a);
+        case '$cond': {
+          if (Array.isArray(a)) return E(a[0]) ? E(a[1]) : E(a[2]);
+          return E(a.if) ? E(a.then) : E(a.else);
+        }
+        case '$ifNull': return (v => v == null ? E(a[1]) : v)(E(a[0]));
+        case '$concat': return a.map(x => String(E(x))).join('');
+        case '$toUpper': return String(E(a)).toUpperCase();
+        case '$toLower': return String(E(a)).toLowerCase();
+        case '$toString': return String(E(a));
+        case '$size': { const v = E(a); return Array.isArray(v) ? v.length : (typeof v === 'string' ? v.length : 0); }
+        case '$in': { const [v, arr] = a.map(E); return Array.isArray(arr) && arr.some(x => deepEq(v, x)); }
+        case '$arrayElemAt': { const [arr, i] = a.map(E); return Array.isArray(arr) ? arr[i < 0 ? arr.length + i : i] : undefined; }
+        case '$first': { const v = E(a); return Array.isArray(v) ? v[0] : undefined; }
+        case '$last': { const v = E(a); return Array.isArray(v) ? v[v.length - 1] : undefined; }
+      }
+    }
+    // Plain object: evaluate each field
+    const out = {};
+    for (const [k, v] of Object.entries(expr)) out[k] = evalExpr(v, doc);
+    return out;
+  };
+
+  // ---------- Accumulators ($group values) ----------
+  const accumulate = (spec, docs) => {
+    const [op] = Object.keys(spec); const arg = spec[op];
+    switch(op){
+      case '$sum':
+        return docs.reduce((s, d) => {
+          const v = evalExpr(arg, d);
+          return s + (typeof v === 'number' ? v : (v ? 1 : 0));
+        }, 0);
+      case '$avg': {
+        const vs = docs.map(d => evalExpr(arg, d)).filter(v => typeof v === 'number');
+        return vs.length ? vs.reduce((s, v) => s + v, 0) / vs.length : null;
+      }
+      case '$min': return docs.reduce((m, d) => { const v = evalExpr(arg, d); return (m == null || v < m) ? v : m; }, null);
+      case '$max': return docs.reduce((m, d) => { const v = evalExpr(arg, d); return (m == null || v > m) ? v : m; }, null);
+      case '$first': return docs.length ? evalExpr(arg, docs[0]) : null;
+      case '$last': return docs.length ? evalExpr(arg, docs[docs.length - 1]) : null;
+      case '$push': return docs.map(d => evalExpr(arg, d));
+      case '$addToSet': {
+        const out = []; const seen = new Set();
+        for (const d of docs){ const v = evalExpr(arg, d); const k = JSON.stringify(v);
+          if (!seen.has(k)){ seen.add(k); out.push(v); } }
+        return out;
+      }
+      case '$count': return docs.length;
+      case '$mergeObjects': return docs.reduce((acc, d) => ({...acc, ...(evalExpr(arg, d) || {})}), {});
+    }
+    throw new Error('Unknown accumulator: ' + op);
+  };
+
+  // ---------- Aggregation pipeline ----------
+  const runPipeline = (docs, pipeline) => {
+    let cur = docs.slice();
+    for (const stage of pipeline){
+      const [op] = Object.keys(stage); const arg = stage[op];
+      switch(op){
+        case '$match': cur = cur.filter(d => matchQuery(d, arg)); break;
+        case '$sort': {
+          const entries = Object.entries(arg);
+          cur = cur.slice().sort((a, b) => {
+            for (const [k, dir] of entries){
+              const av = getField(a, k), bv = getField(b, k);
+              if (av == null && bv == null) continue;
+              if (av == null) return -dir;
+              if (bv == null) return dir;
+              if (av < bv) return -dir;
+              if (av > bv) return dir;
+            }
+            return 0;
+          });
+          break;
+        }
+        case '$limit': cur = cur.slice(0, arg); break;
+        case '$skip': cur = cur.slice(arg); break;
+        case '$project': {
+          const entries = Object.entries(arg);
+          const hasInclusion = entries.some(([k, v]) => k !== '_id' && (v === 1 || v === true));
+          cur = cur.map(d => {
+            const out = {};
+            if (hasInclusion){
+              if (!(('_id' in arg) && (arg._id === 0 || arg._id === false))) out._id = d._id;
+            } else {
+              Object.assign(out, d);
+            }
+            for (const [k, spec] of entries){
+              if (spec === 1 || spec === true){ const v = getField(d, k); if (v !== undefined) out[k] = v; }
+              else if (spec === 0 || spec === false){ delete out[k]; }
+              else { out[k] = evalExpr(spec, d); }
+            }
+            return out;
+          });
+          break;
+        }
+        case '$addFields':
+        case '$set': {
+          cur = cur.map(d => {
+            const out = {...d};
+            for (const [k, expr] of Object.entries(arg)) setField(out, k, evalExpr(expr, d));
+            return out;
+          });
+          break;
+        }
+        case '$unset': {
+          const fields = Array.isArray(arg) ? arg : [arg];
+          cur = cur.map(d => { const o = {...d}; for (const f of fields) delete o[f]; return o; });
+          break;
+        }
+        case '$group': {
+          const idExpr = arg._id;
+          const groups = new Map();
+          for (const d of cur){
+            const key = JSON.stringify(evalExpr(idExpr, d));
+            if (!groups.has(key)) groups.set(key, {idVal: evalExpr(idExpr, d), docs: []});
+            groups.get(key).docs.push(d);
+          }
+          const out = [];
+          for (const {idVal, docs: grp} of groups.values()){
+            const doc = {_id: idVal};
+            for (const [field, spec] of Object.entries(arg)){
+              if (field === '_id') continue;
+              doc[field] = accumulate(spec, grp);
+            }
+            out.push(doc);
+          }
+          cur = out;
+          break;
+        }
+        case '$count':
+          cur = [{[arg]: cur.length}];
+          break;
+        case '$unwind': {
+          const path = typeof arg === 'string' ? arg : arg.path;
+          const field = String(path).replace(/^\$/, '');
+          const preserveEmpty = typeof arg === 'object' && arg.preserveNullAndEmptyArrays;
+          const out = [];
+          for (const d of cur){
+            const v = getField(d, field);
+            if (Array.isArray(v)){
+              if (v.length){
+                for (const item of v){ const copy = {...d}; setField(copy, field, item); out.push(copy); }
+              } else if (preserveEmpty) out.push(d);
+            } else if (v !== undefined){
+              out.push(d);
+            } else if (preserveEmpty){
+              out.push(d);
+            }
+          }
+          cur = out;
+          break;
+        }
+        default:
+          throw new Error('Unsupported pipeline stage: ' + op);
+      }
+    }
+    return cur;
+  };
+
+  // ---------- Update operators ----------
   const applyUpdate = (doc, update) => {
     for (const [op, ops] of Object.entries(update)){
-      if (op === '$set'){ for (const [k, v] of Object.entries(ops)) doc[k] = v; }
-      else if (op === '$unset'){ for (const k of Object.keys(ops)) delete doc[k]; }
-      else if (op === '$inc'){ for (const [k, v] of Object.entries(ops)) doc[k] = (doc[k] || 0) + v; }
-      else if (op === '$push'){ for (const [k, v] of Object.entries(ops)){ if (!Array.isArray(doc[k])) doc[k] = []; doc[k].push(v); } }
-      else if (op === '$mul'){ for (const [k, v] of Object.entries(ops)) doc[k] = (doc[k] || 0) * v; }
-      else if (op === '$addToSet'){ for (const [k, v] of Object.entries(ops)){ if (!Array.isArray(doc[k])) doc[k] = []; if (!doc[k].includes(v)) doc[k].push(v); } }
+      switch(op){
+        case '$set':     for (const [k, v] of Object.entries(ops)) setField(doc, k, v); break;
+        case '$unset':   for (const k of Object.keys(ops)) delete doc[k]; break;
+        case '$inc':     for (const [k, v] of Object.entries(ops)) setField(doc, k, (getField(doc, k) || 0) + v); break;
+        case '$mul':     for (const [k, v] of Object.entries(ops)) setField(doc, k, (getField(doc, k) || 0) * v); break;
+        case '$min':     for (const [k, v] of Object.entries(ops)){ const cur = getField(doc, k); if (cur === undefined || v < cur) setField(doc, k, v); } break;
+        case '$max':     for (const [k, v] of Object.entries(ops)){ const cur = getField(doc, k); if (cur === undefined || v > cur) setField(doc, k, v); } break;
+        case '$rename':  for (const [k, v] of Object.entries(ops)){ const cur = getField(doc, k); delete doc[k]; setField(doc, v, cur); } break;
+        case '$push':    for (const [k, v] of Object.entries(ops)){ let a = getField(doc, k); if (!Array.isArray(a)){ a = []; setField(doc, k, a); } a.push(v); } break;
+        case '$addToSet':for (const [k, v] of Object.entries(ops)){ let a = getField(doc, k); if (!Array.isArray(a)){ a = []; setField(doc, k, a); } if (!a.some(x => deepEq(x, v))) a.push(v); } break;
+        case '$pull':    for (const [k, v] of Object.entries(ops)){ const a = getField(doc, k); if (Array.isArray(a)) setField(doc, k, a.filter(x => !matchField(x, v) && !deepEq(x, v))); } break;
+        case '$pop':     for (const [k, v] of Object.entries(ops)){ const a = getField(doc, k); if (Array.isArray(a)){ if (v === -1) a.shift(); else a.pop(); } } break;
+      }
     }
   };
 
+  // ---------- Collection API ----------
   class Collection {
     constructor(name){ this.name = name; this.docs = []; }
     insertOne(doc){ this.docs.push({...doc}); return {acknowledged:true, insertedId: doc._id}; }
-    insertMany(arr){
-      for (const d of arr) this.docs.push({...d});
-      return {acknowledged:true, insertedCount: arr.length, insertedIds: arr.map(d => d._id)};
-    }
-    find(q = {}){ return mingo.find(this.docs, q).all(); }
-    findOne(q = {}){ return mingo.find(this.docs, q).all()[0] || null; }
-    countDocuments(q = {}){ return mingo.find(this.docs, q).count(); }
+    insertMany(arr){ for (const d of arr) this.docs.push({...d}); return {acknowledged:true, insertedCount: arr.length, insertedIds: arr.map(d => d._id)}; }
+    find(q = {}){ return this.docs.filter(d => matchQuery(d, q)); }
+    findOne(q = {}){ return this.docs.find(d => matchQuery(d, q)) || null; }
+    countDocuments(q = {}){ return this.docs.filter(d => matchQuery(d, q)).length; }
     distinct(field, q = {}){
-      const docs = mingo.find(this.docs, q).all();
-      return [...new Set(docs.map(d => d[field]))];
+      const seen = new Set(); const out = [];
+      for (const d of this.docs.filter(x => matchQuery(x, q))){
+        const v = getField(d, field);
+        const k = JSON.stringify(v);
+        if (!seen.has(k)){ seen.add(k); out.push(v); }
+      }
+      return out;
     }
-    aggregate(pipeline){ return mingo.aggregate(this.docs, pipeline); }
+    aggregate(pipeline){ return runPipeline(this.docs, pipeline); }
     updateOne(q, u){
-      const m = mingo.find(this.docs, q).all();
-      if (!m.length) return {acknowledged:true, matchedCount:0, modifiedCount:0};
-      applyUpdate(m[0], u);
+      const m = this.docs.find(d => matchQuery(d, q));
+      if (!m) return {acknowledged:true, matchedCount:0, modifiedCount:0};
+      applyUpdate(m, u);
       return {acknowledged:true, matchedCount:1, modifiedCount:1};
     }
     updateMany(q, u){
-      const m = mingo.find(this.docs, q).all();
+      const m = this.docs.filter(d => matchQuery(d, q));
       for (const d of m) applyUpdate(d, u);
       return {acknowledged:true, matchedCount:m.length, modifiedCount:m.length};
     }
     deleteOne(q){
-      const m = mingo.find(this.docs, q).all();
-      if (!m.length) return {acknowledged:true, deletedCount:0};
-      this.docs = this.docs.filter(d => d !== m[0]);
+      const i = this.docs.findIndex(d => matchQuery(d, q));
+      if (i < 0) return {acknowledged:true, deletedCount:0};
+      this.docs.splice(i, 1);
       return {acknowledged:true, deletedCount:1};
     }
     deleteMany(q){
-      const m = mingo.find(this.docs, q).all();
-      const set = new Set(m);
-      this.docs = this.docs.filter(d => !set.has(d));
-      return {acknowledged:true, deletedCount:m.length};
+      const before = this.docs.length;
+      this.docs = this.docs.filter(d => !matchQuery(d, q));
+      return {acknowledged:true, deletedCount: before - this.docs.length};
     }
     drop(){ const n = this.docs.length; this.docs = []; return n; }
-    stats(){ return {count: this.docs.length}; }
+    stats(){ return {count: this.docs.length, name: this.name}; }
   }
 
   const collections = {};
@@ -17217,17 +17511,13 @@ function renderIDE(root, lang){
         }
       } else if (lang.local === 'mongodb'){
         progressive = true;
-        where = 'browser (MongoDB-lite via mingo)';
+        where = 'browser (MongoDB-lite, self-contained)';
+        runHeader.remove();
         const writeOut = (text, cls='stdout') => {
           const d = el('div', {class: cls}, String(text));
           output.appendChild(d);
           output.scrollTop = output.scrollHeight;
         };
-        if (!window.mingo){
-          runHeader.querySelector('b').textContent = 'Loading mingo query engine…';
-          await loadScriptOnce('https://cdn.jsdelivr.net/npm/mingo@6.4.11/dist/mingo.min.js');
-        }
-        runHeader.remove();
         try {
           await runMongoLite(ta.value, writeOut);
         } catch(e){
@@ -17550,7 +17840,7 @@ for (const lang of IDE_LANGS){
       : lang.local === 'matlab'
       ? `Write ${lang.name} with syntax highlighting and run it via a built-in MATLAB-lite interpreter — runs 100% in your browser. Supports assignments, cell/matrix literals, fprintf/disp/sprintf, 1-based indexing, for/while/if, function definitions, and common math built-ins. Full MATLAB Toolboxes (e.g. plotting, image processing) are not emulated.`
       : lang.local === 'mongodb'
-      ? `Write MongoDB shell-style commands and run them against an in-memory database — 100% local. Supports db.coll.insertOne/insertMany/find/findOne/aggregate/updateOne/updateMany/deleteOne/deleteMany and common operators ($match, $group, $sum/$avg/$min/$max, $project, $sort, $gt/$gte/$lt/$lte, $in, $regex, …) via the mingo query engine.`
+      ? `Write MongoDB shell-style commands and run them against an in-memory database — 100% local, no external libraries. Supports db.coll.insertOne/insertMany/find/findOne/aggregate/updateOne/updateMany/deleteOne/deleteMany/countDocuments/distinct and the common operators ($match, $group, $sum/$avg/$min/$max, $project, $sort, $gt/$gte/$lt/$lte, $in/$nin, $regex, $unwind, $addFields, …).`
       : lang.local
       ? `Write ${lang.name} with live syntax highlighting and run it directly in your browser. Nothing leaves this page.`
       : `Write ${lang.name} with syntax highlighting and execute it via the public Judge0 CE API (ce.judge0.com). Source is sent over the network — avoid sensitive data.`,
