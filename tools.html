@@ -2369,16 +2369,41 @@ tool({
 
 tool({
   id:'caesar', cat:'encoders', name:'Caesar Cipher', icon:'🔤',
-  desc:'Encode or decode text with a Caesar shift. Preserves case, leaves non-letters untouched, offers a one-click ROT13 and a brute-force view that shows every 1–25 shift.',
-  keywords:'caesar cipher shift rot rot13 encrypt decrypt classical',
+  desc:'Encode or decode text with a Caesar shift — English (A–Z, 26) or Hebrew (א–ת, 22). Handles mixed text, preserves case, leaves non-letters untouched, offers one-click ROT13 / ROT11 and a brute-force view.',
+  keywords:'caesar cipher shift rot rot13 encrypt decrypt classical hebrew עברית צופן קיסר',
   render(root){
+    // Hebrew base alphabet (22 letters) + normalization of final forms (sofit)
+    const HEB = 'אבגדהוזחטיכלמנסעפצקרשת';
+    const HEB_FINAL_TO_BASE = { 'ך':'כ', 'ם':'מ', 'ן':'נ', 'ף':'פ', 'ץ':'צ' };
+    const HEB_BASE_TO_FINAL = { 'כ':'ך', 'מ':'ם', 'נ':'ן', 'פ':'ף', 'צ':'ץ' };
+
+    // Per-character Caesar shift. Latin uses mod 26, Hebrew uses mod 22.
+    // After shifting, letters at the end of a Hebrew word get their final form back.
     const shift = (s, n) => {
-      const k = ((n % 26) + 26) % 26;
-      return s.replace(/[A-Za-z]/g, (c) => {
-        const base = c <= 'Z' ? 65 : 97;
-        return String.fromCharCode(((c.charCodeAt(0) - base + k) % 26) + base);
-      });
+      const out = [];
+      for (let i = 0; i < s.length; i++){
+        const ch = s[i];
+        if (/[A-Za-z]/.test(ch)){
+          const base = ch <= 'Z' ? 65 : 97;
+          const k = ((n % 26) + 26) % 26;
+          out.push(String.fromCharCode(((ch.charCodeAt(0) - base + k) % 26) + base));
+        } else if (HEB.includes(ch) || HEB_FINAL_TO_BASE[ch]){
+          const baseCh = HEB_FINAL_TO_BASE[ch] || ch;
+          const idx = HEB.indexOf(baseCh);
+          const k = ((n % 22) + 22) % 22;
+          out.push(HEB[(idx + k) % 22]);
+        } else {
+          out.push(ch);
+        }
+      }
+      // Re-apply Hebrew final forms at word endings
+      let result = out.join('');
+      result = result.replace(/([כמנפצ])(?![א-ת])/g, (_, c) => HEB_BASE_TO_FINAL[c] || c);
+      return result;
     };
+
+    const hasHebrew = (s) => /[א-ת]/.test(s);
+    const hasLatin  = (s) => /[A-Za-z]/.test(s);
 
     const inp = el('textarea', {class:'code'});
     const out = outBlock();
@@ -2386,6 +2411,11 @@ tool({
     const mode = el('select', {},
       el('option', {value:'enc'}, 'Encode (shift →)'),
       el('option', {value:'dec'}, 'Decode (shift ←)')
+    );
+    const alpha = el('select', {},
+      el('option', {value:'auto'}, 'Auto (both)'),
+      el('option', {value:'en'},   'English (A–Z, 26 letters)'),
+      el('option', {value:'he'},   'Hebrew (א–ת, 22 letters)')
     );
     const bruteBox = el('div', {class:'out', style:{fontFamily:"'JetBrains Mono',ui-monospace,monospace",fontSize:'12.5px',lineHeight:'1.55',maxHeight:'320px',overflow:'auto',whiteSpace:'pre'}});
 
@@ -2396,33 +2426,49 @@ tool({
       out.textContent = shift(inp.value, k);
     };
 
+    // Brute-force iterates up to the alphabet's size minus one.
+    // "auto" picks Hebrew range if the text is Hebrew-only, else 25.
+    const bruteCount = () => {
+      const a = alpha.value;
+      if (a === 'en') return 25;
+      if (a === 'he') return 21;
+      return hasHebrew(inp.value) && !hasLatin(inp.value) ? 21 : 25;
+    };
+
     const buildBrute = () => {
       const lines = [];
-      for (let i = 1; i <= 25; i++){
+      const max = bruteCount();
+      for (let i = 1; i <= max; i++){
         const prefix = `shift ${String(i).padStart(2,' ')}: `;
         lines.push(prefix + shift(inp.value, -i));
       }
       bruteBox.textContent = lines.join('\n');
     };
 
-    [inp, shiftIn, mode].forEach(e => e.addEventListener('input', run));
+    [inp, shiftIn, mode, alpha].forEach(e => e.addEventListener('input', run));
+    alpha.addEventListener('change', buildBrute);
+    inp.addEventListener('input', buildBrute);
 
-    const rot13Btn = el('button', {class:'btn', type:'button', onclick:() => { shiftIn.value = 13; mode.value = 'enc'; run(); }}, 'ROT13');
-    const swapBtn = el('button', {class:'btn ghost', type:'button', onclick:() => { inp.value = out.textContent; mode.value = mode.value === 'enc' ? 'dec' : 'enc'; run(); }}, '⇅ Swap');
-    const bruteBtn = el('button', {class:'btn', type:'button', onclick:buildBrute}, '🕵 Try all 25 shifts');
+    const rot13Btn = el('button', {class:'btn', type:'button', title:'English ROT13', onclick:() => { shiftIn.value = 13; mode.value = 'enc'; run(); buildBrute(); }}, 'ROT13');
+    const rot11Btn = el('button', {class:'btn', type:'button', title:'Hebrew ROT11 (self-inverse)', onclick:() => { shiftIn.value = 11; mode.value = 'enc'; run(); buildBrute(); }}, 'ROT11 (עברית)');
+    const swapBtn  = el('button', {class:'btn ghost', type:'button', onclick:() => { inp.value = out.textContent; mode.value = mode.value === 'enc' ? 'dec' : 'enc'; run(); buildBrute(); }}, '⇅ Swap');
+    const bruteBtn = el('button', {class:'btn', type:'button', onclick:buildBrute}, '🕵 Try all shifts');
 
-    root.appendChild(el('div', {class:'split'}, field('Input', inp), field('Output', out)));
+    root.appendChild(el('div', {class:'split'}, field('Input (English and/or Hebrew)', inp), field('Output', out)));
     root.appendChild(el('div', {class:'row cols-3 mt-3'},
-      field('Shift (0–25)', shiftIn),
+      field('Shift', shiftIn),
       field('Mode', mode),
-      field('Shortcuts', el('div', {class:'btn-row'}, rot13Btn, swapBtn, bruteBtn))
+      field('Alphabet', alpha)
     ));
-    root.appendChild(el('div', {class:'btn-row mt-2'}, copyBtn(() => out.textContent), clearBtn(inp)));
+    root.appendChild(el('div', {class:'btn-row mt-2'},
+      rot13Btn, rot11Btn, swapBtn, bruteBtn,
+      copyBtn(() => out.textContent), clearBtn(inp)
+    ));
     root.appendChild(el('div', {class:'mt-3'}, field('Brute-force (treat input as ciphertext, show every possible plaintext)', bruteBox)));
     root.appendChild(el('div', {class:'muted mt-2', style:{fontSize:'12px'}},
-      'A Caesar cipher shifts each letter by a fixed amount. Encoding with shift k is the inverse of decoding with shift k. ROT13 is just shift = 13, which is its own inverse.'
+      'Handles English (A–Z, 26 letters) and Hebrew (א–ת, 22 letters) — including mixed text. Hebrew final forms (ך ם ן ף ץ) are normalized before shifting and re-applied at word endings. ROT13 is self-inverse for English; ROT11 is self-inverse for Hebrew.'
     ));
-    inp.value = 'Hello BergerOverflow'; run(); buildBrute();
+    inp.value = 'Hello BergerOverflow\nשלום עולם'; run(); buildBrute();
   }
 });
 
