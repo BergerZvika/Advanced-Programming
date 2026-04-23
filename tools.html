@@ -720,11 +720,13 @@ input[type=color]{width:60px;height:36px;border:none;background:transparent;curs
       <div class="hero-inner">
         <h2>Every developer tool you need,<br/><span class="grad">in one beautiful place.</span></h2>
         <p>Online IDEs · Command Builders · Generators · Converters · Encoders &amp; Decoders · Text Utilities · Testers &amp; Viewers · Formatters · CSS Visual Tools · Colors · Bits &amp; Bytes · Dev Utilities.</p>
-        <p style="margin-top:10px;font-size:13px;color:var(--text-faint)">Crafted by <b style="color:var(--text)">Zvika Berger</b>.</p>
+        <p style="margin-top:10px;font-size:13px;color:var(--text-faint)">Crafted by <b style="color:var(--text)">Zvika Berger</b> · <a href="mailto:zvbe10@gmail.com" style="color:var(--accent-2)">zvbe10@gmail.com</a></p>
         <div class="hero-stats">
           <div class="stat"><b id="toolCount">80+</b><span>Tools</span></div>
           <div class="stat"><b id="catCount">11</b><span>Categories</span></div>
           <div class="stat"><b>1</b><span>HTML file</span></div>
+          <div class="stat"><b id="openCount">0</b><span>Tool opens</span></div>
+          <div class="stat"><b id="dlCount">0</b><span>Downloads</span></div>
           <button id="dlSource" class="btn primary" type="button" style="font-weight:600">⤓ Download source</button>
         </div>
       </div>
@@ -795,9 +797,29 @@ const tool = (def) => { TOOLS.push(def); return def; };
 /* ==========================================================================
    WORKSPACE MANAGEMENT
    ========================================================================== */
+// --- Usage stats (persisted in localStorage) ---
+const USAGE_KEY = 'bergeroverflow.usage.v1';
+const usage = (() => {
+  try { return JSON.parse(localStorage.getItem(USAGE_KEY) || '{}') || {}; }
+  catch(e){ return {}; }
+})();
+usage.downloads = Number.isFinite(usage.downloads) ? usage.downloads : 0;
+usage.opens = Number.isFinite(usage.opens) ? usage.opens : 0;
+function saveUsage(){
+  try { localStorage.setItem(USAGE_KEY, JSON.stringify(usage)); } catch(e){}
+}
+function refreshUsageUI(){
+  const dEl = $('#dlCount'); if (dEl) dEl.textContent = String(usage.downloads);
+  const oEl = $('#openCount'); if (oEl) oEl.textContent = String(usage.opens);
+}
+refreshUsageUI();
+
 function openTool(id){
   const t = TOOLS.find(x=>x.id===id);
   if (!t) return;
+  usage.opens = (usage.opens || 0) + 1;
+  saveUsage();
+  refreshUsageUI();
   const catName = (CATS.find(c=>c.id===t.cat)?.name || '');
   $('#wsTitle').textContent = t.name;
   $('#wsIcon').textContent = t.icon || '◆';
@@ -826,12 +848,14 @@ function closeTool(){
 }
 $('#wsClose').addEventListener('click', closeTool);
 $('#dlSource').addEventListener('click', async () => {
+  let ok = false;
   try {
     const r = await fetch(location.href);
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const html = await r.text();
     dl('bergeroverflow.html', html, 'text/html');
     toast('Downloaded source — ' + (html.length / 1024).toFixed(0) + ' KB');
+    ok = true;
   } catch(e) {
     // Fallback: serialize the live DOM (may differ from the file on disk)
     try {
@@ -839,10 +863,12 @@ $('#dlSource').addEventListener('click', async () => {
       const html = doctype + document.documentElement.outerHTML;
       dl('bergeroverflow.html', html, 'text/html');
       toast('Downloaded source (live DOM fallback)');
+      ok = true;
     } catch(e2) {
       toast('Download failed: ' + e.message);
     }
   }
+  if (ok){ usage.downloads = (usage.downloads || 0) + 1; saveUsage(); refreshUsageUI(); }
 });
 $('#workspace').addEventListener('click', (e) => { if (e.target.id === 'workspace') closeTool(); });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeTool(); });
@@ -13412,6 +13438,7 @@ tool({
     run();
   }
 });
+
 
 tool({
   id:'image-convert', cat:'converters', name:'Image Converter', icon:'🖼',
