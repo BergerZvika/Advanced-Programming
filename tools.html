@@ -168,7 +168,57 @@ body::after{
   background-size: 40px 40px;
   mask-image: radial-gradient(ellipse at center, #000 20%, transparent 70%);
 }
-.hero-inner{position:relative;z-index:1}
+.hero-inner{position:relative;z-index:1;max-width:calc(100% - 320px)}
+@media (max-width:980px){.hero-inner{max-width:100%}}
+
+/* 3D slogan on the right side of the hero */
+.hero-slogan{
+  position:absolute;
+  right:40px;top:50%;
+  transform:translateY(-50%) perspective(800px) rotateY(-20deg) rotateX(10deg);
+  transform-style:preserve-3d;
+  transform-origin:center right;
+  display:flex;flex-direction:column;align-items:flex-end;
+  font-family:'Inter',sans-serif;font-weight:900;
+  letter-spacing:-0.025em;
+  line-height:1;
+  text-align:right;
+  pointer-events:none;
+  z-index:2;
+  animation:slogan-float 5s ease-in-out infinite;
+}
+.hero-slogan .l1,.hero-slogan .l2{
+  display:block;position:relative;
+  background:linear-gradient(135deg,#c9b6ff 0%,#7c5cff 30%,#35d0ff 65%,#ff6ec7 100%);
+  -webkit-background-clip:text;background-clip:text;
+  -webkit-text-fill-color:transparent;color:transparent;
+  filter:
+    drop-shadow(0 2px 0 rgba(87,55,210,0.9))
+    drop-shadow(0 4px 0 rgba(63,36,170,0.85))
+    drop-shadow(0 6px 0 rgba(40,20,130,0.8))
+    drop-shadow(0 10px 18px rgba(0,0,0,0.55))
+    drop-shadow(0 16px 35px rgba(124,92,255,0.45));
+}
+.hero-slogan .l1{font-size:clamp(26px,3.2vw,44px)}
+.hero-slogan .l2{font-size:clamp(22px,2.6vw,36px);margin-top:4px}
+.hero-slogan::before{
+  content:"";
+  position:absolute;inset:-40px -30px;
+  background:radial-gradient(ellipse at 60% 50%,rgba(124,92,255,0.22),rgba(53,208,255,0.10) 40%,transparent 72%);
+  filter:blur(22px);z-index:-1;pointer-events:none;
+}
+@keyframes slogan-float{
+  0%,100%{transform:translateY(-50%) perspective(800px) rotateY(-20deg) rotateX(10deg) translateZ(0);}
+  50%    {transform:translateY(calc(-50% - 6px)) perspective(800px) rotateY(-18deg) rotateX(8deg) translateZ(12px);}
+}
+@media (max-width:980px){
+  .hero-slogan{
+    position:static;transform:none;animation:none;
+    align-items:center;text-align:center;
+    margin:6px auto 12px;
+  }
+  .hero-slogan::before{display:none}
+}
 .hero h2{margin:0 0 10px;font-size:clamp(26px, 4vw, 44px);font-weight:800;letter-spacing:-0.03em;line-height:1.05}
 .hero h2 .grad{background:linear-gradient(90deg,#7c5cff,#35d0ff 50%,#ff6ec7);-webkit-background-clip:text;background-clip:text;color:transparent}
 .hero p{max-width:600px;color:var(--text-dim);margin:0;font-size:15px;line-height:1.55}
@@ -717,9 +767,12 @@ input[type=color]{width:60px;height:36px;border:none;background:transparent;curs
       <div class="hero-grid"></div>
       <div class="float-shape shape-1"></div>
       <div class="float-shape shape-2"></div>
+      <div class="hero-slogan" aria-hidden="true">
+        <span class="l1">One page</span>
+        <span class="l2">to rule them all.</span>
+      </div>
       <div class="hero-inner">
         <h2>Every developer tool you need,<br/><span class="grad">in one beautiful place.</span></h2>
-        <p style="margin-top:8px;font-size:15px;font-style:italic;color:var(--accent-2);font-weight:600;letter-spacing:.02em">“One page to rule them all.”</p>
         <p>Online IDEs · Command Builders · Generators · Converters · Encoders &amp; Decoders · Text Utilities · Testers &amp; Viewers · Formatters · CSS Visual Tools · Colors · Bits &amp; Bytes · Dev Utilities.</p>
         <p style="margin-top:10px;font-size:13px;color:var(--text-faint)">Crafted by <b style="color:var(--text)">Zvika Berger</b></p>
         <p style="margin-top:12px;font-size:12px;color:var(--text);max-width:680px;line-height:1.5;padding:8px 12px;border-radius:8px;background:rgba(124,92,255,0.10);border:1px solid rgba(124,92,255,0.30)">Want a new tool, a new feature, or hit something that doesn't work? Drop me a line at <a href="mailto:zvbe10@gmail.com?subject=BergerOverflow%20feedback" style="color:var(--accent-2);font-weight:600">zvbe10@gmail.com</a> — happy to hear from you.</p>
