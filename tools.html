@@ -471,7 +471,7 @@ table.t tr:hover{background:rgba(255,255,255,0.03)}
 .toast{
   position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
   background:#1a1a2e;border:1px solid var(--border-strong);padding:10px 18px;border-radius:12px;
-  color:var(--text);font-size:13px;opacity:0;transition:all .3s;z-index:1000;pointer-events:none;
+  color:var(--text);font-size:13px;opacity:0;transition:all .3s;z-index:10010;pointer-events:none;
   box-shadow: var(--shadow-md);
 }
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -884,6 +884,92 @@ input[type=color]{width:60px;height:36px;border:none;background:transparent;curs
 .md-preview .md-empty{color:var(--text-faint);font-style:italic;text-align:center;margin-top:24%}
 .md-editor-col,.md-preview-col{display:flex;flex-direction:column;gap:6px}
 .md-col-label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-faint)}
+
+/* ===== Quick Reference modal (cheatsheets) ===== */
+.qr-backdrop{
+  position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px;
+  background:radial-gradient(circle at 50% 30%,rgba(30,20,70,0.55),rgba(5,5,10,0.88) 65%);
+  backdrop-filter:blur(12px) saturate(140%);-webkit-backdrop-filter:blur(12px) saturate(140%);
+  animation:appModalFade .22s ease;
+}
+.qr-backdrop.closing{animation:appModalFadeOut .22s ease forwards}
+.qr-panel{
+  position:relative;
+  width:min(1180px,100%);max-height:90vh;
+  display:flex;flex-direction:column;
+  border-radius:20px;overflow:hidden;
+  background:linear-gradient(180deg,#14142a,#0c0c18);
+  border:1px solid rgba(124,92,255,0.28);
+  box-shadow:0 40px 90px -30px rgba(124,92,255,0.55),0 0 0 1px rgba(255,255,255,0.04) inset;
+  animation:appModalPop .38s cubic-bezier(.22,1.3,.36,1);
+}
+.qr-panel.closing{animation:appModalOut .25s ease forwards}
+.qr-panel::before{
+  content:"";position:absolute;inset:-2px;border-radius:22px;pointer-events:none;
+  background:conic-gradient(from 0deg,rgba(124,92,255,0.45),rgba(53,208,255,0.45),rgba(255,110,199,0.45),rgba(124,92,255,0.45));
+  filter:blur(14px);opacity:.45;z-index:-1;
+  animation:appModalRing 7s linear infinite;
+}
+.qr-head{
+  display:flex;align-items:center;gap:14px;padding:20px 26px;
+  border-bottom:1px solid var(--border);
+  background:linear-gradient(90deg,rgba(124,92,255,0.12),transparent 60%);
+}
+.qr-head .qr-icon{
+  width:42px;height:42px;border-radius:12px;font-size:18px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;color:#fff;
+  background:linear-gradient(135deg,#7c5cff,#35d0ff);
+  box-shadow:0 10px 24px -8px rgba(124,92,255,0.65),inset 0 1px 0 rgba(255,255,255,0.3);
+}
+.qr-head h3{margin:0;font-size:18px;font-weight:700;letter-spacing:-.01em}
+.qr-head .qr-sub{margin:3px 0 0;font-size:12.5px;color:var(--text-dim)}
+.qr-head .qr-ext{margin-left:auto;display:flex;gap:8px;align-items:center}
+.qr-head .qr-ext a{
+  padding:7px 12px;border-radius:9px;
+  background:rgba(255,255,255,0.04);border:1px solid var(--border);
+  color:var(--text-dim);font-size:12px;text-decoration:none;
+}
+.qr-head .qr-ext a:hover{color:#fff;border-color:rgba(124,92,255,0.45);background:rgba(124,92,255,0.1)}
+.qr-close{
+  background:rgba(255,255,255,0.05);border:1px solid var(--border);color:var(--text-dim);
+  width:34px;height:34px;border-radius:10px;font-size:18px;cursor:pointer;line-height:1;
+  display:flex;align-items:center;justify-content:center;
+}
+.qr-close:hover{color:#fff;background:rgba(255,90,122,0.14);border-color:rgba(255,90,122,0.3)}
+.qr-body{
+  padding:22px 26px;overflow:auto;
+  display:grid;gap:18px;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));
+  align-items:start;
+}
+.qr-snip{
+  background:rgba(255,255,255,0.02);
+  border:1px solid var(--border);border-radius:12px;
+  display:flex;flex-direction:column;overflow:hidden;
+  transition:border-color .15s,transform .15s;
+}
+.qr-snip:hover{border-color:rgba(124,92,255,0.35);transform:translateY(-1px)}
+.qr-snip-head{
+  padding:9px 14px;display:flex;align-items:center;justify-content:space-between;
+  background:rgba(124,92,255,0.08);border-bottom:1px solid var(--border);
+}
+.qr-snip-head .qr-label{font-size:12px;font-weight:600;color:#fff;letter-spacing:.01em}
+.qr-snip-head .qr-copy{
+  background:transparent;border:1px solid var(--border);color:var(--text-faint);
+  font-size:11px;padding:3px 9px;border-radius:6px;cursor:pointer;
+  transition:all .15s;font-family:inherit;
+}
+.qr-snip-head .qr-copy:hover{color:#fff;border-color:rgba(124,92,255,0.5);background:rgba(124,92,255,0.15)}
+.qr-snip-head .qr-copy.copied{
+  color:#fff;border-color:rgba(56,211,159,0.55);
+  background:linear-gradient(135deg,rgba(56,211,159,0.35),rgba(53,208,255,0.25));
+  box-shadow:0 4px 12px -4px rgba(56,211,159,0.5);
+}
+.qr-snip pre{
+  margin:0;padding:12px 14px;background:#05050c;overflow:auto;
+  font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12.5px;line-height:1.55;
+  color:#e8e8f3;max-height:260px;
+}
+.qr-snip pre code{background:transparent;padding:0;border:none;font-size:inherit}
 
 /* ===== 3D App Modal (replaces native prompt/alert/confirm) ===== */
 .app-modal-backdrop{
@@ -5492,6 +5578,7 @@ tool({
       } catch(e){ highlight.innerHTML = '<span style="color:#ff5a7a">⚠ '+e.message+'</span>'; matches.textContent=''; }
     };
     [pat,flags,text].forEach(e=>e.addEventListener('input', run));
+    root.appendChild(el('div', {style:{marginBottom:'10px'}}, quickRefBtn('regex')));
     root.appendChild(el('div', {class:'row cols-2'}, field('Pattern', pat), field('Flags', flags)));
     root.appendChild(el('div', {class:'mt-3'}, field('Test text', text)));
     root.appendChild(el('div', {class:'split mt-3'}, field('Highlighted', highlight), field('Matches', matches)));
@@ -16263,6 +16350,7 @@ tool({
   desc:'Build a find(1) command step-by-step: filter by name, type, size, modification time, run actions on matches.',
   keywords:'find linux command file search flags',
   render(root){
+    root.appendChild(el('div', {style:{marginBottom:'10px'}}, quickRefBtn('find')));
     renderCommandBuilder(root, {
       cmd: 'find',
       positional: [{name:'path', label:'Starting path', default:'.', placeholder:'/var/log'}],
@@ -16294,6 +16382,7 @@ tool({
   desc:'Build a grep command with recursion, regex, context lines, file includes/excludes, and more.',
   keywords:'grep search text pattern regex flags',
   render(root){
+    root.appendChild(el('div', {style:{marginBottom:'10px'}}, quickRefBtn('grep')));
     renderCommandBuilder(root, {
       cmd: 'grep',
       positional: [
@@ -16411,6 +16500,7 @@ tool({
   desc:'Build any curl request: methods, headers, JSON/form data, auth, proxy, cookies, retries, timeouts, output.',
   keywords:'curl http request api get post put delete headers json',
   render(root){
+    root.appendChild(el('div', {style:{marginBottom:'10px'}}, quickRefBtn('curl')));
     renderCommandBuilder(root, {
       cmd: 'curl',
       positional: [
@@ -18104,6 +18194,7 @@ function renderIDE(root, lang){
   if (!lang.noRun) toolbar.appendChild(runBtn);
   toolbar.appendChild(copyBtn2); toolbar.appendChild(dlBtn);
   toolbar.appendChild(resetBtn); toolbar.appendChild(clearBtn);
+  if (QUICK_REFS[lang.id]) toolbar.appendChild(quickRefBtn(lang.id));
   root.appendChild(toolbar);
   root.appendChild(presets);
   if (lang.noInput || lang.noRun){
@@ -18118,9 +18209,425 @@ function renderIDE(root, lang){
   setTimeout(highlight, 0);
 }
 
+/* ===== Quick Reference (cheatsheets inspired by quickref.me) ===== */
+const QUICK_REFS = {
+  c: {title:'C Quick Reference', url:'https://quickref.me/c', icon:'C', lang:'c', snippets:[
+    {label:'Hello world', code:`#include <stdio.h>\nint main(void){\n    printf("hello, world\\n");\n    return 0;\n}`},
+    {label:'Variables & types', code:`int    i = 42;\nfloat  f = 3.14f;\ndouble d = 3.14;\nchar   c = 'A';\nchar  *s = "text";\nbool   b = true;  // <stdbool.h>`},
+    {label:'Printf format', code:`printf("%d %ld %f %.2f %s %c %x\\n",\n       i, li, f, d, s, c, hex);\n// %d int  %ld long  %f float  %.2f precision\n// %s string  %c char  %x hex  %p pointer`},
+    {label:'If / switch', code:`if (x > 0) { /*…*/ }\nelse if (x == 0) { /*…*/ }\nelse { /*…*/ }\n\nswitch (k){\n  case 1: /*…*/ break;\n  default: /*…*/;\n}`},
+    {label:'Loops', code:`for (int i = 0; i < n; i++) { /*…*/ }\n\nwhile (cond) { /*…*/ }\n\ndo { /*…*/ } while (cond);`},
+    {label:'Arrays & strings', code:`int  a[5] = {1, 2, 3, 4, 5};\nchar s[] = "hello";\nint  n = sizeof(a) / sizeof(a[0]);\nstrlen(s); strcpy(d,s); strcmp(a,b);  // <string.h>`},
+    {label:'Pointers', code:`int  x = 10;\nint *p = &x;      // address of x\n*p = 20;          // x is now 20\nint *arr = malloc(n * sizeof(int));\nfree(arr);`},
+    {label:'Structs', code:`struct Point { int x, y; };\nstruct Point p = {3, 4};\np.x = 7;\nstruct Point *pp = &p;\npp->y = 9;`},
+    {label:'Function', code:`int add(int a, int b){\n    return a + b;\n}\n\n// declaration (header)\nint add(int a, int b);`},
+    {label:'File I/O', code:`FILE *f = fopen("file.txt", "r");\nif (f){\n    char buf[256];\n    while (fgets(buf, sizeof(buf), f)) printf("%s", buf);\n    fclose(f);\n}`},
+  ]},
+  cpp: {title:'C++ Quick Reference', url:'https://quickref.me/cpp', icon:'C++', lang:'cpp', snippets:[
+    {label:'Hello world', code:`#include <iostream>\nint main(){\n    std::cout << "hello, world\\n";\n}`},
+    {label:'Variables & I/O', code:`int n;  std::string s;\nstd::cin >> n >> s;\nstd::cout << n << " " << s << "\\n";\nauto x = 3.14;   // type inferred`},
+    {label:'Strings', code:`#include <string>\nstd::string a = "hi";\na += " there";\na.size(); a.substr(0,2); a.find("x");\nstd::to_string(42);  std::stoi("42");`},
+    {label:'Vectors', code:`#include <vector>\nstd::vector<int> v = {1,2,3};\nv.push_back(4);  v.size();\nfor (int x : v) std::cout << x;\nstd::sort(v.begin(), v.end());`},
+    {label:'Map / set', code:`#include <map>\n#include <unordered_set>\nstd::map<std::string,int> m;\nm["age"] = 30;\nif (m.count("age")) /*…*/;\nstd::unordered_set<int> s{1,2,3};`},
+    {label:'Class', code:`class Point {\n  int x, y;\npublic:\n  Point(int x, int y): x(x), y(y) {}\n  int getX() const { return x; }\n};`},
+    {label:'Templates', code:`template<typename T>\nT max_of(T a, T b){\n    return a > b ? a : b;\n}\n\nauto m = max_of(3, 5);`},
+    {label:'Smart pointers', code:`#include <memory>\nauto p = std::make_unique<Foo>();\nauto q = std::make_shared<Foo>();\n// No delete needed — RAII handles it.`},
+    {label:'Lambdas', code:`auto add = [](int a, int b){ return a + b; };\nadd(2, 3);\n\n// capture\nint x = 10;\nauto f = [x](int y){ return x + y; };`},
+    {label:'Exceptions', code:`try {\n    throw std::runtime_error("boom");\n} catch (const std::exception &e){\n    std::cerr << e.what() << "\\n";\n}`},
+  ]},
+  java: {title:'Java Quick Reference', url:'https://quickref.me/java', icon:'JV', lang:'java', snippets:[
+    {label:'Hello world', code:`public class Main {\n    public static void main(String[] args){\n        System.out.println("hello, world");\n    }\n}`},
+    {label:'Variables & types', code:`int    n = 42;\nlong   big = 1_000_000L;\ndouble pi = 3.14;\nboolean ok = true;\nchar c = 'A';\nString s = "text";\nvar inferred = 5;`},
+    {label:'Strings', code:`String a = "hello";\nint len = a.length();\nString up = a.toUpperCase();\nString[] parts = a.split(",");\nString joined = String.join("-", parts);\nString f = String.format("%d %s", n, s);`},
+    {label:'Collections', code:`import java.util.*;\nList<Integer> l = new ArrayList<>(List.of(1,2,3));\nMap<String,Integer> m = new HashMap<>();\nSet<String> s = new HashSet<>();\nCollections.sort(l);`},
+    {label:'Loops', code:`for (int i = 0; i < 10; i++) {}\nfor (String x : list) {}\nwhile (cond) {}\ndo {} while (cond);`},
+    {label:'Class', code:`class Point {\n    private int x, y;\n    public Point(int x, int y){ this.x = x; this.y = y; }\n    public int getX(){ return x; }\n}`},
+    {label:'Interfaces', code:`interface Shape {\n    double area();\n}\n\nclass Circle implements Shape {\n    public double area(){ return Math.PI * r * r; }\n}`},
+    {label:'Streams', code:`List<Integer> sq = list.stream()\n    .filter(x -> x > 0)\n    .map(x -> x * x)\n    .collect(Collectors.toList());`},
+    {label:'Try/catch', code:`try {\n    var f = new FileReader(path);\n} catch (IOException e){\n    e.printStackTrace();\n} finally {\n    // cleanup\n}`},
+    {label:'Read input', code:`Scanner sc = new Scanner(System.in);\nString line = sc.nextLine();\nint n = sc.nextInt();`},
+  ]},
+  python: {title:'Python Quick Reference', url:'https://quickref.me/python', icon:'Py', lang:'python', snippets:[
+    {label:'Hello world', code:`print("hello, world")`},
+    {label:'Variables & types', code:`n = 42           # int\nf = 3.14         # float\ns = "text"       # str\nb = True         # bool\nitems = [1,2,3]  # list\nd = {"k": 1}     # dict`},
+    {label:'Strings', code:`s = "hello"\nlen(s); s.upper(); s.split(","); "-".join(["a","b"])\nf"n = {n:03d}"\ns.startswith("he"); s.replace("l","L")`},
+    {label:'Lists', code:`a = [1, 2, 3]\na.append(4); a.pop(); a.sort()\na[1:3]        # slice\n[x*x for x in a if x > 1]    # comprehension`},
+    {label:'Dict & set', code:`d = {"a": 1, "b": 2}\nd.get("a", 0); d.keys(); d.items()\nfor k, v in d.items(): print(k, v)\ns = {1, 2, 3}`},
+    {label:'Control flow', code:`if x > 0: print("pos")\nelif x == 0: print("zero")\nelse: print("neg")\n\nfor i in range(5): print(i)\nwhile cond: pass`},
+    {label:'Function', code:`def add(a, b=0, *args, **kwargs):\n    return a + b\n\nsq = lambda x: x*x`},
+    {label:'Classes', code:`class Point:\n    def __init__(self, x, y):\n        self.x, self.y = x, y\n    def __repr__(self):\n        return f"Point({self.x},{self.y})"`},
+    {label:'Exceptions', code:`try:\n    risky()\nexcept ValueError as e:\n    print(e)\nfinally:\n    cleanup()`},
+    {label:'File I/O', code:`with open("f.txt") as f:\n    for line in f: print(line, end="")\n\nwith open("out.txt","w") as f:\n    f.write("hi\\n")`},
+  ]},
+  javascript: {title:'JavaScript Quick Reference', url:'https://quickref.me/javascript', icon:'JS', lang:'javascript', snippets:[
+    {label:'Hello world', code:`console.log("hello, world");`},
+    {label:'Variables', code:`let   x = 1;          // mutable\nconst y = 2;          // constant\nvar   z = 3;          // function-scoped`},
+    {label:'Strings', code:`const s = "hello";\ns.length; s.toUpperCase();\ns.includes("he"); s.replace("l","L");\n\`template \${s}\`;`},
+    {label:'Arrays', code:`const a = [1,2,3];\na.push(4); a.pop(); a.length;\na.map(x => x*2); a.filter(x => x>1);\na.reduce((s,x) => s+x, 0);`},
+    {label:'Objects', code:`const u = { name: "Tom", age: 30 };\nu.name; u["age"];\nObject.keys(u); Object.entries(u);\nconst { name } = u;   // destructuring`},
+    {label:'Functions', code:`function add(a, b){ return a + b; }\n\nconst sq = x => x * x;\nconst greet = (name = "world") => \`hi \${name}\`;`},
+    {label:'Control flow', code:`if (x > 0) {} else if (x === 0) {} else {}\nfor (let i=0; i<10; i++) {}\nfor (const x of arr) {}\nfor (const k in obj) {}`},
+    {label:'Promises & async', code:`async function load(){\n  try {\n    const r = await fetch("/api");\n    const j = await r.json();\n  } catch(e){ console.error(e); }\n}`},
+    {label:'Classes', code:`class Point {\n  constructor(x, y){ this.x = x; this.y = y; }\n  distance(p){ return Math.hypot(this.x-p.x, this.y-p.y); }\n}`},
+    {label:'JSON', code:`const s = JSON.stringify({a:1});\nconst o = JSON.parse(s);\nJSON.stringify(obj, null, 2);   // pretty`},
+  ]},
+  typescript: {title:'TypeScript Quick Reference', url:'https://quickref.me/typescript', icon:'TS', lang:'typescript', snippets:[
+    {label:'Basic types', code:`let n: number = 42;\nlet s: string = "hi";\nlet b: boolean = true;\nlet arr: number[] = [1,2,3];\nlet tup: [string, number] = ["a", 1];\nlet any_: any; let unk: unknown;`},
+    {label:'Union & literal', code:`type Dir = "up" | "down";\nlet d: Dir = "up";\n\nlet id: number | string = 1;\nid = "abc";`},
+    {label:'Interface', code:`interface User {\n  name: string;\n  age?: number;           // optional\n  readonly id: number;\n}\nconst u: User = { name: "Tom", id: 1 };`},
+    {label:'Type alias', code:`type ID = number | string;\ntype Point = { x: number; y: number };\ntype Fn = (x: number) => number;`},
+    {label:'Function types', code:`function add(a: number, b: number): number { return a+b; }\nconst sq: (x: number) => number = x => x*x;\nfunction log(msg: string, ctx?: object): void {}`},
+    {label:'Generics', code:`function first<T>(arr: T[]): T | undefined {\n  return arr[0];\n}\nfirst<string>(["a","b"]);\nfirst([1,2,3]);  // inferred`},
+    {label:'Classes', code:`class Animal {\n  constructor(public name: string, protected age: number){}\n  greet(): string { return \`I am \${this.name}\`; }\n}`},
+    {label:'Enums', code:`enum Color { Red, Green, Blue }\nenum Status { OK = "ok", ERR = "err" }\nconst c: Color = Color.Red;`},
+    {label:'Utility types', code:`Partial<User>         // all fields optional\nRequired<User>        // all fields required\nReadonly<User>        // all fields readonly\nPick<User,"name">     // subset\nOmit<User,"id">       // exclude\nRecord<string,number>`},
+    {label:'Type guards', code:`function isStr(x: unknown): x is string {\n  return typeof x === "string";\n}\nif (isStr(val)) val.toUpperCase();`},
+  ]},
+  rust: {title:'Rust Quick Reference', url:'https://quickref.me/rust', icon:'Rs', lang:'rust', snippets:[
+    {label:'Hello world', code:`fn main() {\n    println!("hello, world");\n}`},
+    {label:'Variables', code:`let x = 5;           // immutable\nlet mut y = 10;      // mutable\ny += 1;\nconst MAX: u32 = 100;\nlet (a, b) = (1, 2); // destructure`},
+    {label:'Types', code:`i8 i16 i32 i64 u8 u16 u32 u64\nf32 f64   bool   char\nlet s: &str = "slice";\nlet s = String::from("owned");`},
+    {label:'Control flow', code:`if x > 0 { /*…*/ } else { /*…*/ }\n\nfor i in 0..10 { /*…*/ }\nwhile cond { /*…*/ }\nloop { if done { break; } }`},
+    {label:'Ownership', code:`let s = String::from("hi");\nlet t = s;            // s moved → invalid\nlet u = t.clone();    // deep copy\nlet r = &t;           // borrow (read)\nlet m = &mut t;       // borrow (mut)`},
+    {label:'Vec & HashMap', code:`let mut v = vec![1, 2, 3];\nv.push(4); v.len(); v[0];\n\nuse std::collections::HashMap;\nlet mut m = HashMap::new();\nm.insert("k", 1);`},
+    {label:'Functions', code:`fn add(a: i32, b: i32) -> i32 {\n    a + b            // no semicolon = return\n}\n\nlet sq = |x: i32| x * x;`},
+    {label:'Structs & enums', code:`struct Point { x: f64, y: f64 }\nenum Shape { Circle(f64), Square(f64) }\n\nlet p = Point { x: 1.0, y: 2.0 };\nlet s = Shape::Circle(3.0);`},
+    {label:'Match', code:`match shape {\n    Shape::Circle(r)   => area = 3.14 * r * r,\n    Shape::Square(s)   => area = s * s,\n    _                  => area = 0.0,\n}`},
+    {label:'Option & Result', code:`fn div(a: i32, b: i32) -> Option<i32> {\n    if b == 0 { None } else { Some(a / b) }\n}\nlet r: Result<i32, String> = Ok(1);\nlet val = r?;  // propagate error`},
+  ]},
+  go: {title:'Go Quick Reference', url:'https://quickref.me/go', icon:'Go', lang:'go', snippets:[
+    {label:'Hello world', code:`package main\nimport "fmt"\n\nfunc main(){\n    fmt.Println("hello, world")\n}`},
+    {label:'Variables', code:`var x int = 5\ny := 10              // short decl (inferred)\nconst Pi = 3.14\nvar a, b = 1, "two"`},
+    {label:'Types', code:`bool int int32 int64 float64\nstring byte rune\nvar s string = "hi"\nvar arr [3]int                // fixed array\nvar sl []int = []int{1,2,3}   // slice`},
+    {label:'Slices', code:`s := []int{1,2,3}\ns = append(s, 4)\nlen(s); cap(s)\ns[1:3]    // sub-slice\nmake([]int, 0, 10)`},
+    {label:'Maps', code:`m := map[string]int{"a":1, "b":2}\nm["c"] = 3\nv, ok := m["a"]\ndelete(m, "a")\nfor k, v := range m { /*…*/ }`},
+    {label:'Functions', code:`func add(a, b int) int {\n    return a + b\n}\n\n// multiple returns\nfunc split(n int) (int, int) {\n    return n/2, n%2\n}`},
+    {label:'Structs & methods', code:`type Point struct { X, Y float64 }\n\nfunc (p Point) Dist() float64 {\n    return math.Hypot(p.X, p.Y)\n}\np := Point{3, 4}; p.Dist()`},
+    {label:'Interfaces', code:`type Shape interface {\n    Area() float64\n}\ntype Circle struct { R float64 }\nfunc (c Circle) Area() float64 {\n    return 3.14 * c.R * c.R\n}`},
+    {label:'Goroutines & channels', code:`ch := make(chan int)\ngo func(){ ch <- 42 }()\nv := <-ch\n\nfor v := range ch { /*…*/ }`},
+    {label:'Errors', code:`f, err := os.Open("file.txt")\nif err != nil {\n    log.Fatal(err)\n}\ndefer f.Close()`},
+  ]},
+  ruby: {title:'Ruby Quick Reference', url:'https://quickref.me/ruby', icon:'Rb', lang:'ruby', snippets:[
+    {label:'Hello world', code:`puts "hello, world"\nprint "no newline "\np [1,2,3]    # inspect`},
+    {label:'Variables', code:`local_var  = 1\n@instance  = 2\n@@class_v  = 3\n$global    = 4\nCONSTANT   = 5`},
+    {label:'Strings', code:`s = "hello"\ns.length; s.upcase; s.split(",")\n"#{name} is #{age}"           # interpolation\ns.gsub(/foo/, "bar")`},
+    {label:'Arrays', code:`a = [1, 2, 3]\na.push(4); a << 5; a.pop\na.map { |x| x*x }\na.select { |x| x > 1 }\na.reduce(0) { |s,x| s+x }`},
+    {label:'Hash', code:`h = { "a" => 1, b: 2 }\nh[:b]; h.keys; h.values\nh.each { |k,v| puts "#{k}=#{v}" }`},
+    {label:'Control flow', code:`if x > 0 then puts "pos"\nelsif x == 0 then puts "zero"\nelse puts "neg"\nend\n\nputs "ok" unless bad?\nputs "big" if n > 100`},
+    {label:'Loops', code:`5.times { |i| puts i }\n(1..10).each { |i| puts i }\nwhile cond do /*…*/ end\narr.each { |x| puts x }`},
+    {label:'Methods', code:`def add(a, b = 0, *rest, **kw)\n  a + b\nend\n\nsq = ->(x) { x * x }\nsq.call(5); sq.(5)`},
+    {label:'Classes', code:`class Point\n  attr_accessor :x, :y\n  def initialize(x, y)\n    @x, @y = x, y\n  end\nend\np = Point.new(3, 4)`},
+    {label:'Blocks & yield', code:`def with_greeting\n  yield "hello"\n  yield "bye"\nend\nwith_greeting { |msg| puts msg }`},
+  ]},
+  php: {title:'PHP Quick Reference', url:'https://quickref.me/php', icon:'PHP', lang:'php', snippets:[
+    {label:'Hello world', code:`<?php\necho "hello, world\\n";\nprint_r(array(1,2,3));  // debug print`},
+    {label:'Variables & strings', code:`$n = 42;\n$s = "hello";\n$name = "Tom";\necho "Hi, $name\\n";            // interpolate\necho 'No interpolation: $name';   // single quotes`},
+    {label:'Arrays', code:`$a = [1, 2, 3];\n$a[] = 4;           // append\ncount($a); array_sum($a);\n$m = ["a"=>1, "b"=>2];\n$m["c"] = 3;`},
+    {label:'Loops', code:`foreach ($a as $v) { /*…*/ }\nforeach ($m as $k => $v) { /*…*/ }\nfor ($i=0; $i<10; $i++) { /*…*/ }\nwhile ($cond) { /*…*/ }`},
+    {label:'Functions', code:`function add($a, $b = 0){\n    return $a + $b;\n}\n\n$sq = fn($x) => $x * $x;\nfunction hello(string $name): string { return "hi $name"; }`},
+    {label:'Classes', code:`class Point {\n    public function __construct(\n        public float $x,\n        public float $y,\n    ){}\n}\n$p = new Point(3.0, 4.0);`},
+    {label:'Strings fns', code:`strlen($s); strtoupper($s); strtolower($s);\nsubstr($s, 0, 3); str_replace("a","b",$s);\nexplode(",", $s); implode(",", $arr);\nsprintf("%05d", 42);`},
+    {label:'Super-globals', code:`$_GET["id"]     // query string\n$_POST["name"]  // form body\n$_SERVER["REQUEST_METHOD"]\n$_SESSION["user"]\n$_COOKIE["token"]`},
+    {label:'File I/O', code:`$lines = file("f.txt");\nforeach ($lines as $line) echo $line;\nfile_put_contents("out.txt", $data);\nfile_exists($p); unlink($p);`},
+    {label:'JSON', code:`$s = json_encode(["a"=>1, "b"=>2]);\n$obj = json_decode($s, true);   // as array\n$obj = json_decode($s);         // as stdClass`},
+  ]},
+  csharp: {title:'C# Quick Reference', url:'https://quickref.me/cs', icon:'C#', lang:'csharp', snippets:[
+    {label:'Hello world', code:`using System;\nConsole.WriteLine("hello, world");\n\n// traditional\nclass Program {\n  static void Main(){ Console.WriteLine("hi"); }\n}`},
+    {label:'Variables', code:`int    n = 42;\ndouble d = 3.14;\nstring s = "hello";\nbool   b = true;\nvar    inferred = 5;\nconst  int MAX = 100;`},
+    {label:'Strings', code:`string s = "hello";\ns.Length; s.ToUpper(); s.Split(",");\n$"n = {n:D3}"                 // interpolation\nstring.Format("{0}-{1}", a, b);`},
+    {label:'Collections', code:`var l = new List<int>{1,2,3};\nl.Add(4); l.Count;\nvar d = new Dictionary<string,int>();\nd["a"] = 1;\nvar s = new HashSet<string>();`},
+    {label:'LINQ', code:`var sq = nums\n    .Where(x => x > 0)\n    .Select(x => x * x)\n    .OrderByDescending(x => x)\n    .ToList();`},
+    {label:'Classes', code:`class Point {\n    public double X { get; set; }\n    public double Y { get; set; }\n    public Point(double x, double y){ X = x; Y = y; }\n}`},
+    {label:'Properties & records', code:`public record Person(string Name, int Age);\n\nclass User {\n    public string Name { get; init; }\n    public int Age { get; set; }\n}`},
+    {label:'Pattern matching', code:`string Describe(object o) => o switch {\n    int n when n > 0 => "positive int",\n    string s => $"string: {s}",\n    null     => "null",\n    _        => "other",\n};`},
+    {label:'Async / await', code:`async Task<string> LoadAsync(string url){\n    using var h = new HttpClient();\n    return await h.GetStringAsync(url);\n}`},
+    {label:'Exceptions', code:`try {\n    risky();\n} catch (FileNotFoundException ex){\n    Console.Error.WriteLine(ex.Message);\n} finally {\n    cleanup();\n}`},
+  ]},
+  kotlin: {title:'Kotlin Quick Reference', url:'https://quickref.me/kotlin', icon:'Kt', lang:'kotlin', snippets:[
+    {label:'Hello world', code:`fun main(){\n    println("hello, world")\n}`},
+    {label:'Variables', code:`val x = 5               // immutable\nvar y = 10              // mutable\nval n: Int = 42\nval pi: Double = 3.14`},
+    {label:'Strings', code:`val s = "hello"\ns.length; s.uppercase()\n"\$name is \$age"\n"""triple-\n   quoted""".trimIndent()`},
+    {label:'Collections', code:`val l = listOf(1,2,3)            // immutable\nval m = mutableListOf(1,2)\nm.add(3)\nval map = mapOf("a" to 1)\nval set = setOf("a", "b")`},
+    {label:'Control flow', code:`if (x > 0) "pos" else "neg"\n\nfor (i in 1..10) println(i)\nwhile (cond) { /*…*/ }\n\nwhen (k){\n  1    -> "one"\n  else -> "other"\n}`},
+    {label:'Functions', code:`fun add(a: Int, b: Int = 0): Int = a + b\n\nval sq: (Int) -> Int = { it * it }\nfun greet(name: String){ println("hi \$name") }`},
+    {label:'Classes', code:`class Point(val x: Int, val y: Int){\n    fun distance(o: Point) =\n        kotlin.math.hypot((x-o.x).toDouble(), (y-o.y).toDouble())\n}`},
+    {label:'Data class', code:`data class User(val name: String, val age: Int)\nval u = User("Tom", 30)\nval (n, a) = u   // destructure\nu.copy(age = 31)`},
+    {label:'Null safety', code:`val s: String? = null\nval len = s?.length ?: 0       // Elvis\nval req: String = s!!          // throw if null\nif (s != null) s.length         // smart cast`},
+    {label:'Lambdas', code:`list.filter { it > 0 }.map { it * 2 }\nlist.forEach { println(it) }\nlist.fold(0) { acc, x -> acc + x }`},
+  ]},
+  swift: {title:'Swift Quick Reference', url:'https://quickref.me/swift', icon:'Sw', lang:'swift', snippets:[
+    {label:'Hello world', code:`print("hello, world")`},
+    {label:'Variables', code:`let   x = 5             // immutable\nvar   y = 10            // mutable\nlet   pi: Double = 3.14\nlet s: String = "hi"`},
+    {label:'Strings', code:`let s = "hello"\ns.count; s.uppercased()\n"\\(name) is \\(age)"    // interpolation\nlet sub = s.prefix(3)`},
+    {label:'Arrays & dict', code:`var a = [1, 2, 3]\na.append(4); a.count\na.first; a.map { \$0 * 2 }\n\nvar d = ["a": 1, "b": 2]\nd["c"] = 3`},
+    {label:'Control flow', code:`if x > 0 { /*…*/ } else { /*…*/ }\n\nfor i in 0..<10 { print(i) }\nwhile cond { /*…*/ }\n\nswitch x {\ncase 0: print("zero")\ndefault: print("other")\n}`},
+    {label:'Optionals', code:`var s: String? = nil\ns = "hi"\nif let v = s { print(v) }     // unwrap\nlet len = s?.count ?? 0       // nil coalescing\nlet forced: String = s!       // force unwrap`},
+    {label:'Functions', code:`func add(_ a: Int, _ b: Int) -> Int {\n    return a + b\n}\nlet sq = { (x: Int) in x * x }`},
+    {label:'Struct & class', code:`struct Point {\n    var x, y: Double\n    func distance() -> Double {\n        return (x*x + y*y).squareRoot()\n    }\n}\nlet p = Point(x: 3, y: 4)`},
+    {label:'Protocols', code:`protocol Shape {\n    var area: Double { get }\n}\nstruct Circle: Shape {\n    let r: Double\n    var area: Double { .pi * r * r }\n}`},
+    {label:'Errors', code:`enum MathError: Error { case divByZero }\nfunc div(_ a: Int, _ b: Int) throws -> Int {\n    if b == 0 { throw MathError.divByZero }\n    return a / b\n}\ndo { try div(1,0) } catch { print(error) }`},
+  ]},
+  lua: {title:'Lua Quick Reference', url:'https://quickref.me/lua', icon:'Lu', lang:'lua', snippets:[
+    {label:'Hello world', code:`print("hello, world")\nio.write("no newline ")`},
+    {label:'Variables', code:`local x = 42              -- number\nlocal s = "text"          -- string\nlocal b = true            -- bool\nlocal n = nil             -- nil`},
+    {label:'Strings', code:`local s = "hello"\n#s                       -- length\ns:upper(); s:sub(1,3)\nstring.format("%d-%s", n, s)\ns:match("^%w+$")`},
+    {label:'Tables (arrays)', code:`local t = {1, 2, 3}\ntable.insert(t, 4)\ntable.remove(t, 1)\n#t                       -- length\nfor i, v in ipairs(t) do print(i, v) end`},
+    {label:'Tables (maps)', code:`local m = {name="Tom", age=30}\nm.age = 31; m["name"]\nfor k, v in pairs(m) do print(k, v) end`},
+    {label:'Control flow', code:`if x > 0 then print("pos")\nelseif x == 0 then print("zero")\nelse print("neg")\nend\n\nfor i = 1, 10 do print(i) end\nwhile cond do /* body */ end`},
+    {label:'Functions', code:`local function add(a, b)\n    return a + b\nend\n\nlocal sq = function(x) return x*x end\nlocal a, b = swap(1, 2)   -- multi-return`},
+    {label:'Metatables (OOP)', code:`Point = {}\nPoint.__index = Point\nfunction Point.new(x, y)\n    return setmetatable({x=x, y=y}, Point)\nend\nfunction Point:dist() return math.sqrt(self.x^2 + self.y^2) end`},
+    {label:'Patterns (like regex)', code:`string.match(s, "(%w+)=(%w+)")\nstring.gmatch(s, "%d+")\nstring.gsub(s, "old", "new")\n-- %d digits %a alpha %s space %w word`},
+    {label:'Modules / require', code:`local M = {}\nfunction M.greet(n) return "hi " .. n end\nreturn M\n-- in another file:\nlocal m = require("mymod")`},
+  ]},
+  bash: {title:'Bash Quick Reference', url:'https://quickref.me/bash', icon:'$_', lang:'bash', snippets:[
+    {label:'Variables', code:`name="Tom"\necho "Hello, $name"\nreadonly PI=3.14\nexport PATH=$PATH:/usr/local/bin`},
+    {label:'Arrays', code:`arr=(apple banana cherry)\necho "\${arr[0]}"          # first\necho "\${arr[@]}"          # all\necho "\${#arr[@]}"         # length\nfor x in "\${arr[@]}"; do echo "$x"; done`},
+    {label:'Conditionals', code:`if [ "$x" -gt 0 ]; then\n    echo "positive"\nelif [ "$x" -eq 0 ]; then\n    echo "zero"\nelse\n    echo "negative"\nfi\n[[ "$str" == *"abc"* ]] && echo "contains"`},
+    {label:'Loops', code:`for i in {1..5}; do echo "$i"; done\nfor f in *.txt; do echo "$f"; done\nwhile read line; do echo "$line"; done < file\nuntil [ "$n" -ge 10 ]; do ((n++)); done`},
+    {label:'Test operators', code:`# strings:  -z empty  -n nonempty  = ==  !=\n# numbers:  -eq -ne -lt -le -gt -ge\n# files:    -f regular  -d dir  -e exists  -r readable -x executable`},
+    {label:'Functions', code:`greet(){\n    local name="$1"\n    echo "Hello, $name"\n}\ngreet "Tom"              # call\nresult=$(greet "Tom")    # capture`},
+    {label:'Command substitution', code:`today=$(date +%F)\nfiles=$(ls *.txt)\nn=$((5 + 3))             # arithmetic\n# Arithmetic: $((expr))  Command: $(cmd)`},
+    {label:'Redirection & pipes', code:`cmd > out.txt              # stdout\ncmd 2> err.txt             # stderr\ncmd &> all.txt             # both\ncmd1 | cmd2 | cmd3         # pipe\ncmd < input.txt            # stdin`},
+    {label:'String manipulation', code:`s="hello world"\n\${s#hello }       # remove prefix → "world"\n\${s%world}        # remove suffix → "hello "\n\${s/world/there}  # replace first\n\${s//o/0}         # replace all\n\${#s}             # length`},
+    {label:'Read input', code:`read -p "Name? " name\nread -s password     # silent\nread -a items        # into array\n# pipe / heredoc\ncat <<EOF\nhello $name\nEOF`},
+  ]},
+  ocaml: {title:'OCaml Quick Reference', url:'https://quickref.me/ocaml', icon:'Oc', lang:'ocaml', snippets:[
+    {label:'Hello world', code:`let () = print_endline "hello, world"`},
+    {label:'Variables & types', code:`let x = 5                (* int *)\nlet pi = 3.14            (* float *)\nlet s = "hello"          (* string *)\nlet b = true             (* bool *)\nlet pair = (1, "a")`},
+    {label:'Functions', code:`let add a b = a + b\nlet sq = fun x -> x * x\nlet rec fact n = if n <= 1 then 1 else n * fact (n-1)`},
+    {label:'Pattern matching', code:`let describe = function\n  | 0 -> "zero"\n  | n when n > 0 -> "pos"\n  | _ -> "neg"\n\nmatch lst with\n| [] -> "empty"\n| x :: _ -> "first: " ^ string_of_int x`},
+    {label:'Lists', code:`let lst = [1; 2; 3]\nList.length lst\nList.map (fun x -> x*x) lst\nList.filter (fun x -> x > 1) lst\nList.fold_left (+) 0 lst`},
+    {label:'Tuples & records', code:`let p = (3, 4)\nlet (x, y) = p\n\ntype point = { x: float; y: float }\nlet q = { x = 1.0; y = 2.0 }`},
+    {label:'Variants', code:`type shape =\n  | Circle of float\n  | Square of float\n\nlet area s = match s with\n  | Circle r -> 3.14 *. r *. r\n  | Square a -> a *. a`},
+    {label:'Options', code:`let safe_div a b =\n  if b = 0 then None else Some (a / b)\n\nmatch safe_div 10 2 with\n| Some v -> v\n| None -> 0`},
+    {label:'Printf', code:`Printf.printf "n = %d, s = %s\\n" n s\nPrintf.sprintf "%.2f" 3.14\n(* %d int  %s str  %f float  %b bool *)`},
+    {label:'Modules', code:`module Point = struct\n  let origin = (0.0, 0.0)\n  let dist (x,y) = sqrt (x*.x +. y*.y)\nend\nPoint.dist (3.0, 4.0)`},
+  ]},
+  sml: {title:'SML Quick Reference', url:'https://quickref.me/ocaml', icon:'ML', lang:'sml', snippets:[
+    {label:'Hello world', code:`val _ = print "hello, world\\n"`},
+    {label:'Variables', code:`val x = 5                  (* int *)\nval pi = 3.14              (* real *)\nval s = "hi"               (* string *)\nval b = true               (* bool *)`},
+    {label:'Functions', code:`fun add a b = a + b\nval sq = fn x => x * x\nfun fact 0 = 1\n  | fact n = n * fact (n-1)`},
+    {label:'Pattern matching', code:`fun describe 0 = "zero"\n  | describe n = if n > 0 then "pos" else "neg"\n\ncase lst of\n  [] => "empty"\n| x :: _ => "first"`},
+    {label:'Lists', code:`val lst = [1, 2, 3]\nlength lst\nmap (fn x => x*x) lst\nList.filter (fn x => x > 1) lst\nfoldl op+ 0 lst`},
+    {label:'Tuples & records', code:`val p = (3, 4)\nval (x, y) = p\n\ntype point = { x : real, y : real }\nval q : point = { x = 1.0, y = 2.0 }`},
+    {label:'Datatypes', code:`datatype shape =\n    Circle of real\n  | Square of real\n\nfun area (Circle r) = 3.14 * r * r\n  | area (Square a) = a * a`},
+    {label:'Options', code:`datatype 'a option = NONE | SOME of 'a\nfun safeDiv (_, 0) = NONE\n  | safeDiv (a, b) = SOME (a div b)`},
+    {label:'Printing', code:`print "text\\n"\nInt.toString 42\nReal.toString 3.14\nString.concat ["a", "-", "b"]`},
+  ]},
+  prolog: {title:'Prolog Quick Reference', url:'https://www.swi-prolog.org', icon:'Pl', lang:'prolog', snippets:[
+    {label:'Facts', code:`parent(tom, bob).\nparent(bob, ann).\nparent(bob, pat).\nanimal(dog).\nanimal(cat).`},
+    {label:'Rules', code:`grandparent(X, Z) :-\n    parent(X, Y),\n    parent(Y, Z).\n\nsibling(X, Y) :-\n    parent(P, X),\n    parent(P, Y),\n    X \\= Y.`},
+    {label:'Queries', code:`?- parent(tom, X).\nX = bob.\n\n?- grandparent(tom, Z).\nZ = ann ;\nZ = pat.`},
+    {label:'Lists', code:`length([a,b,c], L).    % L = 3\nappend([1,2], [3,4], X). % X = [1,2,3,4]\nmember(b, [a,b,c]).     % true\nreverse([1,2,3], R).    % R = [3,2,1]`},
+    {label:'Recursion', code:`fact(0, 1).\nfact(N, F) :-\n    N > 0,\n    N1 is N - 1,\n    fact(N1, F1),\n    F is N * F1.`},
+    {label:'Arithmetic', code:`?- X is 2 + 3.       % X = 5\n?- Y is 10 mod 3.    % Y = 1\n?- Z is sqrt(16).    % Z = 4.0\n% use is/2 not = to evaluate`},
+    {label:'Control', code:`!          % cut: prevent backtracking\nfail       % force failure\nnot(Goal)  % negation as failure\nX = Y      % unification`},
+    {label:'I/O', code:`write(hello), nl.\nformat("~w is ~d~n", [tom, 30]).\nread(X).    % read a term`},
+  ]},
+  haskell: {title:'Haskell Quick Reference', url:'https://quickref.me/haskell', icon:'Hs', lang:'haskell', snippets:[
+    {label:'Hello world', code:`main :: IO ()\nmain = putStrLn "hello, world"`},
+    {label:'Variables', code:`x :: Int\nx = 5\n\npi' :: Double\npi' = 3.14\n\nname :: String\nname = "Tom"`},
+    {label:'Functions', code:`add :: Int -> Int -> Int\nadd a b = a + b\n\nsq :: Int -> Int\nsq = \\x -> x * x\n\nfact n = if n <= 1 then 1 else n * fact (n-1)`},
+    {label:'Pattern matching', code:`describe 0 = "zero"\ndescribe n\n  | n > 0     = "positive"\n  | otherwise = "negative"\n\nfst' (x, _) = x\nhead' (x:_) = x`},
+    {label:'Lists', code:`xs = [1, 2, 3, 4, 5]\nlength xs; head xs; tail xs\nmap (*2) xs\nfilter (>2) xs\nfoldr (+) 0 xs\n[x*x | x <- xs, x > 1]`},
+    {label:'Tuples', code:`p :: (Int, String)\np = (1, "one")\nfst p; snd p\n\nlet (a, b) = (3, 4) in a + b`},
+    {label:'Data types', code:`data Shape = Circle Double\n           | Square Double\n           deriving (Show)\n\narea (Circle r) = pi * r * r\narea (Square s) = s * s`},
+    {label:'Maybe', code:`safeDiv :: Int -> Int -> Maybe Int\nsafeDiv _ 0 = Nothing\nsafeDiv a b = Just (a \`div\` b)\n\ncase safeDiv 10 2 of\n  Just v  -> v\n  Nothing -> 0`},
+    {label:'IO / do-notation', code:`main = do\n  putStr "Your name? "\n  name <- getLine\n  putStrLn ("hi, " ++ name)`},
+    {label:'Common fns', code:`map  :: (a -> b) -> [a] -> [b]\nfilter :: (a -> Bool) -> [a] -> [a]\nfoldr :: (a -> b -> b) -> b -> [a] -> b\nzip  :: [a] -> [b] -> [(a,b)]\ntake :: Int -> [a] -> [a]`},
+  ]},
+  r: {title:'R Quick Reference', url:'https://quickref.me/r', icon:'R', lang:'r', snippets:[
+    {label:'Variables', code:`x <- 5           # preferred assignment\ny = 10           # also works\nname <- "Tom"\npi_val <- 3.14\nis_ok <- TRUE`},
+    {label:'Vectors', code:`v <- c(1, 2, 3, 4, 5)\nlength(v); sum(v); mean(v)\nv[1]; v[-1]; v[1:3]        # 1-indexed\nv[v > 2]                    # boolean index`},
+    {label:'Data frames', code:`df <- data.frame(\n  name = c("Tom", "Lucy"),\n  age  = c(30, 28)\n)\ndf$age; df[1, ]\nsubset(df, age > 29)`},
+    {label:'Control flow', code:`if (x > 0) {\n  print("pos")\n} else if (x == 0) {\n  print("zero")\n} else {\n  print("neg")\n}\n\nifelse(v > 0, "pos", "neg")  # vectorized`},
+    {label:'Loops', code:`for (i in 1:5) print(i)\nwhile (x > 0){ x <- x - 1 }\nsapply(1:5, function(x) x^2)`},
+    {label:'Functions', code:`add <- function(a, b = 0){\n  a + b\n}\nsq <- function(x) x^2\nadd(3, 4)`},
+    {label:'Strings', code:`paste("a", "b", sep="-")\npaste0("hello ", name)\nsprintf("%.2f", 3.14159)\nnchar(s); toupper(s); substr(s, 1, 3)`},
+    {label:'Stats & math', code:`mean(v); median(v); sd(v); var(v)\nmin(v); max(v); sum(v); range(v)\ncor(x, y)\nsummary(v)`},
+    {label:'Plotting', code:`plot(x, y, type="b", main="Title",\n     xlab="X", ylab="Y", col="blue")\nhist(v, breaks=20)\nbarplot(table(v))`},
+    {label:'I/O', code:`df <- read.csv("data.csv")\nwrite.csv(df, "out.csv", row.names=FALSE)\nreadLines("f.txt"); cat("hi\\n")`},
+  ]},
+  sql: {title:'SQL Quick Reference', url:'https://quickref.me/sql', icon:'SQL', lang:'sql', snippets:[
+    {label:'SELECT', code:`SELECT * FROM users;\nSELECT name, age FROM users\nWHERE age > 18\nORDER BY age DESC\nLIMIT 10;`},
+    {label:'JOIN', code:`SELECT u.name, o.total\nFROM users u\nINNER JOIN orders o ON o.user_id = u.id\nLEFT  JOIN refunds r ON r.order_id = o.id;`},
+    {label:'GROUP BY', code:`SELECT category, COUNT(*) AS n, AVG(price) AS avg_p\nFROM products\nGROUP BY category\nHAVING COUNT(*) > 5\nORDER BY n DESC;`},
+    {label:'INSERT', code:`INSERT INTO users (name, age)\nVALUES ('Tom', 30), ('Lucy', 28);\n\nINSERT INTO archive\nSELECT * FROM users WHERE active = 0;`},
+    {label:'UPDATE & DELETE', code:`UPDATE users\nSET age = age + 1\nWHERE id = 5;\n\nDELETE FROM users\nWHERE last_seen < '2023-01-01';`},
+    {label:'CREATE TABLE', code:`CREATE TABLE users (\n  id        INTEGER PRIMARY KEY,\n  name      TEXT NOT NULL,\n  age       INTEGER DEFAULT 0,\n  email     TEXT UNIQUE,\n  created   TIMESTAMP DEFAULT CURRENT_TIMESTAMP\n);`},
+    {label:'Aggregates', code:`COUNT(*)       -- all rows\nCOUNT(DISTINCT col)\nSUM(amount)\nAVG(price)\nMIN(date); MAX(date)`},
+    {label:'WHERE operators', code:`WHERE age BETWEEN 18 AND 65\nWHERE name LIKE 'Tom%'      -- pattern\nWHERE status IN ('A', 'B')\nWHERE email IS NULL\nWHERE age > ALL (SELECT age FROM kids)`},
+    {label:'CTE & window', code:`WITH recent AS (\n  SELECT * FROM orders WHERE date > '2024-01-01'\n)\nSELECT name,\n       ROW_NUMBER() OVER (PARTITION BY city ORDER BY age)\nFROM recent;`},
+    {label:'Indexes & transactions', code:`CREATE INDEX idx_users_email ON users(email);\n\nBEGIN TRANSACTION;\n  UPDATE accounts SET bal = bal - 10 WHERE id = 1;\n  UPDATE accounts SET bal = bal + 10 WHERE id = 2;\nCOMMIT;  -- or ROLLBACK;`},
+  ]},
+  matlab: {title:'MATLAB Quick Reference', url:'https://quickref.me/matlab', icon:'ML', lang:'matlab', snippets:[
+    {label:'Variables', code:`x = 5;                % semicolon suppresses output\nn = 3.14;\ns = 'hello';\nv = [1 2 3 4 5];      % row vector\nA = [1 2; 3 4];       % 2x2 matrix`},
+    {label:'Matrix ops', code:`A + B         % element-wise add\nA * B         % matrix multiply\nA .* B        % element-wise multiply\nA'            % transpose\ninv(A)        % inverse\nA \\ b         % solve A*x = b`},
+    {label:'Indexing (1-based!)', code:`v(1)          % first element\nv(end)        % last\nv(2:4)        % range\nA(:, 1)       % first column\nA(1, :)       % first row\nA(v > 2)      % boolean mask`},
+    {label:'Control flow', code:`if x > 0\n    disp('positive')\nelseif x == 0\n    disp('zero')\nelse\n    disp('negative')\nend\n\nfor i = 1:10, disp(i); end\nwhile cond, /* body */ end`},
+    {label:'Functions', code:`function y = square(x)\n    y = x.^2;\nend\n\n% multi-output\nfunction [a, b] = swap(x, y)\n    a = y; b = x;\nend`},
+    {label:'Useful fns', code:`length(v); size(A); numel(A)\nzeros(3); ones(2,4); eye(5)\nlinspace(0, 1, 100)\nreshape(v, 2, 3)\nsort(v); sum(v); mean(v); std(v)`},
+    {label:'Plotting', code:`x = linspace(0, 2*pi, 200);\ny = sin(x);\nplot(x, y, 'b-', 'LineWidth', 1.5);\ntitle('sin(x)'); xlabel('x'); ylabel('y'); grid on;`},
+    {label:'Formatted print', code:`fprintf('%d is %s\\n', n, s);\ndisp(A);                 % pretty-print\nsprintf('%.2f', 3.14);   % to string`},
+    {label:'Cells & structs', code:`c = {1, 'two', [3 4 5]};    % mixed types\nc{2}                         % index with {}\n\nperson.name = 'Tom';\nperson.age = 30;\ns = struct('x', 1, 'y', 2);`},
+    {label:'Conditional ops', code:`& | ~          % element-wise and/or/not\n&& || ~        % short-circuit (scalar)\n== ~= < <= > >=\nany(v); all(v)`},
+  ]},
+  mongodb: {title:'MongoDB Quick Reference', url:'https://quickref.me/mongodb', icon:'Mo', lang:'javascript', snippets:[
+    {label:'Insert', code:`db.users.insertOne({ name: "Tom", age: 30 });\n\ndb.users.insertMany([\n  { name: "Lucy", age: 28 },\n  { name: "Bob",  age: 45 }\n]);`},
+    {label:'Find', code:`db.users.find();\ndb.users.findOne({ _id: 1 });\ndb.users.find({ age: { $gt: 30 } });\ndb.users.find({}, { name: 1, _id: 0 });  // projection\ndb.users.find().sort({ age: -1 }).limit(5);`},
+    {label:'Query operators', code:`$eq $ne $gt $gte $lt $lte\n$in  { age: { $in: [20, 30] } }\n$nin $exists $regex\n$and $or $not $nor\n// e.g.\n{ $or: [{a:1}, {b:2}] }`},
+    {label:'Update', code:`db.users.updateOne(\n  { name: "Tom" },\n  { $set: { age: 31 }, $inc: { visits: 1 } }\n);\ndb.users.updateMany({}, { $unset: { tmp: "" } });`},
+    {label:'Update operators', code:`$set $unset $rename\n$inc $mul\n$push $pull $addToSet\n$pop $each\ndb.posts.updateOne({_id:1}, { $push: { tags: { $each: ["x","y"] } } });`},
+    {label:'Delete', code:`db.users.deleteOne({ _id: 1 });\ndb.users.deleteMany({ age: { $lt: 18 } });\ndb.users.drop();     // whole collection`},
+    {label:'Aggregate', code:`db.orders.aggregate([\n  { $match: { status: "A" } },\n  { $group: {\n      _id: "$customer",\n      total: { $sum: "$amount" }\n  }},\n  { $sort: { total: -1 } }\n]);`},
+    {label:'Aggregate stages', code:`$match    filter\n$project  reshape\n$group    aggregate\n$sort     order\n$limit $skip\n$unwind   flatten array\n$lookup   join\n$addFields`},
+    {label:'Indexes', code:`db.users.createIndex({ email: 1 }, { unique: true });\ndb.users.createIndex({ name: "text" });\ndb.users.getIndexes();\ndb.users.dropIndex("name_text");`},
+    {label:'Misc', code:`db.users.countDocuments({ age: { $gte: 18 } });\ndb.users.distinct("city");\ndb.stats();\ndb.users.explain("executionStats").find({ age: 30 });`},
+  ]},
+  web: {title:'HTML · CSS · JS Quick Reference', url:'https://quickref.me/html', icon:'⟨⟩', lang:'markup', snippets:[
+    {label:'HTML skeleton', code:`<!DOCTYPE html>\n<html lang="en">\n<head>\n  <meta charset="utf-8">\n  <title>Page</title>\n</head>\n<body>\n  <h1>Hello</h1>\n</body>\n</html>`},
+    {label:'Common HTML tags', code:`<h1>…</h1> … <h6>\n<p>…</p>  <a href="/x">link</a>\n<img src="…" alt="…">\n<ul><li>…</li></ul>\n<ol><li>…</li></ol>\n<button>Click</button>\n<input type="text" placeholder="…">`},
+    {label:'CSS selectors', code:`.class     #id\nh1, p      /* group */\ndiv p      /* descendant */\ndiv > p    /* child */\ndiv + p    /* sibling */\ninput[type="text"]\n:hover :focus :first-child :nth-child(2n)`},
+    {label:'CSS flexbox', code:`.container {\n  display: flex;\n  flex-direction: row;\n  justify-content: center;   /* main axis */\n  align-items: center;       /* cross axis */\n  gap: 12px;\n  flex-wrap: wrap;\n}`},
+    {label:'CSS grid', code:`.grid {\n  display: grid;\n  grid-template-columns: repeat(3, 1fr);\n  grid-template-rows: auto 200px;\n  gap: 16px;\n}`},
+    {label:'CSS units', code:`px   fixed\nem   relative to font-size\nrem  relative to root font-size\n%    parent-relative\nvw vh  viewport\nfr   fraction (grid)`},
+    {label:'JS DOM', code:`document.querySelector(".btn");\ndocument.querySelectorAll("li");\nel.classList.add("active");\nel.addEventListener("click", e => {…});\nel.innerHTML = "…"; el.textContent = "…";`},
+    {label:'JS fetch', code:`fetch("/api/users")\n  .then(r => r.json())\n  .then(data => console.log(data));\n\nconst r = await fetch("/api", { method:"POST", body: JSON.stringify(x) });`},
+    {label:'Forms', code:`<form>\n  <input name="email" type="email" required>\n  <input name="pw" type="password">\n  <button type="submit">Go</button>\n</form>\n// JS: new FormData(formEl) → fetch body`},
+    {label:'Meta / viewport', code:`<meta name="viewport"\n      content="width=device-width, initial-scale=1">\n<meta name="description" content="…">\n<link rel="icon" href="/favicon.ico">`},
+  ]},
+  markdown: {title:'Markdown Quick Reference', url:'https://quickref.me/markdown', icon:'M↓', lang:'markdown', snippets:[
+    {label:'Headings', code:`# H1\n## H2\n### H3\n#### H4\n##### H5\n###### H6`},
+    {label:'Emphasis', code:`*italic*       _italic_\n**bold**       __bold__\n***bold-italic***\n~~strikethrough~~\n\`inline code\``},
+    {label:'Lists', code:`- unordered\n- another\n  - nested\n\n1. ordered\n2. second\n   1. nested\n\n- [x] task done\n- [ ] task todo`},
+    {label:'Links & images', code:`[Google](https://google.com "title")\n![alt text](https://picsum.photos/200)\n\n<https://autolink.example.com>`},
+    {label:'Code blocks', code:`\\\`\\\`\\\`js\nconst x = 42;\nconsole.log(x);\n\\\`\\\`\\\`\n\nUse the language name after the fence for syntax highlighting.`},
+    {label:'Blockquote', code:`> Any fool can write code that a computer can understand.\n> Good programmers write code that humans can understand.\n> — Martin Fowler`},
+    {label:'Tables', code:`| Col A | Col B | Col C |\n| ----- | :---: | ----: |\n| left  | mid   | right |\n| 1     | 2     | 3     |\n\n:--- left  :---: center  ---: right`},
+    {label:'Horizontal rule', code:`---\n***\n___`},
+    {label:'Line breaks', code:`Two trailing spaces at end of line  \nmake a soft line break.\n\nBlank line = new paragraph.`},
+    {label:'Escaping & HTML', code:`\\*not italic\\*      \\\`not code\\\`\n\nInline HTML is usually allowed:\n<kbd>Ctrl</kbd>+<kbd>C</kbd>\n<sub>2</sub>  <sup>2</sup>`},
+  ]},
+  regex: {title:'Regex Quick Reference', url:'https://quickref.me/regex', icon:'/.*/', lang:'regex', snippets:[
+    {label:'Character classes', code:`.        any char except newline\n\\d       digit (0-9)\n\\D       non-digit\n\\w       word char [A-Za-z0-9_]\n\\W       non-word\n\\s       whitespace\n\\S       non-whitespace`},
+    {label:'Anchors', code:`^        start of string / line\n$        end of string / line\n\\b       word boundary\n\\B       non-word boundary\n\\A \\Z    absolute start / end`},
+    {label:'Quantifiers', code:`*        0 or more\n+        1 or more\n?        0 or 1\n{3}      exactly 3\n{3,}     3 or more\n{3,5}    between 3 and 5\n*? +? ?? lazy (non-greedy)`},
+    {label:'Custom classes', code:`[abc]         a, b, or c\n[^abc]        NOT a/b/c\n[a-z]         any lowercase\n[a-zA-Z0-9_]  word char\n[\\d.-]        digit, dot, or dash`},
+    {label:'Groups', code:`(abc)         capturing\n(?:abc)       non-capturing\n(?<name>abc)  named group\n\\1            back-reference (first group)\n\\k<name>      back-reference (named)`},
+    {label:'Alternation', code:`cat|dog|bird      match any one\n(cat|dog)s        match + group\n\\.(jpg|png|gif)$  file extensions`},
+    {label:'Lookaround', code:`(?=abc)     positive lookahead\n(?!abc)     negative lookahead\n(?<=abc)    positive lookbehind\n(?<!abc)    negative lookbehind\n\n\\d+(?=\\$)   digits before a $`},
+    {label:'Flags', code:`g       global (all matches)\ni       case-insensitive\nm       multiline (^/$ per-line)\ns       dotall (. matches newline)\nu       unicode\nx       free-spacing (ignore whitespace)`},
+    {label:'Common patterns', code:`# email-ish\n^[\\w.+-]+@[\\w-]+\\.[\\w.-]+$\n# URL\n^https?://[\\w.-]+(/\\S*)?$\n# IPv4\n^(\\d{1,3}\\.){3}\\d{1,3}$\n# hex color\n^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$\n# 24h time\n^([01]\\d|2[0-3]):[0-5]\\d$`},
+    {label:'JS examples', code:`"hello".match(/l+/g);           // ["ll"]\n"2024-01-15".split(/-/);\n"price: $9.99".replace(/\\$/, "");\nconst re = /(\\w+)@(\\w+)/g;\nfor (const m of s.matchAll(re)) /*…*/;`},
+  ]},
+  curl: {title:'curl Quick Reference', url:'https://quickref.me/curl', icon:'🌐', lang:'bash', snippets:[
+    {label:'Basic GET', code:`curl https://api.example.com/users\ncurl -i  URL           # include response headers\ncurl -v  URL           # verbose (show request)\ncurl -s  URL           # silent (no progress)\ncurl -o out.json URL   # write body to file`},
+    {label:'HTTP methods', code:`curl -X GET    URL\ncurl -X POST   URL -d "name=alice&age=30"\ncurl -X PUT    URL -d @payload.json\ncurl -X PATCH  URL -d '{"age": 31}'\ncurl -X DELETE URL\ncurl -I        URL    # HEAD only`},
+    {label:'Headers', code:`curl -H "Authorization: Bearer TOKEN" URL\ncurl -H "Content-Type: application/json" \\\n     -H "Accept: application/json" URL\ncurl -A "BergerOverflow/1.0" URL   # User-Agent\ncurl -e https://ref URL            # Referer`},
+    {label:'JSON POST', code:`curl -X POST https://api.example.com/users \\\n     -H "Content-Type: application/json" \\\n     -d '{"name":"Tom","age":30}'\n\n# payload from file\ncurl -X POST URL -H "Content-Type: application/json" \\\n     --data-binary @body.json`},
+    {label:'Form data', code:`# form-urlencoded\ncurl -d "name=Tom&age=30" URL\ncurl --data-urlencode "query=hello world" URL\n\n# multipart (file upload)\ncurl -F "file=@photo.jpg" \\\n     -F "caption=hi"    URL`},
+    {label:'Auth', code:`# Basic\ncurl -u user:pass URL\ncurl -u user URL             # prompt for password\n\n# Bearer\ncurl -H "Authorization: Bearer \${TOKEN}" URL\n\n# mTLS / client cert\ncurl --cert client.pem --key client.key URL`},
+    {label:'Cookies', code:`curl -c cookies.txt URL       # save cookies\ncurl -b cookies.txt URL       # send saved cookies\ncurl -b "session=abc123" URL  # send inline cookie`},
+    {label:'Download', code:`curl -O  https://host/file.zip           # save as remote name\ncurl -o out.zip URL                       # save as custom name\ncurl -L  URL                              # follow redirects\ncurl -C - -O URL                          # resume partial download`},
+    {label:'Reliability', code:`curl --retry 5 \\\n     --retry-delay 2 \\\n     --max-time 30 \\\n     --connect-timeout 5 URL\n\ncurl -k URL                # skip TLS verify (unsafe)\ncurl --proxy http://127.0.0.1:8080 URL`},
+    {label:'Useful combos', code:`# Print just the status code\ncurl -s -o /dev/null -w "%{http_code}\\n" URL\n\n# Time a request\ncurl -w "\\nDNS: %{time_namelookup}s\\nConnect: %{time_connect}s\\nTotal: %{time_total}s\\n" \\\n     -o /dev/null -s URL\n\n# JSON response → jq\ncurl -s URL | jq .`},
+  ]},
+  grep: {title:'grep Quick Reference', url:'https://quickref.me/grep', icon:'🔍', lang:'bash', snippets:[
+    {label:'Basics', code:`grep "pattern" file.txt          # lines matching\ngrep -r "pattern" src/           # recursive\ngrep -rn "pattern" src/          # + line numbers\ngrep -l "pattern" *.js           # print filenames only`},
+    {label:'Flags', code:`-i   ignore case\n-v   invert (non-matching)\n-n   show line numbers\n-c   count matches\n-l   files with match (name only)\n-L   files WITHOUT match\n-w   whole word\n-x   whole line`},
+    {label:'Regex modes', code:`grep -E "err(or|s)"   file    # extended regex (ERE)\ngrep -F "literal"     file    # fixed-string (fast)\ngrep -P "\\d{3}-\\d{4}" file    # Perl-compat (GNU)\ngrep -G "basic"       file    # basic regex (default)`},
+    {label:'Context', code:`grep -A 3 "error" log.txt   # 3 lines After\ngrep -B 2 "error" log.txt   # 2 lines Before\ngrep -C 5 "error" log.txt   # 5 lines of Context (both)`},
+    {label:'Multiple patterns', code:`grep -e "foo" -e "bar" file\ngrep -f patterns.txt       file   # patterns from file\ngrep -E "foo|bar|baz"      file`},
+    {label:'Recursive tips', code:`grep -rn --include="*.py" "TODO"  src/\ngrep -rn --exclude="*.min.js" "bug" .\ngrep -rn --exclude-dir={node_modules,.git} "." .`},
+    {label:'Output tweaks', code:`grep -o "[0-9]\\+" file   # print only matched part\ngrep --color=auto "…"    # colored output\ngrep -q "…" file && echo "found"   # quiet (exit code only)\ngrep -m 5 "…" file       # stop after 5 matches`},
+    {label:'Common patterns', code:`grep "^foo"      start of line\ngrep "foo$"      end of line\ngrep "^$"        blank lines\ngrep -v "^#"     skip comments\ngrep -E "\\b\\w+@\\w+\\.\\w+\\b"   email-ish`},
+    {label:'Piping', code:`ls -la | grep "^d"              # directories only\nps aux | grep -v grep | grep nginx\ncat file.log | grep -iE "error|warn" | sort | uniq -c`},
+  ]},
+  find: {title:'find Quick Reference', url:'https://quickref.me/find', icon:'🔎', lang:'bash', snippets:[
+    {label:'Basics', code:`find .                    # everything under cwd\nfind . -name "*.log"\nfind /var -type f         # files only\nfind . -type d            # directories only\nfind . -maxdepth 2        # limit recursion depth`},
+    {label:'By name', code:`find . -name  "*.txt"       # case-sensitive glob\nfind . -iname "README*"     # case-insensitive\nfind . -name "*.py" -not -name "test_*"\nfind . -path "*/node_modules" -prune -o -print`},
+    {label:'By type', code:`-type f   regular file\n-type d   directory\n-type l   symlink\n-type s   socket\n-type p   named pipe\n-type b   block device\n-type c   character device`},
+    {label:'By size', code:`find . -size +100M         # bigger than 100MB\nfind . -size -10k          # smaller than 10KB\nfind . -size  0            # empty\n# Units: c bytes  k KB  M MB  G GB`},
+    {label:'By time', code:`find . -mtime -7       # modified in last 7 days\nfind . -mtime +30      # older than 30 days\nfind . -atime -1       # accessed in last day\nfind . -mmin -60       # modified in last 60 minutes\nfind . -newer ref.txt  # newer than a file`},
+    {label:'By perm / owner', code:`find . -perm 644\nfind . -perm -u+x           # at least u+x\nfind . -user alice\nfind . -group dev\nfind . -readable -writable`},
+    {label:'Run on matches (-exec)', code:`find . -name "*.bak" -delete\nfind . -name "*.sh" -exec chmod +x {} \\\\;\nfind . -name "*.log" -exec gzip {} \\\\;\nfind . -type f -exec grep -l "TODO" {} +   # batched`},
+    {label:'Logical & operators', code:`find . \\\\( -name "*.py" -o -name "*.js" \\\\)\nfind . -type f -not -name ".*"\nfind . -name "*.tmp" -or -name "*.log"\n# -a and (implicit)  -o or  -not  \\\\( \\\\) grouping`},
+    {label:'Piping', code:`find . -name "*.txt" | xargs grep "TODO"\n# -print0 + xargs -0 for filenames with spaces:\nfind . -name "*.jpg" -print0 | xargs -0 ls -la\nfind . -type f | wc -l`},
+  ]},
+};
+
+function showQuickRef(key){
+  const ref = QUICK_REFS[key];
+  if (!ref){ toast('No quick reference for ' + key); return; }
+  const backdrop = el('div', {class:'qr-backdrop'});
+  const panel = el('div', {class:'qr-panel'});
+
+  const head = el('div', {class:'qr-head'},
+    el('div', {class:'qr-icon'}, ref.icon),
+    el('div', {style:{minWidth:0,flex:'1'}},
+      el('h3', {}, ref.title),
+      el('div', {class:'qr-sub'}, `Common syntax & patterns — click a snippet's ⧉ to copy.`)
+    )
+  );
+  const ext = el('div', {class:'qr-ext'});
+  if (ref.url) ext.appendChild(el('a', {href:ref.url, target:'_blank', rel:'noopener'}, '↗ quickref.me'));
+  const closeBtn = el('button', {class:'qr-close', type:'button', title:'Close'}, '✕');
+  ext.appendChild(closeBtn);
+  head.appendChild(ext);
+  panel.appendChild(head);
+
+  const body = el('div', {class:'qr-body'});
+  for (const s of ref.snippets){
+    const copyBtnEl = el('button', {class:'qr-copy', type:'button'}, '⧉ Copy');
+    copyBtnEl.addEventListener('click', async () => {
+      await copy(s.code);
+      const prev = copyBtnEl.textContent;
+      copyBtnEl.textContent = '✓ Copied';
+      copyBtnEl.classList.add('copied');
+      clearTimeout(copyBtnEl._t);
+      copyBtnEl._t = setTimeout(() => {
+        copyBtnEl.textContent = prev;
+        copyBtnEl.classList.remove('copied');
+      }, 1200);
+    });
+    const head2 = el('div', {class:'qr-snip-head'},
+      el('span', {class:'qr-label'}, s.label),
+      copyBtnEl
+    );
+    const codeEl = el('code', {class:'language-' + (ref.lang || 'text')});
+    codeEl.textContent = s.code;
+    const pre = el('pre', {}, codeEl);
+    const snip = el('div', {class:'qr-snip'}, head2, pre);
+    body.appendChild(snip);
+    if (window.Prism){
+      try { Prism.highlightElement(codeEl); } catch(e){}
+    }
+  }
+  panel.appendChild(body);
+  backdrop.appendChild(panel);
+
+  const close = () => {
+    if (panel.classList.contains('closing')) return;
+    panel.classList.add('closing');
+    backdrop.classList.add('closing');
+    document.removeEventListener('keydown', onKey, true);
+    setTimeout(() => backdrop.remove(), 260);
+  };
+  const onKey = (e) => { if (e.key === 'Escape'){ e.stopPropagation(); e.preventDefault(); close(); } };
+  closeBtn.addEventListener('click', close);
+  backdrop.addEventListener('click', (e) => { if (e.target === backdrop) close(); });
+  document.addEventListener('keydown', onKey, true);
+  document.body.appendChild(backdrop);
+}
+
+function quickRefBtn(key){
+  return el('button', {class:'btn', type:'button', onclick:() => showQuickRef(key), title:'Open cheatsheet'}, '📖 Quick reference');
+}
+
 const IDE_LANGS = [
   {id:'c', name:'C', icon:'C', prism:'c', judgeId:103, file:'main.c',
     samples:[
+      {name:'Hello world', code:`#include <stdio.h>\n\nint main(void) {\n    printf("hello, world\\n");\n    return 0;\n}`},
       {name:'Roll-call of names', code:`#include <stdio.h>\n\nint main(void) {\n    const char *names[] = {"Tom", "Lucy", "Frank", "Jane", "Robert"};\n    int n = sizeof(names) / sizeof(names[0]);\n\n    printf("Roll-call of %d:\\n", n);\n    for (int i = 0; i < n; i++) {\n        printf("  %d. %s\\n", i + 1, names[i]);\n    }\n    return 0;\n}`},
       {name:'Read input', code:`#include <stdio.h>\n\nint main(void) {\n    char name[100];\n    printf("Your name? ");\n    if (scanf("%99s", name) == 1) {\n        printf("hello, %s!\\n", name);\n    }\n    return 0;\n}`},
       {name:'Command-line args', code:`#include <stdio.h>\n\nint main(int argc, char *argv[]) {\n    printf("Got %d argument(s):\\n", argc - 1);\n    for (int i = 1; i < argc; i++) {\n        printf("  %d: %s\\n", i - 1, argv[i]);\n    }\n    return 0;\n}`},
@@ -18668,7 +19175,8 @@ def hello():
         const full = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Markdown export</title><style>body{font-family:system-ui,sans-serif;max-width:760px;margin:40px auto;padding:0 20px;color:#222;line-height:1.6}code{background:#f2f2f7;padding:2px 6px;border-radius:4px;font-size:.9em}pre{background:#0d0d18;color:#e8e8f3;padding:12px 14px;border-radius:8px;overflow:auto}pre code{background:transparent;color:inherit;padding:0}blockquote{margin:.8em 0;padding:.4em 14px;border-left:3px solid #7c5cff;color:#555;background:#f5f3ff}table{border-collapse:collapse}th,td{border:1px solid #ddd;padding:6px 12px}th{background:#f2f2f7}hr{border:none;border-top:1px solid #ddd;margin:1.4em 0}img{max-width:100%}</style></head><body>${renderMarkdown(ta.value)}</body></html>`;
         dl('document.html', full, 'text/html');
       }}, '⤓ .html'),
-      el('button', {class:'btn', type:'button', onclick: () => { ta.value = samples[0].code; presets.querySelectorAll('.ide-preset').forEach((b,i)=>b.classList.toggle('active', i===0)); renderAll(); }}, '↺ Reset')
+      el('button', {class:'btn', type:'button', onclick: () => { ta.value = samples[0].code; presets.querySelectorAll('.ide-preset').forEach((b,i)=>b.classList.toggle('active', i===0)); renderAll(); }}, '↺ Reset'),
+      quickRefBtn('markdown')
     );
 
     root.appendChild(toolbar);
@@ -18737,7 +19245,8 @@ tool({
       el('span', {class:'ide-lang-pill'}, 'HTML · CSS · JS'),
       el('button', {class:'btn primary', onclick:runPreview}, '▶ Refresh preview'),
       el('button', {class:'btn', onclick:()=>copy(`<!DOCTYPE html>\n<html>\n<head><style>\n${values.css}\n</style></head>\n<body>\n${values.html}\n<script>\n${values.js}\n<\/script>\n</body>\n</html>`)}, '⧉ Copy full HTML'),
-      el('button', {class:'btn', onclick:()=>{ ['html','css','js'].forEach(k=>{ tas[k].value = samples[k]; tas[k].dispatchEvent(new Event('input')); }); }}, '↺ Reset')
+      el('button', {class:'btn', onclick:()=>{ ['html','css','js'].forEach(k=>{ tas[k].value = samples[k]; tas[k].dispatchEvent(new Event('input')); }); }}, '↺ Reset'),
+      quickRefBtn('web')
     ));
     root.appendChild(el('div', {class:'mt-3'}, tabBar, container));
     root.appendChild(el('div', {class:'mt-3'}, field('Live preview', iframe)));
