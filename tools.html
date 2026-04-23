@@ -724,6 +724,7 @@ input[type=color]{width:60px;height:36px;border:none;background:transparent;curs
         <h2>Every developer tool you need,<br/><span class="grad">in one beautiful place.</span></h2>
         <p>Online IDEs · Command Builders · Generators · Converters · Encoders &amp; Decoders · Text Utilities · Testers &amp; Viewers · Formatters · CSS Visual Tools · Colors · Bits &amp; Bytes · Dev Utilities.</p>
         <p style="margin-top:10px;font-size:13px;color:var(--text-faint)">Crafted by <b style="color:var(--text)">Zvika Berger</b> · <a href="mailto:zvbe10@gmail.com" style="color:var(--accent-2)">zvbe10@gmail.com</a></p>
+        <p style="margin-top:6px;font-size:11.5px;color:var(--text-faint);max-width:640px;line-height:1.5">Want a new tool, a new feature, or hit something that doesn't work? Drop me a line at <a href="mailto:zvbe10@gmail.com?subject=BergerOverflow%20feedback" style="color:var(--accent-2)">zvbe10@gmail.com</a> — happy to hear from you.</p>
         <div class="hero-stats">
           <div class="stat"><b id="toolCount">80+</b><span>Tools</span></div>
           <div class="stat"><b id="catCount">11</b><span>Categories</span></div>
@@ -16602,6 +16603,130 @@ function parseCliArgs(str){
   return out;
 }
 
+// ===== MongoDB-lite shell (backed by mingo for queries/aggregations) =====
+async function runMongoLite(source, writeOut){
+  const mingo = window.mingo;
+  if (!mingo) throw new Error('mingo not loaded');
+
+  const applyUpdate = (doc, update) => {
+    for (const [op, ops] of Object.entries(update)){
+      if (op === '$set'){ for (const [k, v] of Object.entries(ops)) doc[k] = v; }
+      else if (op === '$unset'){ for (const k of Object.keys(ops)) delete doc[k]; }
+      else if (op === '$inc'){ for (const [k, v] of Object.entries(ops)) doc[k] = (doc[k] || 0) + v; }
+      else if (op === '$push'){ for (const [k, v] of Object.entries(ops)){ if (!Array.isArray(doc[k])) doc[k] = []; doc[k].push(v); } }
+      else if (op === '$mul'){ for (const [k, v] of Object.entries(ops)) doc[k] = (doc[k] || 0) * v; }
+      else if (op === '$addToSet'){ for (const [k, v] of Object.entries(ops)){ if (!Array.isArray(doc[k])) doc[k] = []; if (!doc[k].includes(v)) doc[k].push(v); } }
+    }
+  };
+
+  class Collection {
+    constructor(name){ this.name = name; this.docs = []; }
+    insertOne(doc){ this.docs.push({...doc}); return {acknowledged:true, insertedId: doc._id}; }
+    insertMany(arr){
+      for (const d of arr) this.docs.push({...d});
+      return {acknowledged:true, insertedCount: arr.length, insertedIds: arr.map(d => d._id)};
+    }
+    find(q = {}){ return mingo.find(this.docs, q).all(); }
+    findOne(q = {}){ return mingo.find(this.docs, q).all()[0] || null; }
+    countDocuments(q = {}){ return mingo.find(this.docs, q).count(); }
+    distinct(field, q = {}){
+      const docs = mingo.find(this.docs, q).all();
+      return [...new Set(docs.map(d => d[field]))];
+    }
+    aggregate(pipeline){ return mingo.aggregate(this.docs, pipeline); }
+    updateOne(q, u){
+      const m = mingo.find(this.docs, q).all();
+      if (!m.length) return {acknowledged:true, matchedCount:0, modifiedCount:0};
+      applyUpdate(m[0], u);
+      return {acknowledged:true, matchedCount:1, modifiedCount:1};
+    }
+    updateMany(q, u){
+      const m = mingo.find(this.docs, q).all();
+      for (const d of m) applyUpdate(d, u);
+      return {acknowledged:true, matchedCount:m.length, modifiedCount:m.length};
+    }
+    deleteOne(q){
+      const m = mingo.find(this.docs, q).all();
+      if (!m.length) return {acknowledged:true, deletedCount:0};
+      this.docs = this.docs.filter(d => d !== m[0]);
+      return {acknowledged:true, deletedCount:1};
+    }
+    deleteMany(q){
+      const m = mingo.find(this.docs, q).all();
+      const set = new Set(m);
+      this.docs = this.docs.filter(d => !set.has(d));
+      return {acknowledged:true, deletedCount:m.length};
+    }
+    drop(){ const n = this.docs.length; this.docs = []; return n; }
+    stats(){ return {count: this.docs.length}; }
+  }
+
+  const collections = {};
+  const db = new Proxy({}, {
+    get(_, prop){
+      if (prop === 'getCollectionNames') return () => Object.keys(collections).sort();
+      if (prop === 'dropDatabase'){ return () => { for (const k of Object.keys(collections)) delete collections[k]; return {ok:1}; }; }
+      if (typeof prop !== 'string') return undefined;
+      if (!collections[prop]) collections[prop] = new Collection(prop);
+      return collections[prop];
+    }
+  });
+
+  // Split into statements at top-level semicolons, skipping strings/comments/braces.
+  const splitStmts = (src) => {
+    const out = []; let cur = '', depth = 0, inStr = null;
+    for (let i = 0; i < src.length; i++){
+      const c = src[i], n = src[i+1];
+      if (inStr){
+        cur += c;
+        if (c === '\\' && n){ cur += n; i++; continue; }
+        if (c === inStr) inStr = null;
+        continue;
+      }
+      if (c === '/' && n === '/'){ while (i < src.length && src[i] !== '\n') i++; continue; }
+      if (c === '/' && n === '*'){ i += 2; while (i < src.length - 1 && !(src[i] === '*' && src[i+1] === '/')) i++; i++; continue; }
+      if (c === "'" || c === '"' || c === '`'){ cur += c; inStr = c; continue; }
+      if ('([{'.includes(c)){ depth++; cur += c; continue; }
+      if (')]}'.includes(c)){ depth--; cur += c; continue; }
+      if (c === ';' && depth === 0){ if (cur.trim()) out.push(cur.trim()); cur = ''; continue; }
+      cur += c;
+    }
+    if (cur.trim()) out.push(cur.trim());
+    return out;
+  };
+
+  const format = (x) => {
+    if (x === undefined) return undefined;
+    if (x === null) return 'null';
+    if (typeof x === 'string') return x;
+    try { return JSON.stringify(x, null, 2); } catch(e){ return String(x); }
+  };
+  const printjson = (x) => writeOut(format(x));
+  const print = (x) => writeOut(typeof x === 'string' ? x : format(x));
+
+  for (const stmt of splitStmts(source)){
+    try {
+      const fn = new Function('db', 'print', 'printjson', 'ObjectId', 'ISODate', '"use strict"; return (' + stmt + ');');
+      const ObjectId = (s) => ({$oid: s || ''});
+      const ISODate  = (s) => new Date(s || Date.now());
+      const result = fn(db, print, printjson, ObjectId, ISODate);
+      if (result !== undefined){
+        writeOut(format(result));
+      }
+    } catch(e){
+      // Mongo shell compatibility — try evaluating as statement (not expression) if expression-form fails
+      try {
+        const fn2 = new Function('db', 'print', 'printjson', 'ObjectId', 'ISODate', '"use strict";' + stmt + ';');
+        const ObjectId = (s) => ({$oid: s || ''});
+        const ISODate  = (s) => new Date(s || Date.now());
+        fn2(db, print, printjson, ObjectId, ISODate);
+      } catch(e2){
+        writeOut('⚠ ' + (e2 && e2.message || String(e2)), 'stderr');
+      }
+    }
+  }
+}
+
 // ===== Minimal MATLAB-lite interpreter (in-browser) =====
 // Supports: comments, strings, numbers, row/matrix literals, cell literals,
 // assignment, 1-based indexing (calls + array index via one helper),
@@ -17090,6 +17215,24 @@ function renderIDE(root, lang){
         } catch(e){
           writeOut((e && e.message) || String(e), 'stderr');
         }
+      } else if (lang.local === 'mongodb'){
+        progressive = true;
+        where = 'browser (MongoDB-lite via mingo)';
+        const writeOut = (text, cls='stdout') => {
+          const d = el('div', {class: cls}, String(text));
+          output.appendChild(d);
+          output.scrollTop = output.scrollHeight;
+        };
+        if (!window.mingo){
+          runHeader.querySelector('b').textContent = 'Loading mingo query engine…';
+          await loadScriptOnce('https://cdn.jsdelivr.net/npm/mingo@6.4.11/dist/mingo.min.js');
+        }
+        runHeader.remove();
+        try {
+          await runMongoLite(ta.value, writeOut);
+        } catch(e){
+          writeOut('⚠ ' + (e && e.message || String(e)), 'stderr');
+        }
       } else if (lang.local === 'matlab'){
         progressive = true;
         where = 'browser (MATLAB-lite)';
@@ -17385,6 +17528,13 @@ const IDE_LANGS = [
       {name:'Plot a sine wave', code:`% Generate and plot y = sin(x)\nx = linspace(0, 2 * pi, 200);\ny = sin(x);\n\nplot(x, y, 'b-', 'LineWidth', 1.5);\ntitle('y = sin(x)');\nxlabel('x');\nylabel('sin(x)');\ngrid on;`},
       {name:'Function returns', code:`% Define a simple function and call it\nfunction s = hello(who)\n    s = sprintf('hello, %s!', who);\nend\n\ndisp(hello('MATLAB'));\ndisp(hello('Zvika'));`},
     ]},
+  {id:'mongodb', name:'MongoDB', icon:'Mo', prism:'javascript', file:'script.js', local:'mongodb', noInput:true,
+    samples:[
+      {name:'Users collection (CRUD + aggregate)', code:`// Create a 'users' collection with some documents\ndb.users.insertMany([\n  { _id: 1, name: 'Tom',    age: 34 },\n  { _id: 2, name: 'Lucy',   age: 28 },\n  { _id: 3, name: 'Frank',  age: 45 },\n  { _id: 4, name: 'Jane',   age: 31 },\n  { _id: 5, name: 'Robert', age: 52 }\n]);\n\n// Find everyone over 30, sorted by age\ndb.users.find({ age: { $gt: 30 } });\n\n// Aggregate: average age across all users\ndb.users.aggregate([\n  { $group: { _id: null, avgAge: { $avg: '$age' } } }\n]);`},
+      {name:'Filter + sort', code:`db.users.insertMany([\n  { _id: 1, name: 'Tom',    age: 34, city: 'NYC' },\n  { _id: 2, name: 'Lucy',   age: 28, city: 'SF' },\n  { _id: 3, name: 'Frank',  age: 45, city: 'NYC' },\n  { _id: 4, name: 'Jane',   age: 31, city: 'LA' },\n  { _id: 5, name: 'Robert', age: 52, city: 'SF' }\n]);\n\n// Users from NYC or SF, sorted by age descending\ndb.users.aggregate([\n  { $match: { city: { $in: ['NYC', 'SF'] } } },\n  { $sort: { age: -1 } },\n  { $project: { _id: 0, name: 1, age: 1, city: 1 } }\n]);`},
+      {name:'Group by + count', code:`db.orders.insertMany([\n  { _id: 1, customer: 'Tom',  product: 'Apple',  qty: 2 },\n  { _id: 2, customer: 'Lucy', product: 'Banana', qty: 5 },\n  { _id: 3, customer: 'Tom',  product: 'Banana', qty: 3 },\n  { _id: 4, customer: 'Lucy', product: 'Apple',  qty: 1 },\n  { _id: 5, customer: 'Tom',  product: 'Apple',  qty: 4 }\n]);\n\ndb.orders.aggregate([\n  { $group: {\n    _id: '$customer',\n    totalOrders: { $sum: 1 },\n    totalQty: { $sum: '$qty' }\n  }},\n  { $sort: { totalQty: -1 } }\n]);`},
+      {name:'Update & delete', code:`db.users.insertMany([\n  { _id: 1, name: 'Tom',    age: 34 },\n  { _id: 2, name: 'Lucy',   age: 28 },\n  { _id: 3, name: 'Frank',  age: 45 }\n]);\n\n// $inc everyone's age by 1\ndb.users.updateMany({}, { $inc: { age: 1 } });\n\n// Remove Frank\ndb.users.deleteOne({ name: 'Frank' });\n\ndb.users.find();`},
+    ]},
 ];
 
 for (const lang of IDE_LANGS){
@@ -17399,6 +17549,8 @@ for (const lang of IDE_LANGS){
       ? `Write ${lang.name} with syntax highlighting and execute it via the SOSML interpreter — runs 100% in your browser.`
       : lang.local === 'matlab'
       ? `Write ${lang.name} with syntax highlighting and run it via a built-in MATLAB-lite interpreter — runs 100% in your browser. Supports assignments, cell/matrix literals, fprintf/disp/sprintf, 1-based indexing, for/while/if, function definitions, and common math built-ins. Full MATLAB Toolboxes (e.g. plotting, image processing) are not emulated.`
+      : lang.local === 'mongodb'
+      ? `Write MongoDB shell-style commands and run them against an in-memory database — 100% local. Supports db.coll.insertOne/insertMany/find/findOne/aggregate/updateOne/updateMany/deleteOne/deleteMany and common operators ($match, $group, $sum/$avg/$min/$max, $project, $sort, $gt/$gte/$lt/$lte, $in, $regex, …) via the mingo query engine.`
       : lang.local
       ? `Write ${lang.name} with live syntax highlighting and run it directly in your browser. Nothing leaves this page.`
       : `Write ${lang.name} with syntax highlighting and execute it via the public Judge0 CE API (ce.judge0.com). Source is sent over the network — avoid sensitive data.`,
