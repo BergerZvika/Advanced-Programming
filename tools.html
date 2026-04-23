@@ -16574,6 +16574,53 @@ tool({
   }
 });
 
+// ----- scp -----
+tool({
+  id:'cmd-scp', cat:'cmd', name:'scp — secure copy (SSH)', icon:'🔐',
+  desc:'Build an scp command to copy files or directories between local and remote hosts over SSH: ports, identity files, recursive, compression, bandwidth limits, SSH options.',
+  keywords:'scp ssh secure copy remote transfer',
+  render(root){
+    root.appendChild(el('div', {style:{marginBottom:'10px'}}, quickRefBtn('scp')));
+    renderCommandBuilder(root, {
+      cmd: 'scp',
+      positional: [
+        {name:'source', label:'Source (local path or user@host:/path)', default:'', placeholder:'./file.txt', required:true},
+        {name:'dest',   label:'Destination (local path or user@host:/path)', default:'', placeholder:'user@host:/home/user/', required:true},
+      ],
+      presets: [
+        {name:'⬆️  Upload file',           flags:{}, args:{source:'./file.txt', dest:'user@host:/home/user/'}},
+        {name:'⬇️  Download file',         flags:{}, args:{source:'user@host:/home/user/file.txt', dest:'./'}},
+        {name:'📁 Upload directory (-r)',   flags:{'-r':true}, args:{source:'./dist/', dest:'user@host:/var/www/'}},
+        {name:'🔑 With SSH key (-i)',       flags:{'-i':'~/.ssh/id_ed25519'}, args:{source:'./file.txt', dest:'user@host:/srv/'}},
+        {name:'🚪 Custom SSH port (-P)',    flags:{'-P':2222}, args:{source:'./file.txt', dest:'user@host:/srv/'}},
+        {name:'🗜 Compressed + recursive',  flags:{'-r':true, '-C':true, '-p':true}, args:{source:'./project/', dest:'user@host:/backups/'}},
+        {name:'🪐 Jump host (-J)',          flags:{'-J':'bastion@jump.example.com'}, args:{source:'./file.txt', dest:'user@private:/srv/'}},
+      ],
+      flags: [
+        {flag:'-r', label:'Recursive (copy directories)', type:'boolean'},
+        {flag:'-P', label:'SSH port (note: uppercase -P, not -p)', type:'number', placeholder:'2222'},
+        {flag:'-i', label:'Identity (private key) file', type:'string', placeholder:'~/.ssh/id_ed25519'},
+        {flag:'-p', label:'Preserve modification times and modes', type:'boolean'},
+        {flag:'-q', label:'Quiet (suppress progress and warnings)', type:'boolean'},
+        {flag:'-C', label:'Enable compression (gzip)', type:'boolean'},
+        {flag:'-v', label:'Verbose (debug SSH connection)', type:'boolean'},
+        {flag:'-l', label:'Bandwidth limit (Kbit/s)', type:'number', placeholder:'500'},
+        {flag:'-3', label:'Copy between two remotes via local machine', type:'boolean'},
+        {flag:'-4', label:'Force IPv4', type:'boolean'},
+        {flag:'-6', label:'Force IPv6', type:'boolean'},
+        {flag:'-B', label:'Batch mode — never prompt (fail instead)', type:'boolean'},
+        {flag:'-J', label:'Jump host (bastion)', type:'string', placeholder:'bastion@jump.example.com'},
+        {flag:'-F', label:'Alternate ssh_config file', type:'string', placeholder:'~/.ssh/config.alt'},
+        {flag:'-c', label:'Cipher spec', type:'string', placeholder:'aes256-gcm@openssh.com'},
+        {flag:'-o', label:'SSH option (repeat for multiple)', type:'string', placeholder:'StrictHostKeyChecking=no'},
+        {flag:'-S', label:'SSH program path', type:'string', placeholder:'/usr/bin/ssh'},
+        {flag:'-O', label:'Use legacy SCP protocol (OpenSSH 9+ default is SFTP)', type:'boolean'},
+        {flag:'-T', label:'Disable strict filename checking', type:'boolean'},
+      ]
+    });
+  }
+});
+
 // ----- cp -----
 tool({
   id:'cmd-cp', cat:'cmd', name:'cp — copy files', icon:'⎘',
@@ -18549,6 +18596,20 @@ const QUICK_REFS = {
     {label:'Output tweaks', code:`grep -o "[0-9]\\+" file   # print only matched part\ngrep --color=auto "…"    # colored output\ngrep -q "…" file && echo "found"   # quiet (exit code only)\ngrep -m 5 "…" file       # stop after 5 matches`},
     {label:'Common patterns', code:`grep "^foo"      start of line\ngrep "foo$"      end of line\ngrep "^$"        blank lines\ngrep -v "^#"     skip comments\ngrep -E "\\b\\w+@\\w+\\.\\w+\\b"   email-ish`},
     {label:'Piping', code:`ls -la | grep "^d"              # directories only\nps aux | grep -v grep | grep nginx\ncat file.log | grep -iE "error|warn" | sort | uniq -c`},
+  ]},
+  scp: {title:'scp Quick Reference', url:'https://man.openbsd.org/scp', icon:'🔐', lang:'bash', snippets:[
+    {label:'Upload / download', code:`# upload local → remote\nscp ./file.txt user@host:/home/user/\n\n# download remote → local\nscp user@host:/etc/motd ./\n\n# rename while copying\nscp ./a.txt user@host:/srv/b.txt`},
+    {label:'Directories (-r)', code:`# recursive — copy a whole directory\nscp -r ./dist/ user@host:/var/www/\n\n# trailing slash matters:\n#   src/   → copy CONTENTS into dst\n#   src    → copy DIR itself into dst`},
+    {label:'Custom SSH port', code:`# ⚠ scp uses -P (uppercase), ssh uses -p (lowercase)\nscp -P 2222 ./file.txt user@host:/srv/\nscp -P 2222 -r ./dist/ user@host:/var/www/`},
+    {label:'Identity (SSH key)', code:`scp -i ~/.ssh/id_ed25519 \\\n    ./file.txt user@host:/srv/\n\n# combine with port\nscp -i ~/.ssh/deploy_key -P 2222 \\\n    -r ./build/ user@host:/var/www/`},
+    {label:'Preserve + compress', code:`# -p  preserve modification time, mode\n# -C  gzip-compress during transfer\n# -q  quiet (no progress bar)\nscp -Cpr ./project/ user@host:/backups/`},
+    {label:'Bandwidth limit', code:`# limit to 500 Kbit/s\nscp -l 500 -r ./big-folder/ user@host:/srv/\n\n# useful when on metered or shared links`},
+    {label:'Between two remotes (-3)', code:`# pull from A, push to B, routed through you\nscp -3 \\\n    userA@hostA:/src/file.txt \\\n    userB@hostB:/dst/`},
+    {label:'Jump host (-J)', code:`# reach a private host via a bastion in one shot\nscp -J bastion@jump.example.com \\\n    ./file.txt user@private-host:/srv/`},
+    {label:'SSH options (-o)', code:`# disable strict host-key check (e.g. throwaway VMs)\nscp -o StrictHostKeyChecking=no \\\n    -o UserKnownHostsFile=/dev/null \\\n    ./file.txt user@host:/tmp/\n\n# pick a specific cipher\nscp -c aes256-gcm@openssh.com ./big.iso user@host:/srv/`},
+    {label:'Batch mode (-B)', code:`# never prompt — fail instead (for scripts)\nscp -B -i ~/.ssh/deploy_key \\\n    ./artifact.tar.gz user@host:/releases/\n\n# pair with -q so logs stay clean`},
+    {label:'OpenSSH 9+ tip', code:`# Since OpenSSH 9, scp uses SFTP under the hood.\n# If you need the legacy protocol (e.g. old servers):\nscp -O ./file.txt user@host:/srv/\n\n# Or switch to rsync over ssh for better UX:\nrsync -avP ./dir/ user@host:/srv/`},
+    {label:'Tilde & spaces', code:`# remote path starting with ~ is the remote HOME\nscp ./f.txt user@host:~/docs/\n\n# quote remote paths with spaces (double-escape)\nscp ./f.txt user@host:"'/srv/my folder/'"`},
   ]},
   find: {title:'find Quick Reference', url:'https://quickref.me/find', icon:'🔎', lang:'bash', snippets:[
     {label:'Basics', code:`find .                    # everything under cwd\nfind . -name "*.log"\nfind /var -type f         # files only\nfind . -type d            # directories only\nfind . -maxdepth 2        # limit recursion depth`},
