@@ -94,8 +94,12 @@ body::after{
 .sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.08);border-radius:6px}
 .brand{
   display:flex;align-items:center;gap:12px;margin-bottom:20px;
-  padding:6px 4px;
+  padding:6px 4px;border-radius:12px;cursor:pointer;
+  transition: background .18s ease, transform .18s ease;
+  user-select:none;
 }
+.brand:hover{background:rgba(124,92,255,0.08)}
+.brand:focus-visible{outline:none;background:rgba(124,92,255,0.10);box-shadow:0 0 0 2px rgba(124,92,255,0.45)}
 .logo{
   width:44px;height:44px;border-radius:12px;position:relative;
   background:
@@ -253,6 +257,89 @@ body::after{
   padding:14px 28px 22px;font-size:12px;color:var(--text-faint);
   border-top:1px solid var(--border);text-align:center;
 }
+
+/* Stats modal — page-wide usage statistics */
+.stats-modal{
+  position:fixed;inset:0;z-index:115;display:none;
+  background:rgba(5,5,10,0.78);backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+  align-items:center;justify-content:center;padding:24px;
+  animation:fadeIn .2s ease;
+}
+.stats-modal.open{display:flex}
+.stats-panel{
+  width:min(880px,100%);max-height:92vh;overflow:auto;
+  background:linear-gradient(180deg,#14142a,#0c0c18);
+  border:1px solid var(--border-strong);border-radius:20px;
+  box-shadow:var(--shadow-lg);position:relative;
+}
+.stats-panel::before{
+  content:"";position:absolute;inset:0;border-radius:20px;pointer-events:none;
+  background:
+    radial-gradient(420px 180px at 15% 0%,rgba(124,92,255,0.22),transparent 70%),
+    radial-gradient(420px 180px at 85% 0%,rgba(53,208,255,0.16),transparent 70%);
+  z-index:0;
+}
+.stats-head{
+  position:relative;z-index:1;
+  display:flex;align-items:flex-start;gap:16px;padding:24px 28px 14px;
+  border-bottom:1px solid var(--border);
+}
+.stats-title{display:flex;align-items:center;gap:14px;flex:1}
+.stats-title .stats-spark{
+  width:44px;height:44px;border-radius:12px;
+  background:linear-gradient(135deg,#7c5cff,#35d0ff);
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;color:#fff;
+  box-shadow:0 8px 20px -8px rgba(124,92,255,0.8);
+}
+.stats-title h3{margin:0;font-size:18px;font-weight:700;letter-spacing:-0.01em}
+.stats-title p{margin:3px 0 0;font-size:12.5px;color:var(--text-dim);line-height:1.5;max-width:560px}
+.stats-close{
+  background:rgba(255,255,255,0.05);border:1px solid var(--border);color:var(--text-dim);
+  width:34px;height:34px;border-radius:10px;font-size:20px;cursor:pointer;line-height:1;
+  display:flex;align-items:center;justify-content:center;
+}
+.stats-close:hover{color:#fff;background:rgba(255,90,122,0.14);border-color:rgba(255,90,122,0.3)}
+.stats-body{position:relative;z-index:1;padding:20px 28px 24px}
+.stats-globals{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px;
+}
+.stats-globals .stat{
+  padding:14px 16px;border-radius:14px;
+  background:rgba(0,0,0,0.32);border:1px solid var(--border);
+  display:flex;flex-direction:column;gap:4px;align-items:flex-start;
+}
+.stats-globals .stat b{font-size:24px;color:#fff;font-weight:800;letter-spacing:-.02em}
+.stats-globals .stat span{font-size:11px;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.1em}
+.stats-section-title{
+  font-size:12px;text-transform:uppercase;letter-spacing:.15em;
+  color:var(--text-faint);margin:14px 0 8px;display:flex;align-items:center;gap:10px;
+}
+.stats-section-title::before{content:"";width:18px;height:1px;background:linear-gradient(90deg,transparent,var(--accent))}
+.stats-list{
+  border:1px solid var(--border);border-radius:14px;overflow:hidden;
+  background:rgba(255,255,255,0.02);
+}
+.stats-row{
+  display:flex;align-items:center;gap:12px;padding:9px 14px;
+  border-bottom:1px solid var(--border);font-size:13px;
+}
+.stats-row:last-child{border-bottom:none}
+.stats-row:hover{background:rgba(124,92,255,0.06)}
+.stats-row .sr-icon{
+  width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,rgba(124,92,255,0.25),rgba(53,208,255,0.10));
+  border:1px solid var(--border);font-size:13px;color:#cfc2ff;flex-shrink:0;
+}
+.stats-row .sr-name{flex:1;color:var(--text);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.stats-row .sr-cat{font-size:11px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.08em;flex-shrink:0}
+.stats-row .sr-count{
+  font-size:14px;font-weight:700;color:#fff;
+  min-width:46px;text-align:right;font-variant-numeric:tabular-nums;
+}
+.stats-row .sr-count.zero{color:var(--text-faint);font-weight:500}
+.stats-empty{padding:14px;color:var(--text-faint);font-size:13px;text-align:center}
 
 /* Main */
 .main{padding:36px 44px 80px;max-width:1400px;width:100%}
@@ -1120,7 +1207,7 @@ input[type=color]{width:60px;height:36px;border:none;background:transparent;curs
 <body>
 <div class="app">
   <aside class="sidebar">
-    <div class="brand">
+    <div class="brand" id="statsTrigger" role="button" tabindex="0" title="View page statistics" aria-label="Open page statistics">
       <div class="logo"></div>
       <div>
         <h1>BergerOverflow</h1>
@@ -1150,31 +1237,31 @@ input[type=color]{width:60px;height:36px;border:none;background:transparent;curs
         <button id="myWorkClose" class="my-work-close" type="button" title="Close (Esc)">×</button>
       </div>
       <div class="my-work-grid">
-        <a class="my-work-card" href="https://bergerzvika.github.io/Automated-Reasoning-Course/index.html" target="_blank" rel="noopener">
+        <a class="my-work-card" data-mwid="auto-reasoning" data-mwlabel="Automated Reasoning · Course" href="https://bergerzvika.github.io/Automated-Reasoning-Course/index.html" target="_blank" rel="noopener">
           <div class="mw-card-icon" data-accent="a">∀∃</div>
           <h4>Automated Reasoning · Course</h4>
           <p>Interactive course materials on automated reasoning — SAT/SMT solvers, decision procedures, and proof generation, with step-by-step walkthroughs.</p>
           <div class="mw-card-cta">Open <span>↗</span></div>
         </a>
-        <a class="my-work-card" href="https://bergerzvika.github.io/pbv-visual/" target="_blank" rel="noopener">
+        <a class="my-work-card" data-mwid="pbv-visual" data-mwlabel="PBV Visual" href="https://bergerzvika.github.io/pbv-visual/" target="_blank" rel="noopener">
           <div class="mw-card-icon" data-accent="b">⬣</div>
           <h4>PBV Visual <span style="font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-2);background:rgba(53,208,255,0.14);border:1px solid rgba(53,208,255,0.35);padding:1px 6px;border-radius:6px;margin-left:6px;vertical-align:middle">My thesis</span></h4>
           <p>My M.Sc. thesis work — a visual playground for Parametric Bit-Vectors (PBV). Watch bit-width parameters propagate through SMT operations and rewrite rules in real time, and see how the underlying decision procedure reasons about them.</p>
           <div class="mw-card-cta">Open <span>↗</span></div>
         </a>
-        <a class="my-work-card" href="https://bergerzvika.github.io/AI-Lab/mdp_tutorial.html" target="_blank" rel="noopener">
+        <a class="my-work-card" data-mwid="mdp-tutorial" data-mwlabel="MDP Tutorial · AI Lab" href="https://bergerzvika.github.io/AI-Lab/mdp_tutorial.html" target="_blank" rel="noopener">
           <div class="mw-card-icon" data-accent="c">◊</div>
           <h4>MDP Tutorial · AI Lab</h4>
           <p>Step-by-step tutorial on Markov Decision Processes — value iteration, policy iteration, and the Bellman equations, animated on a grid-world.</p>
           <div class="mw-card-cta">Open <span>↗</span></div>
         </a>
-        <a class="my-work-card" href="https://bergerzvika.github.io/Prompt-Injection/" target="_blank" rel="noopener">
+        <a class="my-work-card" data-mwid="prompt-injection" data-mwlabel="Prompt Injection" href="https://bergerzvika.github.io/Prompt-Injection/" target="_blank" rel="noopener">
           <div class="mw-card-icon" data-accent="d">⚠</div>
           <h4>Prompt Injection</h4>
           <p>A showcase of prompt-injection attacks against LLMs — concrete examples, categories, and notes on mitigation patterns.</p>
           <div class="mw-card-cta">Open <span>↗</span></div>
         </a>
-        <a class="my-work-card" href="https://bergerzvika.github.io/nurse-scheduling-problem/visualization_lab.html" target="_blank" rel="noopener">
+        <a class="my-work-card" data-mwid="nurse-scheduling" data-mwlabel="Nurse Scheduling · Visualization Lab" href="https://bergerzvika.github.io/nurse-scheduling-problem/visualization_lab.html" target="_blank" rel="noopener">
           <div class="mw-card-icon" data-accent="e">🩺</div>
           <h4>Nurse Scheduling · Visualization Lab</h4>
           <p>Interactive visualization lab for the Nurse Scheduling Problem — explore constraints, shift assignments, and how solvers build a feasible roster step by step.</p>
@@ -1184,6 +1271,32 @@ input[type=color]{width:60px;height:36px;border:none;background:transparent;curs
       <div class="my-work-foot">Made by <b>Zvika Berger</b> · <a href="mailto:zvbe10@gmail.com" style="color:var(--accent-2)">zvbe10@gmail.com</a></div>
     </div>
   </div>
+
+  <div class="stats-modal" id="statsModal">
+    <div class="stats-panel">
+      <div class="stats-head">
+        <div class="stats-title">
+          <span class="stats-spark">📊</span>
+          <div>
+            <h3>Page statistics</h3>
+            <p>Live counters shared across all visitors — global tool opens, source downloads, per-tool open counts, and clicks on “More of my work”.</p>
+          </div>
+        </div>
+        <button id="statsClose" class="stats-close" type="button" title="Close (Esc)">×</button>
+      </div>
+      <div class="stats-body">
+        <div class="stats-globals">
+          <div class="stat"><b id="openCount">…</b><span>Tool opens</span></div>
+          <div class="stat"><b id="dlCount">…</b><span>Downloads</span></div>
+        </div>
+        <div class="stats-section-title">Per tool — opens</div>
+        <div class="stats-list" id="statsToolList"><div class="stats-empty">Loading…</div></div>
+        <div class="stats-section-title" style="margin-top:18px">More of my work — clicks</div>
+        <div class="stats-list" id="statsMyWorkList"><div class="stats-empty">Loading…</div></div>
+      </div>
+    </div>
+  </div>
+
   <main class="main">
     <div class="hero">
       <div class="hero-grid"></div>
@@ -1198,8 +1311,6 @@ input[type=color]{width:60px;height:36px;border:none;background:transparent;curs
           <div class="stat"><b id="toolCount">80+</b><span>Tools</span></div>
           <div class="stat"><b id="catCount">11</b><span>Categories</span></div>
           <div class="stat"><b>1</b><span>HTML file</span></div>
-          <div class="stat"><b id="openCount">0</b><span>Tool opens</span></div>
-          <div class="stat"><b id="dlCount">0</b><span>Downloads</span></div>
           <button id="dlSource" class="btn primary" type="button" style="font-weight:600">⤓ Download source</button>
         </div>
       </div>
@@ -1382,6 +1493,12 @@ const tool = (def) => { TOOLS.push(def); return def; };
 const STATS_NAMESPACE = 'bergeroverflow-zvbe10';
 const STATS_URL = (key, mode) => `https://abacus.jasoncameron.dev/${mode}/${STATS_NAMESPACE}/${key}`;
 const usage = { opens: null, downloads: null };
+const toolOpenCounts = {};   // {toolId: number} — populated by stats modal + openTool()
+const myWorkClickCounts = {}; // {mwid: number}
+// Hook installed by the stats-modal IIFE — lets the per-tool 'hit' and
+// per-mywork 'hit' handlers force an immediate re-render even when their
+// network round-trip resolves AFTER the modal was already opened.
+let refreshStatsRows = () => {};
 function refreshUsageUI(){
   const dEl = $('#dlCount'); if (dEl) dEl.textContent = usage.downloads === null ? '…' : String(usage.downloads);
   const oEl = $('#openCount'); if (oEl) oEl.textContent = usage.opens === null ? '…' : String(usage.opens);
@@ -1409,6 +1526,12 @@ function openTool(id){
   if (!t) return;
   statsFetch('tool-opens', 'hit').then(v => {
     if (typeof v === 'number'){ usage.opens = v; refreshUsageUI(); }
+  });
+  statsFetch('open-' + id, 'hit').then(v => {
+    if (typeof v === 'number'){
+      toolOpenCounts[id] = v;
+      refreshStatsRows();
+    }
   });
   const catName = (CATS.find(c=>c.id===t.cat)?.name || '');
   $('#wsTitle').textContent = t.name;
@@ -1448,6 +1571,141 @@ $('#wsClose').addEventListener('click', closeTool);
   close.addEventListener('click', hide);
   modal.addEventListener('click', (e) => { if (e.target === modal) hide(); });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && modal.classList.contains('open')) hide(); });
+  // Track clicks on each "More of my work" link (per-card counter).
+  // Use mousedown so the hit fires before the new tab steals focus.
+  $$('.my-work-card[data-mwid]').forEach(card => {
+    const fire = () => {
+      const id = card.dataset.mwid;
+      statsFetch('mw-' + id, 'hit').then(v => {
+        if (typeof v === 'number'){
+          myWorkClickCounts[id] = v;
+          refreshStatsRows();
+        }
+      });
+    };
+    card.addEventListener('mousedown', fire);
+    card.addEventListener('auxclick', fire); // middle click
+    card.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') fire(); });
+  });
+})();
+
+// Page stats modal — opened by clicking the BergerOverflow logo / brand
+(() => {
+  const trigger = $('#statsTrigger'), modal = $('#statsModal'), close = $('#statsClose');
+  if (!trigger || !modal || !close) return;
+  const toolListEl = $('#statsToolList');
+  const mwListEl = $('#statsMyWorkList');
+  let lastLoad = 0;
+
+  const open = () => {
+    modal.classList.add('open');
+    syncStats(); // refresh global counts
+    // Always re-render from the live cache so a value just bumped by a tool/link
+    // click shows up immediately, even if we skip the network fetch below.
+    renderToolRows();
+    renderMyWorkRows();
+    // Re-fetch per-row counts at most every 10s to avoid hammering the counter API.
+    if (Date.now() - lastLoad > 10000){
+      lastLoad = Date.now();
+      loadToolStats();
+      loadMyWorkStats();
+    }
+  };
+  const hide = () => modal.classList.remove('open');
+
+  trigger.addEventListener('click', open);
+  trigger.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); open(); }
+  });
+  close.addEventListener('click', hide);
+  modal.addEventListener('click', (e) => { if (e.target === modal) hide(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && modal.classList.contains('open')) hide(); });
+
+  function renderToolRows(){
+    toolListEl.innerHTML = '';
+    if (!TOOLS.length){ toolListEl.appendChild(el('div', {class:'stats-empty'}, 'No tools registered yet.')); return; }
+    const items = TOOLS.map(t => ({ t, n: (typeof toolOpenCounts[t.id] === 'number') ? toolOpenCounts[t.id] : null }));
+    items.sort((a,b) => {
+      const av = a.n == null ? -1 : a.n;
+      const bv = b.n == null ? -1 : b.n;
+      if (bv !== av) return bv - av;
+      return a.t.name.localeCompare(b.t.name);
+    });
+    items.forEach(({t, n}) => {
+      const catName = (CATS.find(c=>c.id===t.cat)?.name) || '';
+      const countTxt = n == null ? '…' : String(n);
+      const row = el('div', {class:'stats-row'},
+        el('span', {class:'sr-icon'}, t.icon || '◆'),
+        el('span', {class:'sr-name', title: t.name}, t.name),
+        el('span', {class:'sr-cat'}, catName),
+        el('b', {class: 'sr-count' + (n === 0 ? ' zero' : '')}, countTxt),
+      );
+      row.addEventListener('click', () => { hide(); openTool(t.id); });
+      row.style.cursor = 'pointer';
+      toolListEl.appendChild(row);
+    });
+  }
+
+  function renderMyWorkRows(){
+    mwListEl.innerHTML = '';
+    const cards = $$('.my-work-card[data-mwid]');
+    if (!cards.length){ mwListEl.appendChild(el('div', {class:'stats-empty'}, 'No links registered yet.')); return; }
+    const items = cards.map(c => ({
+      id: c.dataset.mwid,
+      label: c.dataset.mwlabel || c.dataset.mwid,
+      href: c.getAttribute('href'),
+      n: (typeof myWorkClickCounts[c.dataset.mwid] === 'number') ? myWorkClickCounts[c.dataset.mwid] : null,
+    }));
+    items.sort((a,b) => {
+      const av = a.n == null ? -1 : a.n;
+      const bv = b.n == null ? -1 : b.n;
+      if (bv !== av) return bv - av;
+      return a.label.localeCompare(b.label);
+    });
+    items.forEach(it => {
+      const countTxt = it.n == null ? '…' : String(it.n);
+      const row = el('div', {class:'stats-row'},
+        el('span', {class:'sr-icon'}, '↗'),
+        el('a', {class:'sr-name', href: it.href, target:'_blank', rel:'noopener', style:{color:'inherit', textDecoration:'none'}}, it.label),
+        el('b', {class: 'sr-count' + (it.n === 0 ? ' zero' : '')}, countTxt),
+      );
+      mwListEl.appendChild(row);
+    });
+  }
+
+  // Expose render functions to the rest of the script via the hoisted hook,
+  // so that an async 'hit' resolution can repaint the visible modal.
+  refreshStatsRows = () => { renderToolRows(); renderMyWorkRows(); };
+
+  // Counters only ever go up. If a freshly-fired 'hit' has already bumped the
+  // cache, a slow 'get' shouldn't be allowed to overwrite it back to the lower
+  // server-side value (which may not yet reflect the just-issued hit).
+  const bump = (store, id, v) => {
+    const newV = (typeof v === 'number') ? v : 0;
+    const cur = store[id];
+    store[id] = (typeof cur === 'number' && cur > newV) ? cur : newV;
+  };
+
+  async function loadToolStats(){
+    renderToolRows(); // first paint with cached/placeholders
+    // Fetch all per-tool counts in parallel — browsers will queue beyond ~6 per host, that's fine.
+    await Promise.all(TOOLS.map(async t => {
+      const v = await statsFetch('open-' + t.id, 'get');
+      bump(toolOpenCounts, t.id, v);
+    }));
+    renderToolRows(); // re-render sorted by count
+  }
+
+  async function loadMyWorkStats(){
+    renderMyWorkRows();
+    const cards = $$('.my-work-card[data-mwid]');
+    await Promise.all(cards.map(async c => {
+      const id = c.dataset.mwid;
+      const v = await statsFetch('mw-' + id, 'get');
+      bump(myWorkClickCounts, id, v);
+    }));
+    renderMyWorkRows();
+  }
 })();
 $('#dlSource').addEventListener('click', async () => {
   let ok = false;
