@@ -1935,8 +1935,11 @@ async function activate(name){
 }
 
 function refreshDirty(name){
-  const buf = name === state.active ? editor.getValue() : (state.buffers[name] ?? '');
-  const dirty = state.loaded[name] && buf !== state.originals[name];
+  // "Dirty" = the file's canonical (All) buffer differs from the original.
+  // The editor view may be a step extraction — that derivation is not
+  // a real edit, so don't read editor.getValue() here.
+  const buf = state.buffers[name];
+  const dirty = state.loaded[name] && buf != null && buf !== state.originals[name];
   const btn = document.querySelector(`.file-btn[data-file="${name}"]`);
   if(btn) btn.classList.toggle('dirty', dirty);
   if(name === state.active){
