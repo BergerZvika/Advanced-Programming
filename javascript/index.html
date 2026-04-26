@@ -490,6 +490,62 @@ body::after{
 .media-foot a:hover{ text-decoration: underline }
 .media-loading{ color: var(--text-dim); font-size: 13px; padding: 60px 0 }
 
+/* HTML-content mode for the modal — used for install guides etc. */
+.media-body.html-mode{
+  background: linear-gradient(180deg, rgba(20,20,35,0.95), rgba(10,10,22,0.95));
+  display: block; align-items: stretch; justify-content: stretch;
+  padding: 20px 26px 24px;
+  overflow: auto;
+  font-family: 'Inter', system-ui, sans-serif;
+  color: var(--text); line-height: 1.65; text-align: left;
+}
+.media-body.html-mode h4{
+  margin: 18px 0 8px; font-size: 14px; font-weight: 700; color: #fff; letter-spacing: -0.005em;
+}
+.media-body.html-mode h4:first-child{ margin-top: 0 }
+.media-body.html-mode p{ margin: 8px 0; font-size: 14px; color: var(--text) }
+.media-body.html-mode ul{ margin: 8px 0; padding-left: 22px }
+.media-body.html-mode li{ margin: 4px 0; font-size: 14px }
+.media-body.html-mode a{
+  color: var(--accent-2); text-decoration: none;
+  border-bottom: 1px dashed rgba(53,208,255,0.4);
+  transition: color .15s, border-color .15s;
+}
+.media-body.html-mode a:hover{ color: #fff; border-bottom-color: rgba(53,208,255,0.85) }
+.media-body.html-mode code{
+  background: rgba(124,92,255,0.14);
+  border: 1px solid rgba(124,92,255,0.28);
+  color: #d4cbff; padding: 1px 6px; border-radius: 5px;
+  font-size: 12.5px; font-family: 'JetBrains Mono', monospace;
+}
+.media-body.html-mode pre{
+  background: rgba(6,6,14,0.85);
+  border: 1px solid var(--border); border-radius: 10px;
+  padding: 14px 16px; overflow-x: auto; margin: 12px 0;
+}
+.media-body.html-mode pre code{
+  background: none; border: 0; padding: 0;
+  color: #cfeaff; font-size: 12.5px; line-height: 1.55;
+}
+.media-body.html-mode kbd{
+  display: inline-block; padding: 2px 8px; margin: 0 2px;
+  font-family: 'JetBrains Mono', monospace; font-size: 11px; line-height: 1.35;
+  color: #f0e8ff;
+  background: rgba(124,92,255,0.18);
+  border: 1px solid rgba(124,92,255,0.42);
+  border-bottom-width: 2px; border-radius: 5px;
+}
+.media-body.html-mode small,
+.media-body.html-mode .note{ color: var(--text-faint); font-size: 12px; font-style: italic }
+.media-body.html-mode .arrow-note{ color: var(--text-dim); font-size: 12px; margin-top: 6px }
+.media-body.html-mode .step-pill{
+  display: inline-block; min-width: 20px; height: 20px; padding: 0 6px;
+  border-radius: 999px; background: rgba(53,208,255,0.16);
+  border: 1px solid rgba(53,208,255,0.4); color: #a4e2ff;
+  font-size: 11px; font-weight: 700; text-align: center; line-height: 18px;
+  margin-right: 8px; font-family: 'JetBrains Mono', monospace;
+}
+
 /* Toast / status */
 .toast{
   position:fixed; bottom:22px; right:22px; z-index:50;
@@ -583,7 +639,7 @@ body::after{
       <button class="media-close" id="mediaClose" type="button" title="Close (Esc)" aria-label="Close">×</button>
     </div>
     <div class="media-body" id="mediaBody"></div>
-    <div class="media-foot">
+    <div class="media-foot" id="mediaFoot">
       <span>Embedded from <a id="mediaSource" href="#" target="_blank" rel="noopener">source ↗</a></span>
     </div>
   </div>
@@ -1433,6 +1489,34 @@ const FILES = [
   { file: 'hello_world.js',         label: 'Hello World',
     links: [
       {
+        title: 'JavaScript — Install',
+        icon: '⚙',
+        embed: {
+          type: 'html',
+          html: `
+            <h4>In Windows we'll download:</h4>
+            <ul>
+              <li>Sublime Text 3 — <a href="https://www.sublimetext.com/3" target="_blank" rel="noopener">sublimetext.com/3</a></li>
+              <li>Node.js — <a href="https://nodejs.org/en/download/" target="_blank" rel="noopener">nodejs.org/en/download</a></li>
+            </ul>
+
+            <h4>Wire Sublime up to run Node.js</h4>
+            <p>After installing, Sublime needs to recognize the Node.js working environment. Inside Sublime open:</p>
+            <p><code>Tools → Build System → New Build System…</code></p>
+            <p>A file will open. Paste:</p>
+<pre><code>{
+    "cmd": ["C:/Program Files/nodejs/node.exe", "$file"],
+    "selector": "source.js"
+}</code></pre>
+            <p class="arrow-note">↑ The path inside <code>cmd</code> is wherever you installed Node.js — adjust it if it's somewhere else on your machine.</p>
+            <p>Save the file with any name (e.g. <code>node.sublime-build</code>), then under <code>Tools → Build System</code> select the build you just created.</p>
+
+            <h4>Run JavaScript</h4>
+            <p>You can now run any <code>.js</code> file with <kbd>Ctrl</kbd> + <kbd>B</kbd>.</p>
+          `,
+        },
+      },
+      {
         title: 'Web browsers over the last 28 years — visualization',
         url: 'https://www.reddit.com/r/dataisbeautiful/comments/v3c9nv/oc_web_browsers_over_the_last_28_years/',
         embed: {
@@ -1734,12 +1818,16 @@ function renderFileLinks(){
     let host = '';
     try { host = new URL(l.url).hostname.replace(/^www\./,''); } catch {}
     const isEmbed = !!l.embed;
-    const ico = isEmbed ? '▶' : '📚';
+    const defaultIco = isEmbed
+      ? (l.embed.type === 'video' ? '▶' : (l.embed.type === 'html' ? '📥' : '⤢'))
+      : '📚';
+    const ico = l.icon || defaultIco;
     const arrow = isEmbed ? '⤢' : '↗';
-    const tag = isEmbed ? 'button type="button"' : `a href="${esc(l.url)}" target="_blank" rel="noopener noreferrer"`;
+    const tag = isEmbed ? 'button type="button"' : `a href="${esc(l.url || '#')}" target="_blank" rel="noopener noreferrer"`;
     const close = isEmbed ? 'button' : 'a';
-    return `<${tag} class="file-link" data-link-index="${i}" title="${esc(l.url)}">`
-         + `<span class="ico">${ico}</span><span>${esc(l.title)}</span>`
+    const tip = l.url ? esc(l.url) : esc(l.title);
+    return `<${tag} class="file-link" data-link-index="${i}" title="${tip}">`
+         + `<span class="ico">${esc(ico)}</span><span>${esc(l.title)}</span>`
          + (host ? `<span class="host">${esc(host)}</span>` : '')
          + `<span class="arrow">${arrow}</span></${close}>`;
   }).join('');
@@ -1765,17 +1853,30 @@ const mediaSrcLink = document.getElementById('mediaSource');
 function openMediaModal(link){
   if(!link || !link.embed) return;
   const e = link.embed;
+  const foot = document.getElementById('mediaFoot');
   mediaTitleEl.textContent = link.title || 'Embedded media';
   let host = '';
-  try { host = new URL(link.url).hostname.replace(/^www\./,''); } catch {}
+  try { if(link.url) host = new URL(link.url).hostname.replace(/^www\./,''); } catch {}
   mediaHostEl.textContent = host;
-  mediaSrcLink.href = link.url;
-  mediaSrcLink.textContent = host || 'source';
-  mediaSrcLink.title = link.url;
+  // Footer is only meaningful when there's an external source URL
+  if(link.url){
+    foot.style.display = '';
+    mediaSrcLink.href = link.url;
+    mediaSrcLink.textContent = host || 'source';
+    mediaSrcLink.title = link.url;
+  }else{
+    foot.style.display = 'none';
+  }
 
+  mediaBodyEl.classList.remove('html-mode');
   mediaBodyEl.innerHTML = '<div class="media-loading">Loading…</div>';
   mediaModalEl.classList.add('open');
 
+  if(e.type === 'html'){
+    mediaBodyEl.classList.add('html-mode');
+    mediaBodyEl.innerHTML = e.html || '';
+    return;
+  }
   if(e.type === 'video'){
     const video = document.createElement('video');
     video.src = e.videoSrc;
@@ -1829,6 +1930,7 @@ function closeMediaModal(){
     if(n.tagName === 'IFRAME'){ n.src = 'about:blank'; }
     else { try { n.pause(); } catch {} n.removeAttribute('src'); n.load && n.load(); }
   });
+  mediaBodyEl.classList.remove('html-mode');
   mediaBodyEl.innerHTML = '';
 }
 
