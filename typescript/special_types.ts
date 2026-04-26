@@ -23,10 +23,14 @@ function checkNothing(val: string | null | undefined) {
 // 2. ANY vs. UNKNOWN (The "Top" Types)
 // ==========================================
 
-// ANY: The "Escape Hatch". Disables all type checking. 
+// ANY: The "Escape Hatch". Disables all type checking.
 // DANGEROUS: Avoid this in your students' code.
 let insecure: any = { greet: () => "Hi" };
-insecure.doAnything(); // NO COMPILE ERROR, but crashes at runtime!
+try {
+    insecure.doAnything(); // NO COMPILE ERROR, but crashes at runtime!
+} catch (e) {
+    console.log("any crashed at runtime:", (e as Error).message);
+}
 
 // UNKNOWN: The "Safe Any". You cannot use it until you prove what it is.
 let secure: unknown = "I am a string";

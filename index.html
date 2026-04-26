@@ -207,6 +207,35 @@ section.lab-section{ margin-top: 56px }
 }
 .subgroup-title::after{ flex: 1 }
 
+/* TypeScript-themed featured card variant */
+.featured-card.ts-theme::before{
+  background: linear-gradient(135deg, rgba(49,120,198,0.55), rgba(124,92,255,0) 40%, rgba(53,208,255,0.45));
+}
+.featured-card.ts-theme:hover{ border-color: rgba(95,163,223,0.4); box-shadow: 0 36px 90px -30px rgba(49,120,198,0.30), 0 10px 30px -15px rgba(0,0,0,0.7) }
+.featured-card.ts-theme .featured-art{
+  background:
+    radial-gradient(420px 220px at 30% 30%, rgba(49,120,198,0.26), transparent 60%),
+    radial-gradient(380px 220px at 80% 70%, rgba(53,208,255,0.20), transparent 60%),
+    linear-gradient(135deg, rgba(49,120,198,0.06), rgba(124,92,255,0.06));
+}
+.featured-card.ts-theme .tag{
+  color: #b4d8ff; background: rgba(49,120,198,0.10); border-color: rgba(49,120,198,0.32);
+}
+.ts-cube{
+  width: 130px; height: 130px; border-radius: 22px;
+  background: linear-gradient(135deg, #5fa3df, #3178c6);
+  color: #ffffff; font-weight: 900; font-size: 38px;
+  display: flex; align-items: center; justify-content: center;
+  letter-spacing: 1px;
+  box-shadow:
+    0 30px 70px -22px rgba(49,120,198,0.55),
+    inset 0 0 0 1px rgba(255,255,255,0.20),
+    inset 0 -16px 28px -10px rgba(0,0,0,0.30);
+  transform: rotate(-5deg);
+  animation: floatY 5s ease-in-out infinite;
+  text-shadow: 0 2px 0 rgba(0,0,0,0.18);
+}
+
 /* HTML-themed featured card variant */
 .featured-card.html-theme::before{
   background: linear-gradient(135deg, rgba(227,79,38,0.55), rgba(124,92,255,0) 45%, rgba(53,208,255,0.4));
@@ -404,6 +433,7 @@ footer a:hover{ color: var(--text) }
   </div>
   <div class="right">
     <a class="nav-link" href="#javascript">JavaScript</a>
+    <a class="nav-link" href="#typescript">TypeScript</a>
     <a class="nav-link" href="#html">HTML</a>
     <a class="nav-link primary" href="tools.html">BergerOverflow ↗</a>
   </div>
@@ -413,13 +443,7 @@ footer a:hover{ color: var(--text) }
   <div class="hero-content">
     <div class="eyebrow"><span class="pulse"></span> Course playground</div>
     <h1>Advanced<br><span class="accent">Programming</span> Labs</h1>
-    <p class="lead">Live online labs for the fundamentals of the web — JavaScript in a sandboxed runner, HTML in a side-by-side editor with live preview.</p>
-    <div class="hero-cta">
-      <a class="cta-btn primary" href="javascript/index.html">▶ Open JS Lab <span class="arrow">→</span></a>
-      <a class="cta-btn" href="html/lab.html">◧ Open HTML Lab <span class="arrow">→</span></a>
-    </div>
   </div>
-  <a class="scroll-hint" href="#javascript">Scroll</a>
 </section>
 
 <main class="content">
@@ -446,6 +470,34 @@ footer a:hover{ color: var(--text) }
           <span>11 lessons</span>
           <span>CodeMirror editor</span>
           <span>three.js scene</span>
+        </div>
+        <span class="open">Open the lab <span aria-hidden="true">→</span></span>
+      </div>
+    </a>
+  </section>
+
+  <!-- TypeScript — featured -->
+  <section class="lab-section" id="typescript">
+    <div class="section-head">
+      <h2>TypeScript</h2>
+      <span class="count">live IDE</span>
+      <p>Same lab, but the editor is transpiled in your browser by the official TypeScript compiler before running in the sandbox.</p>
+    </div>
+
+    <a class="featured-card ts-theme" href="typescript/index.html">
+      <div class="featured-art">
+        <span class="ring r1"></span>
+        <span class="ring r2"></span>
+        <div class="ts-cube">TS</div>
+      </div>
+      <div class="featured-body">
+        <span class="tag">Featured</span>
+        <h3>TypeScript Lab</h3>
+        <p>Walk through primitive types, special types, casting, generics, mapped &amp; conditional types, branded (nominal) types, and more — each lesson runs in a sandbox after an in-browser TypeScript compile.</p>
+        <div class="meta">
+          <span>12 lessons</span>
+          <span>tsc in your browser</span>
+          <span>compile errors inline</span>
         </div>
         <span class="open">Open the lab <span aria-hidden="true">→</span></span>
       </div>
@@ -483,7 +535,7 @@ footer a:hover{ color: var(--text) }
 </main>
 
 <footer>
-  <p>Advanced Programming · <a href="tools.html">BergerOverflow Tools</a> · <a href="javascript/index.html">JS Lab</a> · <a href="html/lab.html">HTML Lab</a></p>
+  <p>Advanced Programming · <a href="tools.html">BergerOverflow Tools</a> · <a href="javascript/index.html">JS Lab</a> · <a href="typescript/index.html">TS Lab</a> · <a href="html/lab.html">HTML Lab</a></p>
 </footer>
 
 <script>

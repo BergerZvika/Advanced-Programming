@@ -49,8 +49,11 @@ type SolverResult<T> = T extends "SAT"
     : { conflict: string[] };
 
 function handleSolver<S extends "SAT" | "UNSAT">(status: S): SolverResult<S> {
-    throw "Implementation here";
+    // Stub implementation — the real lesson is at the type level: SolverResult<S>
+    // narrows the return shape based on the literal type passed in.
+    if (status === "SAT") return { model: "x=1, y=2" } as SolverResult<S>;
+    return { conflict: ["clause 3", "clause 7"] } as SolverResult<S>;
 }
 
 const res = handleSolver("SAT");
-// res.model exists here, but res.conflict does not.
+console.log("model:", res.model); // res.model exists here, but res.conflict does not.

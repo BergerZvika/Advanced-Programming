@@ -1,0 +1,2358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>TS Lab — Advanced Programming</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/theme/dracula.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/dialog/dialog.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/hint/show-hint.min.css">
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/javascript/javascript.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/edit/closebrackets.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/edit/matchbrackets.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/selection/active-line.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/comment/comment.min.js"></script>
+<!-- TypeScript compiler is loaded dynamically below from one of several CDNs
+     (some networks/ad-blockers block jsdelivr or unpkg, so we fall back). -->
+
+<style>
+:root{
+  --bg-0:#06060c;
+  --bg-1:#0c0c18;
+  --bg-2:#15152a;
+  --surface:rgba(255,255,255,0.04);
+  --surface-2:rgba(255,255,255,0.07);
+  --border:rgba(255,255,255,0.09);
+  --border-strong:rgba(255,255,255,0.18);
+  --text:#e8e8f3;
+  --text-dim:#9a9ab0;
+  --text-faint:#666680;
+  --accent:#7c5cff;
+  --accent-2:#35d0ff;
+  --accent-3:#ff6ec7;
+  --ts-blue:#3178c6;
+  --ts-blue-2:#5fa3df;
+  --success:#38d39f;
+  --warn:#ffb547;
+  --error:#ff5a7a;
+  --radius:18px;
+  --radius-sm:12px;
+  --shadow-lg: 0 30px 80px -30px rgba(124,92,255,0.35), 0 10px 30px -15px rgba(0,0,0,0.6);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg-0);color:var(--text);font-family:'Inter',system-ui,sans-serif;height:100%;overflow:hidden}
+code,pre,textarea,.mono,.CodeMirror{font-family:'JetBrains Mono',ui-monospace,monospace}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+
+/* 3D Three.js canvas — background layer */
+#bg-3d{
+  position:fixed; inset:0; z-index:-2;
+  display:block;
+  background:
+    radial-gradient(1200px 700px at 8% -10%, rgba(124,92,255,0.30), transparent 60%),
+    radial-gradient(1000px 600px at 110% 0%,  rgba(53,208,255,0.22), transparent 60%),
+    radial-gradient(900px 600px at 50% 130%,  rgba(255,110,199,0.18), transparent 60%),
+    linear-gradient(180deg, #050510 0%, #08081a 50%, #050510 100%);
+}
+/* tiny stars overlay */
+body::after{
+  content:""; position:fixed; inset:0; z-index:-1; pointer-events:none; opacity:.32;
+  background-image:
+    radial-gradient(1px 1px at 20% 30%, #ffffff 100%, transparent),
+    radial-gradient(1px 1px at 70% 60%, #ffffff 100%, transparent),
+    radial-gradient(1.5px 1.5px at 40% 80%, #ffffff 100%, transparent),
+    radial-gradient(1px 1px at 85% 20%, #ffffff 100%, transparent),
+    radial-gradient(1px 1px at 15% 65%, #ffffff 100%, transparent);
+  background-size: 1200px 800px;
+  mask-image:linear-gradient(180deg,transparent,#000 20%,#000 80%,transparent);
+}
+
+/* Layout */
+.app{
+  display:grid; grid-template-columns: 300px 1fr; height:100vh;
+}
+@media (max-width: 980px){
+  .app{ grid-template-columns: 1fr; height:auto; min-height:100vh; overflow:auto }
+  html,body{ overflow:auto; height:auto }
+}
+
+/* Sidebar */
+.sidebar{
+  padding:22px 16px; position:relative; z-index:5;
+  background:linear-gradient(180deg, rgba(12,12,24,0.85), rgba(8,8,18,0.85));
+  backdrop-filter: blur(22px) saturate(140%);
+  -webkit-backdrop-filter: blur(22px) saturate(140%);
+  border-right:1px solid var(--border);
+  overflow-y:auto;
+  scrollbar-width:thin;
+}
+.sidebar::-webkit-scrollbar{width:6px}
+.sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.08);border-radius:6px}
+
+.brand{
+  display:flex;align-items:center;gap:12px;margin-bottom:18px;
+  padding:6px 4px;border-radius:14px;user-select:none;
+}
+.brand-cube{
+  width:46px;height:46px;border-radius:12px;position:relative;
+  background:linear-gradient(135deg,#5fa3df,#3178c6);
+  box-shadow:
+    0 12px 30px -10px rgba(247,223,30,0.45),
+    inset 0 0 0 1px rgba(255,255,255,0.25),
+    inset 0 -10px 20px -8px rgba(0,0,0,0.35);
+  transform: rotate(-6deg);
+  display:flex;align-items:center;justify-content:center;
+  font-weight:800;font-size:13px;color:#1a1a2a;letter-spacing:0.5px;
+  animation: floatY 5s ease-in-out infinite;
+}
+.brand-cube::after{
+  content:""; position:absolute; inset:auto -6px -6px auto;
+  width:100%;height:100%; border-radius:12px;
+  background:linear-gradient(135deg, rgba(124,92,255,0.5), rgba(53,208,255,0.5));
+  filter:blur(14px); z-index:-1;
+}
+@keyframes floatY{
+  0%,100%{ transform: rotate(-6deg) translateY(0) }
+  50%   { transform: rotate(-2deg) translateY(-4px) }
+}
+.brand h1{margin:0;font-size:17px;font-weight:700;letter-spacing:-0.02em}
+.brand .sub{font-size:11px;color:var(--text-faint);letter-spacing:0.14em;text-transform:uppercase}
+
+.search-wrap{ position:relative; margin-bottom:14px }
+.search{
+  width:100%;padding:10px 14px 10px 34px;border-radius:12px;border:1px solid var(--border);
+  background:rgba(255,255,255,0.03);color:var(--text);font-size:13.5px;outline:none;
+  transition:border-color .2s, box-shadow .2s;
+}
+.search:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(124,92,255,0.2)}
+.search-wrap::before{
+  content:"⌕"; position:absolute; left:11px; top:50%; transform:translateY(-50%);
+  color:var(--text-faint); font-size:14px; pointer-events:none;
+}
+
+.section-label{
+  font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:var(--text-faint);
+  padding:14px 8px 6px;
+}
+
+.file-list{ list-style:none; padding:0; margin:0 }
+.file-list li{ margin:2px 0 }
+.file-btn{
+  width:100%;display:flex;align-items:center;gap:10px;
+  background:transparent;color:var(--text-dim);
+  padding:10px 12px;border-radius:10px;font-size:13.5px;font-weight:500;text-align:left;
+  transition: background .15s, color .15s, transform .15s, box-shadow .2s;
+  border:1px solid transparent;
+}
+.file-btn:hover{ background:var(--surface); color:var(--text); transform:translateX(2px) }
+.file-btn.active{
+  background:linear-gradient(135deg,rgba(124,92,255,0.22),rgba(53,208,255,0.12));
+  color:#fff; border-color:rgba(124,92,255,0.32);
+  box-shadow: inset 0 0 0 1px rgba(124,92,255,0.18), 0 8px 24px -16px rgba(124,92,255,0.55);
+}
+.file-btn .ico{
+  width:24px; height:24px; flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  border-radius:6px;
+  background:linear-gradient(135deg,#5fa3df,#3178c6);
+  color:#1a1a2a; font-weight:800; font-size:9.5px; letter-spacing:0.5px;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.2);
+}
+.file-btn .label{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+.file-btn .lines{
+  font-size:10.5px; color:var(--text-faint); padding:1px 6px; border-radius:20px;
+  background:rgba(255,255,255,0.04); flex-shrink:0;
+}
+.file-btn.active .lines{ background:rgba(124,92,255,0.22); color:#dcd5ff }
+.file-btn.dirty::before{
+  content:""; width:6px; height:6px; border-radius:50%;
+  background:var(--accent-2); flex-shrink:0;
+  box-shadow: 0 0 8px var(--accent-2);
+}
+
+.back-link{
+  display:flex;align-items:center;gap:8px;
+  margin-top:18px; padding:10px 12px;border-radius:10px;
+  color:var(--text-dim); font-size:13px; text-decoration:none;
+  border:1px solid var(--border);
+  transition: background .15s, color .15s, border-color .15s;
+}
+.back-link:hover{ background:var(--surface); color:var(--text); border-color:var(--border-strong) }
+
+/* Main pane */
+.editor-pane{
+  position:relative; padding:22px 22px 22px 22px;
+  display:grid; grid-template-rows: auto 1fr auto; gap:14px;
+  min-width:0; min-height:0; overflow:hidden;
+}
+
+/* Top header bar with file info & actions */
+.top-bar{
+  display:flex;align-items:center;gap:14px;
+  padding:14px 18px;
+  background: linear-gradient(135deg, rgba(20,20,40,0.7), rgba(12,12,24,0.7));
+  border:1px solid var(--border); border-radius: var(--radius);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  box-shadow: var(--shadow-lg);
+}
+.file-meta{ display:flex; align-items:center; gap:12px; min-width:0 }
+.file-icon{
+  width:36px;height:36px;border-radius:10px;
+  background:linear-gradient(135deg,#5fa3df,#3178c6);
+  color:#1a1a2a; font-weight:800; font-size:13px; letter-spacing:0.5px;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow: 0 6px 18px -8px rgba(247,223,30,0.55), inset 0 0 0 1px rgba(255,255,255,0.25);
+  flex-shrink:0;
+}
+.file-name{ font-size:15px; font-weight:600; letter-spacing:-0.01em }
+.file-name .dirty-mark{ color:var(--accent-2); margin-left:6px; opacity:0; transition:opacity .15s }
+.file-name.dirty .dirty-mark{ opacity:1 }
+.file-sub{ font-size:11.5px; color:var(--text-faint); margin-top:1px; font-family:'JetBrains Mono',monospace }
+.spacer{ flex:1 }
+
+.action-btn{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:8px 14px; border-radius:10px;
+  border:1px solid var(--border); background:rgba(255,255,255,0.03);
+  color:var(--text-dim); font-size:13px; font-weight:600;
+  transition: background .15s, color .15s, border-color .15s, transform .15s;
+}
+.action-btn:hover{ background:var(--surface-2); color:var(--text); border-color:var(--border-strong) }
+.action-btn:active{ transform:translateY(1px) }
+.action-btn .k{ font-family:'JetBrains Mono',monospace; font-size:10.5px; opacity:.6; padding:1px 5px; border-radius:5px; background:rgba(255,255,255,0.06) }
+.run-btn{
+  background:linear-gradient(135deg,#7c5cff,#35d0ff);
+  color:#fff; border-color:transparent;
+  box-shadow: 0 10px 30px -12px rgba(124,92,255,0.7);
+}
+.run-btn:hover{ filter:brightness(1.08); transform:translateY(-1px); border-color:transparent }
+.stop-btn{
+  background:linear-gradient(135deg,#ff5a7a,#ff8c5a);
+  color:#fff; border-color:transparent;
+  box-shadow: 0 10px 30px -12px rgba(255,90,122,0.65);
+}
+.stop-btn:hover{ filter:brightness(1.08); transform:translateY(-1px); border-color:transparent }
+.stop-btn .k{ background:rgba(255,255,255,0.16) }
+
+/* Editor card with 3D float */
+.editor-card{
+  position:relative; min-height:0;
+  background: linear-gradient(180deg, rgba(20,20,40,0.65), rgba(8,8,18,0.65));
+  border:1px solid var(--border); border-radius: var(--radius);
+  overflow:hidden;
+  backdrop-filter: blur(22px) saturate(150%);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  box-shadow: var(--shadow-lg);
+  transform-style: preserve-3d;
+  transition: transform .25s cubic-bezier(.2,.7,.2,1);
+}
+.editor-card::before{
+  content:""; position:absolute; inset:-1px; border-radius: calc(var(--radius) + 1px); pointer-events:none;
+  background: linear-gradient(135deg, rgba(124,92,255,0.45), rgba(53,208,255,0.0) 40%, rgba(255,110,199,0.35));
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  padding:1px;
+  opacity:.55;
+}
+.editor-chrome{
+  display:flex; align-items:center; gap:10px; padding:9px 14px;
+  border-bottom:1px solid var(--border);
+  background: linear-gradient(180deg, rgba(255,255,255,0.025), transparent);
+}
+.dot{ width:11px; height:11px; border-radius:50% }
+.dot.r{ background:#ff5a7a; box-shadow:0 0 10px rgba(255,90,122,0.55) }
+.dot.y{ background:#ffb547; box-shadow:0 0 10px rgba(255,181,71,0.55) }
+.dot.g{ background:#38d39f; box-shadow:0 0 10px rgba(56,211,159,0.55) }
+.editor-chrome .filename{
+  margin-left:8px; font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--text-dim);
+}
+.editor-chrome .badge{
+  margin-left:auto; font-size:10.5px; letter-spacing:0.14em; text-transform:uppercase;
+  color:var(--text-faint); padding:3px 9px; border-radius:20px;
+  background:rgba(49,120,198,0.10); border:1px solid rgba(49,120,198,0.32);
+  color:#9bd0ff;
+}
+
+/* Step tabs (per-file numbered runners) */
+.step-tabs{
+  display:flex; gap:5px; margin: 0 6px 0 12px;
+  flex:1; min-width:0; overflow-x:auto;
+  scrollbar-width:none;
+}
+.step-tabs::-webkit-scrollbar{ display:none }
+.step-tabs:empty{ display:none }
+.step-tab{
+  flex-shrink:0;
+  padding: 3px 11px; font-size:11px; border-radius:7px;
+  border:1px solid var(--border); background:rgba(255,255,255,0.025);
+  color:var(--text-dim); font-weight:600;
+  font-family:'JetBrains Mono',ui-monospace,monospace;
+  transition: background .15s, color .15s, border-color .15s, transform .15s;
+}
+.step-tab:hover{ background:var(--surface-2); color:var(--text); border-color:var(--border-strong) }
+.step-tab.active{
+  background:linear-gradient(135deg, rgba(124,92,255,0.32), rgba(53,208,255,0.20));
+  color:#fff; border-color:rgba(124,92,255,0.45);
+  box-shadow: 0 0 0 1px rgba(124,92,255,0.28), 0 6px 14px -8px rgba(124,92,255,0.55);
+}
+.step-tab .lbl{ opacity:.85; margin-left:2px; font-weight:500 }
+
+/* Per-file external links (e.g. wikipedia / MDN) */
+.file-links{
+  display:flex; gap:6px; margin-top:6px; flex-wrap:wrap;
+}
+.file-links:empty{ display:none }
+.file-link{
+  display:inline-flex; align-items:center; gap:6px;
+  padding: 4px 9px; border-radius: 8px;
+  font-size: 11.5px; line-height:1.2;
+  border:1px solid rgba(53,208,255,0.28);
+  background:linear-gradient(135deg, rgba(53,208,255,0.10), rgba(124,92,255,0.08));
+  color:#cfeaff; text-decoration:none;
+  transition: background .15s, color .15s, border-color .15s, transform .15s;
+}
+.file-link:hover{
+  background:linear-gradient(135deg, rgba(53,208,255,0.20), rgba(124,92,255,0.16));
+  border-color:rgba(53,208,255,0.55);
+  color:#fff; transform: translateY(-1px);
+}
+.file-link .ico{ font-size:12px; opacity:.85 }
+.file-link .arrow{ font-size:10px; opacity:.65 }
+.file-link .host{ font-size:10px; color:var(--text-faint); font-family:'JetBrains Mono',monospace }
+.cm-host{ position:relative; height:calc(100% - 41px) }
+.CodeMirror{
+  height:100% !important; background:transparent;
+  font-size:14px; line-height:1.55;
+  padding: 6px 0;
+}
+.CodeMirror-gutters{ background:transparent; border-right:1px solid var(--border) }
+.CodeMirror-linenumber{ color:rgba(154,154,176,0.4) }
+.CodeMirror-cursor{ border-left-color:#fff }
+.CodeMirror-activeline-background{ background:rgba(124,92,255,0.05) !important }
+.CodeMirror-selected{ background:rgba(124,92,255,0.22) !important }
+.CodeMirror-matchingbracket{ color:#35d0ff !important; text-shadow:0 0 8px rgba(53,208,255,0.6) }
+
+/* Console card */
+.console-card{
+  height: 220px;
+  background: linear-gradient(180deg, rgba(8,8,18,0.78), rgba(6,6,14,0.78));
+  border:1px solid var(--border); border-radius: var(--radius);
+  display:flex; flex-direction:column; min-height:0;
+  backdrop-filter: blur(22px) saturate(150%);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  box-shadow: var(--shadow-lg);
+  overflow:hidden;
+}
+.console-head{
+  display:flex; align-items:center; gap:10px; padding:10px 14px;
+  border-bottom:1px solid var(--border);
+}
+.console-head .label{
+  font-size:11.5px; letter-spacing:0.18em; text-transform:uppercase; color:var(--text-dim);
+  display:flex; align-items:center; gap:8px;
+}
+.console-head .label::before{
+  content:""; width:8px; height:8px; border-radius:50%;
+  background: var(--success); box-shadow: 0 0 10px rgba(56,211,159,0.7);
+}
+.console-head .label.running::before{ background: var(--accent-2); box-shadow: 0 0 10px rgba(53,208,255,0.7); animation: pulse 1s ease infinite }
+.console-head .label.error::before{ background: var(--error); box-shadow: 0 0 10px rgba(255,90,122,0.7) }
+@keyframes pulse{
+  0%,100%{ transform: scale(1); opacity:1 }
+  50%   { transform: scale(1.4); opacity:.55 }
+}
+.console-head .stats{
+  font-size:11px; color:var(--text-faint); font-family:'JetBrains Mono',monospace;
+}
+.console-head .right{ margin-left:auto; display:flex; gap:6px }
+.console-head .icon-btn{
+  padding:5px 10px; border-radius:8px; border:1px solid var(--border);
+  background:rgba(255,255,255,0.02); color:var(--text-dim); font-size:11.5px;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.console-head .icon-btn:hover{ background:var(--surface-2); color:var(--text); border-color:var(--border-strong) }
+.console-out{
+  flex:1; overflow:auto; padding:10px 14px;
+  font-family:'JetBrains Mono',monospace; font-size:12.5px; line-height:1.55;
+  scrollbar-width:thin;
+}
+.console-out::-webkit-scrollbar{ width:8px; height:8px }
+.console-out::-webkit-scrollbar-thumb{ background:rgba(255,255,255,0.08); border-radius:8px }
+.console-out .empty{
+  color:var(--text-faint); text-align:center; padding:34px 0; font-style:italic; font-family:'Inter',sans-serif;
+}
+.line{
+  padding:3px 8px; margin:1px 0; border-radius:6px;
+  display:flex; gap:10px; align-items:flex-start;
+  border-left:2px solid transparent;
+  white-space:pre-wrap; word-break:break-word;
+}
+.line .t{ flex-shrink:0; color:var(--text-faint); font-size:10.5px; padding-top:2px; min-width:62px }
+.line .c{ flex:1; min-width:0 }
+.line.log{ color:#dcd5ff; border-left-color:rgba(124,92,255,0.4) }
+.line.info{ color:#9bd9ff; border-left-color:rgba(53,208,255,0.5) }
+.line.warn{ color:#ffe0a3; border-left-color:rgba(255,181,71,0.6); background:rgba(255,181,71,0.04) }
+.line.error{ color:#ffb1bf; border-left-color:rgba(255,90,122,0.7); background:rgba(255,90,122,0.06) }
+.line.system{ color:var(--text-faint); border-left-color:rgba(255,255,255,0.15); font-style:italic }
+.line.result{ color:#a8f5d2; border-left-color:rgba(56,211,159,0.55) }
+.console-out table{
+  border-collapse:collapse; margin:4px 0; font-size:12px;
+}
+.console-out th, .console-out td{
+  border:1px solid rgba(255,255,255,0.1); padding:3px 8px; text-align:left;
+}
+.console-out th{ background:rgba(124,92,255,0.12); color:#fff }
+
+/* Floating ambient glow shape */
+.ambient{
+  position:absolute; border-radius:50%; pointer-events:none; z-index:0;
+  filter: blur(60px); opacity:.5;
+}
+.ambient.a{ width:340px;height:340px; background:rgba(124,92,255,0.35); top:-80px; right:-100px; animation:floatA 14s ease-in-out infinite }
+.ambient.b{ width:280px;height:280px; background:rgba(53,208,255,0.28); bottom:-60px; left:8%; animation:floatB 18s ease-in-out infinite }
+@keyframes floatA{ 0%,100%{transform:translate(0,0)} 50%{transform:translate(-30px,20px)} }
+@keyframes floatB{ 0%,100%{transform:translate(0,0)} 50%{transform:translate(40px,-20px)} }
+
+/* Media modal — embeds external videos in-page */
+.media-modal{
+  position: fixed; inset: 0; z-index: 200; display: none;
+  align-items: center; justify-content: center;
+  padding: 24px;
+  background: rgba(4,4,12,0.78);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  animation: mmFade .18s ease both;
+}
+.media-modal.open{ display: flex }
+@keyframes mmFade{ from{opacity:0} to{opacity:1} }
+.media-panel{
+  width: min(960px, 100%);
+  max-height: 92vh;
+  display: flex; flex-direction: column;
+  background: linear-gradient(180deg, rgba(20,20,40,0.9), rgba(8,8,18,0.9));
+  border: 1px solid var(--border-strong);
+  border-radius: 18px;
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  position: relative;
+}
+.media-panel::before{
+  content:""; position: absolute; inset: -1px; border-radius: 19px; pointer-events: none;
+  background: linear-gradient(135deg, rgba(124,92,255,0.45), rgba(53,208,255,0) 40%, rgba(255,110,199,0.4));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude; padding: 1px;
+  opacity: .55;
+}
+.media-head{
+  display: flex; align-items: center; gap: 12px; padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+}
+.media-head h3{ margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -0.01em; flex: 1; min-width: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.media-host{ font-size: 11px; color: var(--text-faint); font-family: 'JetBrains Mono', monospace }
+.media-close{
+  width: 30px; height: 30px; flex-shrink: 0;
+  border-radius: 50%; border: 1px solid var(--border);
+  background: rgba(255,255,255,0.04); color: var(--text-dim);
+  font-size: 17px; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.media-close:hover{ background: rgba(255,90,122,0.14); color: #fff; border-color: rgba(255,90,122,0.4) }
+.media-body{
+  flex: 1; min-height: 0; padding: 14px 18px;
+  display: flex; align-items: center; justify-content: center;
+  background: #000;
+}
+.media-body video{
+  max-width: 100%; max-height: 70vh;
+  display: block; border-radius: 10px;
+  background: #000;
+}
+.media-foot{
+  padding: 10px 18px; border-top: 1px solid var(--border);
+  font-size: 12px; color: var(--text-faint);
+  display: flex; align-items: center; gap: 10px;
+}
+.media-foot a{ color: var(--accent-2); text-decoration: none }
+.media-foot a:hover{ text-decoration: underline }
+.media-loading{ color: var(--text-dim); font-size: 13px; padding: 60px 0 }
+
+/* HTML-content mode for the modal — used for install guides etc. */
+.media-body.html-mode{
+  background: linear-gradient(180deg, rgba(20,20,35,0.95), rgba(10,10,22,0.95));
+  display: block; align-items: stretch; justify-content: stretch;
+  padding: 20px 26px 24px;
+  overflow: auto;
+  font-family: 'Inter', system-ui, sans-serif;
+  color: var(--text); line-height: 1.65; text-align: left;
+}
+.media-body.html-mode h4{
+  margin: 18px 0 8px; font-size: 14px; font-weight: 700; color: #fff; letter-spacing: -0.005em;
+}
+.media-body.html-mode h4:first-child{ margin-top: 0 }
+.media-body.html-mode p{ margin: 8px 0; font-size: 14px; color: var(--text) }
+.media-body.html-mode ul{ margin: 8px 0; padding-left: 22px }
+.media-body.html-mode li{ margin: 4px 0; font-size: 14px }
+.media-body.html-mode a{
+  color: var(--accent-2); text-decoration: none;
+  border-bottom: 1px dashed rgba(53,208,255,0.4);
+  transition: color .15s, border-color .15s;
+}
+.media-body.html-mode a:hover{ color: #fff; border-bottom-color: rgba(53,208,255,0.85) }
+.media-body.html-mode code{
+  background: rgba(124,92,255,0.14);
+  border: 1px solid rgba(124,92,255,0.28);
+  color: #d4cbff; padding: 1px 6px; border-radius: 5px;
+  font-size: 12.5px; font-family: 'JetBrains Mono', monospace;
+}
+.media-body.html-mode pre{
+  background: rgba(6,6,14,0.85);
+  border: 1px solid var(--border); border-radius: 10px;
+  padding: 14px 16px; overflow-x: auto; margin: 12px 0;
+}
+.media-body.html-mode pre code{
+  background: none; border: 0; padding: 0;
+  color: #cfeaff; font-size: 12.5px; line-height: 1.55;
+}
+.media-body.html-mode kbd{
+  display: inline-block; padding: 2px 8px; margin: 0 2px;
+  font-family: 'JetBrains Mono', monospace; font-size: 11px; line-height: 1.35;
+  color: #f0e8ff;
+  background: rgba(124,92,255,0.18);
+  border: 1px solid rgba(124,92,255,0.42);
+  border-bottom-width: 2px; border-radius: 5px;
+}
+.media-body.html-mode small,
+.media-body.html-mode .note{ color: var(--text-faint); font-size: 12px; font-style: italic }
+.media-body.html-mode .arrow-note{ color: var(--text-dim); font-size: 12px; margin-top: 6px }
+.media-body.html-mode .step-pill{
+  display: inline-block; min-width: 20px; height: 20px; padding: 0 6px;
+  border-radius: 999px; background: rgba(53,208,255,0.16);
+  border: 1px solid rgba(53,208,255,0.4); color: #a4e2ff;
+  font-size: 11px; font-weight: 700; text-align: center; line-height: 18px;
+  margin-right: 8px; font-family: 'JetBrains Mono', monospace;
+}
+
+/* Toast / status */
+.toast{
+  position:fixed; bottom:22px; right:22px; z-index:50;
+  padding:10px 14px; border-radius:12px; font-size:13px;
+  background:linear-gradient(135deg,#7c5cff,#35d0ff); color:#fff;
+  box-shadow: 0 18px 40px -18px rgba(124,92,255,0.7);
+  transform: translateY(20px); opacity:0;
+  transition: transform .25s ease, opacity .25s ease;
+}
+.toast.show{ transform: translateY(0); opacity:1 }
+.toast.error{ background:linear-gradient(135deg,#ff5a7a,#ff8c5a) }
+</style>
+</head>
+<body>
+<canvas id="bg-3d"></canvas>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-cube">TS</div>
+      <div>
+        <h1>TS Lab</h1>
+        <div class="sub">Live Interpreter</div>
+      </div>
+    </div>
+
+    <div class="search-wrap">
+      <input class="search" id="search" placeholder="Filter files…" />
+    </div>
+
+    <div class="section-label">Files</div>
+    <ul class="file-list" id="fileList"></ul>
+
+    <a class="back-link" href="../index.html" style="margin-top:18px">⌂ Home</a>
+  </aside>
+
+  <main class="editor-pane">
+    <div class="ambient a"></div>
+    <div class="ambient b"></div>
+
+    <header class="top-bar">
+      <div class="file-meta">
+        <div class="file-icon">TS</div>
+        <div style="min-width:0">
+          <div class="file-name" id="fileName">hello_ts.ts<span class="dirty-mark">●</span></div>
+          <div class="file-sub" id="fileSub">typescript/hello_ts.ts</div>
+          <div class="file-links" id="fileLinks"></div>
+        </div>
+      </div>
+      <div class="spacer"></div>
+      <button class="action-btn" id="resetBtn" title="Revert to file on disk">⟲ Reset</button>
+      <button class="action-btn" id="clearBtn" title="Clear console">✕ Clear</button>
+      <button class="action-btn run-btn" id="runBtn" title="Run code">▶ Run <span class="k">⌘↵</span></button>
+    </header>
+
+    <section class="editor-card" id="editorCard">
+      <div class="editor-chrome">
+        <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="filename" id="chromeName">hello_ts.ts</span>
+        <div class="step-tabs" id="stepTabs"></div>
+        <span class="badge">TypeScript</span>
+      </div>
+      <div class="cm-host">
+        <textarea id="editor"></textarea>
+      </div>
+    </section>
+
+    <section class="console-card">
+      <div class="console-head">
+        <span class="label" id="consoleStatus">Idle</span>
+        <span class="stats" id="consoleStats"></span>
+        <div class="right">
+          <button class="icon-btn" id="copyOutBtn">Copy</button>
+          <button class="icon-btn" id="clearOutBtn">Clear</button>
+        </div>
+      </div>
+      <div class="console-out" id="consoleOut">
+        <div class="empty">Press ▶ Run (or ⌘/Ctrl+Enter) to execute the editor's code.</div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="media-modal" id="mediaModal" role="dialog" aria-modal="true" aria-labelledby="mediaTitle">
+  <div class="media-panel">
+    <div class="media-head">
+      <h3 id="mediaTitle">Loading…</h3>
+      <span class="media-host" id="mediaHost"></span>
+      <button class="media-close" id="mediaClose" type="button" title="Close (Esc)" aria-label="Close">×</button>
+    </div>
+    <div class="media-body" id="mediaBody"></div>
+    <div class="media-foot" id="mediaFoot">
+      <span>Embedded from <a id="mediaSource" href="#" target="_blank" rel="noopener">source ↗</a></span>
+    </div>
+  </div>
+</div>
+
+<!-- Embedded source — kept in sync with sibling .ts files -->
+<script type="text/plain" data-tsfile="hello_ts.ts">/**
+ * 1. Step 1: Install Node.js
+ * node -v
+ * npm -v
+ * 
+ * Step 2: Install TypeScript Compiler (tsc)
+ * npm install -g typescript
+ * 
+ * Step 3: Initialize a Project
+ * mkdir ts-tutorial && cd ts-tutorial
+ * npx tsc --init
+ * 
+ * Step 4: Compile & Run
+ * tsc hello_ts.ts
+ * node hello_ts.js
+ */
+
+// Primitive Types
+let username: string = "Zvika";
+let age: number = 30;
+let isTA: boolean = true;
+
+// Functions with typed parameters and return values
+function greet(name: string, year: number): string {
+    return `Hello ${name}, welcome to the class of ${year}!`;
+}
+
+console.log(greet(username, 2026));
+
+// Error Case: This will be caught by the compiler
+// greet("Student", "2026"); // Error: Argument of type 'string' is not assignable to parameter of type 'number'.</script>
+<script type="text/plain" data-tsfile="primitive_types.ts">/**
+ * SIMPLE PRIMITIVE TYPES
+ */
+
+let instructorName: string = "Zvika";
+let studentCount: number = 45;
+let isLabOpen: boolean = true;
+
+console.log(`Name: ${instructorName}`);
+console.log(`Class Size: ${studentCount}`);
+console.log(`Is Open: ${isLabOpen}`);
+
+// TypeScript infers 'string'
+let username = "alice";
+
+// TypeScript infers 'number'
+let score = 100;
+
+// TypeScript infers 'boolean'
+let flags = true;
+
+// TypeScript infers return type as 'number'
+function add(a: number, b: number) {
+return a + b;
+}
+</script>
+<script type="text/plain" data-tsfile="type.ts">/**
+ * LESSON: Type Aliases
+ * Using 'type' to create reusable definitions.
+ * To compile: tsc type_aliases.ts --target ES2020
+ */
+
+// 1. Aliasing Primitives
+// Makes code self-documenting for students.
+type StudentID = string;
+type NumericGrade = number;
+
+let user: StudentID = "std_882";
+let finalScore: NumericGrade = 95;
+
+
+// 2. Aliasing Object Shapes
+// Similar to an interface, but cannot be re-opened to add new properties.
+type Point2D = {
+    x: number;
+    y: number;
+};
+
+const origin: Point2D = { x: 0, y: 0 };
+
+
+// 3. Aliasing Unions (Extremely Powerful)
+// This is where Type Aliases shine compared to Interfaces.
+type ConnectionState = "connecting" | "connected" | "disconnected" | "error";
+
+let currentStatus: ConnectionState = "connected";
+
+
+// 4. Aliasing Tuples
+// Useful for representing mathematical vectors or fixed data pairs.
+type RGB = [red: number, green: number, blue: number];
+const tomato: RGB = [255, 99, 71];
+
+
+// 5. Aliasing Function Signatures
+// Defining the "contract" for a function.
+type MathOperation = (a: number, b: number) => number;
+
+const add: MathOperation = (x, y) => x + y;
+const multiply: MathOperation = (x, y) => x * y;
+
+
+// 6. Intersection Types (Combining Aliases)
+// Similar to "logical AND" in formal methods.
+type Person = { name: string };
+type Employee = { employeeID: number };
+
+type StaffMember = Person & Employee; // Must have both sets of properties
+
+const assistant: StaffMember = {
+    name: "Zvika",
+    employeeID: 12345
+};</script>
+<script type="text/plain" data-tsfile="special_types.ts">/**
+ * LESSON: The "Special" Types
+ * Explaining Null, Undefined, Any, Unknown, Never, Object, and Void.
+ * * To compile: tsc special_types_comparison.ts --target ES2020
+ */
+
+// ==========================================
+// 1. NULL vs. UNDEFINED (The "Nothing" Types)
+// ==========================================
+
+// Undefined: Variable is declared but has no value yet.
+let notInitialized: undefined; 
+
+// Null: An intentional assignment representing "no value".
+let intentionallyEmpty: null = null; 
+
+function checkNothing(val: string | null | undefined) {
+    if (val === undefined) console.log("Value was never provided.");
+    if (val === null) console.log("Value was explicitly set to null.");
+}
+
+// ==========================================
+// 2. ANY vs. UNKNOWN (The "Top" Types)
+// ==========================================
+
+// ANY: The "Escape Hatch". Disables all type checking.
+// DANGEROUS: Avoid this in your students' code.
+let insecure: any = { greet: () => "Hi" };
+try {
+    insecure.doAnything(); // NO COMPILE ERROR, but crashes at runtime!
+} catch (e) {
+    console.log("any crashed at runtime:", (e as Error).message);
+}
+
+// UNKNOWN: The "Safe Any". You cannot use it until you prove what it is.
+let secure: unknown = "I am a string";
+
+// secure.toUpperCase(); // ERROR: Object is of type 'unknown'.
+
+if (typeof secure === "string") {
+    console.log(secure.toUpperCase()); // OK: Logic "proved" it is a string.
+}
+
+// ==========================================
+// 3. VOID vs. NEVER (The "Function" Types)
+// ==========================================
+
+// VOID: A function that returns nothing (it finishes, but returns undefined).
+function logStatus(msg: string): void {
+    console.log("Status:", msg);
+    return; // Optional
+}
+
+// NEVER: A function that NEVER returns.
+// 1. It throws an error OR 2. It has an infinite loop.
+function panic(errorMsg: string): never {
+    throw new Error(errorMsg);
+}
+
+// ==========================================
+// 4. OBJECT (The "Non-Primitive" Type)
+// ==========================================
+
+// 'object' (lowercase) represents any non-primitive type.
+// It is NOT a number, string, boolean, symbol, null, or undefined.
+let dataContainer: object;
+dataContainer = { id: 1 };
+dataContainer = [1, 2, 3]; // Arrays are objects
+// dataContainer = 42;      // ERROR: Type 'number' is not assignable to 'object'.
+</script>
+<script type="text/plain" data-tsfile="numbers.ts">/**
+ * TYPE: number
+ * Representing integers, floats, and different bases.
+ */
+
+// 1. Different Bases (Literals)
+const decimal: number = 2026;
+const hex: number = 0xf00d;      // Hexadecimal (starts with 0x)
+const binary: number = 0b1010;   // Binary (starts with 0b)
+const octal: number = 0o744;     // Octal (starts with 0o)
+
+console.log(`Bases: ${decimal}, ${hex}, ${binary}, ${octal}`);
+
+
+// 2. Large Number Readability (Numeric Separators)
+// Use underscores to make large numbers readable for students.
+const billion: number = 1_000_000_000;
+const bytes: number = 0b1101_0010_1011_0001;
+
+
+// 3. Special Numeric Values (Non-trivial)
+// These are all of type 'number', which can be counter-intuitive.
+const infinity: number = Infinity;
+const negInfinity: number = -Infinity;
+const notANumber: number = NaN; // Result of "hello" * 5
+
+// compile with --lib ES2015,DOM for Numbers.isFinite
+function checkPurity(value: number) {
+    if (!Number.isFinite(value)) {
+        console.log("This is an infinite or NaN value!");
+    }
+} 
+
+
+// 4. Literal Number Types (Highly useful for logic)
+// Restricting a variable to ONLY specific numeric values.
+type DieRoll = 1 | 2 | 3 | 4 | 5 | 6;
+
+function movePlayer(roll: DieRoll) {
+    console.log(`Moving ${roll} spaces.`);
+}
+
+movePlayer(5); // OK
+// movePlayer(7); // Error: Argument of type '7' is not assignable to 'DieRoll'
+
+
+// 5. Floating Point Precision Awareness
+// A classic trap for CS students: 0.1 + 0.2 is NOT 0.3 in IEEE 754.
+const x: number = 0.1;
+const y: number = 0.2;
+const result: number = x + y;
+
+console.log(`0.1 + 0.2 = ${result}`); // Output: 0.30000000000000004
+
+// Proper way to handle currency/precision:
+const isCorrect: boolean = Math.abs(result - 0.3) < Number.EPSILON;
+console.log(`Is it close enough to 0.3? ${isCorrect}`);
+
+
+// 6. Bigint Represents whole numbers larger than 2^53 - 1.
+// compile with --target ES2020
+let bigIntVal: bigint = 9007199254740991n; 
+const hugeNumber = BigInt(9007199254740991); </script>
+<script type="text/plain" data-tsfile="casting.ts">/**
+ * Type Casting (Assertions)
+ * How to override TypeScript's inferred types.
+ * To compile: tsc type_casting.ts --target ES2020
+ */
+
+// 1. The 'as' Syntax (Recommended)
+// Imagine receiving data from an external API or research tool.
+let someValue: unknown = "Hello";
+
+// We know it's a string, but the compiler doesn't.
+let strLength: number = (someValue as string).length;
+
+
+// 2. The Angle-Bracket Syntax
+// This is identical to 'as', but cannot be used in .tsx (React) files.
+let anotherValue: unknown = "Logic is fun";
+let strUpper = (<string>anotherValue).toUpperCase();
+
+
+// 3. Casting with the DOM (Very common)
+// getElementById returns 'HTMLElement | null'.
+// We cast it to a specific element to access specific properties (like .value).
+
+// Quick setup so the demo has an input to read from:
+const created = document.createElement("input");
+created.id = "user-email";
+created.value = "zvi@example.com";
+document.body.appendChild(created);
+
+const input = document.getElementById("user-email") as HTMLInputElement;
+// Now we can access .value without a compiler error
+console.log(input.value);
+
+
+// 4. The "Impossible" Cast (Double Casting)
+// TypeScript prevents you from casting a 'string' directly to a 'number' 
+// because it knows that's likely a mistake.
+let myAge: string = "30";
+// let numAge = myAge as number; // ERROR: Conversion of type 'string' to 'number' may be a mistake.
+
+// To force it, cast to 'unknown' or 'any' first. (Use with caution!)
+let forcedNum = (myAge as unknown) as number;
+
+
+// 5. Const Assertions (The 'as const' syntax)
+// This makes the entire structure deeply readonly and literal.
+let settings = {
+    theme: "dark",
+    version: 1.0
+} as const;
+
+// settings.theme = "light"; // ERROR: Readonly property.</script>
+<script type="text/plain" data-tsfile="data_structure.ts">/**
+ * ARRAYS AND TUPLES
+ */
+// Array of numbers
+const list: number[] = [1, 2, 3];
+
+const names: string[] = [];
+names.push("Zvi"); // no error
+// names.push(3); // Error: Argument of type 'number' is not assignable to parameter of type 'string'.
+
+const str_array: readonly string[] = ["Zvi"];
+// names.push("Berger"); // Error: Property 'push' does not exist on type 'readonly string[]'.
+
+
+// Tuple: Fixed length and fixed types at specific indices
+let tuple: [string, number];
+tuple = ["hello", 10]; 
+// tuple = [10, "hello"]; // Error!
+
+/**
+ * ENUMS
+ * Useful for sets of constants (like HTTP status codes or directions)
+ */
+enum Role {
+    Admin,   // 0
+    User,    // 1
+    Guest    // 2
+}
+let currentRole: Role = Role.Admin;
+
+/**
+ * OBJECTS AND INTERFACES
+ * Interfaces define the "shape" of an object.
+ */
+const car: { type: string, model: string, year: number } = {
+  type: "Toyota",
+  model: "Corolla",
+  year: 2009
+};
+
+interface Professor {
+    readonly id: number; // Cannot be modified
+    name: string;
+    department?: string; // Optional property
+}
+
+const instructor: Professor = {
+    id: 1,
+    name: "Dr. Smith"
+};
+
+/**
+ * UNION AND INTERSECTION TYPES
+ */
+// Union: Can be one type OR another
+let result: string | number;
+result = "Success";
+result = 200;
+
+// Intersection: Combines multiple types into one
+interface Loggable { log(): void }
+interface Serializable { toJSON(): string }
+
+type StorageItem = Loggable & Serializable;
+
+// 1. The 'keyof' Operator
+interface Student {
+    id: number;
+    name: string;
+    age: number;
+}
+
+// StudentKeys is now "id" | "name" | "age"
+// Extracting keys from an object type to create a Union.
+// To compile: tsc type_keyof.ts --target ES2020
+type StudentKeys = keyof Student;
+
+let myKey: StudentKeys = "name"; // OK
+// myKey = "address"; // ERROR: "address" is not a key of Student.</script>
+<script type="text/plain" data-tsfile="symbol.ts">/**
+ * TYPE: symbol
+ * Symbols are unique and immutable.
+ */
+
+// 1. Basic Creation
+// Every call to Symbol() returns a new, unique symbol.
+const sym1: symbol = Symbol("key");
+const sym2: symbol = Symbol("key");
+
+console.log(sym1 === sym2); // false! Even with the same description.
+
+
+// 2. unique symbol (The most "Advanced" variant)
+// In TypeScript, 'unique symbol' is a subtype of symbol that can only 
+// be used with 'const'. It links the type to that specific instance.
+const INTERNAL_ID: unique symbol = Symbol("id");
+
+interface SecureUser {
+    [INTERNAL_ID]: number; // The key is the unique symbol itself
+    name: string;
+}
+
+const user: SecureUser = {
+    [INTERNAL_ID]: 999,
+    name: "Zvika"
+};
+
+console.log(user[INTERNAL_ID]); // 999
+
+// 3. The Symbol Registry (Global Symbols)
+// If you actually WANT to share a symbol across files, use Symbol.for()
+const globalSym1 = Symbol.for("app.api.key");
+const globalSym2 = Symbol.for("app.api.key");
+
+console.log(globalSym1 === globalSym2); // true</script>
+<script type="text/plain" data-tsfile="generic.ts">/**
+ * Generics (<T>)
+ * Writing reusable, type-safe logic.
+ * To compile: tsc type_generics.ts --target ES2020
+ */
+
+// 1. Why Generics? (The Problem)
+// Without generics, we use 'any', which is unsafe.
+function getLastItemAny(items: any[]): any {
+    return items[items.length - 1];
+}
+
+// 2. The Generic Solution
+// <T> is a placeholder for the Type. 
+// When we call the function, T becomes the type of the array we passed.
+function getLastItem<T>(items: T[]): T {
+    return items[items.length - 1];
+}
+
+const lastNum = getLastItem([10, 20, 30]);      // T is 'number'
+const lastStr = getLastItem(["a", "b", "c"]);  // T is 'string'
+
+
+// 3. Generic Interfaces
+// Useful for modeling API responses or data containers.
+interface Box<T> {
+    content: T;
+    id: number;
+}
+
+const stringBox: Box<string> = { content: "Research Data", id: 101 };
+const numberBox: Box<number> = { content: 555, id: 102 };
+
+
+// 4. Generic Constraints (extends)
+// Sometimes we want a generic, but it must have certain properties.
+// Example: The type MUST have a .length property.
+interface HasLength {
+    length: number;
+}
+
+function logLength<T extends HasLength>(item: T): void {
+    console.log(`Length: ${item.length}`);
+}
+
+logLength("Hello");       // OK: strings have .length
+logLength([1, 2, 3]);    // OK: arrays have .length
+// logLength(123);       // ERROR: numbers don't have .length
+
+
+// 5. Generics in Classes
+// Perfect for Data Structures like Stacks, Queues, or Trees.
+class Stack<T> {
+    private items: T[] = [];
+
+    push(val: T) {
+        this.items.push(val);
+    }
+
+    pop(): T | undefined {
+        return this.items.pop();
+    }
+}
+
+const plateStack = new Stack<string>();
+plateStack.push("Plate 1");
+
+
+// 6. Multiple Type Parameters
+// Example: A function that merges two different objects.
+function merge<T extends object, U extends object>(obj1: T, obj2: U): T & U {
+    return { ...obj1, ...obj2 };
+}
+
+const merged = merge({ name: "Zvika" }, { role: "TA" });
+console.log(merged.name, merged.role);</script>
+<script type="text/plain" data-tsfile="mapped_types.ts">/**
+ * Mapped Types
+ * The 'for-each' loop of the TypeScript type system.
+ * To compile: tsc master_mapped_types.ts --target ES2020
+ */
+
+// --- THE BASE INTERFACE ---
+interface SystemState {
+    id: number;
+    label: string;
+    isActive: boolean;
+}
+
+// 1. BASIC MAPPING
+// Create a "Mask" where every value in SystemState becomes a boolean.
+type StateMask = {
+    [K in keyof SystemState]: boolean;
+};
+
+// 2. THE MODIFIER MAPS (+ and -)
+// This is how built-in types like Readonly and Partial are made.
+
+// 2a. Make everything Readonly and Optional
+type ReadonlyPartialState = {
+    readonly [K in keyof SystemState]?: SystemState[K];
+};
+
+// 2b. The "Stripper" Map: Remove Readonly and Remove Optional
+// Note: We use '-readonly' and '-?' to force strictness.
+type AbsoluteState = {
+    -readonly [K in keyof SystemState]-?: SystemState[K];
+};
+
+
+// 3. WRAPPER MAPPING
+// Wrap every property in a specific generic container.
+type AsyncState = {
+    [K in keyof SystemState]: Promise<SystemState[K]>;
+};
+
+
+// 4. KEY REMAPPING (Using the 'as' clause)
+// This allows you to change the NAMES of the keys. 
+// Extremely common for generating Getters and Setters.
+
+type StateGetters = {
+    [K in keyof SystemState as `get${Capitalize<string & K>}`]: () => SystemState[K];
+};
+
+/* Resulting Type for StateGetters:
+{
+    getId: () => number;
+    getLabel: () => string;
+    getIsActive: () => boolean;
+}
+*/
+
+
+// 5. FILTERING DURING MAPPING
+// You can use the 'as' clause with 'never' to filter out specific types.
+// Only keep properties that are strings.
+type OnlyStrings<T> = {
+    [K in keyof T as T[K] extends string ? K : never]: T[K];
+};
+
+type StringFields = OnlyStrings<SystemState>; // Result: { label: string }
+
+// 6. Built-in Utility Types
+interface User {
+    id: number;
+    name: string;
+    email: string;
+    phoneNumber?: string; // Optional property
+    isAdmin: boolean;
+    secretToken: string;  // Sensitive data
+}
+
+// Partial<T> - Makes all properties optional
+// Essential for "Update" or "Patch" functions where users change only some fields.
+type UserUpdate = Partial<User>;
+
+const updateName: UserUpdate = { name: "Zvika" }; // Valid: no other fields required
+
+
+// Required<T> - The opposite of Partial; removes all '?' modifiers
+// Useful for ensuring a model is fully populated before saving to a database.
+type FinalUser = Required<User>;
+
+
+// Pick<T, Keys> - Selects only a specific subset of keys
+// Used to create "View Models" or DTOs (Data Transfer Objects).
+type UserProfile = Pick<User, "id" | "name" | "email">;
+
+const profile: UserProfile = {
+    id: 1,
+    name: "Alice",
+    email: "alice@univ.ac.il"
+};
+
+
+// Omit<T, Keys> - Removes specific keys
+// The best way to create a "Safe" version of an object by stripping sensitive fields.
+type SafeUser = Omit<User, "secretToken" | "isAdmin">;
+
+
+// Record<Keys, Type> - Creates a Dictionary/Map structure
+// Ideal for indexing data by an ID (e.g., in a Cache or Registry).
+type UserRegistry = Record<number, User>;
+
+const users: UserRegistry = {
+    101: { id: 101, name: "Zvi", email: "z@z.com", isAdmin: true, secretToken: "123" },
+    102: { id: 102, name: "Dan", email: "d@d.com", isAdmin: false, secretToken: "456" }
+};</script>
+<script type="text/plain" data-tsfile="conditinal_types.ts">/**
+ * Conditional Types
+ * Logic-based type transformations.
+ * To compile: tsc type_conditional.ts --target ES2020
+ */
+
+// 1. Basic Conditional Type
+// A type that returns "string" if passed a string, and "number" otherwise.
+//Conditional types use the form T extends U ? X : Y, which means:
+// "if type T extends (or is assignable to) type U, use type X, otherwise use type Y".
+type IsString<T> = T extends string ? string : number;
+
+type A = IsString<string>;
+type B = IsString<number>; 
+
+
+// 2. Non-Trivial Example: API Response Unwrapper
+// In research tools, you might have a wrapper. Let's unwrap it.
+interface DataWrapper<T> {
+    data: T;
+}
+
+type Unwrap<T> = T extends DataWrapper<infer U> ? U : T;
+
+type TypedData = Unwrap<DataWrapper<number[]>>; // Result: number[]
+type SimpleData = Unwrap<string>;               // Result: string
+
+
+// 3. Distributive Conditional Types
+// When you pass a Union to a conditional type, TS applies it to each member.
+type ToArray<T> = T extends any ? T[] : never;
+
+type StrOrNumArray = ToArray<string | number>; 
+// Result: string[] | number[]
+
+
+// 4. Filtering Types (The "Exclude" Logic)
+// Create a type that removes 'null' and 'undefined' from a union.
+type NonNullableCustom<T> = T extends null | undefined ? never : T;
+
+type Cleaned = NonNullableCustom<string | null | number>; 
+// Result: string | number (because 'never' is removed from unions)
+
+
+// 5. Practical Example: Formal Methods Result
+// Modeling a solver that returns different payload shapes based on the result status.
+type SolverResult<T> = T extends "SAT" 
+    ? { model: string } 
+    : { conflict: string[] };
+
+function handleSolver<S extends "SAT" | "UNSAT">(status: S): SolverResult<S> {
+    // Stub implementation — the real lesson is at the type level: SolverResult<S>
+    // narrows the return shape based on the literal type passed in.
+    if (status === "SAT") return { model: "x=1, y=2" } as SolverResult<S>;
+    return { conflict: ["clause 3", "clause 7"] } as SolverResult<S>;
+}
+
+const res = handleSolver("SAT");
+console.log("model:", res.model); // res.model exists here, but res.conflict does not.</script>
+<script type="text/plain" data-tsfile="brand.ts">/**
+ * LESSON: Branded Types (Nominal Typing)
+ * Preventing logical errors by distinguishing between structurally identical types.
+ */
+
+// A helper utility to "Brand" a type. 
+// It intersects the base type (K) with a unique literal object.
+type Brand<K, T> = K & { __brand: T };
+
+// Suppose we have User IDs and Project IDs. 
+// Both are numbers, but logically, they should never be mixed.
+type UserId = Brand<number, "UserId">;
+type ProjectId = Brand<number, "ProjectId">;
+
+// Critical System Functions
+function deleteUser(id: UserId) {
+    console.log(`User ${id} deleted successfully.`);
+}
+
+function archiveProject(id: ProjectId) {
+    console.log(`Project ${id} archived successfully.`);
+}
+
+// --- Usage ---
+
+// To create a Branded type, we use a Type Assertion (Casting)
+const myUserId = 101 as UserId;
+const myProjectId = 5005 as ProjectId;
+
+// Valid usage:
+deleteUser(myUserId);
+archiveProject(myProjectId);
+
+// --- THE LOGICAL PROTECTION ---
+// Without Branding, the following line would compile (since both are just numbers).
+// With Branding, the compiler prevents this logical error:
+// deleteUser(myProjectId); 
+// Error: Argument of type 'ProjectId' is not assignable to parameter of type 'UserId'.</script>
+
+<script>
+/* ==========================================================
+   File registry — every .js file in this directory
+   ========================================================== */
+const FILES = [
+  { file: 'hello_ts.ts',           label: 'Hello TS',
+    links: [
+      {
+        title: 'TypeScript — Install',
+        icon: '⚙',
+        embed: {
+          type: 'html',
+          html: `
+            <h4>You'll need:</h4>
+            <ul>
+              <li>Node.js — <a href="https://nodejs.org/en/download/" target="_blank" rel="noopener">nodejs.org/en/download</a></li>
+              <li>The TypeScript compiler — installed via npm:</li>
+            </ul>
+<pre><code>npm install -g typescript
+
+# verify
+tsc --version</code></pre>
+
+            <h4>Compile &amp; run a single file</h4>
+<pre><code>tsc hello_ts.ts        # produces hello_ts.js
+node hello_ts.js</code></pre>
+
+            <h4>Or set up a project</h4>
+<pre><code>mkdir ts-tutorial &amp;&amp; cd ts-tutorial
+npx tsc --init         # writes tsconfig.json</code></pre>
+
+            <p class="note">In this lab, every file is transpiled in your browser by the official TypeScript compiler — you don't need anything installed locally.</p>
+          `,
+        },
+      },
+    ],
+  },
+  { file: 'primitive_types.ts',    label: 'Primitive Types' },
+  { file: 'type.ts',               label: 'Type' },
+  { file: 'special_types.ts',      label: 'Special Types' },
+  { file: 'numbers.ts',            label: 'Numbers' },
+  { file: 'casting.ts',            label: 'Casting' },
+  { file: 'data_structure.ts',     label: 'Data Structures' },
+  { file: 'symbol.ts',             label: 'Symbol' },
+  { file: 'generic.ts',            label: 'Generic' },
+  { file: 'mapped_types.ts',       label: 'Mapped Types' },
+  { file: 'conditinal_types.ts',   label: 'Conditional Types' },
+  { file: 'brand.ts',              label: 'Branded Types' },
+];
+
+/* ==========================================================
+   3D background — Three.js scene with floating wireframes
+   ========================================================== */
+(function init3D(){
+  const canvas = document.getElementById('bg-3d');
+  if(!window.THREE){ return; }
+  const renderer = new THREE.WebGLRenderer({ canvas, alpha:true, antialias:true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 100);
+  camera.position.z = 7;
+
+  // Group of floating wireframe shapes
+  const group = new THREE.Group();
+  scene.add(group);
+
+  const palette = [0x7c5cff, 0x35d0ff, 0xff6ec7, 0xf7df1e];
+
+  function addShape(geom, color, scale, position){
+    const mat = new THREE.LineBasicMaterial({ color, transparent:true, opacity:0.55 });
+    const wire = new THREE.WireframeGeometry(geom);
+    const line = new THREE.LineSegments(wire, mat);
+    line.scale.setScalar(scale);
+    line.position.set(position.x, position.y, position.z);
+    line.userData.spinSpeed = {
+      x: (Math.random() - 0.5) * 0.004,
+      y: (Math.random() - 0.5) * 0.004,
+      z: (Math.random() - 0.5) * 0.0025
+    };
+    line.userData.float = { phase: Math.random()*Math.PI*2, amp: 0.3 + Math.random()*0.4 };
+    group.add(line);
+    return line;
+  }
+
+  addShape(new THREE.IcosahedronGeometry(1, 0), palette[0], 1.6,  { x:-4.5, y:1.6, z:-2 });
+  addShape(new THREE.TorusKnotGeometry(0.7, 0.22, 80, 12), palette[1], 1.4, { x: 4.5, y:-1.8, z:-1 });
+  addShape(new THREE.OctahedronGeometry(1, 0), palette[2], 1.0,  { x: 3.0, y: 2.2, z:-3 });
+  addShape(new THREE.TetrahedronGeometry(1, 0), palette[3], 0.9, { x:-3.2, y:-2.0, z:-2.5 });
+  addShape(new THREE.IcosahedronGeometry(1, 0), palette[1], 0.6, { x: 0.2, y: 0.0, z:-4 });
+  addShape(new THREE.DodecahedronGeometry(1, 0), palette[0], 0.7,{ x:-1.6, y: 2.6, z:-3.5 });
+  addShape(new THREE.OctahedronGeometry(1, 0), palette[3], 0.55, { x: 1.8, y:-2.6, z:-3.5 });
+
+  // Particle field
+  const pCount = 220;
+  const pGeom = new THREE.BufferGeometry();
+  const pPos = new Float32Array(pCount * 3);
+  for(let i=0; i<pCount; i++){
+    pPos[i*3+0] = (Math.random() - 0.5) * 18;
+    pPos[i*3+1] = (Math.random() - 0.5) * 12;
+    pPos[i*3+2] = (Math.random() - 0.5) * 10 - 2;
+  }
+  pGeom.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+  const pMat = new THREE.PointsMaterial({ color:0xffffff, size:0.025, transparent:true, opacity:0.65 });
+  const points = new THREE.Points(pGeom, pMat);
+  scene.add(points);
+
+  // Mouse parallax
+  const target = { x:0, y:0 };
+  const current = { x:0, y:0 };
+  window.addEventListener('mousemove', (e)=>{
+    target.x = (e.clientX / window.innerWidth - 0.5) * 0.6;
+    target.y = (e.clientY / window.innerHeight - 0.5) * 0.4;
+  });
+
+  function resize(){
+    const w = window.innerWidth, h = window.innerHeight;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  let t = 0;
+  function tick(){
+    t += 0.01;
+    current.x += (target.x - current.x) * 0.05;
+    current.y += (target.y - current.y) * 0.05;
+
+    group.children.forEach((m)=>{
+      m.rotation.x += m.userData.spinSpeed.x;
+      m.rotation.y += m.userData.spinSpeed.y;
+      m.rotation.z += m.userData.spinSpeed.z;
+      m.position.y += Math.sin(t + m.userData.float.phase) * 0.0025 * m.userData.float.amp;
+    });
+    group.rotation.y = current.x * 0.4;
+    group.rotation.x = -current.y * 0.3;
+    points.rotation.y += 0.0006;
+    points.rotation.x = -current.y * 0.05;
+
+    renderer.render(scene, camera);
+    requestAnimationFrame(tick);
+  }
+  tick();
+})();
+
+/* ==========================================================
+   CodeMirror setup
+   ========================================================== */
+const editor = CodeMirror.fromTextArea(document.getElementById('editor'), {
+  mode: { name: 'javascript', typescript: true },
+  theme: 'dracula',
+  lineNumbers: true,
+  matchBrackets: true,
+  autoCloseBrackets: true,
+  styleActiveLine: true,
+  indentUnit: 2,
+  tabSize: 2,
+  smartIndent: true,
+  lineWrapping: true,
+  extraKeys: {
+    'Cmd-Enter': runCode,
+    'Ctrl-Enter': runCode,
+    'Cmd-/': 'toggleComment',
+    'Ctrl-/': 'toggleComment',
+  },
+});
+editor.setValue('// Loading…\n');
+
+/* ==========================================================
+   File loading & state
+   ========================================================== */
+const fileListEl = document.getElementById('fileList');
+const fileNameEl = document.getElementById('fileName');
+const fileSubEl  = document.getElementById('fileSub');
+const chromeNameEl = document.getElementById('chromeName');
+const searchEl = document.getElementById('search');
+
+const state = {
+  active: null,           // current file name
+  originals: {},          // file -> original text from disk
+  buffers: {},            // file -> "All" buffer text (preserved per file)
+  loaded: {},             // file -> bool
+  lineCounts: {},         // file -> line count
+  steps: {},              // file -> [{n, title, code}] | null  (parsed step list)
+  activeStep: {},         // file -> 0 (All) | step number
+  stepEdits: {},          // file -> { stepN: editedCode }       (per-step scratch buffer)
+};
+
+/* Parse "// N) title" headings into step snippets. A step is included only if
+   its extracted code contains at least one console.* call (otherwise running
+   it would produce no visible output). The file gets step tabs only if 2+
+   steps qualify. Bodies that are mostly commented-out get their leading "// "
+   stripped; bodies that already contain live code are left as-is. */
+function parseSteps(source){
+  if(!source) return null;
+  const lines = source.split('\n');
+  const headingRe = /^(\s*)\/\/\s*(\d+)\)\s*(.*)$/;
+  const headings = [];
+  for(let i=0; i<lines.length; i++){
+    const m = lines[i].match(headingRe);
+    if(m) headings.push({ n: parseInt(m[2],10), title: m[3].trim(), line: i });
+  }
+  if(headings.length < 2) return null;
+
+  const result = [];
+  for(let h=0; h<headings.length; h++){
+    const start = headings[h].line;
+    const end = (h+1 < headings.length) ? headings[h+1].line : lines.length;
+    const block = lines.slice(start, end);
+
+    // Decide commented-mode vs live-mode by counting body lines (skip heading)
+    let commented = 0, live = 0;
+    for(let j=1; j<block.length; j++){
+      const t = block[j].trim();
+      if(!t) continue;
+      if(t.startsWith('//')) commented++;
+      else live++;
+    }
+    let code;
+    if(commented > live){
+      // Strip a single "// " (or "//") from each non-heading line
+      code = [block[0]].concat(
+        block.slice(1).map(line => line.replace(/^(\s*)\/\/ ?/, '$1'))
+      ).join('\n');
+    }else{
+      code = block.join('\n');
+    }
+
+    if(/\bconsole\.(log|info|warn|error|table|dir|trace)\b/.test(code)){
+      result.push({ n: headings[h].n, title: headings[h].title, code });
+    }
+  }
+  return result.length >= 2 ? result : null;
+}
+
+/* Save whatever's in the editor into the right slot for the active file/step. */
+function saveCurrentEditor(){
+  const file = state.active;
+  if(!file) return;
+  const step = state.activeStep[file] || 0;
+  const v = editor.getValue();
+  if(step === 0){
+    state.buffers[file] = v;
+    // Editing the canonical "All" view invalidates per-step caches —
+    // they should be regenerated from the new buffer next time.
+    if(state.stepEdits[file]) delete state.stepEdits[file];
+    state.steps[file] = parseSteps(v);
+  }else{
+    if(!state.stepEdits[file]) state.stepEdits[file] = {};
+    state.stepEdits[file][step] = v;
+  }
+}
+
+/* Set the editor content + chrome labels for the currently-active step. */
+function loadEditorForCurrentStep(){
+  const file = state.active;
+  if(!file) return;
+  const step = state.activeStep[file] || 0;
+  let content;
+  if(step === 0){
+    content = state.buffers[file] ?? state.originals[file] ?? '';
+    chromeNameEl.textContent = file;
+    fileSubEl.textContent = 'typescript/' + file;
+  }else{
+    const cached = state.stepEdits[file] && state.stepEdits[file][step];
+    if(cached != null){
+      content = cached;
+    }else{
+      const steps = parseSteps(state.buffers[file] ?? state.originals[file] ?? '');
+      const s = (steps || []).find(x => x.n === step);
+      content = s ? s.code : '// step ' + step + ' not found';
+    }
+    const s = (state.steps[file] || []).find(x => x.n === step);
+    chromeNameEl.textContent = file + '  ·  step ' + step;
+    fileSubEl.textContent = s ? `step ${step} — ${s.title}` : `step ${step}`;
+  }
+  editor.setValue(content);
+  editor.clearHistory();
+}
+
+function switchStep(stepN){
+  const file = state.active;
+  if(!file) return;
+  saveCurrentEditor();
+  state.activeStep[file] = stepN;
+  loadEditorForCurrentStep();
+  renderStepTabs();
+  refreshDirty(file);
+  editor.focus();
+}
+
+function renderStepTabs(){
+  const tabsEl = document.getElementById('stepTabs');
+  const file = state.active;
+  const steps = state.steps[file];
+  if(!steps || steps.length < 2){
+    tabsEl.innerHTML = '';
+    return;
+  }
+  const cur = state.activeStep[file] || 0;
+  const esc = (s) => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+  let html = '';
+  steps.forEach(s => {
+    const tip = `${s.n}) ${s.title || 'Step '+s.n}`;
+    html += `<button class="step-tab ${cur===s.n?'active':''}" data-step="${s.n}" title="${esc(tip)}">${s.n}</button>`;
+  });
+  html += `<button class="step-tab ${cur===0?'active':''}" data-step="0" title="Run the full file">All</button>`;
+  tabsEl.innerHTML = html;
+  tabsEl.querySelectorAll('.step-tab').forEach(b => {
+    b.addEventListener('click', () => switchStep(parseInt(b.dataset.step, 10)));
+  });
+}
+
+function renderFileLinks(){
+  const linksEl = document.getElementById('fileLinks');
+  const entry = FILES.find(f => f.file === state.active);
+  const links = (entry && entry.links) || [];
+  if(!links.length){ linksEl.innerHTML = ''; return; }
+  const esc = (s) => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+  linksEl.innerHTML = links.map((l, i) => {
+    let host = '';
+    try { host = new URL(l.url).hostname.replace(/^www\./,''); } catch {}
+    const isEmbed = !!l.embed;
+    const defaultIco = isEmbed
+      ? (l.embed.type === 'video' ? '▶' : (l.embed.type === 'html' ? '📥' : '⤢'))
+      : '📚';
+    const ico = l.icon || defaultIco;
+    const arrow = isEmbed ? '⤢' : '↗';
+    const tag = isEmbed ? 'button type="button"' : `a href="${esc(l.url || '#')}" target="_blank" rel="noopener noreferrer"`;
+    const close = isEmbed ? 'button' : 'a';
+    const tip = l.url ? esc(l.url) : esc(l.title);
+    return `<${tag} class="file-link" data-link-index="${i}" title="${tip}">`
+         + `<span class="ico">${esc(ico)}</span><span>${esc(l.title)}</span>`
+         + (host ? `<span class="host">${esc(host)}</span>` : '')
+         + `<span class="arrow">${arrow}</span></${close}>`;
+  }).join('');
+  // Attach click handlers for embed-style links
+  linksEl.querySelectorAll('button.file-link').forEach(btn => {
+    const idx = parseInt(btn.dataset.linkIndex, 10);
+    const link = links[idx];
+    if(!link) return;
+    btn.addEventListener('click', () => openMediaModal(link));
+  });
+}
+
+/* ==========================================================
+   Media modal — plays cross-origin video (and optional separate
+   audio track, e.g. Reddit DASH) inside the lab.
+   ========================================================== */
+const mediaModalEl = document.getElementById('mediaModal');
+const mediaTitleEl = document.getElementById('mediaTitle');
+const mediaHostEl  = document.getElementById('mediaHost');
+const mediaBodyEl  = document.getElementById('mediaBody');
+const mediaSrcLink = document.getElementById('mediaSource');
+
+function openMediaModal(link){
+  if(!link || !link.embed) return;
+  const e = link.embed;
+  const foot = document.getElementById('mediaFoot');
+  mediaTitleEl.textContent = link.title || 'Embedded media';
+  let host = '';
+  try { if(link.url) host = new URL(link.url).hostname.replace(/^www\./,''); } catch {}
+  mediaHostEl.textContent = host;
+  // Footer is only meaningful when there's an external source URL
+  if(link.url){
+    foot.style.display = '';
+    mediaSrcLink.href = link.url;
+    mediaSrcLink.textContent = host || 'source';
+    mediaSrcLink.title = link.url;
+  }else{
+    foot.style.display = 'none';
+  }
+
+  mediaBodyEl.classList.remove('html-mode');
+  mediaBodyEl.innerHTML = '<div class="media-loading">Loading…</div>';
+  mediaModalEl.classList.add('open');
+
+  if(e.type === 'html'){
+    mediaBodyEl.classList.add('html-mode');
+    mediaBodyEl.innerHTML = e.html || '';
+    return;
+  }
+  if(e.type === 'video'){
+    const video = document.createElement('video');
+    video.src = e.videoSrc;
+    video.controls = true;
+    video.playsInline = true;
+    video.preload = 'metadata';
+    if(e.poster) video.poster = e.poster;
+    if(e.width) video.width = e.width;
+    if(e.height) video.height = e.height;
+
+    let audio = null;
+    if(e.audioSrc){
+      // Reddit DASH videos have audio in a separate file; play in sync
+      audio = document.createElement('audio');
+      audio.src = e.audioSrc;
+      audio.preload = 'metadata';
+      const sync = () => { try { audio.currentTime = video.currentTime; } catch {} };
+      video.addEventListener('play',   () => { sync(); audio.play().catch(()=>{}); });
+      video.addEventListener('pause',  () => audio.pause());
+      video.addEventListener('seeking',() => sync());
+      video.addEventListener('seeked', () => sync());
+      video.addEventListener('ratechange', () => { audio.playbackRate = video.playbackRate; });
+      video.addEventListener('volumechange', () => { audio.volume = video.volume; audio.muted = video.muted; });
+      // Periodically nudge if drift > 0.25s
+      setInterval(() => {
+        if(audio.paused || video.paused) return;
+        const drift = audio.currentTime - video.currentTime;
+        if(Math.abs(drift) > 0.25) sync();
+      }, 1000);
+    }
+
+    mediaBodyEl.innerHTML = '';
+    mediaBodyEl.appendChild(video);
+    if(audio) mediaBodyEl.appendChild(audio);
+  } else if(e.type === 'iframe'){
+    mediaBodyEl.innerHTML = '';
+    const ifr = document.createElement('iframe');
+    ifr.src = e.src;
+    ifr.style.cssText = 'border:0;width:100%;height:60vh;border-radius:10px;background:#000';
+    if(e.allow) ifr.allow = e.allow;
+    mediaBodyEl.appendChild(ifr);
+  } else {
+    mediaBodyEl.innerHTML = '<div class="media-loading">Unsupported embed type.</div>';
+  }
+}
+
+function closeMediaModal(){
+  mediaModalEl.classList.remove('open');
+  // Tear down media to stop playback and free the network stream
+  mediaBodyEl.querySelectorAll('video, audio, iframe').forEach(n => {
+    if(n.tagName === 'IFRAME'){ n.src = 'about:blank'; }
+    else { try { n.pause(); } catch {} n.removeAttribute('src'); n.load && n.load(); }
+  });
+  mediaBodyEl.classList.remove('html-mode');
+  mediaBodyEl.innerHTML = '';
+}
+
+document.getElementById('mediaClose').addEventListener('click', closeMediaModal);
+mediaModalEl.addEventListener('click', (e) => {
+  if(e.target === mediaModalEl) closeMediaModal();
+});
+window.addEventListener('keydown', (e) => {
+  if(e.key === 'Escape' && mediaModalEl.classList.contains('open')) closeMediaModal();
+});
+
+function fileButtonNode(entry){
+  const li = document.createElement('li');
+  const btn = document.createElement('button');
+  btn.className = 'file-btn';
+  btn.dataset.file = entry.file;
+  btn.innerHTML = `
+    <span class="ico">TS</span>
+    <span class="label">${entry.label}</span>
+    <span class="lines" data-lines>—</span>
+  `;
+  btn.addEventListener('click', ()=> activate(entry.file));
+  li.appendChild(btn);
+  return li;
+}
+
+FILES.forEach(f => fileListEl.appendChild(fileButtonNode(f)));
+
+searchEl.addEventListener('input', ()=>{
+  const q = searchEl.value.toLowerCase().trim();
+  document.querySelectorAll('.file-btn').forEach(b=>{
+    const f = b.dataset.file;
+    const label = b.querySelector('.label').textContent.toLowerCase();
+    const match = !q || f.toLowerCase().includes(q) || label.includes(q);
+    b.parentElement.style.display = match ? '' : 'none';
+  });
+});
+
+function readEmbedded(name){
+  const node = document.querySelector(`script[type="text/plain"][data-tsfile="${name}"]`);
+  if(!node) return null;
+  // Restore "<\/script" → "</script" in case anything was neutralized at embed time
+  return node.textContent.replace(/<\\\/script/gi, '</script');
+}
+
+async function loadFile(name){
+  if(state.loaded[name]) return state.originals[name];
+  let text = readEmbedded(name);
+  if(text == null){
+    // Fall back to fetch when served over http(s) and a file isn't embedded
+    try{
+      const r = await fetch(name + '?t=' + Date.now());
+      if(!r.ok) throw new Error('HTTP ' + r.status);
+      text = await r.text();
+    }catch(err){
+      text = `// Source for ${name} is not embedded in this page and could not be fetched.\n// ${err.message}\n`;
+    }
+  }
+  state.originals[name] = text;
+  state.buffers[name] = text;
+  state.loaded[name] = true;
+  state.lineCounts[name] = text.split('\n').length;
+  const btn = document.querySelector(`.file-btn[data-file="${name}"]`);
+  if(btn){
+    const lines = btn.querySelector('[data-lines]');
+    if(lines) lines.textContent = state.lineCounts[name] + 'L';
+  }
+  return text;
+}
+
+async function activate(name){
+  // Save current view (file + step) into its slot
+  if(state.active){
+    saveCurrentEditor();
+    refreshDirty(state.active);
+  }
+  state.active = name;
+  document.querySelectorAll('.file-btn').forEach(b=>{
+    b.classList.toggle('active', b.dataset.file === name);
+  });
+  fileNameEl.firstChild.textContent = name;
+  if(!state.loaded[name]){
+    editor.setValue('// Loading ' + name + '…');
+    await loadFile(name);
+  }
+  // (Re)compute steps from the current "All" buffer
+  state.steps[name] = parseSteps(state.buffers[name] ?? state.originals[name] ?? '');
+  // First time this file is opened: default to the LAST step when there are
+  // multiple steps; otherwise fall back to All (0).
+  if(state.activeStep[name] == null){
+    const ss = state.steps[name];
+    state.activeStep[name] = (ss && ss.length >= 2) ? ss[ss.length - 1].n : 0;
+  }
+  // If a previously-active step no longer exists (e.g. headings removed), fall back to the last available step or All
+  if(state.activeStep[name] !== 0 && !(state.steps[name] || []).some(s => s.n === state.activeStep[name])){
+    const ss = state.steps[name];
+    state.activeStep[name] = (ss && ss.length) ? ss[ss.length - 1].n : 0;
+  }
+  loadEditorForCurrentStep();
+  renderStepTabs();
+  renderFileLinks();
+  refreshDirty(name);
+  editor.focus();
+}
+
+function refreshDirty(name){
+  // "Dirty" = the file's canonical (All) buffer differs from the original.
+  // The editor view may be a step extraction — that derivation is not
+  // a real edit, so don't read editor.getValue() here.
+  const buf = state.buffers[name];
+  const dirty = state.loaded[name] && buf != null && buf !== state.originals[name];
+  const btn = document.querySelector(`.file-btn[data-file="${name}"]`);
+  if(btn) btn.classList.toggle('dirty', dirty);
+  if(name === state.active){
+    fileNameEl.classList.toggle('dirty', dirty);
+  }
+}
+
+editor.on('change', ()=>{
+  if(!state.active) return;
+  const file = state.active;
+  const step = state.activeStep[file] || 0;
+  const v = editor.getValue();
+  if(step === 0){
+    state.buffers[file] = v;
+    if(state.stepEdits[file]) delete state.stepEdits[file];
+    const newSteps = parseSteps(v);
+    state.steps[file] = newSteps;
+    renderStepTabs();
+  }else{
+    if(!state.stepEdits[file]) state.stepEdits[file] = {};
+    state.stepEdits[file][step] = v;
+  }
+  refreshDirty(file);
+});
+
+/* ==========================================================
+   Reset / Clear / Run
+   ========================================================== */
+document.getElementById('resetBtn').addEventListener('click', ()=>{
+  const file = state.active;
+  if(!file || state.originals[file] == null) return;
+  const step = state.activeStep[file] || 0;
+  if(step === 0){
+    state.buffers[file] = state.originals[file];
+    if(state.stepEdits[file]) delete state.stepEdits[file];
+    state.steps[file] = parseSteps(state.originals[file]);
+    loadEditorForCurrentStep();
+    renderStepTabs();
+    toast('Reset ' + file);
+  }else{
+    // Forget any in-flight edits for this step, then regenerate from current All buffer
+    if(state.stepEdits[file]) delete state.stepEdits[file][step];
+    loadEditorForCurrentStep();
+    toast(`Reset step ${step}`);
+  }
+  refreshDirty(file);
+});
+document.getElementById('clearBtn').addEventListener('click', clearConsole);
+document.getElementById('clearOutBtn').addEventListener('click', clearConsole);
+document.getElementById('runBtn').addEventListener('click', () => {
+  if(isRunning) stopRun('user');
+  else runCode();
+});
+document.getElementById('copyOutBtn').addEventListener('click', ()=>{
+  const out = document.getElementById('consoleOut');
+  const text = Array.from(out.querySelectorAll('.line .c')).map(n=>n.textContent).join('\n');
+  if(!text){ toast('Nothing to copy'); return; }
+  navigator.clipboard?.writeText(text).then(()=> toast('Output copied'));
+});
+
+window.addEventListener('keydown', (e)=>{
+  if((e.metaKey || e.ctrlKey) && e.key === 'Enter'){
+    e.preventDefault();
+    runCode();
+  }
+});
+
+/* ==========================================================
+   Console output
+   ========================================================== */
+const consoleOut = document.getElementById('consoleOut');
+const consoleStatus = document.getElementById('consoleStatus');
+const consoleStats = document.getElementById('consoleStats');
+let runStartTime = 0;
+let logCount = 0;
+let warnCount = 0;
+let errorCount = 0;
+
+function clearConsole(){
+  consoleOut.innerHTML = '<div class="empty">Console cleared.</div>';
+  logCount = warnCount = errorCount = 0;
+  consoleStats.textContent = '';
+  consoleStatus.classList.remove('error','running');
+  consoleStatus.textContent = 'Idle';
+}
+function ensureConsoleEmptyCleared(){
+  const empty = consoleOut.querySelector('.empty');
+  if(empty) empty.remove();
+}
+// Renamed from `ts` — that name now belongs to the TypeScript compiler global.
+function relTime(){
+  const now = (performance.now() - runStartTime) / 1000;
+  return (now >= 0 && runStartTime > 0) ? '+' + now.toFixed(3) + 's' : '';
+}
+function appendLine(kind, parts){
+  ensureConsoleEmptyCleared();
+  const line = document.createElement('div');
+  line.className = 'line ' + kind;
+  const t = document.createElement('span'); t.className = 't'; t.textContent = relTime();
+  const c = document.createElement('span'); c.className = 'c';
+  c.textContent = parts.map(formatVal).join(' ');
+  line.append(t, c);
+  consoleOut.appendChild(line);
+  consoleOut.scrollTop = consoleOut.scrollHeight;
+}
+function appendTable(parts){
+  ensureConsoleEmptyCleared();
+  const data = parts[0];
+  if(data == null || typeof data !== 'object'){ appendLine('log', parts); return; }
+  const rows = Array.isArray(data) ? data : Object.entries(data).map(([k,v])=>({ '(key)':k, value:v }));
+  const cols = new Set();
+  rows.forEach(r => {
+    if(r && typeof r === 'object') Object.keys(r).forEach(k=>cols.add(k));
+    else cols.add('value');
+  });
+  const colArr = ['(index)', ...cols];
+  const tbl = document.createElement('table');
+  const thead = document.createElement('thead'); const trH = document.createElement('tr');
+  colArr.forEach(c=>{ const th = document.createElement('th'); th.textContent = c; trH.appendChild(th); });
+  thead.appendChild(trH); tbl.appendChild(thead);
+  const tbody = document.createElement('tbody');
+  rows.forEach((r, i)=>{
+    const tr = document.createElement('tr');
+    colArr.forEach(col=>{
+      const td = document.createElement('td');
+      let val;
+      if(col === '(index)') val = i;
+      else if(r && typeof r === 'object') val = r[col];
+      else if(col === 'value') val = r;
+      td.textContent = val === undefined ? '' : formatVal(val);
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+  tbl.appendChild(tbody);
+  const wrap = document.createElement('div'); wrap.className = 'line log';
+  const t = document.createElement('span'); t.className = 't'; t.textContent = relTime();
+  const c = document.createElement('span'); c.className = 'c'; c.appendChild(tbl);
+  wrap.append(t, c);
+  consoleOut.appendChild(wrap);
+  consoleOut.scrollTop = consoleOut.scrollHeight;
+}
+function formatVal(v){
+  if(v === null) return 'null';
+  if(v === undefined) return 'undefined';
+  if(typeof v === 'string') return v;
+  if(typeof v === 'number' || typeof v === 'boolean') return String(v);
+  if(typeof v === 'bigint') return v.toString() + 'n';
+  if(typeof v === 'function') return v.toString();
+  if(typeof v === 'symbol') return v.toString();
+  try { return JSON.stringify(v, replacer, 2); }
+  catch { return String(v); }
+}
+function replacer(_, value){
+  if(typeof value === 'bigint') return value.toString() + 'n';
+  if(typeof value === 'function') return '[Function ' + (value.name || 'anonymous') + ']';
+  if(typeof value === 'symbol') return value.toString();
+  return value;
+}
+
+function bumpStats(kind){
+  if(kind === 'log' || kind === 'info') logCount++;
+  else if(kind === 'warn') warnCount++;
+  else if(kind === 'error') errorCount++;
+  consoleStats.textContent = `${logCount} log · ${warnCount} warn · ${errorCount} err`;
+}
+
+/* ==========================================================
+   Sandbox runner — uses srcdoc iframe so timers + async work,
+   and so the runner cannot pollute or break this page.
+   ========================================================== */
+let sandbox = null;
+let sandboxId = 0;
+
+function killSandbox(){
+  if(sandbox){ sandbox.remove(); sandbox = null; }
+}
+
+/* Run/Stop button state — keeps Stop visible while the iframe is alive
+   (so async setTimeout/Promise output can still arrive). Auto-reverts to
+   Run after a brief idle window with no incoming messages, or immediately
+   if the user clicks Stop. */
+let isRunning = false;
+let idleTimer = null;
+const IDLE_WINDOW_MS = 800;
+
+function setRunButton(running){
+  const btn = document.getElementById('runBtn');
+  if(!btn) return;
+  if(running){
+    btn.classList.remove('run-btn');
+    btn.classList.add('stop-btn');
+    btn.title = 'Stop running code';
+    btn.innerHTML = '■ Stop <span class="k">⌘↵</span>';
+  }else{
+    btn.classList.remove('stop-btn');
+    btn.classList.add('run-btn');
+    btn.title = 'Run code';
+    btn.innerHTML = '▶ Run <span class="k">⌘↵</span>';
+  }
+}
+
+function scheduleIdle(){
+  if(idleTimer) clearTimeout(idleTimer);
+  idleTimer = setTimeout(()=>{
+    idleTimer = null;
+    if(!isRunning) return;
+    killSandbox();
+    isRunning = false;
+    setRunButton(false);
+  }, IDLE_WINDOW_MS);
+}
+
+function stopRun(reason){
+  if(idleTimer){ clearTimeout(idleTimer); idleTimer = null; }
+  const wasRunning = isRunning;
+  killSandbox();
+  isRunning = false;
+  setRunButton(false);
+  if(wasRunning){
+    consoleStatus.classList.remove('running');
+    if(errorCount > 0){ consoleStatus.classList.add('error'); consoleStatus.textContent = 'Failed'; }
+    else { consoleStatus.textContent = reason === 'user' ? 'Stopped' : 'Done'; }
+    if(reason === 'user') appendLine('system', ['■ Stopped by user']);
+  }
+}
+
+function buildSandboxSrc(code, runId){
+  // serialize the user code as a JSON string so quotes/backticks survive intact
+  const codeJson = JSON.stringify(code);
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body><script>
+(function(){
+  const RUN_ID = ${runId};
+  function send(kind, payload){
+    parent.postMessage({ __js_lab__: true, runId: RUN_ID, kind, payload }, '*');
+  }
+  function pack(args){
+    return Array.from(args).map(a => {
+      if(a instanceof Error) return { __t:'error', name:a.name, message:a.message, stack:a.stack };
+      return a;
+    });
+  }
+  const origLog = console.log;
+  ['log','info','warn','error','debug'].forEach(m=>{
+    console[m] = function(){ send(m === 'debug' ? 'log' : m, pack(arguments)); };
+  });
+  console.table = function(data){ send('table', [data]); };
+  console.dir = function(o){ send('log', [o]); };
+  console.trace = function(){ send('log', ['trace']); };
+  console.group = function(){ send('log', ['▼ '+Array.from(arguments).join(' ')]); };
+  console.groupEnd = function(){};
+  console.time = function(l){ console.__t = console.__t||{}; console.__t[l||'default']=performance.now(); };
+  console.timeEnd = function(l){
+    const k = l||'default';
+    const start = (console.__t||{})[k];
+    if(start!=null) send('info', [k+': '+(performance.now()-start).toFixed(3)+'ms']);
+  };
+  window.addEventListener('error', function(e){
+    send('error', [{__t:'error', name:(e.error&&e.error.name)||'Error', message:e.message, stack:(e.error&&e.error.stack)||''}]);
+  });
+  window.addEventListener('unhandledrejection', function(e){
+    const r = e.reason;
+    if(r instanceof Error) send('error', [{__t:'error', name:r.name, message:r.message, stack:r.stack}]);
+    else send('error', ['Unhandled promise rejection: '+String(r)]);
+  });
+  // Run user code; wrap in a fresh function so top-level "return" works
+  // and so syntax errors are reported as errors.
+  const userCode = ${codeJson};
+  try{
+    (0, eval)(userCode);
+    send('done', []);
+  }catch(err){
+    send('error', [{__t:'error', name:err.name, message:err.message, stack:err.stack}]);
+    send('done', []);
+  }
+})();
+<\/script></body></html>`;
+}
+
+window.addEventListener('message', (ev)=>{
+  const data = ev.data;
+  if(!data || !data.__js_lab__) return;
+  if(data.runId !== sandboxId) return;
+  const { kind, payload } = data;
+  if(kind === 'done'){
+    // Sync user code finished — start the idle window. Any further
+    // async output (setTimeout/Promise) will reset it.
+    consoleStatus.classList.remove('running');
+    if(errorCount > 0){ consoleStatus.classList.add('error'); consoleStatus.textContent = 'Failed'; }
+    else { consoleStatus.textContent = 'Done'; }
+    if(isRunning) scheduleIdle();
+    return;
+  }
+  if(kind === 'table'){ appendTable(payload); }
+  else {
+    // unwrap structured errors
+    const display = payload.map(p => {
+      if(p && p.__t === 'error') return `${p.name}: ${p.message}` + (p.stack ? '\n' + indent(p.stack) : '');
+      return p;
+    });
+    appendLine(kind, display);
+    bumpStats(kind);
+  }
+  // Any async output extends the idle window — keep Stop visible
+  if(isRunning && idleTimer) scheduleIdle();
+});
+function indent(s){ return s.split('\n').map(l=>'    '+l).join('\n'); }
+
+/* TypeScript compiler loader — tries several CDNs because jsdelivr/unpkg
+   are sometimes blocked. Resolves true once `window.ts.transpileModule`
+   is available. */
+const TS_CDNS = [
+  'https://playgroundcdn.typescriptlang.org/cdn/5.4.5/typescript/lib/typescript.js',
+  'https://cdn.jsdelivr.net/npm/typescript@5.4.5/lib/typescript.js',
+  'https://unpkg.com/typescript@5.4.5/lib/typescript.js',
+];
+let TS_LOAD_PROMISE = null;
+function loadTS(){
+  if(typeof ts !== 'undefined' && ts.transpileModule) return Promise.resolve(true);
+  if(TS_LOAD_PROMISE) return TS_LOAD_PROMISE;
+  TS_LOAD_PROMISE = new Promise(resolve => {
+    let i = 0;
+    function next(){
+      if(typeof ts !== 'undefined' && ts.transpileModule){ resolve(true); return; }
+      if(i >= TS_CDNS.length){ resolve(false); return; }
+      const s = document.createElement('script');
+      s.src = TS_CDNS[i++];
+      s.async = false;
+      s.onload  = () => { (typeof ts !== 'undefined' && ts.transpileModule) ? resolve(true) : next(); };
+      s.onerror = next;
+      document.head.appendChild(s);
+    }
+    next();
+  });
+  return TS_LOAD_PROMISE;
+}
+// Kick off loading immediately so it's ready by the time the user clicks Run
+loadTS();
+
+/* Transpile TypeScript → JavaScript using the official TS compiler.
+   Returns { js, errors } where errors is a list of human-readable strings
+   from any syntactic diagnostics. transpileModule does not run the full
+   semantic type-checker, but it does report parse errors. */
+function transpileTS(tsCode){
+  if(typeof ts === 'undefined' || !ts.transpileModule){
+    return { js: '', errors: ['TypeScript compiler is not loaded — couldn\'t reach any CDN. Check the network tab; ad-blockers sometimes block jsdelivr/unpkg.'] };
+  }
+  try {
+    const result = ts.transpileModule(tsCode, {
+      compilerOptions: {
+        target: ts.ScriptTarget.ES2020,
+        // CommonJS keeps top-level statements working in the sandbox iframe and
+        // emits no `exports` wrapper for files that don't use import/export.
+        module: ts.ModuleKind.CommonJS,
+        esModuleInterop: true,
+        allowJs: true,
+        sourceMap: false,
+        inlineSourceMap: false,
+      },
+      reportDiagnostics: true,
+      fileName: state.active || 'input.ts',
+    });
+    const errors = (result.diagnostics || [])
+      .filter(d => d.category === ts.DiagnosticCategory.Error)
+      .map(d => {
+        const msg = ts.flattenDiagnosticMessageText(d.messageText, '\n');
+        if(d.file && d.start != null){
+          const { line, character } = d.file.getLineAndCharacterOfPosition(d.start);
+          return `${d.file.fileName}(${line+1},${character+1}): TS${d.code}: ${msg}`;
+        }
+        return `TS${d.code}: ${msg}`;
+      });
+    return { js: result.outputText, errors };
+  } catch(err) {
+    return { js: '', errors: [String(err && err.message || err)] };
+  }
+}
+
+async function runCode(){
+  if(!state.active){ toast('No file selected'); return; }
+  const tsCode = editor.getValue();
+  // Reset console
+  consoleOut.innerHTML = '';
+  logCount = warnCount = errorCount = 0;
+  consoleStats.textContent = '';
+  consoleStatus.classList.remove('error');
+  consoleStatus.classList.add('running');
+  consoleStatus.textContent = 'Running…';
+  const _step = state.activeStep[state.active] || 0;
+  appendLine('system', [`▶ Running ${state.active}${_step ? ' — step ' + _step : ''}`]);
+
+  // Make sure the TS compiler is available; if it's still loading, wait briefly
+  if(typeof ts === 'undefined' || !ts.transpileModule){
+    appendLine('system', ['⏳ Loading TypeScript compiler…']);
+    const ok = await loadTS();
+    if(!ok){
+      consoleStatus.classList.remove('running');
+      consoleStatus.classList.add('error');
+      consoleStatus.textContent = 'Compiler unavailable';
+      appendLine('error', ['Could not load the TypeScript compiler from any CDN. Check your network / ad-blocker, then click Run again.']);
+      bumpStats('error');
+      return;
+    }
+  }
+
+  // Transpile TS → JS
+  const { js: code, errors: tsErrors } = transpileTS(tsCode);
+  if(tsErrors.length){
+    tsErrors.forEach(e => { appendLine('error', [e]); bumpStats('error'); });
+  }
+  if(!code){
+    consoleStatus.classList.remove('running');
+    consoleStatus.classList.add('error');
+    consoleStatus.textContent = 'Compile failed';
+    return;
+  }
+
+  // Tear down any previous run, including its idle timer
+  if(idleTimer){ clearTimeout(idleTimer); idleTimer = null; }
+  killSandbox();
+  sandboxId += 1;
+  runStartTime = performance.now();
+  const iframe = document.createElement('iframe');
+  iframe.sandbox = 'allow-scripts';
+  iframe.style.display = 'none';
+  iframe.srcdoc = buildSandboxSrc(code, sandboxId);
+  document.body.appendChild(iframe);
+  sandbox = iframe;
+  isRunning = true;
+  setRunButton(true);
+}
+
+/* ==========================================================
+   Toast helper
+   ========================================================== */
+const toastEl = document.getElementById('toast');
+let toastTimer;
+function toast(msg, kind){
+  toastEl.textContent = msg;
+  toastEl.classList.toggle('error', kind === 'error');
+  toastEl.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=> toastEl.classList.remove('show'), 1800);
+}
+
+/* ==========================================================
+   Boot
+   ========================================================== */
+(async function boot(){
+  // Pre-fetch line counts for sidebar in the background
+  FILES.forEach(f => loadFile(f.file));
+  // Activate first file
+  await activate(FILES[0].file);
+})();
+</script>
+</body>
+</html>

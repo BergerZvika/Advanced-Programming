@@ -19,8 +19,15 @@ let strUpper = (<string>anotherValue).toUpperCase();
 
 
 // 3. Casting with the DOM (Very common)
-// getElementById returns 'HTMLElement | null'. 
+// getElementById returns 'HTMLElement | null'.
 // We cast it to a specific element to access specific properties (like .value).
+
+// Quick setup so the demo has an input to read from:
+const created = document.createElement("input");
+created.id = "user-email";
+created.value = "zvi@example.com";
+document.body.appendChild(created);
+
 const input = document.getElementById("user-email") as HTMLInputElement;
 // Now we can access .value without a compiler error
 console.log(input.value);
