@@ -1251,7 +1251,7 @@ input[type=color]{width:60px;height:36px;border:none;background:transparent;curs
           <span class="stats-spark">📊</span>
           <div>
             <h3>Page statistics</h3>
-            <p>Live counters shared across all visitors — global tool opens and source downloads.</p>
+            <p>Live counters shared across all visitors — global tool opens, source downloads, and "More of my work" clicks.</p>
           </div>
         </div>
         <button id="statsClose" class="stats-close" type="button" title="Close (Esc)">×</button>
@@ -1260,6 +1260,7 @@ input[type=color]{width:60px;height:36px;border:none;background:transparent;curs
         <div class="stats-globals">
           <div class="stat"><b id="openCount">…</b><span>Tool opens</span></div>
           <div class="stat"><b id="dlCount">…</b><span>Downloads</span></div>
+          <div class="stat"><b id="mwClickCount">…</b><span>"More of my work" clicks</span></div>
         </div>
       </div>
     </div>
@@ -1460,10 +1461,11 @@ const tool = (def) => { TOOLS.push(def); return def; };
 // instead of silently drifting into a per-browser local count.)
 const STATS_NAMESPACE = 'bergeroverflow-zvbe10';
 const STATS_URL = (key, mode) => `https://abacus.jasoncameron.dev/${mode}/${STATS_NAMESPACE}/${key}`;
-const usage = { opens: null, downloads: null };
+const usage = { opens: null, downloads: null, mwClicks: null };
 function refreshUsageUI(){
   const dEl = $('#dlCount'); if (dEl) dEl.textContent = usage.downloads === null ? '…' : String(usage.downloads);
   const oEl = $('#openCount'); if (oEl) oEl.textContent = usage.opens === null ? '…' : String(usage.opens);
+  const mEl = $('#mwClickCount'); if (mEl) mEl.textContent = usage.mwClicks === null ? '…' : String(usage.mwClicks);
 }
 async function statsFetch(key, mode){
   try {
@@ -1474,9 +1476,14 @@ async function statsFetch(key, mode){
   } catch(e){ console.warn('[stats] ' + mode + '/' + key + ' failed', e); return null; }
 }
 async function syncStats(){
-  const [o, d] = await Promise.all([statsFetch('tool-opens', 'get'), statsFetch('downloads', 'get')]);
+  const [o, d, m] = await Promise.all([
+    statsFetch('tool-opens', 'get'),
+    statsFetch('downloads', 'get'),
+    statsFetch('mywork-clicks', 'get'),
+  ]);
   if (typeof o === 'number') usage.opens = o;
   if (typeof d === 'number') usage.downloads = d;
+  if (typeof m === 'number') usage.mwClicks = m;
   refreshUsageUI();
 }
 refreshUsageUI();           // initial "…"
@@ -1527,6 +1534,18 @@ $('#wsClose').addEventListener('click', closeTool);
   close.addEventListener('click', hide);
   modal.addEventListener('click', (e) => { if (e.target === modal) hide(); });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && modal.classList.contains('open')) hide(); });
+  // Bump the global "More of my work" click counter on any card activation.
+  // mousedown fires before the new tab steals focus; auxclick covers middle-click.
+  $$('.my-work-card').forEach(card => {
+    const fire = () => {
+      statsFetch('mywork-clicks', 'hit').then(v => {
+        if (typeof v === 'number'){ usage.mwClicks = v; refreshUsageUI(); }
+      });
+    };
+    card.addEventListener('mousedown', fire);
+    card.addEventListener('auxclick', fire);
+    card.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') fire(); });
+  });
 })();
 
 // Page stats modal — opened by clicking the BergerOverflow logo / brand
