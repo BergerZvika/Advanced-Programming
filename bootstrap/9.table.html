@@ -4,6 +4,13 @@
   <meta charset="UTF-8">
   <title>Bootstrap Tables</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    /* Bootstrap 5.3's defaults for striped/hover are very faint (rgba 5% / 7.5%).
+       Bump the contrast so the demos are clearly visible — still uses
+       Bootstrap's own CSS variables (so behaviour stays Bootstrap-driven). */
+    .table-striped > tbody > tr:nth-of-type(odd) > * { --bs-table-bg-type:  rgba(0,0,0,0.12); }
+    .table-hover   > tbody > tr:hover > *           { --bs-table-bg-state: rgba(13,110,253,0.18); cursor: pointer; }
+  </style>
 </head>
 <body class="p-4">
 
@@ -64,9 +71,9 @@
       </tr>
       <tr>
         <th>3</th>
-        <td>Mike</td>
-        <td>Jordan</td>
-        <td>@mj</td>
+        <td>Sam</td>
+        <td>Patel</td>
+        <td>@spatel</td>
       </tr>
     </tbody>
   </table>
@@ -123,32 +130,59 @@
 
   <!-- 5. Responsive Table -->
   <h5>5. Responsive Table</h5>
-  <!-- .table-responsive makes table scrollable on small screens -->
+  <!-- .table-responsive makes the table scroll horizontally when it's
+       wider than the container. The min-width below forces the table
+       to be wider than the preview pane so you can SEE the scrollbar
+       and the wrapper actually doing its job. Drag the bottom of the
+       table sideways to see the hidden columns. -->
   <div class="table-responsive">
-    <table class="table">
+    <table class="table" style="min-width: 900px">
       <thead>
         <tr>
           <th>#</th>
           <th>Product</th>
           <th>Description</th>
+          <th>Category</th>
           <th>Price</th>
           <th>Stock</th>
+          <th>Warehouse</th>
+          <th>Last Restock</th>
+          <th>Status</th>
         </tr>
       </thead>
       <tbody>
         <tr>
           <th>1</th>
-          <td>Phone</td>
-          <td>Smartphone with OLED</td>
+          <td>Phone Pro 14</td>
+          <td>Smartphone with 6.7" OLED display and titanium frame</td>
+          <td>Mobile</td>
           <td>$699</td>
           <td>34</td>
+          <td>Tel-Aviv · A12</td>
+          <td>2026-04-18</td>
+          <td>In stock</td>
         </tr>
         <tr>
           <th>2</th>
-          <td>Laptop</td>
-          <td>High-end model</td>
+          <td>Laptop Ultra</td>
+          <td>16" high-end model, 32GB RAM, 1TB SSD</td>
+          <td>Computers</td>
           <td>$1299</td>
           <td>15</td>
+          <td>Haifa · B07</td>
+          <td>2026-04-22</td>
+          <td>In stock</td>
+        </tr>
+        <tr>
+          <th>3</th>
+          <td>Tablet Mini</td>
+          <td>Compact 8" tablet with Apple Pencil support</td>
+          <td>Mobile</td>
+          <td>$449</td>
+          <td>0</td>
+          <td>Jerusalem · C03</td>
+          <td>2026-03-30</td>
+          <td>Out of stock</td>
         </tr>
       </tbody>
     </table>
@@ -157,7 +191,7 @@
   <!-- 6. Contextual Table Rows -->
   <h5>6. Contextual Colors</h5>
   <!-- Add classes like .table-success, .table-danger, etc. to rows -->
-  <table class="table ">
+  <table class="table">
     <thead>
       <tr>
         <th>Status</th>
@@ -184,8 +218,8 @@
     </tbody>
   </table>
 
-  <!-- 7. This is a dark-themed table using the .table-dark class -->
-  <h5> 7 Dark Table</h5>
+  <!-- 7. Dark-themed table using the .table-dark class -->
+  <h5>7. Dark Table</h5>
 
   <!-- It gives the table a dark background and light text for contrast -->
   <table class="table table-dark">

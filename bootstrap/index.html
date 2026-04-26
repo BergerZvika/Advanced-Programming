@@ -1,0 +1,3285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Bootstrap Lab — Advanced Programming</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/theme/dracula.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/dialog/dialog.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/hint/show-hint.min.css">
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/xml/xml.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/javascript/javascript.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/css/css.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/htmlmixed/htmlmixed.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/edit/closebrackets.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/edit/matchbrackets.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/selection/active-line.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/comment/comment.min.js"></script>
+
+<style>
+:root{
+  --bg-0:#06060c;
+  --bg-1:#0c0c18;
+  --bg-2:#15152a;
+  --surface:rgba(255,255,255,0.04);
+  --surface-2:rgba(255,255,255,0.07);
+  --border:rgba(255,255,255,0.09);
+  --border-strong:rgba(255,255,255,0.18);
+  --text:#e8e8f3;
+  --text-dim:#9a9ab0;
+  --text-faint:#666680;
+  --accent:#7c5cff;
+  --accent-2:#35d0ff;
+  --accent-3:#ff6ec7;
+  --bs-purple:#7952b3;
+  --bs-purple-2:#a585d8;
+  --success:#38d39f;
+  --warn:#ffb547;
+  --error:#ff5a7a;
+  --radius:18px;
+  --radius-sm:12px;
+  --shadow-lg: 0 30px 80px -30px rgba(124,92,255,0.35), 0 10px 30px -15px rgba(0,0,0,0.6);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg-0);color:var(--text);font-family:'Inter',system-ui,sans-serif;height:100%;overflow:hidden}
+code,pre,textarea,.mono,.CodeMirror{font-family:'JetBrains Mono',ui-monospace,monospace}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+
+/* 3D Three.js canvas — background layer */
+#bg-3d{
+  position:fixed; inset:0; z-index:-2;
+  display:block;
+  background:
+    radial-gradient(1200px 700px at 8% -10%, rgba(124,92,255,0.30), transparent 60%),
+    radial-gradient(1000px 600px at 110% 0%,  rgba(53,208,255,0.22), transparent 60%),
+    radial-gradient(900px 600px at 50% 130%,  rgba(255,110,199,0.18), transparent 60%),
+    linear-gradient(180deg, #050510 0%, #08081a 50%, #050510 100%);
+}
+/* tiny stars overlay */
+body::after{
+  content:""; position:fixed; inset:0; z-index:-1; pointer-events:none; opacity:.32;
+  background-image:
+    radial-gradient(1px 1px at 20% 30%, #ffffff 100%, transparent),
+    radial-gradient(1px 1px at 70% 60%, #ffffff 100%, transparent),
+    radial-gradient(1.5px 1.5px at 40% 80%, #ffffff 100%, transparent),
+    radial-gradient(1px 1px at 85% 20%, #ffffff 100%, transparent),
+    radial-gradient(1px 1px at 15% 65%, #ffffff 100%, transparent);
+  background-size: 1200px 800px;
+  mask-image:linear-gradient(180deg,transparent,#000 20%,#000 80%,transparent);
+}
+
+/* Layout */
+.app{
+  display:grid; grid-template-columns: 300px 1fr; height:100vh;
+}
+@media (max-width: 980px){
+  .app{ grid-template-columns: 1fr; height:auto; min-height:100vh; overflow:auto }
+  html,body{ overflow:auto; height:auto }
+}
+
+/* Sidebar */
+.sidebar{
+  padding:22px 16px; position:relative; z-index:5;
+  background:linear-gradient(180deg, rgba(12,12,24,0.85), rgba(8,8,18,0.85));
+  backdrop-filter: blur(22px) saturate(140%);
+  -webkit-backdrop-filter: blur(22px) saturate(140%);
+  border-right:1px solid var(--border);
+  overflow-y:auto;
+  scrollbar-width:thin;
+}
+.sidebar::-webkit-scrollbar{width:6px}
+.sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.08);border-radius:6px}
+
+.brand{
+  display:flex;align-items:center;gap:12px;margin-bottom:18px;
+  padding:6px 4px;border-radius:14px;user-select:none;
+}
+.brand-cube{
+  width:46px;height:46px;border-radius:12px;position:relative;
+  background:linear-gradient(135deg,#a585d8,#7952b3);
+  box-shadow:
+    0 12px 30px -10px rgba(247,223,30,0.45),
+    inset 0 0 0 1px rgba(255,255,255,0.25),
+    inset 0 -10px 20px -8px rgba(0,0,0,0.35);
+  transform: rotate(-6deg);
+  display:flex;align-items:center;justify-content:center;
+  font-weight:800;font-size:13px;color:#1a1a2a;letter-spacing:0.5px;
+  animation: floatY 5s ease-in-out infinite;
+}
+.brand-cube::after{
+  content:""; position:absolute; inset:auto -6px -6px auto;
+  width:100%;height:100%; border-radius:12px;
+  background:linear-gradient(135deg, rgba(124,92,255,0.5), rgba(53,208,255,0.5));
+  filter:blur(14px); z-index:-1;
+}
+@keyframes floatY{
+  0%,100%{ transform: rotate(-6deg) translateY(0) }
+  50%   { transform: rotate(-2deg) translateY(-4px) }
+}
+.brand h1{margin:0;font-size:17px;font-weight:700;letter-spacing:-0.02em}
+.brand .sub{font-size:11px;color:var(--text-faint);letter-spacing:0.14em;text-transform:uppercase}
+
+.search-wrap{ position:relative; margin-bottom:14px }
+.search{
+  width:100%;padding:10px 14px 10px 34px;border-radius:12px;border:1px solid var(--border);
+  background:rgba(255,255,255,0.03);color:var(--text);font-size:13.5px;outline:none;
+  transition:border-color .2s, box-shadow .2s;
+}
+.search:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(124,92,255,0.2)}
+.search-wrap::before{
+  content:"⌕"; position:absolute; left:11px; top:50%; transform:translateY(-50%);
+  color:var(--text-faint); font-size:14px; pointer-events:none;
+}
+
+.section-label{
+  font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:var(--text-faint);
+  padding:14px 8px 6px;
+}
+
+.file-list{ list-style:none; padding:0; margin:0 }
+.file-list li{ margin:2px 0 }
+.file-btn{
+  width:100%;display:flex;align-items:center;gap:10px;
+  background:transparent;color:var(--text-dim);
+  padding:10px 12px;border-radius:10px;font-size:13.5px;font-weight:500;text-align:left;
+  transition: background .15s, color .15s, transform .15s, box-shadow .2s;
+  border:1px solid transparent;
+}
+.file-btn:hover{ background:var(--surface); color:var(--text); transform:translateX(2px) }
+.file-btn.active{
+  background:linear-gradient(135deg,rgba(124,92,255,0.22),rgba(53,208,255,0.12));
+  color:#fff; border-color:rgba(124,92,255,0.32);
+  box-shadow: inset 0 0 0 1px rgba(124,92,255,0.18), 0 8px 24px -16px rgba(124,92,255,0.55);
+}
+.file-btn .ico{
+  width:24px; height:24px; flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  border-radius:6px;
+  background:linear-gradient(135deg,#a585d8,#7952b3);
+  color:#1a1a2a; font-weight:800; font-size:9.5px; letter-spacing:0.5px;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.2);
+}
+.file-btn .label{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+.file-btn .lines{
+  font-size:10.5px; color:var(--text-faint); padding:1px 6px; border-radius:20px;
+  background:rgba(255,255,255,0.04); flex-shrink:0;
+}
+.file-btn.active .lines{ background:rgba(124,92,255,0.22); color:#dcd5ff }
+.file-btn.dirty::before{
+  content:""; width:6px; height:6px; border-radius:50%;
+  background:var(--accent-2); flex-shrink:0;
+  box-shadow: 0 0 8px var(--accent-2);
+}
+
+.back-link{
+  display:flex;align-items:center;gap:8px;
+  margin-top:18px; padding:10px 12px;border-radius:10px;
+  color:var(--text-dim); font-size:13px; text-decoration:none;
+  border:1px solid var(--border);
+  transition: background .15s, color .15s, border-color .15s;
+}
+.back-link:hover{ background:var(--surface); color:var(--text); border-color:var(--border-strong) }
+
+/* Main pane */
+.editor-pane{
+  position:relative; padding:22px 22px 22px 22px;
+  display:grid;
+  /* Both columns default to 1fr; the drag handle overrides --col-1/--col-2 with px values */
+  grid-template-columns: var(--col-1, 1fr) 6px var(--col-2, 1fr);
+  grid-template-rows: auto 1fr;
+  grid-template-areas:
+    "topbar  topbar  topbar"
+    "editor  split   preview";
+  gap:14px;
+  min-width:0; min-height:0; overflow:hidden;
+}
+.editor-pane > .top-bar     { grid-area: topbar }
+.editor-pane > .editor-card { grid-area: editor;  min-width: 0 }
+.editor-pane > .preview-card{ grid-area: preview; min-width: 0 }
+
+/* Drag handle to resize editor / preview split */
+.splitter{
+  grid-area: split;
+  cursor: col-resize;
+  position: relative;
+  background: transparent;
+  user-select: none;
+  touch-action: none;
+}
+.splitter::before{
+  content: ""; position: absolute;
+  left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: 4px; height: 64px; border-radius: 2px;
+  background: var(--border-strong);
+  transition: background .18s, height .18s, box-shadow .18s;
+}
+.splitter:hover::before,
+.splitter.active::before{
+  background: linear-gradient(180deg, var(--accent), var(--accent-2));
+  height: 110px;
+  box-shadow: 0 0 16px -2px rgba(124,92,255,0.55);
+}
+
+@media (max-width: 980px){
+  .editor-pane{
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr 1fr;
+    grid-template-areas:
+      "topbar"
+      "editor"
+      "preview";
+  }
+  .splitter{ display:none }
+}
+
+/* Top header bar with file info & actions */
+.top-bar{
+  display:flex;align-items:center;gap:14px;
+  padding:14px 18px;
+  background: linear-gradient(135deg, rgba(20,20,40,0.7), rgba(12,12,24,0.7));
+  border:1px solid var(--border); border-radius: var(--radius);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  box-shadow: var(--shadow-lg);
+}
+.file-meta{ display:flex; align-items:center; gap:12px; min-width:0 }
+.file-icon{
+  width:36px;height:36px;border-radius:10px;
+  background:linear-gradient(135deg,#a585d8,#7952b3);
+  color:#1a1a2a; font-weight:800; font-size:13px; letter-spacing:0.5px;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow: 0 6px 18px -8px rgba(247,223,30,0.55), inset 0 0 0 1px rgba(255,255,255,0.25);
+  flex-shrink:0;
+}
+.file-name{ font-size:15px; font-weight:600; letter-spacing:-0.01em }
+.file-name .dirty-mark{ color:var(--accent-2); margin-left:6px; opacity:0; transition:opacity .15s }
+.file-name.dirty .dirty-mark{ opacity:1 }
+.file-sub{ font-size:11.5px; color:var(--text-faint); margin-top:1px; font-family:'JetBrains Mono',monospace }
+.spacer{ flex:1 }
+
+.action-btn{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:8px 14px; border-radius:10px;
+  border:1px solid var(--border); background:rgba(255,255,255,0.03);
+  color:var(--text-dim); font-size:13px; font-weight:600;
+  transition: background .15s, color .15s, border-color .15s, transform .15s;
+}
+.action-btn:hover{ background:var(--surface-2); color:var(--text); border-color:var(--border-strong) }
+.action-btn:active{ transform:translateY(1px) }
+.action-btn .k{ font-family:'JetBrains Mono',monospace; font-size:10.5px; opacity:.6; padding:1px 5px; border-radius:5px; background:rgba(255,255,255,0.06) }
+.run-btn{
+  background:linear-gradient(135deg,#7c5cff,#35d0ff);
+  color:#fff; border-color:transparent;
+  box-shadow: 0 10px 30px -12px rgba(124,92,255,0.7);
+}
+.run-btn:hover{ filter:brightness(1.08); transform:translateY(-1px); border-color:transparent }
+.stop-btn{
+  background:linear-gradient(135deg,#ff5a7a,#ff8c5a);
+  color:#fff; border-color:transparent;
+  box-shadow: 0 10px 30px -12px rgba(255,90,122,0.65);
+}
+.stop-btn:hover{ filter:brightness(1.08); transform:translateY(-1px); border-color:transparent }
+.stop-btn .k{ background:rgba(255,255,255,0.16) }
+
+/* Editor card with 3D float */
+.editor-card{
+  position:relative; min-height:0;
+  background: linear-gradient(180deg, rgba(20,20,40,0.65), rgba(8,8,18,0.65));
+  border:1px solid var(--border); border-radius: var(--radius);
+  overflow:hidden;
+  backdrop-filter: blur(22px) saturate(150%);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  box-shadow: var(--shadow-lg);
+  transform-style: preserve-3d;
+  transition: transform .25s cubic-bezier(.2,.7,.2,1);
+}
+.editor-card::before{
+  content:""; position:absolute; inset:-1px; border-radius: calc(var(--radius) + 1px); pointer-events:none;
+  background: linear-gradient(135deg, rgba(124,92,255,0.45), rgba(53,208,255,0.0) 40%, rgba(255,110,199,0.35));
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  padding:1px;
+  opacity:.55;
+}
+.editor-chrome{
+  display:flex; align-items:center; gap:10px; padding:9px 14px;
+  border-bottom:1px solid var(--border);
+  background: linear-gradient(180deg, rgba(255,255,255,0.025), transparent);
+}
+.dot{ width:11px; height:11px; border-radius:50% }
+.dot.r{ background:#ff5a7a; box-shadow:0 0 10px rgba(255,90,122,0.55) }
+.dot.y{ background:#ffb547; box-shadow:0 0 10px rgba(255,181,71,0.55) }
+.dot.g{ background:#38d39f; box-shadow:0 0 10px rgba(56,211,159,0.55) }
+.editor-chrome .filename{
+  margin-left:8px; font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--text-dim);
+}
+.editor-chrome .badge{
+  margin-left:auto; font-size:10.5px; letter-spacing:0.14em; text-transform:uppercase;
+  color:var(--text-faint); padding:3px 9px; border-radius:20px;
+  background:rgba(121,82,179,0.12); border:1px solid rgba(121,82,179,0.38);
+  color:#d6c2f0;
+}
+
+/* Step tabs (per-file numbered runners) */
+.step-tabs{
+  display:flex; gap:5px; margin: 0 6px 0 12px;
+  flex:1; min-width:0; overflow-x:auto;
+  scrollbar-width:none;
+}
+.step-tabs::-webkit-scrollbar{ display:none }
+.step-tabs:empty{ display:none }
+.step-tab{
+  flex-shrink:0;
+  padding: 3px 11px; font-size:11px; border-radius:7px;
+  border:1px solid var(--border); background:rgba(255,255,255,0.025);
+  color:var(--text-dim); font-weight:600;
+  font-family:'JetBrains Mono',ui-monospace,monospace;
+  transition: background .15s, color .15s, border-color .15s, transform .15s;
+}
+.step-tab:hover{ background:var(--surface-2); color:var(--text); border-color:var(--border-strong) }
+.step-tab.active{
+  background:linear-gradient(135deg, rgba(124,92,255,0.32), rgba(53,208,255,0.20));
+  color:#fff; border-color:rgba(124,92,255,0.45);
+  box-shadow: 0 0 0 1px rgba(124,92,255,0.28), 0 6px 14px -8px rgba(124,92,255,0.55);
+}
+.step-tab .lbl{ opacity:.85; margin-left:2px; font-weight:500 }
+
+/* Sub-file tabs (when a lesson has companion .css/.js files) */
+.file-tabs{
+  display:flex; gap:4px; margin: 0 6px 0 12px;
+  flex:1; min-width:0; overflow-x:auto;
+  scrollbar-width:none;
+}
+.file-tabs::-webkit-scrollbar{ display:none }
+.file-tabs:empty{ display:none }
+.file-tab{
+  flex-shrink:0;
+  padding: 3px 11px; font-size:11.5px; border-radius:7px;
+  border:1px solid var(--border); background:rgba(255,255,255,0.025);
+  color:var(--text-dim); font-weight:500;
+  font-family:'JetBrains Mono', ui-monospace, monospace;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.file-tab:hover{ background:var(--surface-2); color:var(--text); border-color:var(--border-strong) }
+.file-tab.active{
+  background:linear-gradient(135deg, rgba(165,133,216,0.32), rgba(121,82,179,0.20));
+  color:#fff; border-color:rgba(165,133,216,0.45);
+  box-shadow: 0 0 0 1px rgba(121,82,179,0.30), 0 6px 14px -8px rgba(121,82,179,0.5);
+}
+
+/* Per-file external links (e.g. wikipedia / MDN) */
+.file-links{
+  display:flex; gap:6px; margin-top:6px; flex-wrap:wrap;
+}
+.file-links:empty{ display:none }
+.file-link{
+  display:inline-flex; align-items:center; gap:6px;
+  padding: 4px 9px; border-radius: 8px;
+  font-size: 11.5px; line-height:1.2;
+  border:1px solid rgba(53,208,255,0.28);
+  background:linear-gradient(135deg, rgba(53,208,255,0.10), rgba(124,92,255,0.08));
+  color:#cfeaff; text-decoration:none;
+  transition: background .15s, color .15s, border-color .15s, transform .15s;
+}
+.file-link:hover{
+  background:linear-gradient(135deg, rgba(53,208,255,0.20), rgba(124,92,255,0.16));
+  border-color:rgba(53,208,255,0.55);
+  color:#fff; transform: translateY(-1px);
+}
+.file-link .ico{ font-size:12px; opacity:.85 }
+.file-link .arrow{ font-size:10px; opacity:.65 }
+.file-link .host{ font-size:10px; color:var(--text-faint); font-family:'JetBrains Mono',monospace }
+.cm-host{ position:relative; height:calc(100% - 41px) }
+.CodeMirror{
+  height:100% !important; background:transparent;
+  font-size:14px; line-height:1.55;
+  padding: 6px 0;
+}
+.CodeMirror-gutters{ background:transparent; border-right:1px solid var(--border) }
+.CodeMirror-linenumber{ color:rgba(154,154,176,0.4) }
+.CodeMirror-cursor{ border-left-color:#fff }
+.CodeMirror-activeline-background{ background:rgba(124,92,255,0.05) !important }
+.CodeMirror-selected{ background:rgba(124,92,255,0.22) !important }
+.CodeMirror-matchingbracket{ color:#35d0ff !important; text-shadow:0 0 8px rgba(53,208,255,0.6) }
+
+/* Console card */
+.preview-card{
+  background: linear-gradient(180deg, rgba(20,20,40,0.7), rgba(8,8,18,0.7));
+  border:1px solid var(--border); border-radius: var(--radius);
+  display:flex; flex-direction:column; min-height:0;
+  backdrop-filter: blur(22px) saturate(150%);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  box-shadow: var(--shadow-lg);
+  overflow:hidden;
+  position: relative;
+}
+.preview-card::before{
+  content:""; position: absolute; inset:-1px; border-radius: calc(var(--radius) + 1px); pointer-events:none;
+  background: linear-gradient(135deg, rgba(121,82,179,0.55), rgba(124,92,255,0) 40%, rgba(255,110,199,0.40));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude; padding: 1px;
+  opacity: .55;
+}
+.preview-head{
+  display:flex; align-items:center; gap:10px; padding:9px 14px;
+  border-bottom:1px solid var(--border);
+  background: linear-gradient(180deg, rgba(255,255,255,0.025), transparent);
+  position: relative; z-index: 1;
+}
+.preview-head .label{
+  font-size:11.5px; letter-spacing:0.18em; text-transform:uppercase; color:var(--text-dim);
+  display:flex; align-items:center; gap:8px;
+}
+.preview-head .label::before{
+  content:""; width:8px; height:8px; border-radius:50%;
+  background: var(--success); box-shadow: 0 0 10px rgba(56,211,159,0.7);
+}
+.preview-head .label.rendering::before{ background: var(--accent-2); box-shadow: 0 0 10px rgba(53,208,255,0.7); animation: pulse 1s ease infinite }
+@keyframes pulse{
+  0%,100%{ transform: scale(1); opacity:1 }
+  50%   { transform: scale(1.4); opacity:.55 }
+}
+.preview-head .right{ margin-left:auto; display:flex; gap:6px; align-items:center }
+.preview-head .icon-btn{
+  padding:5px 10px; border-radius:8px; border:1px solid var(--border);
+  background:rgba(255,255,255,0.02); color:var(--text-dim); font-size:11.5px;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.preview-head .icon-btn:hover{ background:var(--surface-2); color:var(--text); border-color:var(--border-strong) }
+.preview-head .icon-btn.active{
+  background: linear-gradient(135deg, rgba(124,92,255,0.30), rgba(53,208,255,0.20));
+  color: #fff; border-color: rgba(124,92,255,0.45);
+}
+.preview-frame{
+  flex: 1; min-height: 0;
+  background: #fff;
+  border: 0;
+  width: 100%;
+}
+.preview-card.dark-bg .preview-frame{ background: #1a1a2a }
+
+/* Old console styles kept defensively to avoid breaking anything that
+   might still reference them — unused in the CSS lab. */
+.console-card{
+  height: 220px;
+  background: linear-gradient(180deg, rgba(8,8,18,0.78), rgba(6,6,14,0.78));
+  border:1px solid var(--border); border-radius: var(--radius);
+  display:flex; flex-direction:column; min-height:0;
+  backdrop-filter: blur(22px) saturate(150%);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  box-shadow: var(--shadow-lg);
+  overflow:hidden;
+}
+.console-head{
+  display:flex; align-items:center; gap:10px; padding:10px 14px;
+  border-bottom:1px solid var(--border);
+}
+.console-head .label{
+  font-size:11.5px; letter-spacing:0.18em; text-transform:uppercase; color:var(--text-dim);
+  display:flex; align-items:center; gap:8px;
+}
+.console-head .label::before{
+  content:""; width:8px; height:8px; border-radius:50%;
+  background: var(--success); box-shadow: 0 0 10px rgba(56,211,159,0.7);
+}
+.console-head .label.running::before{ background: var(--accent-2); box-shadow: 0 0 10px rgba(53,208,255,0.7); animation: pulse 1s ease infinite }
+.console-head .label.error::before{ background: var(--error); box-shadow: 0 0 10px rgba(255,90,122,0.7) }
+@keyframes pulse{
+  0%,100%{ transform: scale(1); opacity:1 }
+  50%   { transform: scale(1.4); opacity:.55 }
+}
+.console-head .stats{
+  font-size:11px; color:var(--text-faint); font-family:'JetBrains Mono',monospace;
+}
+.console-head .right{ margin-left:auto; display:flex; gap:6px }
+.console-head .icon-btn{
+  padding:5px 10px; border-radius:8px; border:1px solid var(--border);
+  background:rgba(255,255,255,0.02); color:var(--text-dim); font-size:11.5px;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.console-head .icon-btn:hover{ background:var(--surface-2); color:var(--text); border-color:var(--border-strong) }
+.console-out{
+  flex:1; overflow:auto; padding:10px 14px;
+  font-family:'JetBrains Mono',monospace; font-size:12.5px; line-height:1.55;
+  scrollbar-width:thin;
+}
+.console-out::-webkit-scrollbar{ width:8px; height:8px }
+.console-out::-webkit-scrollbar-thumb{ background:rgba(255,255,255,0.08); border-radius:8px }
+.console-out .empty{
+  color:var(--text-faint); text-align:center; padding:34px 0; font-style:italic; font-family:'Inter',sans-serif;
+}
+.line{
+  padding:3px 8px; margin:1px 0; border-radius:6px;
+  display:flex; gap:10px; align-items:flex-start;
+  border-left:2px solid transparent;
+  white-space:pre-wrap; word-break:break-word;
+}
+.line .t{ flex-shrink:0; color:var(--text-faint); font-size:10.5px; padding-top:2px; min-width:62px }
+.line .c{ flex:1; min-width:0 }
+.line.log{ color:#dcd5ff; border-left-color:rgba(124,92,255,0.4) }
+.line.info{ color:#9bd9ff; border-left-color:rgba(53,208,255,0.5) }
+.line.warn{ color:#ffe0a3; border-left-color:rgba(255,181,71,0.6); background:rgba(255,181,71,0.04) }
+.line.error{ color:#ffb1bf; border-left-color:rgba(255,90,122,0.7); background:rgba(255,90,122,0.06) }
+.line.system{ color:var(--text-faint); border-left-color:rgba(255,255,255,0.15); font-style:italic }
+.line.result{ color:#a8f5d2; border-left-color:rgba(56,211,159,0.55) }
+.console-out table{
+  border-collapse:collapse; margin:4px 0; font-size:12px;
+}
+.console-out th, .console-out td{
+  border:1px solid rgba(255,255,255,0.1); padding:3px 8px; text-align:left;
+}
+.console-out th{ background:rgba(124,92,255,0.12); color:#fff }
+
+/* Floating ambient glow shape */
+.ambient{
+  position:absolute; border-radius:50%; pointer-events:none; z-index:0;
+  filter: blur(60px); opacity:.5;
+}
+.ambient.a{ width:340px;height:340px; background:rgba(124,92,255,0.35); top:-80px; right:-100px; animation:floatA 14s ease-in-out infinite }
+.ambient.b{ width:280px;height:280px; background:rgba(53,208,255,0.28); bottom:-60px; left:8%; animation:floatB 18s ease-in-out infinite }
+@keyframes floatA{ 0%,100%{transform:translate(0,0)} 50%{transform:translate(-30px,20px)} }
+@keyframes floatB{ 0%,100%{transform:translate(0,0)} 50%{transform:translate(40px,-20px)} }
+
+/* Media modal — embeds external videos in-page */
+.media-modal{
+  position: fixed; inset: 0; z-index: 200; display: none;
+  align-items: center; justify-content: center;
+  padding: 24px;
+  background: rgba(4,4,12,0.78);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  animation: mmFade .18s ease both;
+}
+.media-modal.open{ display: flex }
+@keyframes mmFade{ from{opacity:0} to{opacity:1} }
+.media-panel{
+  width: min(960px, 100%);
+  max-height: 92vh;
+  display: flex; flex-direction: column;
+  background: linear-gradient(180deg, rgba(20,20,40,0.9), rgba(8,8,18,0.9));
+  border: 1px solid var(--border-strong);
+  border-radius: 18px;
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  position: relative;
+}
+.media-panel::before{
+  content:""; position: absolute; inset: -1px; border-radius: 19px; pointer-events: none;
+  background: linear-gradient(135deg, rgba(124,92,255,0.45), rgba(53,208,255,0) 40%, rgba(255,110,199,0.4));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude; padding: 1px;
+  opacity: .55;
+}
+.media-head{
+  display: flex; align-items: center; gap: 12px; padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+}
+.media-head h3{ margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -0.01em; flex: 1; min-width: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.media-host{ font-size: 11px; color: var(--text-faint); font-family: 'JetBrains Mono', monospace }
+.media-close{
+  width: 30px; height: 30px; flex-shrink: 0;
+  border-radius: 50%; border: 1px solid var(--border);
+  background: rgba(255,255,255,0.04); color: var(--text-dim);
+  font-size: 17px; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.media-close:hover{ background: rgba(255,90,122,0.14); color: #fff; border-color: rgba(255,90,122,0.4) }
+.media-body{
+  flex: 1; min-height: 0; padding: 14px 18px;
+  display: flex; align-items: center; justify-content: center;
+  background: #000;
+}
+.media-body video{
+  max-width: 100%; max-height: 70vh;
+  display: block; border-radius: 10px;
+  background: #000;
+}
+.media-foot{
+  padding: 10px 18px; border-top: 1px solid var(--border);
+  font-size: 12px; color: var(--text-faint);
+  display: flex; align-items: center; gap: 10px;
+}
+.media-foot a{ color: var(--accent-2); text-decoration: none }
+.media-foot a:hover{ text-decoration: underline }
+.media-loading{ color: var(--text-dim); font-size: 13px; padding: 60px 0 }
+
+/* HTML-content mode for the modal — used for install guides etc. */
+.media-body.html-mode{
+  background: linear-gradient(180deg, rgba(20,20,35,0.95), rgba(10,10,22,0.95));
+  display: block; align-items: stretch; justify-content: stretch;
+  padding: 20px 26px 24px;
+  overflow: auto;
+  font-family: 'Inter', system-ui, sans-serif;
+  color: var(--text); line-height: 1.65; text-align: left;
+}
+.media-body.html-mode h4{
+  margin: 18px 0 8px; font-size: 14px; font-weight: 700; color: #fff; letter-spacing: -0.005em;
+}
+.media-body.html-mode h4:first-child{ margin-top: 0 }
+.media-body.html-mode p{ margin: 8px 0; font-size: 14px; color: var(--text) }
+.media-body.html-mode ul{ margin: 8px 0; padding-left: 22px }
+.media-body.html-mode li{ margin: 4px 0; font-size: 14px }
+.media-body.html-mode a{
+  color: var(--accent-2); text-decoration: none;
+  border-bottom: 1px dashed rgba(53,208,255,0.4);
+  transition: color .15s, border-color .15s;
+}
+.media-body.html-mode a:hover{ color: #fff; border-bottom-color: rgba(53,208,255,0.85) }
+.media-body.html-mode code{
+  background: rgba(124,92,255,0.14);
+  border: 1px solid rgba(124,92,255,0.28);
+  color: #d4cbff; padding: 1px 6px; border-radius: 5px;
+  font-size: 12.5px; font-family: 'JetBrains Mono', monospace;
+}
+.media-body.html-mode pre{
+  background: rgba(6,6,14,0.85);
+  border: 1px solid var(--border); border-radius: 10px;
+  padding: 14px 16px; overflow-x: auto; margin: 12px 0;
+}
+.media-body.html-mode pre code{
+  background: none; border: 0; padding: 0;
+  color: #cfeaff; font-size: 12.5px; line-height: 1.55;
+}
+.media-body.html-mode kbd{
+  display: inline-block; padding: 2px 8px; margin: 0 2px;
+  font-family: 'JetBrains Mono', monospace; font-size: 11px; line-height: 1.35;
+  color: #f0e8ff;
+  background: rgba(124,92,255,0.18);
+  border: 1px solid rgba(124,92,255,0.42);
+  border-bottom-width: 2px; border-radius: 5px;
+}
+.media-body.html-mode small,
+.media-body.html-mode .note{ color: var(--text-faint); font-size: 12px; font-style: italic }
+.media-body.html-mode .arrow-note{ color: var(--text-dim); font-size: 12px; margin-top: 6px }
+.media-body.html-mode .step-pill{
+  display: inline-block; min-width: 20px; height: 20px; padding: 0 6px;
+  border-radius: 999px; background: rgba(53,208,255,0.16);
+  border: 1px solid rgba(53,208,255,0.4); color: #a4e2ff;
+  font-size: 11px; font-weight: 700; text-align: center; line-height: 18px;
+  margin-right: 8px; font-family: 'JetBrains Mono', monospace;
+}
+
+/* Toast / status */
+.toast{
+  position:fixed; bottom:22px; right:22px; z-index:50;
+  padding:10px 14px; border-radius:12px; font-size:13px;
+  background:linear-gradient(135deg,#7c5cff,#35d0ff); color:#fff;
+  box-shadow: 0 18px 40px -18px rgba(124,92,255,0.7);
+  transform: translateY(20px); opacity:0;
+  transition: transform .25s ease, opacity .25s ease;
+}
+.toast.show{ transform: translateY(0); opacity:1 }
+.toast.error{ background:linear-gradient(135deg,#ff5a7a,#ff8c5a) }
+</style>
+</head>
+<body>
+<canvas id="bg-3d"></canvas>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-cube">B</div>
+      <div>
+        <h1>Bootstrap Lab</h1>
+        <div class="sub">Live Preview</div>
+      </div>
+    </div>
+
+    <div class="search-wrap">
+      <input class="search" id="search" placeholder="Filter files…" />
+    </div>
+
+    <div class="section-label">Files</div>
+    <ul class="file-list" id="fileList"></ul>
+
+    <a class="back-link" href="../index.html" style="margin-top:18px">⌂ Home</a>
+  </aside>
+
+  <main class="editor-pane">
+    <div class="ambient a"></div>
+    <div class="ambient b"></div>
+
+    <header class="top-bar">
+      <div class="file-meta">
+        <div class="file-icon">B</div>
+        <div style="min-width:0">
+          <div class="file-name" id="fileName">1.hello bootstrap.html<span class="dirty-mark">●</span></div>
+          <div class="file-sub" id="fileSub">bootstrap/1.hello bootstrap.html</div>
+          <div class="file-links" id="fileLinks"></div>
+        </div>
+      </div>
+      <div class="spacer"></div>
+      <label class="action-btn" id="autoLbl" style="cursor:pointer" title="Auto-render preview as you type">
+        <input type="checkbox" id="autoChk" checked style="margin-right:6px;vertical-align:middle"> Auto
+      </label>
+      <button class="action-btn" id="resetBtn" title="Revert to file on disk">⟲ Reset</button>
+      <button class="action-btn run-btn" id="runBtn" title="Refresh preview">▶ Render <span class="k">⌘↵</span></button>
+    </header>
+
+    <section class="editor-card" id="editorCard">
+      <div class="editor-chrome">
+        <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="filename" id="chromeName">1.hello bootstrap.html</span>
+        <div class="file-tabs" id="fileTabs"></div>
+        <div class="step-tabs" id="stepTabs"></div>
+        <span class="badge">Bootstrap 5</span>
+      </div>
+      <div class="cm-host">
+        <textarea id="editor"></textarea>
+      </div>
+    </section>
+
+    <div class="splitter" id="splitter" role="separator" aria-orientation="vertical" title="Drag to resize"></div>
+
+    <section class="preview-card" id="previewCard">
+      <div class="preview-head">
+        <span class="label" id="previewStatus">Preview</span>
+        <div class="right">
+          <button class="icon-btn" id="bgToggleBtn" title="Toggle preview background (light / dark)">◐ BG</button>
+          <button class="icon-btn" id="popoutBtn" title="Open the rendered preview in a new tab">↗ Pop out</button>
+        </div>
+      </div>
+      <iframe class="preview-frame" id="preview" sandbox="allow-scripts" title="Live preview"></iframe>
+    </section>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="media-modal" id="mediaModal" role="dialog" aria-modal="true" aria-labelledby="mediaTitle">
+  <div class="media-panel">
+    <div class="media-head">
+      <h3 id="mediaTitle">Loading…</h3>
+      <span class="media-host" id="mediaHost"></span>
+      <button class="media-close" id="mediaClose" type="button" title="Close (Esc)" aria-label="Close">×</button>
+    </div>
+    <div class="media-body" id="mediaBody"></div>
+    <div class="media-foot" id="mediaFoot">
+      <span>Embedded from <a id="mediaSource" href="#" target="_blank" rel="noopener">source ↗</a></span>
+    </div>
+  </div>
+</div>
+
+<!-- Embedded source — kept in sync with sibling .html files (home.js stripped) -->
+<script type="text/plain" data-bsfile="1.hello bootstrap.html"><!-- https://getbootstrap.com/ -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hello Bootstrap</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-4Q6Gf2aSP4eDXB8Miphtr37CMZZQ5oXLH2yaXMJ2w8e2ZtHTl7GptT4jmndRuHDT" crossorigin="anonymous">
+</head>
+<body>
+
+  <div>
+    <h1>Hello, Bootstrap!</h1>
+    <p>This is a simple example using Bootstrap 5.</p>
+    <a hr ef="#">Click Me</a>
+  </div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js" integrity="sha384-j1CDi7MgGQ12Z7Qab0qlWQ/Qqz24Gc6BM0thvEMVjHnfYGF0rmFCozFSxQBxwHKO" crossorigin="anonymous"><\/script>
+</body>
+</html>
+
+
+</script>
+<script type="text/plain" data-bsfile="10.collapse.html"><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Bootstrap Collapse Examples</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"><\/script>
+</head>
+<body class="p-4">
+
+  <h1 class="mb-4 text-center">📂 Bootstrap Collapse Examples</h1>
+
+  <!-- 1. Basic Collapse -->
+  <h5>1. Basic Collapse Example</h5>
+  <p>
+    <button class="btn btn-primary" data-bs-toggle="collapse" data-bs-target="#collapseExample1">
+      Toggle Text
+    </button>
+  </p>
+  <div class="collapse" id="collapseExample1">
+    <div class="card card-body">
+      This is some collapsible content. Click the button again to hide.
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- 2. Collapse with multiple targets -->
+  <h5>2. Collapse Multiple Targets</h5>
+  <p>
+    <button class="btn btn-secondary" data-bs-toggle="collapse" data-bs-target=".multi-collapse">Toggle Both</button>
+  </p>
+  <div class="row">
+    <div class="col">
+      <div class="collapse multi-collapse" id="multiCollapse1">
+        <div class="card card-body">
+          First panel content.
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="collapse multi-collapse" id="multiCollapse2">
+        <div class="card card-body">
+          Second panel content.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- 3. Accordion Example -->
+  <h5>3. Accordion Style Collapse</h5>
+  <div class="accordion" id="accordionExample">
+    <div class="accordion-item">
+      <h2 class="accordion-header" id="headingOne">
+        <button class="accordion-button" type="button" data-bs-toggle="collapse"
+          data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+          Accordion Item #1
+        </button>
+      </h2>
+      <div id="collapseOne" class="accordion-collapse collapse show" data-bs-parent="#accordionExample">
+        <div class="accordion-body">
+          This is the first item's content.
+        </div>
+      </div>
+    </div>
+    <div class="accordion-item">
+      <h2 class="accordion-header" id="headingTwo">
+        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+          data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+          Accordion Item #2
+        </button>
+      </h2>
+      <div id="collapseTwo" class="accordion-collapse collapse" data-bs-parent="#accordionExample">
+        <div class="accordion-body">
+          This is the second item's content.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Multi-Open Accordion -->
+  <h4> 4. Multi-Open Accordion</h4>
+  <div class="accordion" id="accordionMulti">
+    <div class="accordion-item">
+      <h2 class="accordion-header" id="headingOne2">
+        <button class="accordion-button" type="button" data-bs-toggle="collapse"
+          data-bs-target="#collapseOne2" aria-expanded="true" aria-controls="collapseOne2">
+          Multi Item #1
+        </button>
+      </h2>
+      <div id="collapseOne2" class="accordion-collapse collapse show">
+        <div class="accordion-body">
+          This panel can stay open even if others open.
+        </div>
+      </div>
+    </div>
+    <div class="accordion-item">
+      <h2 class="accordion-header" id="headingTwo2">
+        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+          data-bs-target="#collapseTwo2" aria-expanded="false" aria-controls="collapseTwo2">
+          Multi Item #2
+        </button>
+      </h2>
+      <div id="collapseTwo2" class="accordion-collapse collapse">
+        <div class="accordion-body">
+          This one too can remain open simultaneously.
+        </div>
+      </div>
+    </div>
+    <div class="accordion-item">
+      <h2 class="accordion-header" id="headingThree2">
+        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+          data-bs-target="#collapseThree2" aria-expanded="false" aria-controls="collapseThree2">
+          Multi Item #3
+        </button>
+      </h2>
+      <div id="collapseThree2" class="accordion-collapse collapse">
+        <div class="accordion-body">
+          Open as many panels as you want.
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+</script>
+<script type="text/plain" data-bsfile="11.tooltip.html"><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Bootstrap Tooltip Extended Examples</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      padding: 2rem;
+      background: #fefefe;
+    }
+  </style>
+</head>
+<body>
+
+  <h1 class="text-center mb-5"> Bootstrap Tooltip Examples</h1>
+
+  <!-- 1 Title attribute WITHOUT tooltip -->
+  <p>
+    <!-- No tooltip because no data-bs-toggle -->
+    <button type="button" class="btn btn-outline-secondary" title="I am a plain HTML title">
+      1. Hover to see plain title (no Bootstrap tooltip)
+    </button>
+  </p>
+
+  <!-- 2. Tooltips on all sides -->
+  <div class="d-flex gap-3 my-4">
+    <button class="btn btn-secondary" data-bs-toggle="tooltip" data-bs-placement="top" title="Tooltip on top">Top</button>
+    <button class="btn btn-secondary" data-bs-toggle="tooltip" data-bs-placement="right" title="Tooltip on right">Right</button>
+    <button class="btn btn-secondary" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Tooltip on bottom">Bottom</button>
+    <button class="btn btn-secondary" data-bs-toggle="tooltip" data-bs-placement="left" title="Tooltip on left">Left</button>
+  </div>
+
+
+  <!-- Bootstrap JS and Tooltip initialization -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"><\/script>
+  <!-- https://getbootstrap.com/docs/5.3/components/tooltips/ -->
+  <script>
+    const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+    const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+  <\/script>
+</body>
+</html>
+</script>
+<script type="text/plain" data-bsfile="12.forms.html"><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Complex Bootstrap Form</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light p-4">
+
+  <div class="container bg-white p-5 rounded shadow">
+    <h2 class="mb-4 text-center">Registration Form</h2>
+    <form>
+
+      <!-- 1. Full Name -->
+      <div class="mb-3">
+        <label for="fullName" class="form-label">1. Full Name</label>
+        <input type="text" class="form-control" id="fullName" placeholder="John Doe">
+      </div>
+
+      <!-- 2. Email and Password in same row -->
+      <div class="row mb-3">
+        <div class="col-md-6">
+          <label for="email" class="form-label">2a. Email</label>
+          <input type="email" class="form-control" id="email" placeholder="name@example.com">
+        </div>
+        <div class="col-md-6">
+          <label for="password" class="form-label">2b. Password</label>
+          <input type="password" class="form-control" id="password" placeholder="••••••••">
+        </div>
+      </div>
+
+      <!-- 3. Gender (Radio) -->
+      <div class="mb-3">
+        <label class="form-label d-block">3. Gender</label>
+        <div class="form-check form-check-inline">
+          <input class="form-check-input" type="radio" name="gender" id="male" value="male">
+          <label class="form-check-label" for="male">Male</label>
+        </div>
+        <div class="form-check form-check-inline">
+          <input class="form-check-input" type="radio" name="gender" id="female" value="female">
+          <label class="form-check-label" for="female">Female</label>
+        </div>
+      </div>
+
+      <!-- 4. Skills (Checkboxes) -->
+      <div class="mb-3">
+        <label class="form-label d-block">4. Skills</label>
+        <div class="form-check form-check-inline">
+          <input class="form-check-input" type="checkbox" id="htmlSkill">
+          <label class="form-check-label" for="htmlSkill">HTML</label>
+        </div>
+        <div class="form-check form-check-inline">
+          <input class="form-check-input" type="checkbox" id="cssSkill">
+          <label class="form-check-label" for="cssSkill">CSS</label>
+        </div>
+        <div class="form-check form-check-inline">
+          <input class="form-check-input" type="checkbox" id="jsSkill">
+          <label class="form-check-label" for="jsSkill">JavaScript</label>
+        </div>
+      </div>
+
+      <!-- 5. Country (Select) -->
+      <div class="mb-3">
+        <label for="country" class="form-label">5. Country</label>
+        <select class="form-select" id="country">
+          <option selected disabled>Select your country</option>
+          <option>USA</option>
+          <option>Canada</option>
+          <option>UK</option>
+          <option>Israel</option>
+        </select>
+      </div>
+
+      <!-- 6. Bio (Textarea) -->
+      <div class="mb-3">
+        <label for="bio" class="form-label">6. Short Bio</label>
+        <textarea class="form-control" id="bio" rows="3" placeholder="Tell us about yourself..."></textarea>
+      </div>
+
+      <!-- 7. File Upload -->
+      <div class="mb-3">
+        <label for="formFile" class="form-label">7. Upload Resume</label>
+        <input class="form-control" type="file" id="formFile">
+      </div>
+
+      <!-- 8. Terms Checkbox -->
+      <div class="mb-3 form-check">
+        <input type="checkbox" class="form-check-input" id="termsCheck">
+        <label class="form-check-label" for="termsCheck">8. I agree to the terms and conditions</label>
+      </div>
+
+      <!-- 9. Buttons -->
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary">9a. Submit</button>
+        <button type="reset" class="btn btn-secondary">9b. Reset</button>
+      </div>
+
+    </form>
+  </div>
+</body>
+</html>
+</script>
+<script type="text/plain" data-bsfile="13.modal-box.html"><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Bootstrap Modal Example</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="p-4">
+
+  <h2 class="mb-4">📦 Bootstrap Modal Example</h2>
+
+  <!-- 1. Button to Trigger Modal -->
+  <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#myModal">
+    Open Modal
+  </button>
+
+  <!-- 2. Modal Structure -->
+  <div class="modal fade" id="myModal" tabindex="-1" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+      
+        <!-- Modal Header -->
+        <div class="modal-header">
+          <h5 class="modal-title" id="myModalLabel">Modal Title</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        
+        <!-- Modal Body -->
+        <div class="modal-body">
+          This is the body of the modal. You can put text, forms, images, or anything here.
+        </div>
+        
+        <!-- Modal Footer -->
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-primary">Save changes</button>
+        </div>
+        
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS (required for modal functionality) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"><\/script>
+</body>
+</html>
+</script>
+<script type="text/plain" data-bsfile="2.text.html"><!-- https://www.w3schools.com/bootstrap/bootstrap_ref_all_classes.asp -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hello Bootstrap - Text Utilities</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    .example-box {
+      border: 1px solid #ccc;
+      padding: 1rem;
+      margin-bottom: 1.5rem;
+      background-color: #f9f9f9;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1 class="text-center">Bootstrap Text Utilities - Examples</h1>
+
+    <!-- 1. Left-aligned text + Bold -->
+    <p><strong>0. Normal </strong></p>
+    <p>
+      <!-- .text-start aligns the text to the left, .fw-bold makes the text bold -->
+      This paragraph is normal.
+    </p>
+
+    <!-- 1. Left-aligned text + Bold -->
+    <p><strong>1. Left-aligned text + Bold</strong></p>
+    <p class="text-center fw-bold">
+      <!-- .text-start aligns the text to the left, .fw-bold makes the text bold -->
+      This paragraph is left aligned and uses <code>.fw-bold</code> to make the text bold.
+    </p>
+
+    <!-- 2. Center-aligned text + Light weight -->
+    <p><strong>2. Center-aligned text + Light weight</strong></p>
+      <!-- font-weight-bold, font-weight-bolder, font-weight-normal, font-weight-light, font-weight-lighter -->
+    <p class="text-center fw-light">
+      <!-- .text-center centers the text, .fw-light makes the font weight light -->
+      This paragraph is center aligned and uses <code>.fw-light</code> for light text weight.
+    </p>
+
+    <!-- 3. Right-aligned text + Italic -->
+    <p><strong>3. Right-aligned text + Italic</strong></p>
+    <p class="text-end fst-italic">
+      <!-- .text-end aligns text to the right, .fst-italic makes it italic -->
+      This paragraph is right aligned and uses <code>.fst-italic</code> for italic text.
+    </p>
+
+    <!-- 4. Underlined text -->
+    <p><strong>4. Underlined text</strong></p>
+      <!-- text-decoration-none, text-decoration-underline -->
+    <p class="text-decoration-underline"> 
+      <!-- .text-decoration-underline underlines the text -->
+      This text uses <code>.text-decoration-underline</code> to appear underlined.
+    </p>
+    <!-- 5. Uppercase transformation -->
+    <p><strong>5. Uppercase transformation</strong></p>
+    <!-- text-lowercase, text-uppercase, text-capitalize  -->
+    <p class="text-lowercase">
+      <!-- .text-uppercase transforms all text to uppercase -->
+      This paragraph uses <code>.text-uppercase</code> to make all letters uppercase.
+    </p>
+
+    <!-- 6. Muted (faded) text -->
+    <p><strong>6. Muted (faded) text</strong></p>
+    <p class="text-muted">
+      <!-- .text-muted gives the text a faded appearance -->
+      This paragraph uses <code>.text-muted</code> to make the text look faded or less prominent.
+    </p>
+  </div>
+
+    <!-- 7. Headings using .h1 to .h6 -->
+  <div class="example-box">
+    <!-- Example 7: .h1 to .h6 -->
+    <strong>7. Heading Utilities (.h1 to .h6)</strong>
+    <p class="h1">.h1 Bootstrap heading</p>
+    <p class="h2">.h2 Bootstrap heading</p>
+    <p class="h3">.h3 Bootstrap heading</p>
+    <p class="h4">.h4 Bootstrap heading</p>
+    <p class="h5">.h5 Bootstrap heading</p>
+    <p class="h6">.h6 Bootstrap heading</p>
+    <!-- These use <p> tags styled like headings -->
+  </div>
+
+  <!-- 8. Display headings -->
+  <div class="example-box">
+    <!-- Example 8: .display-1 to .display-6 -->
+    <strong>8. Display Utilities (.display-1 to .display-6)</strong>
+    <h1 class="display-1">.display-1</h1>
+    <h1 class="display-2">.display-2</h1>
+    <h1 class="display-3">.display-3</h1>
+    <h1 class="display-4">.display-4</h1>
+    <h1 class="display-5">.display-5</h1>
+    <h1 class="display-6">.display-6</h1>
+    <!-- These are for extra-large, prominent headings -->
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"><\/script>
+</body>
+</html>
+</script>
+<script type="text/plain" data-bsfile="3.colors.html"><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Bootstrap Text Color Utilities</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+</head>
+<body>
+
+  <div class="container">
+    <h1 class="text-center text-primary">Bootstrap Text Color Utilities</h1>
+    <!-- 0. normal -->
+    <p><strong>0. normal</strong></p>
+    <p>
+      This text is normal.
+    </p>
+
+    <!-- 1. text-primary -->
+    <p><strong>1. text-primary</strong></p>
+    <p class="text-primary">
+      <!-- .text-primary applies the primary theme color -->
+      This text uses <code>.text-primary</code> – the main theme color (usually blue).
+    </p>
+
+    <!-- 2. text-secondary -->
+    <p><strong>2. text-secondary</strong></p>
+    <p class="text-secondary">
+      <!-- .text-secondary applies the secondary theme color -->
+      This text uses <code>.text-secondary</code> – a slightly muted secondary color.
+    </p>
+
+    <!-- 3. text-success -->
+    <p><strong>3. text-success</strong></p>
+    <p class="text-success">
+      <!-- .text-success applies a green color indicating success -->
+      This text uses <code>.text-success</code> – often used for success messages.
+    </p>
+
+    <!-- 4. text-danger -->
+    <p><strong>4. text-danger</strong></p>
+    <p class="text-danger">
+      <!-- .text-danger applies a red color indicating errors -->
+      This text uses <code>.text-danger</code> – usually for errors or alerts.
+    </p>
+
+    <!-- 5. text-warning -->
+    <p><strong>5. text-warning</strong></p>
+    <p class="text-warning">
+      <!-- .text-warning applies a yellow/orange warning color -->
+      This text uses <code>.text-warning</code> – used for warnings or cautions.
+    </p>
+
+    <!-- 6. text-info -->
+    <p><strong>6. text-info</strong></p>
+    <p class="text-info">
+      <!-- .text-info applies a light blue informative color -->
+      This text uses <code>.text-info</code> – typically for informational messages.
+    </p>
+
+    <!-- 7. text-white -->
+    <p><strong>7. text-light</strong></p>
+    <p class="text-light">
+      <!-- .text-info applies a white informative color -->
+      This text uses <code>.text-light</code> – typically for informational messages.
+    </p>
+
+    <!-- 8. text-dark -->
+    <p><strong>8. text-dark</strong></p>
+    <p class="text-dark">
+      <!-- .text-info applies a black informative color -->
+      This text uses <code>.text-dark</code> – typically for informational messages.
+    </p>
+
+    <!-- 9. bg-info -->
+    <p><strong>9. bg-info</strong></p>
+    <!-- bg-primary, bg-secondary, bg-success, bg-info, bg-warning, bg-danger, bg-dark, bg-light -->
+    <p class="bg-danger">
+      <!-- .text-info applies a light blue informative color -->
+      This text uses <code>.bg-info</code> – typically for informational messages.
+    </p>
+
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"><\/script>
+</body>
+</html>
+</script>
+<script type="text/plain" data-bsfile="4.allert.html"><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Bootstrap Alert Examples</title>
+  <!-- Bootstrap 5 CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="p-4">
+
+  <h1 class="mb-4">Bootstrap Alerts Demonstration</h1>
+
+  <!-- 1. Primary Alert -->
+  <!-- Basic blue alert for general information -->
+  <h5>1. Primary Alert</h5>
+  <div class="alert alert-primary" role="alert">
+    This is a primary alert—check it out!
+  </div>
+
+  <!-- 2. Secondary Alert -->
+  <!-- Gray alert for secondary/less important info -->
+  <h5>2. Secondary Alert</h5>
+  <div class="alert alert-secondary" role="alert">
+    This is a secondary alert—check it out!
+  </div>
+
+  <!-- 3. Success Alert -->
+  <!-- Green alert for success messages -->
+  <h5>3. Success Alert</h5>
+  <div class="alert alert-success" role="alert">
+    This is a success alert—operation completed!
+  </div>
+
+  <!-- 4. Danger Alert -->
+  <!-- Red alert for critical errors or warnings -->
+  <h5>4. Danger Alert</h5>
+  <div class="alert alert-danger" role="alert">
+    This is a danger alert—something went wrong!
+  </div>
+
+  <!-- 5. Warning Alert -->
+  <!-- Yellow/orange alert for caution messages -->
+  <h5>5. Warning Alert</h5>
+  <div class="alert alert-warning" role="alert">
+    This is a warning alert—be careful!
+  </div>
+
+  <!-- 6. Info Alert -->
+  <!-- Light blue alert for general tips/information -->
+  <h5>6. Info Alert</h5>
+  <div class="alert alert-info" role="alert">
+    This is an info alert—just letting you know.
+  </div>
+
+  <!-- 7. Light Alert -->
+  <!-- Light gray background for subtle notice -->
+  <h5>7. Light Alert</h5>
+  <div class="alert alert-light" role="alert">
+    This is a light alert—subtle and minimal.
+  </div>
+
+  <!-- 8. Dark Alert -->
+  <!-- Dark background alert for special emphasis -->
+  <h5>8. Dark Alert</h5>
+  <div class="alert alert-dark" role="alert">
+    This is a dark alert—looks strong and bold.
+  </div>
+</body>
+</html>
+</script>
+<script type="text/plain" data-bsfile="5. button.html"><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Bootstrap Text and Button Utilities</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+</head>
+<body class="bg-light py-4">
+
+  <div class="container">
+    <h1 class="text-center text-primary mb-4">Bootstrap Text and Button Utilities</h1>
+
+    <!-- ========================================= -->
+    <!-- TEXT COLOR CLASSES (previous section) -->
+    <!-- ========================================= -->
+    <h2 class="mt-5 mb-3">Text Color Examples</h2>
+
+    <!-- (Previous examples 1-11 for text classes remain here) -->
+
+    <!-- ========================================= -->
+    <!-- BUTTON CLASSES SECTION -->
+    <!-- ========================================= -->
+    <h2 class="mt-5 mb-3">Bootstrap Button Examples</h2>
+
+    <!-- 1. Primary button -->
+    <p><strong>1. btn-primary</strong></p>
+    <button class="btn btn-primary">Primary</button>
+    <!-- A blue primary action button -->
+
+    <!-- 2. Secondary button -->
+    <p><strong>2. btn-secondary</strong></p>
+    <button class="btn btn-secondary">Secondary</button>
+    <!-- A gray secondary action button -->
+
+    <!-- 3. Success button -->
+    <p><strong>3. btn-success</strong></p>
+    <button class="btn btn-success">Success</button>
+    <!-- A green button often used for confirming actions -->
+
+    <!-- 4. Danger button -->
+    <p><strong>4. btn-danger</strong></p>
+    <button class="btn btn-danger">Danger</button>
+    <!-- A red button typically used for delete/warning actions -->
+
+    <!-- 5. Warning button -->
+    <p><strong>5. btn-warning</strong></p>
+    <button class="btn btn-warning">Warning</button>
+    <!-- A yellow/orange button for warning actions -->
+
+    <!-- 6. Info button -->
+    <p><strong>6. btn-info</strong></p>
+    <button class="btn btn-info">Info</button>
+    <!-- A light blue button for informational actions -->
+
+    <!-- 7. Light and Dark buttons -->
+    <p><strong>7. btn-light and btn-dark</strong></p>
+    <button class="btn btn-light">Light</button>
+    <button class="btn btn-dark">Dark</button>
+    <!-- Light and dark colored buttons for general use -->
+
+    <!-- 8. Outline buttons -->
+    <p><strong>8. Outline buttons</strong></p>
+    <button class="btn btn-outline-primary">Outline Primary</button>
+    <button class="btn btn-outline-danger">Outline Danger</button>
+    <!-- Outline buttons are border-only versions of solid buttons -->
+
+    <!-- 9. Button sizes -->
+    <p><strong>9. Button sizes</strong></p>
+    <button class="btn btn-primary btn-sm">Small</button>
+    <button class="btn btn-primary">Default</button>
+    <button class="btn btn-primary btn-lg">Large</button>
+    <!-- Change button size with btn-sm and btn-lg -->
+
+    <!-- 10. Block-level button -->
+    <p><strong>10. Block button</strong></p>
+    <button class="btn btn-success w-100">Full-width button</button>
+    <!-- Use w-100 to make a button take full width -->
+
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"><\/script>
+</body>
+</html>
+</script>
+<script type="text/plain" data-bsfile="7.container.html"><!-- https://getbootstrap.com/docs/5.3/layout/containers/ -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Bootstrap Container Examples</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    .example-box {
+      border: 2px dashed #0d6efd;
+      padding: 1rem;
+      margin-bottom: 1.5rem;
+      background-color: #e0e4e7;
+    }
+  </style>
+</head>
+<body class="p-3">
+
+  <h1 class="text-center mb-4">Bootstrap Container Examples</h1>
+  <!-- 1. Default container: max-width changes at breakpoints -->
+  <div class="container example-box">
+    <!-- Example 1: Default .container -->
+    <strong>1. .container</strong><br>
+    This container has a responsive fixed width (changes at breakpoints). Resize the window to see.
+  </div>
+
+  <!-- 2. Fluid container: always 100% width -->
+  <div class="container-fluid example-box">
+    <!-- Example 2: .container-fluid -->
+    <strong>2. .container-fluid</strong><br>
+    This container is always full width (100% of the screen), regardless of screen size.
+  </div>
+
+  <!-- 3. Breakpoint specific container: container-sm -->
+  <div class="container-sm example-box">
+    <!-- Example 3: .container-sm -->
+    <strong>3. .container-sm</strong><br>
+    This container has 100% width until the "sm" breakpoint (576px), then becomes fixed width.
+  </div>
+
+  <!-- 4. container-md -->
+  <div class="container-md example-box">
+    <!-- Example 4: .container-md -->
+    <strong>4. .container-md</strong><br>
+    This container has 100% width until the "md" breakpoint (768px), then becomes fixed width.
+  </div>
+
+  <!-- 5. container-lg -->
+  <div class="container-lg example-box">
+    <!-- Example 5: .container-lg -->
+    <strong>5. .container-lg</strong><br>
+    This container has 100% width until the "lg" breakpoint (992px), then becomes fixed width.
+  </div>
+
+  <!-- 6. container-xl -->
+  <div class="container-xl example-box">
+    <!-- Example 6: .container-xl -->
+    <strong>6. .container-xl</strong><br>
+    This container has 100% width until the "xl" breakpoint (1200px), then becomes fixed width.
+  </div>
+
+  <!-- 7. container-xxl -->
+  <div class="container-xxl example-box">
+    <!-- Example 7: .container-xxl -->
+    <strong>7. .container-xxl</strong><br>
+    This container has 100% width until the "xxl" breakpoint (1400px), then becomes fixed width.
+  </div>
+</body>
+</html>
+</script>
+<script type="text/plain" data-bsfile="8. padding-and-margin.html"><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Bootstrap Padding and Margin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    .demo-box {
+      background-color: #f0f8ff;
+      border: 1px solid #ccc;
+    }
+  </style>
+</head>
+<body class="p-4">
+
+  <h1 class="mb-4">🧱 Bootstrap Spacing Utilities</h1>
+
+  <!-- 1. Margin All Sides -->
+  <div class="demo-box m-3">
+    <p>1. <code>.m-3</code> - Margin of 1rem (16px) on all sides.</p>
+  </div>
+
+  <!-- 2. Padding All Sides -->
+  <div class="demo-box p-4">
+    <p>2. <code>.p-4</code> - Padding of 1.5rem (24px) on all sides.</p>
+  </div>
+
+  <!-- 3. Margin Top Only -->
+  <div class="demo-box mt-5">
+    <p>3. <code>.mt-5</code> - Margin-top of 3rem (48px).</p>
+  </div>
+
+  <!-- 4. Padding Left & Right -->
+  <div class="demo-box px-5">
+    <p>4. <code>.px-5</code> - Padding-left and right of 3rem (48px).</p>
+  </div>
+
+  <!-- 5. Margin X (left + right) and Padding Y (top + bottom) -->
+  <div class="demo-box mx-4 py-3">
+    <p>5. <code>.mx-4</code> & <code>.py-3</code> - Margin-x is 1.5rem, Padding-y is 1rem.</p>
+  </div>
+
+  <!-- 6. No Margin -->
+  <div class="demo-box m-0">
+    <p>6. <code>.m-0</code> - No margin at all.</p>
+  </div>
+
+  <!-- 7. Negative Margin -->
+  <div class="demo-box bg-warning text-dark mt-5">
+    <div class="demo-box bg-secondary text-white m-n3">
+      <p>7. <code>.m-n3</code> - Negative margin (pulls element closer).</p>
+    </div>
+  </div>
+
+  <!-- 8. Responsive Padding -->
+  <div class="demo-box p-2 p-md-5">
+    <p>8. <code>.p-2</code> (small screens), <code>.p-md-5</code> (medium+)</p>
+  </div>
+
+  <!-- Bootstrap JS (not required for spacing) -->
+</body>
+</html>
+</script>
+<script type="text/plain" data-bsfile="9.table.html"><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Bootstrap Tables</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    /* Bootstrap 5.3's defaults for striped/hover are very faint (rgba 5% / 7.5%).
+       Bump the contrast so the demos are clearly visible — still uses
+       Bootstrap's own CSS variables (so behaviour stays Bootstrap-driven). */
+    .table-striped > tbody > tr:nth-of-type(odd) > * { --bs-table-bg-type:  rgba(0,0,0,0.12); }
+    .table-hover   > tbody > tr:hover > *           { --bs-table-bg-state: rgba(13,110,253,0.18); cursor: pointer; }
+  </style>
+</head>
+<body class="p-4">
+
+  <h1 class="mb-4">Bootstrap Table Examples</h1>
+
+  <!-- 1. Basic Table -->
+  <h5>1. Basic Table</h5>
+  <!-- .table adds base styles for tables -->
+  <table class="table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>First</th>
+        <th>Last</th>
+        <th>Handle</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th>1</th>
+        <td>John</td>
+        <td>Doe</td>
+        <td>@jdoe</td>
+      </tr>
+      <tr>
+        <th>2</th>
+        <td>Jane</td>
+        <td>Smith</td>
+        <td>@jsmith</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- 2. Striped Table -->
+  <h5>2. Striped Table</h5>
+  <!-- .table-striped adds zebra-striping to rows -->
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>First</th>
+        <th>Last</th>
+        <th>Handle</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th>1</th>
+        <td>Anna</td>
+        <td>Lee</td>
+        <td>@alee</td>
+      </tr>
+      <tr>
+        <th>2</th>
+        <td>Mike</td>
+        <td>Jordan</td>
+        <td>@mj</td>
+      </tr>
+      <tr>
+        <th>3</th>
+        <td>Sam</td>
+        <td>Patel</td>
+        <td>@spatel</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- 3. Bordered Table -->
+  <h5>3. Bordered Table</h5>
+  <!-- .table-bordered adds borders to all cells -->
+  <table class="table table-bordered">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Item</th>
+        <th>Qty</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th>1</th>
+        <td>Apples</td>
+        <td>10</td>
+      </tr>
+      <tr>
+        <th>2</th>
+        <td>Oranges</td>
+        <td>8</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- 4. Hoverable Table -->
+  <h5>4. Hoverable Table</h5>
+  <!-- .table-hover adds a hover effect on rows -->
+  <table class="table table-hover">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>City</th>
+        <th>Country</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th>1</th>
+        <td>Paris</td>
+        <td>France</td>
+      </tr>
+      <tr>
+        <th>2</th>
+        <td>Tokyo</td>
+        <td>Japan</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- 5. Responsive Table -->
+  <h5>5. Responsive Table</h5>
+  <!-- .table-responsive makes the table scroll horizontally when it's
+       wider than the container. The min-width below forces the table
+       to be wider than the preview pane so you can SEE the scrollbar
+       and the wrapper actually doing its job. Drag the bottom of the
+       table sideways to see the hidden columns. -->
+  <div class="table-responsive">
+    <table class="table" style="min-width: 900px">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Product</th>
+          <th>Description</th>
+          <th>Category</th>
+          <th>Price</th>
+          <th>Stock</th>
+          <th>Warehouse</th>
+          <th>Last Restock</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th>1</th>
+          <td>Phone Pro 14</td>
+          <td>Smartphone with 6.7" OLED display and titanium frame</td>
+          <td>Mobile</td>
+          <td>$699</td>
+          <td>34</td>
+          <td>Tel-Aviv · A12</td>
+          <td>2026-04-18</td>
+          <td>In stock</td>
+        </tr>
+        <tr>
+          <th>2</th>
+          <td>Laptop Ultra</td>
+          <td>16" high-end model, 32GB RAM, 1TB SSD</td>
+          <td>Computers</td>
+          <td>$1299</td>
+          <td>15</td>
+          <td>Haifa · B07</td>
+          <td>2026-04-22</td>
+          <td>In stock</td>
+        </tr>
+        <tr>
+          <th>3</th>
+          <td>Tablet Mini</td>
+          <td>Compact 8" tablet with Apple Pencil support</td>
+          <td>Mobile</td>
+          <td>$449</td>
+          <td>0</td>
+          <td>Jerusalem · C03</td>
+          <td>2026-03-30</td>
+          <td>Out of stock</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 6. Contextual Table Rows -->
+  <h5>6. Contextual Colors</h5>
+  <!-- Add classes like .table-success, .table-danger, etc. to rows -->
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Status</th>
+        <th>Message</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="table-success">
+        <td>Success</td>
+        <td>Operation completed successfully</td>
+      </tr>
+      <tr class="table-danger">
+        <td>Error</td>
+        <td>Something went wrong</td>
+      </tr>
+      <tr class="table-warning">
+        <td>Warning</td>
+        <td>Be careful with this action</td>
+      </tr>
+      <tr class="table-info">
+        <td>Info</td>
+        <td>This is an informational note</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- 7. Dark-themed table using the .table-dark class -->
+  <h5>7. Dark Table</h5>
+
+  <!-- It gives the table a dark background and light text for contrast -->
+  <table class="table table-dark">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>First Name</th>
+        <th>Last Name</th>
+        <th>Username</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th>1</th>
+        <td>Sarah</td>
+        <td>Connor</td>
+        <td>@sconnor</td>
+      </tr>
+      <tr>
+        <th>2</th>
+        <td>John</td>
+        <td>Doe</td>
+        <td>@jdoe</td>
+      </tr>
+    </tbody>
+  </table>
+</body>
+</html>
+</script>
+<script type="text/plain" data-bsfile="icons.html"><!-- https://icons.getbootstrap.com/ -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Bootstrap Icons Demo</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap Icons CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    body {
+      padding: 2rem;
+      background: #f8f9fa;
+    }
+    .icon-example {
+      font-size: 2rem;
+      margin: 1rem 0;
+    }
+  </style>
+</head>
+<body>
+
+  <h1 class="text-center mb-4">🔤 Bootstrap Icons Examples</h1>
+
+  <!-- 1️⃣ Basic Icon -->
+  <div class="icon-example">
+    <strong>1️⃣ Basic icon:</strong> <i class="bi bi-alarm"></i>
+    <!-- This shows a basic alarm icon -->
+  </div>
+
+  <!-- 2️⃣ Colored Icon -->
+  <div class="icon-example text-primary">
+    <strong>2️⃣ Colored icon:</strong> <i class="bi bi-heart-fill"></i>
+    <!-- Heart icon with Bootstrap's primary color -->
+  </div>
+
+  <!-- 3️⃣ Icon with Text -->
+  <div class="icon-example">
+    <strong>3️⃣ Icon with text:</strong> <i class="bi bi-envelope-fill"></i> Mail us anytime!
+  </div>
+
+  <!-- 4️⃣ Icon Button -->
+  <div class="icon-example">
+    <strong>4️⃣ Icon inside button:</strong>
+    <button class="btn btn-success">
+      <i class="bi bi-check-circle"></i> Confirm
+    </button>
+  </div>
+
+  <!-- 5️⃣ Large Icon -->
+  <div class="icon-example">
+    <strong>5️⃣ Large icon (3rem):</strong>
+    <i class="bi bi-star-fill text-warning" style="font-size: 3rem;"></i>
+  </div>
+
+  <!-- 6️⃣ Inline Multiple Icons -->
+  <div class="icon-example">
+    <strong>6️⃣ Inline icons:</strong>
+    <i class="bi bi-facebook text-primary"></i>
+    <i class="bi bi-twitter text-info"></i>
+    <i class="bi bi-instagram text-danger"></i>
+  </div>
+</body>
+</html>
+</script>
+<script type="text/plain" data-bsfile="navbar.html"><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Bootstrap Navbar Example</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    section {
+      padding: 100px 0;
+      border-bottom: 1px solid #ddd;
+    }
+  </style>
+</head>
+<body data-bs-spy="scroll" data-bs-target=".navbar" data-bs-offset="70">
+
+  <!-- 1. Basic Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
+    <div class="container-fluid">
+      <!-- Brand -->
+      <a class="navbar-brand" href="#">MySite</a>
+
+      <!-- Toggle button for mobile view -->
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarBasic" aria-controls="navbarBasic" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <!-- Navbar links -->
+      <div class="collapse navbar-collapse" id="navbarBasic">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+          <!-- Links -->
+          <li class="nav-item">
+            <a class="nav-link active" aria-current="page" href="#home">Home</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#about">About</a>
+          </li>
+
+          <!-- Dropdown -->
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+              Services
+            </a>
+            <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+              <li><a class="dropdown-item" href="#design">Design</a></li>
+              <li><a class="dropdown-item" href="#development">Development</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="#contact">Contact</a></li>
+            </ul>
+          </li>
+
+          <li class="nav-item">
+            <a class="nav-link disabled">Disabled</a>
+          </li>
+        </ul>
+
+        <!-- Right aligned content (search form) -->
+        <form class="d-flex" onsubmit="event.preventDefault(); location.href='#search-results';">
+          <input class="form-control me-2" type="search" placeholder="Search..." aria-label="Search">
+          <button class="btn btn-outline-success" type="submit">Search</button>
+        </form>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Content Sections -->
+  <div class="container mt-5 pt-5">
+    <section id="home">
+      <h2>Home</h2>
+      <p>This is the Home section. Scroll down or use the navbar to navigate.</p>
+    </section>
+
+    <section id="about">
+      <h2>About</h2>
+      <p>This section contains information about our mission and team.</p>
+    </section>
+
+    <section id="design">
+      <h2>Design Services</h2>
+      <p>We offer modern UI/UX design services for web and mobile platforms.</p>
+    </section>
+
+    <section id="development">
+      <h2>Development Services</h2>
+      <p>From front-end to back-end development, we build scalable applications.</p>
+    </section>
+
+    <section id="contact">
+      <h2>Contact Us</h2>
+      <p>Need to get in touch? Reach out through email or phone anytime.</p>
+    </section>
+
+    <section id="search-results">
+      <h2>Search Results</h2>
+      <p>This is a placeholder for search results.</p>
+    </section>
+  </div>
+
+  <!-- Bootstrap JS (required for collapse and dropdowns) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"><\/script>
+</body>
+</html>
+</script>
+<script type="text/plain" data-bsfile="pagination.html"><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Bootstrap Pagination Examples</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+</head>
+<body>
+
+  <div class="container py-5">
+    <h1 class="mb-4 text-center">Bootstrap Pagination Examples</h1>
+
+    <!-- 1. Basic Pagination -->
+    <h3>1. Basic Pagination</h3>
+    <!-- Explanation: A simple pagination with 5 page numbers and previous/next buttons -->
+    <nav aria-label="Basic pagination example">
+      <ul class="pagination">
+        <li class="page-item disabled">
+          <a class="page-link" href="#" tabindex="-1" aria-disabled="true">Previous</a>
+        </li>
+        <li class="page-item active" aria-current="page"><a class="page-link" href="#2">1</a></li>
+        <li class="page-item"><a class="page-link" href="#2">2</a></li>
+        <li class="page-item"><a class="page-link" href="#3">3</a></li>
+        <li class="page-item"><a class="page-link" href="#4">4</a></li>
+        <li class="page-item"><a class="page-link" href="#5">5</a></li>
+        <li class="page-item">
+          <a class="page-link" href="#">Next</a>
+        </li>
+      </ul>
+    </nav>
+
+    <!-- 2. Pagination with Disabled and Active States -->
+    <h3 class="mt-5">2. Disabled and Active States</h3>
+    <!-- Explanation: Previous button disabled, page 3 active -->
+    <nav aria-label="Disabled and active pagination example">
+      <ul class="pagination">
+        <li class="page-item disabled">
+          <a class="page-link" href="#" tabindex="-1" aria-disabled="true">Previous</a>
+        </li>
+        <li class="page-item"><a class="page-link" href="#1">1</a></li>
+        <li class="page-item"><a class="page-link" href="#2">2</a></li>
+        <li class="page-item active" aria-current="page"><a class="page-link" href="#3">3</a></li>
+        <li class="page-item"><a class="page-link" href="#4">4</a></li>
+        <li class="page-item"><a class="page-link" href="#5">5</a></li>
+        <li class="page-item">
+          <a class="page-link" href="#">Next</a>
+        </li>
+      </ul>
+    </nav>
+
+    <!-- 3. Pagination with Icons -->
+    <h3 class="mt-5">3. Pagination with Icons</h3>
+    <!-- Explanation: Using Bootstrap icons for previous and next -->
+    <nav aria-label="Pagination with icons">
+      <ul class="pagination">
+        <li class="page-item">
+          <a class="page-link" href="#" aria-label="Previous">
+            <span aria-hidden="true">&laquo;</span>
+          </a>
+        </li>
+        <li class="page-item active" aria-current="page"><a class="page-link" href="#1">1</a></li>
+        <li class="page-item"><a class="page-link" href="#2">2</a></li>
+        <li class="page-item"><a class="page-link" href="#3">3</a></li>
+        <li class="page-item">
+          <a class="page-link" href="#" aria-label="Next">
+            <span aria-hidden="true">&raquo;</span>
+          </a>
+        </li>
+      </ul>
+    </nav>
+
+    <!-- 4. Large Sized Pagination -->
+    <h3 class="mt-5">4. Large Sized Pagination</h3>
+    <!-- Explanation: Using .pagination-lg for bigger pagination buttons -->
+    <nav aria-label="Large pagination example">
+      <ul class="pagination pagination-lg">
+        <li class="page-item"><a class="page-link" href="#1">1</a></li>
+        <li class="page-item active" aria-current="page"><a class="page-link" href="#2">2</a></li>
+        <li class="page-item"><a class="page-link" href="#3">3</a></li>
+      </ul>
+    </nav>
+
+    <!-- 5. Small Sized Pagination -->
+    <h3 class="mt-5">5. Small Sized Pagination</h3>
+    <!-- Explanation: Using .pagination-sm for smaller pagination buttons -->
+    <nav aria-label="Small pagination example">
+      <ul class="pagination pagination-sm">
+        <li class="page-item"><a class="page-link" href="#1">1</a></li>
+        <li class="page-item active" aria-current="page"><a class="page-link" href="#2">2</a></li>
+        <li class="page-item"><a class="page-link" href="#3">3</a></li>
+      </ul>
+    </nav>
+
+    <!-- 6. Pagination with Disabled Pages -->
+    <h3 class="mt-5">6. Pagination with Disabled Pages</h3>
+    <!-- Explanation: Page 2 disabled, page 3 active -->
+    <nav aria-label="Disabled page example">
+      <ul class="pagination">
+        <li class="page-item"><a class="page-link" href="#1">1</a></li>
+        <li class="page-item disabled" aria-disabled="true"><a class="page-link" href="#2">2</a></li>
+        <li class="page-item active" aria-current="page"><a class="page-link" href="#3">3</a></li>
+        <li class="page-item"><a class="page-link" href="#4">4</a></li>
+      </ul>
+    </nav>
+
+  </div>
+
+  <!-- Bootstrap JS Bundle -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"><\/script>
+</body>
+</html>
+</script>
+<script type="text/plain" data-bsfile="shadow.html"><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Bootstrap Shadow Examples</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <style>
+    body {
+      padding: 2rem;
+    }
+    .example-box {
+      width: 100%;
+      max-width: 300px;
+      height: 100px;
+      margin: 1rem auto;
+      background-color: #f8f9fa;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+
+  <h1 class="text-center mb-4">🌟 Bootstrap Shadow Examples</h1>
+
+  <!-- 1. No shadow -->
+  <div class="example-box shadow-none">
+    <!-- .shadow-none: No shadow -->
+    <strong>1. No Shadow</strong>
+  </div>
+
+  <!-- 2. Small shadow -->
+  <div class="example-box shadow-sm">
+    <!-- .shadow-sm: Small subtle shadow -->
+    <strong>2. Small Shadow</strong>
+  </div>
+
+  <!-- 3. Regular shadow -->
+  <div class="example-box shadow">
+    <!-- .shadow: Default regular shadow -->
+    <strong>3. Regular Shadow</strong>
+  </div>
+
+  <!-- 4. Large shadow -->
+  <div class="example-box shadow-lg">
+    <!-- .shadow-lg: Large stronger shadow -->
+    <strong>4. Large Shadow</strong>
+  </div>
+
+  <!-- 5. Custom shadow with text and button -->
+  <div class="example-box shadow-lg bg-white border">
+    <!-- Combination with border and background -->
+    <div>
+      <p class="mb-1">5. Shadow Card Example</p>
+      <button class="btn btn-primary btn-sm">Click Me</button>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS Bundle -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"><\/script>
+</body>
+</html>
+</script>
+<script type="text/plain" data-bsfile="spinners.html"><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Bootstrap Spinners Examples</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      padding: 2rem;
+      background: #f8f9fa;
+    }
+  </style>
+</head>
+<body>
+
+  <h1 class="text-center mb-5">🌀 Bootstrap Spinner Examples</h1>
+
+  <!-- 1️⃣ Basic border spinner -->
+  <p>
+    <strong>1️⃣ Border Spinner:</strong>
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+  </p>
+
+  <!-- 2️⃣ Growing spinner -->
+  <p>
+    <strong>2️⃣ Growing Spinner:</strong>
+    <div class="spinner-grow text-success" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+  </p>
+
+  <!-- 3️⃣ Colored border spinners -->
+  <p>
+    <strong>3️⃣ Colored Border Spinners:</strong><br>
+    <div class="d-flex gap-2 align-items-center">
+      <div class="spinner-border text-primary" role="status"></div>
+      <div class="spinner-border text-secondary" role="status"></div>
+      <div class="spinner-border text-success" role="status"></div>
+      <div class="spinner-border text-danger" role="status"></div>
+      <div class="spinner-border text-warning" role="status"></div>
+      <div class="spinner-border text-info" role="status"></div>
+      <div class="spinner-border text-dark" role="status"></div>
+    </div>
+  </p>
+
+  <!-- 4️⃣ Spinner inside a button (loading state) -->
+  <p>
+    <strong>4️⃣ Spinner inside a button:</strong><br>
+    <button class="btn btn-primary" type="button" disabled>
+      <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+      Loading...
+    </button>
+  </p>
+
+  <!-- 5️⃣ Growing spinner inside button -->
+  <p>
+    <strong>5️⃣ Growing spinner in button:</strong><br>
+    <button class="btn btn-success" type="button" disabled>
+      <span class="spinner-grow spinner-grow-sm" role="status" aria-hidden="true"></span>
+      Waiting...
+    </button>
+  </p>
+</body>
+</html>
+</script>
+<script type="text/plain" data-bsfile="visibility.html"><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Bootstrap Visibility Utilities</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    .box {
+      width: 200px;
+      height: 100px;
+      margin: 1rem auto;
+      background-color: #0d6efd;
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border-radius: 0.5rem;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <h1 class="text-center mb-4">Bootstrap Visibility Utilities</h1>
+
+  <!-- 1. Visible element -->
+  <div class="box visible">
+    1. Visible (default)
+  </div>
+
+  <!-- 2. Invisible element (hidden but takes space) -->
+  <div class="box invisible">
+    2. Invisible (hidden, but space reserved)
+  </div>
+
+  <!-- 3. Hidden element (completely removed, no space) -->
+  <div class="d-none box bg-danger">
+    3. Hidden (display: none, no space)
+  </div>
+
+  <!-- Explanation text -->
+  <p class="text-center mt-4 mx-3">
+    <strong>Note:</strong><br>
+    - <code>visible</code> means the element is visible.<br>
+    - <code>invisible</code> hides the element but keeps its space.<br>
+    - <code>d-none</code> hides the element completely (no space).
+  </p>
+
+  <!-- Bootstrap JS Bundle -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"><\/script>
+</body>
+</html>
+</script>
+<script type="text/plain" data-bsfile="z-index.html"><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Bootstrap z-index Demo</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    /* Simple styling for colored boxes */
+    .box {
+      width: 150px;
+      height: 150px;
+      position: absolute;
+      color: white;
+      font-weight: bold;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border-radius: 0.5rem;
+    }
+    .box1 { background-color: #0d6efd; top: 40px; left: 40px; }
+    .box2 { background-color: #198754; top: 80px; left: 80px; }
+    .box3 { background-color: #dc3545; top: 120px; left: 120px; }
+  </style>
+</head>
+<!-- You must have position-relative for z-index to work. -->
+<body class="position-relative" style="height: 350px;">
+
+  <h1 class="text-center my-4">Bootstrap z-index Demo</h1>
+
+  <!-- Box with z-index 1 -->
+  <div class="box box1 position-absolute z-3">
+    z-index: 1
+  </div>
+
+  <!-- Box with z-index 3 -->
+  <div class="box box2 position-absolute z-1">
+    z-index: 3
+  </div>
+
+  <!-- Box with z-index 5 -->
+  <div class="box box3 position-absolute z-3">
+    z-index: 5
+  </div>
+</body>
+</html>
+</script>
+
+<script>
+/* ==========================================================
+   File registry — every .html lesson under css/, grouped by folder.
+   `file` is the path relative to bootstrap/ and matches the data-bsfile
+   attribute on the embedded source blocks above.
+   ========================================================== */
+const FILES = [
+  // Numbered tutorial — taught in order
+  { file: '1.hello bootstrap.html',        label: '1 · Hello Bootstrap',     group: 'Tutorial' },
+  { file: '2.text.html',                   label: '2 · Text',                group: 'Tutorial' },
+  { file: '3.colors.html',                 label: '3 · Colors',              group: 'Tutorial' },
+  { file: '4.allert.html',                 label: '4 · Alert',               group: 'Tutorial' },
+  { file: '5. button.html',                label: '5 · Button',              group: 'Tutorial' },
+  { file: '7.container.html',              label: '7 · Container',           group: 'Tutorial' },
+  { file: '8. padding-and-margin.html',    label: '8 · Padding & Margin',    group: 'Tutorial' },
+  { file: '9.table.html',                  label: '9 · Table',               group: 'Tutorial' },
+  { file: '10.collapse.html',              label: '10 · Collapse',           group: 'Tutorial' },
+  { file: '11.tooltip.html',               label: '11 · Tooltip',            group: 'Tutorial' },
+  { file: '12.forms.html',                 label: '12 · Forms',              group: 'Tutorial' },
+  { file: '13.modal-box.html',             label: '13 · Modal Box',          group: 'Tutorial' },
+
+  // Component cookbook — alphabetical, no specific order
+  { file: 'icons.html',                    label: 'Icons',                   group: 'Cookbook' },
+  { file: 'navbar.html',                   label: 'Navbar',                  group: 'Cookbook' },
+  { file: 'pagination.html',               label: 'Pagination',              group: 'Cookbook' },
+  { file: 'shadow.html',                   label: 'Shadow',                  group: 'Cookbook' },
+  { file: 'spinners.html',                 label: 'Spinners',                group: 'Cookbook' },
+  { file: 'visibility.html',               label: 'Visibility',              group: 'Cookbook' },
+  { file: 'z-index.html',                  label: 'Z-Index',                 group: 'Cookbook' },
+];
+
+/* ==========================================================
+   3D background — Three.js scene with floating wireframes
+   ========================================================== */
+(function init3D(){
+  const canvas = document.getElementById('bg-3d');
+  if(!window.THREE){ return; }
+  const renderer = new THREE.WebGLRenderer({ canvas, alpha:true, antialias:true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 100);
+  camera.position.z = 7;
+
+  // Group of floating wireframe shapes
+  const group = new THREE.Group();
+  scene.add(group);
+
+  const palette = [0x7c5cff, 0x35d0ff, 0xff6ec7, 0xf7df1e];
+
+  function addShape(geom, color, scale, position){
+    const mat = new THREE.LineBasicMaterial({ color, transparent:true, opacity:0.55 });
+    const wire = new THREE.WireframeGeometry(geom);
+    const line = new THREE.LineSegments(wire, mat);
+    line.scale.setScalar(scale);
+    line.position.set(position.x, position.y, position.z);
+    line.userData.spinSpeed = {
+      x: (Math.random() - 0.5) * 0.004,
+      y: (Math.random() - 0.5) * 0.004,
+      z: (Math.random() - 0.5) * 0.0025
+    };
+    line.userData.float = { phase: Math.random()*Math.PI*2, amp: 0.3 + Math.random()*0.4 };
+    group.add(line);
+    return line;
+  }
+
+  addShape(new THREE.IcosahedronGeometry(1, 0), palette[0], 1.6,  { x:-4.5, y:1.6, z:-2 });
+  addShape(new THREE.TorusKnotGeometry(0.7, 0.22, 80, 12), palette[1], 1.4, { x: 4.5, y:-1.8, z:-1 });
+  addShape(new THREE.OctahedronGeometry(1, 0), palette[2], 1.0,  { x: 3.0, y: 2.2, z:-3 });
+  addShape(new THREE.TetrahedronGeometry(1, 0), palette[3], 0.9, { x:-3.2, y:-2.0, z:-2.5 });
+  addShape(new THREE.IcosahedronGeometry(1, 0), palette[1], 0.6, { x: 0.2, y: 0.0, z:-4 });
+  addShape(new THREE.DodecahedronGeometry(1, 0), palette[0], 0.7,{ x:-1.6, y: 2.6, z:-3.5 });
+  addShape(new THREE.OctahedronGeometry(1, 0), palette[3], 0.55, { x: 1.8, y:-2.6, z:-3.5 });
+
+  // Particle field
+  const pCount = 220;
+  const pGeom = new THREE.BufferGeometry();
+  const pPos = new Float32Array(pCount * 3);
+  for(let i=0; i<pCount; i++){
+    pPos[i*3+0] = (Math.random() - 0.5) * 18;
+    pPos[i*3+1] = (Math.random() - 0.5) * 12;
+    pPos[i*3+2] = (Math.random() - 0.5) * 10 - 2;
+  }
+  pGeom.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+  const pMat = new THREE.PointsMaterial({ color:0xffffff, size:0.025, transparent:true, opacity:0.65 });
+  const points = new THREE.Points(pGeom, pMat);
+  scene.add(points);
+
+  // Mouse parallax
+  const target = { x:0, y:0 };
+  const current = { x:0, y:0 };
+  window.addEventListener('mousemove', (e)=>{
+    target.x = (e.clientX / window.innerWidth - 0.5) * 0.6;
+    target.y = (e.clientY / window.innerHeight - 0.5) * 0.4;
+  });
+
+  function resize(){
+    const w = window.innerWidth, h = window.innerHeight;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  let t = 0;
+  function tick(){
+    t += 0.01;
+    current.x += (target.x - current.x) * 0.05;
+    current.y += (target.y - current.y) * 0.05;
+
+    group.children.forEach((m)=>{
+      m.rotation.x += m.userData.spinSpeed.x;
+      m.rotation.y += m.userData.spinSpeed.y;
+      m.rotation.z += m.userData.spinSpeed.z;
+      m.position.y += Math.sin(t + m.userData.float.phase) * 0.0025 * m.userData.float.amp;
+    });
+    group.rotation.y = current.x * 0.4;
+    group.rotation.x = -current.y * 0.3;
+    points.rotation.y += 0.0006;
+    points.rotation.x = -current.y * 0.05;
+
+    renderer.render(scene, camera);
+    requestAnimationFrame(tick);
+  }
+  tick();
+})();
+
+/* ==========================================================
+   CodeMirror setup
+   ========================================================== */
+const editor = CodeMirror.fromTextArea(document.getElementById('editor'), {
+  mode: 'htmlmixed',
+  theme: 'dracula',
+  lineNumbers: true,
+  matchBrackets: true,
+  autoCloseBrackets: true,
+  styleActiveLine: true,
+  indentUnit: 2,
+  tabSize: 2,
+  smartIndent: true,
+  lineWrapping: true,
+  extraKeys: {
+    'Cmd-Enter': () => renderPreview(),
+    'Ctrl-Enter': () => renderPreview(),
+    'Cmd-/': 'toggleComment',
+    'Ctrl-/': 'toggleComment',
+  },
+});
+editor.setValue('// Loading…\n');
+
+/* ==========================================================
+   File loading & state
+   ========================================================== */
+const fileListEl = document.getElementById('fileList');
+const fileNameEl = document.getElementById('fileName');
+const fileSubEl  = document.getElementById('fileSub');
+const chromeNameEl = document.getElementById('chromeName');
+const searchEl = document.getElementById('search');
+
+const state = {
+  active: null,           // current LESSON file path
+  originals: {},          // any path -> original text from disk
+  buffers: {},            // any path -> editable buffer text (preserved per file)
+  loaded: {},             // any path -> bool
+  lineCounts: {},         // any path -> line count
+  steps: {},              // file -> [{n, title, code}] | null  (parsed step list — unused for HTML)
+  activeStep: {},         // file -> 0 (All) | step number
+  stepEdits: {},          // file -> { stepN: editedCode }       (per-step scratch buffer — unused for HTML)
+  activeSubfile: {},      // lesson -> currently shown sub-file path (defaults to lesson itself)
+};
+
+/* Parse "// N) title" headings into step snippets. A step is included only if
+   its extracted code contains at least one console.* call (otherwise running
+   it would produce no visible output). The file gets step tabs only if 2+
+   steps qualify. Bodies that are mostly commented-out get their leading "// "
+   stripped; bodies that already contain live code are left as-is. */
+function parseSteps(source){
+  if(!source) return null;
+  const lines = source.split('\n');
+  const headingRe = /^(\s*)\/\/\s*(\d+)\)\s*(.*)$/;
+  const headings = [];
+  for(let i=0; i<lines.length; i++){
+    const m = lines[i].match(headingRe);
+    if(m) headings.push({ n: parseInt(m[2],10), title: m[3].trim(), line: i });
+  }
+  if(headings.length < 2) return null;
+
+  const result = [];
+  for(let h=0; h<headings.length; h++){
+    const start = headings[h].line;
+    const end = (h+1 < headings.length) ? headings[h+1].line : lines.length;
+    const block = lines.slice(start, end);
+
+    // Decide commented-mode vs live-mode by counting body lines (skip heading)
+    let commented = 0, live = 0;
+    for(let j=1; j<block.length; j++){
+      const t = block[j].trim();
+      if(!t) continue;
+      if(t.startsWith('//')) commented++;
+      else live++;
+    }
+    let code;
+    if(commented > live){
+      // Strip a single "// " (or "//") from each non-heading line
+      code = [block[0]].concat(
+        block.slice(1).map(line => line.replace(/^(\s*)\/\/ ?/, '$1'))
+      ).join('\n');
+    }else{
+      code = block.join('\n');
+    }
+
+    if(/\bconsole\.(log|info|warn|error|table|dir|trace)\b/.test(code)){
+      result.push({ n: headings[h].n, title: headings[h].title, code });
+    }
+  }
+  return result.length >= 2 ? result : null;
+}
+
+/* Save whatever's in the editor into the right slot for the active file/step. */
+function saveCurrentEditor(){
+  const file = state.active;
+  if(!file) return;
+  const step = state.activeStep[file] || 0;
+  const v = editor.getValue();
+  if(step === 0){
+    state.buffers[file] = v;
+    // Editing the canonical "All" view invalidates per-step caches —
+    // they should be regenerated from the new buffer next time.
+    if(state.stepEdits[file]) delete state.stepEdits[file];
+    state.steps[file] = parseSteps(v);
+  }else{
+    if(!state.stepEdits[file]) state.stepEdits[file] = {};
+    state.stepEdits[file][step] = v;
+  }
+}
+
+/* Set the editor content + chrome labels for the currently-active step. */
+function loadEditorForCurrentStep(){
+  const file = state.active;
+  if(!file) return;
+  const step = state.activeStep[file] || 0;
+  let content;
+  if(step === 0){
+    content = state.buffers[file] ?? state.originals[file] ?? '';
+    chromeNameEl.textContent = file;
+    fileSubEl.textContent = 'bootstrap/' + file;
+  }else{
+    const cached = state.stepEdits[file] && state.stepEdits[file][step];
+    if(cached != null){
+      content = cached;
+    }else{
+      const steps = parseSteps(state.buffers[file] ?? state.originals[file] ?? '');
+      const s = (steps || []).find(x => x.n === step);
+      content = s ? s.code : '// step ' + step + ' not found';
+    }
+    const s = (state.steps[file] || []).find(x => x.n === step);
+    chromeNameEl.textContent = file + '  ·  step ' + step;
+    fileSubEl.textContent = s ? `step ${step} — ${s.title}` : `step ${step}`;
+  }
+  editor.setValue(content);
+  editor.clearHistory();
+}
+
+function switchStep(stepN){
+  const file = state.active;
+  if(!file) return;
+  saveCurrentEditor();
+  state.activeStep[file] = stepN;
+  loadEditorForCurrentStep();
+  renderStepTabs();
+  refreshDirty(file);
+  editor.focus();
+}
+
+function renderStepTabs(){
+  const tabsEl = document.getElementById('stepTabs');
+  const file = state.active;
+  const steps = state.steps[file];
+  if(!steps || steps.length < 2){
+    tabsEl.innerHTML = '';
+    return;
+  }
+  const cur = state.activeStep[file] || 0;
+  const esc = (s) => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+  let html = '';
+  steps.forEach(s => {
+    const tip = `${s.n}) ${s.title || 'Step '+s.n}`;
+    html += `<button class="step-tab ${cur===s.n?'active':''}" data-step="${s.n}" title="${esc(tip)}">${s.n}</button>`;
+  });
+  html += `<button class="step-tab ${cur===0?'active':''}" data-step="0" title="Run the full file">All</button>`;
+  tabsEl.innerHTML = html;
+  tabsEl.querySelectorAll('.step-tab').forEach(b => {
+    b.addEventListener('click', () => switchStep(parseInt(b.dataset.step, 10)));
+  });
+}
+
+/* Pull every <a href> out of an HTML string. Returns a deduped list of
+   {title, url} pairs. Skips empty / "#" / "javascript:" hrefs and pure
+   in-page anchors. The link's visible text becomes the chip title;
+   if it's empty or just markup, fall back to the URL. */
+function extractLinks(html){
+  if(!html) return [];
+  const out = [];
+  const seen = new Set();
+  const re = /<a\b[^>]*\bhref\s*=\s*("([^"]*)"|'([^']*)')[^>]*>([\s\S]*?)<\/a>/gi;
+  let m;
+  while((m = re.exec(html)) !== null){
+    const url = (m[2] ?? m[3] ?? '').trim();
+    if(!url || url === '#' || url.startsWith('javascript:')) continue;
+    // Skip pure same-page anchors (#section) — they don't navigate to anything useful here
+    if(url.startsWith('#')) continue;
+    if(seen.has(url)) continue;
+    seen.add(url);
+    let text = m[4].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+    if(!text) text = url;
+    out.push({ title: text, url, autoFromFile: true });
+  }
+  return out;
+}
+
+function renderFileLinks(){
+  const linksEl = document.getElementById('fileLinks');
+  const entry = FILES.find(f => f.file === state.active);
+  const manual = (entry && entry.links) || [];
+  // Auto-extract <a href> links from the lesson's current HTML buffer
+  const lesson = state.active;
+  const lessonHtml = lesson ? (state.buffers[lesson] ?? state.originals[lesson] ?? '') : '';
+  const auto = extractLinks(lessonHtml);
+  // Merge: keep manual entries first, then auto entries that aren't duplicates
+  const seenUrls = new Set(manual.filter(l => l.url).map(l => l.url));
+  const links = [...manual, ...auto.filter(l => !seenUrls.has(l.url))];
+  if(!links.length){ linksEl.innerHTML = ''; return; }
+  const esc = (s) => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+  linksEl.innerHTML = links.map((l, i) => {
+    let host = '';
+    try { host = new URL(l.url).hostname.replace(/^www\./,''); } catch {}
+    const isEmbed = !!l.embed;
+    const defaultIco = isEmbed
+      ? (l.embed.type === 'video' ? '▶' : (l.embed.type === 'html' ? '📥' : '⤢'))
+      : (l.autoFromFile ? '🔗' : '📚');
+    const ico = l.icon || defaultIco;
+    const arrow = isEmbed ? '⤢' : '↗';
+    const tag = isEmbed ? 'button type="button"' : `a href="${esc(l.url || '#')}" target="_blank" rel="noopener noreferrer"`;
+    const close = isEmbed ? 'button' : 'a';
+    const tip = l.url ? esc(l.url) : esc(l.title);
+    return `<${tag} class="file-link" data-link-index="${i}" title="${tip}">`
+         + `<span class="ico">${esc(ico)}</span><span>${esc(l.title)}</span>`
+         + (host ? `<span class="host">${esc(host)}</span>` : '')
+         + `<span class="arrow">${arrow}</span></${close}>`;
+  }).join('');
+  // Attach click handlers for embed-style links
+  linksEl.querySelectorAll('button.file-link').forEach(btn => {
+    const idx = parseInt(btn.dataset.linkIndex, 10);
+    const link = links[idx];
+    if(!link) return;
+    btn.addEventListener('click', () => openMediaModal(link));
+  });
+}
+
+/* ==========================================================
+   Media modal — plays cross-origin video (and optional separate
+   audio track, e.g. Reddit DASH) inside the lab.
+   ========================================================== */
+const mediaModalEl = document.getElementById('mediaModal');
+const mediaTitleEl = document.getElementById('mediaTitle');
+const mediaHostEl  = document.getElementById('mediaHost');
+const mediaBodyEl  = document.getElementById('mediaBody');
+const mediaSrcLink = document.getElementById('mediaSource');
+
+function openMediaModal(link){
+  if(!link || !link.embed) return;
+  const e = link.embed;
+  const foot = document.getElementById('mediaFoot');
+  mediaTitleEl.textContent = link.title || 'Embedded media';
+  let host = '';
+  try { if(link.url) host = new URL(link.url).hostname.replace(/^www\./,''); } catch {}
+  mediaHostEl.textContent = host;
+  // Footer is only meaningful when there's an external source URL
+  if(link.url){
+    foot.style.display = '';
+    mediaSrcLink.href = link.url;
+    mediaSrcLink.textContent = host || 'source';
+    mediaSrcLink.title = link.url;
+  }else{
+    foot.style.display = 'none';
+  }
+
+  mediaBodyEl.classList.remove('html-mode');
+  mediaBodyEl.innerHTML = '<div class="media-loading">Loading…</div>';
+  mediaModalEl.classList.add('open');
+
+  if(e.type === 'html'){
+    mediaBodyEl.classList.add('html-mode');
+    mediaBodyEl.innerHTML = e.html || '';
+    return;
+  }
+  if(e.type === 'video'){
+    const video = document.createElement('video');
+    video.src = e.videoSrc;
+    video.controls = true;
+    video.playsInline = true;
+    video.preload = 'metadata';
+    if(e.poster) video.poster = e.poster;
+    if(e.width) video.width = e.width;
+    if(e.height) video.height = e.height;
+
+    let audio = null;
+    if(e.audioSrc){
+      // Reddit DASH videos have audio in a separate file; play in sync
+      audio = document.createElement('audio');
+      audio.src = e.audioSrc;
+      audio.preload = 'metadata';
+      const sync = () => { try { audio.currentTime = video.currentTime; } catch {} };
+      video.addEventListener('play',   () => { sync(); audio.play().catch(()=>{}); });
+      video.addEventListener('pause',  () => audio.pause());
+      video.addEventListener('seeking',() => sync());
+      video.addEventListener('seeked', () => sync());
+      video.addEventListener('ratechange', () => { audio.playbackRate = video.playbackRate; });
+      video.addEventListener('volumechange', () => { audio.volume = video.volume; audio.muted = video.muted; });
+      // Periodically nudge if drift > 0.25s
+      setInterval(() => {
+        if(audio.paused || video.paused) return;
+        const drift = audio.currentTime - video.currentTime;
+        if(Math.abs(drift) > 0.25) sync();
+      }, 1000);
+    }
+
+    mediaBodyEl.innerHTML = '';
+    mediaBodyEl.appendChild(video);
+    if(audio) mediaBodyEl.appendChild(audio);
+  } else if(e.type === 'iframe'){
+    mediaBodyEl.innerHTML = '';
+    const ifr = document.createElement('iframe');
+    ifr.src = e.src;
+    ifr.style.cssText = 'border:0;width:100%;height:60vh;border-radius:10px;background:#000';
+    if(e.allow) ifr.allow = e.allow;
+    mediaBodyEl.appendChild(ifr);
+  } else {
+    mediaBodyEl.innerHTML = '<div class="media-loading">Unsupported embed type.</div>';
+  }
+}
+
+function closeMediaModal(){
+  mediaModalEl.classList.remove('open');
+  // Tear down media to stop playback and free the network stream
+  mediaBodyEl.querySelectorAll('video, audio, iframe').forEach(n => {
+    if(n.tagName === 'IFRAME'){ n.src = 'about:blank'; }
+    else { try { n.pause(); } catch {} n.removeAttribute('src'); n.load && n.load(); }
+  });
+  mediaBodyEl.classList.remove('html-mode');
+  mediaBodyEl.innerHTML = '';
+}
+
+document.getElementById('mediaClose').addEventListener('click', closeMediaModal);
+mediaModalEl.addEventListener('click', (e) => {
+  if(e.target === mediaModalEl) closeMediaModal();
+});
+window.addEventListener('keydown', (e) => {
+  if(e.key === 'Escape' && mediaModalEl.classList.contains('open')) closeMediaModal();
+});
+
+function fileButtonNode(entry){
+  const li = document.createElement('li');
+  const btn = document.createElement('button');
+  btn.className = 'file-btn';
+  btn.dataset.file = entry.file;
+  btn.innerHTML = `
+    <span class="ico">B</span>
+    <span class="label">${entry.label}</span>
+    <span class="lines" data-lines>—</span>
+  `;
+  btn.addEventListener('click', ()=> activate(entry.file));
+  li.appendChild(btn);
+  return li;
+}
+
+// Render the sidebar grouped by `entry.group` (with a folder header for each group)
+(function renderFileList(){
+  const groups = [];
+  const seen = new Map();
+  FILES.forEach(f => {
+    const g = f.group || 'Other';
+    if(!seen.has(g)){
+      seen.set(g, { name: g, items: [] });
+      groups.push(seen.get(g));
+    }
+    seen.get(g).items.push(f);
+  });
+  groups.forEach(g => {
+    const head = document.createElement('li');
+    head.className = 'file-group-head';
+    head.innerHTML = `<span>${g.name}</span>`;
+    head.style.cssText = 'list-style:none; padding:14px 12px 4px; font-size:10.5px; letter-spacing:0.18em; text-transform:uppercase; color:var(--text-faint); font-weight:600';
+    fileListEl.appendChild(head);
+    g.items.forEach(f => fileListEl.appendChild(fileButtonNode(f)));
+  });
+})();
+
+searchEl.addEventListener('input', ()=>{
+  const q = searchEl.value.toLowerCase().trim();
+  document.querySelectorAll('.file-btn').forEach(b=>{
+    const f = b.dataset.file;
+    const label = b.querySelector('.label').textContent.toLowerCase();
+    const match = !q || f.toLowerCase().includes(q) || label.includes(q);
+    b.parentElement.style.display = match ? '' : 'none';
+  });
+  // Hide a group header when all its items are filtered out
+  document.querySelectorAll('.file-group-head').forEach(head => {
+    let n = head.nextElementSibling;
+    let anyVisible = false;
+    while(n && !n.classList.contains('file-group-head')){
+      if(n.style.display !== 'none') { anyVisible = true; break; }
+      n = n.nextElementSibling;
+    }
+    head.style.display = anyVisible ? '' : 'none';
+  });
+});
+
+function readEmbedded(name){
+  const node = document.querySelector(`script[type="text/plain"][data-bsfile="${CSS.escape(name)}"]`);
+  if(!node) return null;
+  // Restore "<\/script" → "</script" in case anything was neutralized at embed time
+  return node.textContent.replace(/<\\\/script/gi, '</script');
+}
+
+async function loadFile(name){
+  if(state.loaded[name]) return state.originals[name];
+  let text = readEmbedded(name);
+  if(text == null){
+    // Fall back to fetch when served over http(s) and a file isn't embedded
+    try{
+      const r = await fetch(name + '?t=' + Date.now());
+      if(!r.ok) throw new Error('HTTP ' + r.status);
+      text = await r.text();
+    }catch(err){
+      text = `// Source for ${name} is not embedded in this page and could not be fetched.\n// ${err.message}\n`;
+    }
+  }
+  state.originals[name] = text;
+  state.buffers[name] = text;
+  state.loaded[name] = true;
+  state.lineCounts[name] = text.split('\n').length;
+  const btn = document.querySelector(`.file-btn[data-file="${name}"]`);
+  if(btn){
+    const lines = btn.querySelector('[data-lines]');
+    if(lines) lines.textContent = state.lineCounts[name] + 'L';
+  }
+  return text;
+}
+
+async function activate(name){
+  // Save current view (current sub-file inside the current lesson) into its slot
+  if(state.active){
+    saveCurrentSubEditor();
+    refreshDirty(state.active);
+  }
+  state.active = name;
+  document.querySelectorAll('.file-btn').forEach(b=>{
+    b.classList.toggle('active', b.dataset.file === name);
+  });
+  fileNameEl.firstChild.textContent = name;
+  if(!state.loaded[name]){
+    editor.setValue('// Loading ' + name + '…');
+    await loadFile(name);
+  }
+  // Also pre-load any companion files declared via `related`
+  const entry = FILES.find(f => f.file === name);
+  const related = (entry && entry.related) || [];
+  for(const rel of related){
+    if(!state.loaded[rel]) await loadFile(rel);
+  }
+  // (Re)compute steps from the current "All" buffer (no-op for HTML lessons)
+  state.steps[name] = parseSteps(state.buffers[name] ?? state.originals[name] ?? '');
+  if(state.activeStep[name] == null){
+    const ss = state.steps[name];
+    state.activeStep[name] = (ss && ss.length >= 2) ? ss[ss.length - 1].n : 0;
+  }
+  if(state.activeStep[name] !== 0 && !(state.steps[name] || []).some(s => s.n === state.activeStep[name])){
+    const ss = state.steps[name];
+    state.activeStep[name] = (ss && ss.length) ? ss[ss.length - 1].n : 0;
+  }
+  // Default the sub-file selector to the lesson itself
+  if(!state.activeSubfile[name]) state.activeSubfile[name] = name;
+  loadSubfileIntoEditor();
+  renderStepTabs();
+  renderFileTabs();
+  renderFileLinks();
+  refreshDirty(name);
+  editor.focus();
+  // Refresh the iframe preview for the newly-active file
+  if(typeof renderPreview === 'function') renderPreview();
+}
+
+function refreshDirty(name){
+  // "Dirty" = the lesson's HTML buffer OR any of its related-file buffers
+  // differs from the originals on disk. Switching sub-file tabs is just a
+  // view change, so the editor's current text isn't read here.
+  if(!state.loaded[name]) return;
+  const entry = FILES.find(f => f.file === name);
+  const all = [name, ...((entry && entry.related) || [])];
+  let dirty = false;
+  for(const p of all){
+    if(state.buffers[p] != null && state.buffers[p] !== state.originals[p]){ dirty = true; break; }
+  }
+  const btn = document.querySelector(`.file-btn[data-file="${name}"]`);
+  if(btn) btn.classList.toggle('dirty', dirty);
+  if(name === state.active){
+    fileNameEl.classList.toggle('dirty', dirty);
+  }
+}
+
+/* Sub-file tabs (when a lesson has companion .css/.js files) */
+function saveCurrentSubEditor(){
+  const lesson = state.active;
+  if(!lesson) return;
+  const sub = state.activeSubfile[lesson] || lesson;
+  state.buffers[sub] = editor.getValue();
+}
+function loadSubfileIntoEditor(){
+  const lesson = state.active;
+  if(!lesson) return;
+  const sub = state.activeSubfile[lesson] || lesson;
+  const content = state.buffers[sub] ?? state.originals[sub] ?? '';
+  // Match syntax mode to the file's extension
+  const mode = sub.endsWith('.css') ? 'css'
+             : sub.endsWith('.js')  ? 'javascript'
+             : 'htmlmixed';
+  editor.setOption('mode', mode);
+  editor.setValue(content);
+  editor.clearHistory();
+  // Update chrome name + sub-path display
+  chromeNameEl.textContent = sub.split('/').pop();
+  fileSubEl.textContent = 'bootstrap/' + sub;
+}
+function renderFileTabs(){
+  const tabsEl = document.getElementById('fileTabs');
+  const lesson = state.active;
+  if(!lesson){ tabsEl.innerHTML = ''; chromeNameEl.style.display = ''; return; }
+  const entry = FILES.find(f => f.file === lesson);
+  const related = (entry && entry.related) || [];
+  const all = [lesson, ...related];
+  if(all.length < 2){
+    tabsEl.innerHTML = '';
+    chromeNameEl.style.display = '';
+    return;
+  }
+  // Tabs replace the static filename in the chrome
+  chromeNameEl.style.display = 'none';
+  const cur = state.activeSubfile[lesson] || lesson;
+  const esc = (s) => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+  tabsEl.innerHTML = all.map(p => {
+    const name = p.split('/').pop();
+    const cls  = 'file-tab' + (p === cur ? ' active' : '');
+    return `<button class="${cls}" data-path="${esc(p)}" title="${esc(p)}">${esc(name)}</button>`;
+  }).join('');
+  tabsEl.querySelectorAll('.file-tab').forEach(b => {
+    b.addEventListener('click', () => switchSubfile(b.dataset.path));
+  });
+}
+function switchSubfile(path){
+  const lesson = state.active;
+  if(!lesson) return;
+  saveCurrentSubEditor();
+  state.activeSubfile[lesson] = path;
+  loadSubfileIntoEditor();
+  renderFileTabs();
+  refreshDirty(lesson);
+  editor.focus();
+}
+
+editor.on('change', ()=>{
+  if(!state.active) return;
+  const lesson = state.active;
+  const sub = state.activeSubfile[lesson] || lesson;
+  state.buffers[sub] = editor.getValue();
+  refreshDirty(lesson);
+  // If the user just edited the lesson HTML, the set of <a href> links
+  // can change — refresh the chip strip (debounced so we don't churn DOM
+  // on every keystroke).
+  if(sub === lesson){
+    clearTimeout(renderFileLinks._t);
+    renderFileLinks._t = setTimeout(renderFileLinks, 250);
+  }
+});
+
+/* ==========================================================
+   Reset / Render / Preview
+   ========================================================== */
+document.getElementById('resetBtn').addEventListener('click', ()=>{
+  const lesson = state.active;
+  if(!lesson || state.originals[lesson] == null) return;
+  // Reset both the lesson's HTML and every related companion file
+  const entry = FILES.find(f => f.file === lesson);
+  const all = [lesson, ...((entry && entry.related) || [])];
+  for(const p of all){
+    if(state.originals[p] != null) state.buffers[p] = state.originals[p];
+  }
+  loadSubfileIntoEditor();
+  refreshDirty(lesson);
+  renderPreview();
+  toast('Reset ' + lesson);
+});
+document.getElementById('runBtn').addEventListener('click', () => renderPreview());
+window.addEventListener('keydown', (e)=>{
+  if((e.metaKey || e.ctrlKey) && e.key === 'Enter'){
+    e.preventDefault();
+    renderPreview();
+  }
+});
+
+/* ==========================================================
+   Live preview
+   ========================================================== */
+const previewEl = document.getElementById('preview');
+const previewCardEl = document.getElementById('previewCard');
+const previewStatusEl = document.getElementById('previewStatus');
+const autoChk = document.getElementById('autoChk');
+
+/* Compose the lesson's HTML with each companion file inlined, so the user's
+   in-editor edits to a sibling .css / .js show up in the preview. */
+function buildPreviewHtml(){
+  const lesson = state.active;
+  if(!lesson) return '';
+  // Make sure the active sub-file's editor content is captured before we read
+  // the buffers (the change handler usually does this, but be explicit).
+  saveCurrentSubEditor();
+  let html = state.buffers[lesson] ?? state.originals[lesson] ?? '';
+  const entry = FILES.find(f => f.file === lesson);
+  const related = (entry && entry.related) || [];
+  for(const rel of related){
+    const buf = state.buffers[rel] ?? state.originals[rel] ?? '';
+    const fname = rel.split('/').pop();
+    const escName = fname.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    if(rel.endsWith('.css')){
+      const re = new RegExp(`<link\\b[^>]*\\bhref=(?:"${escName}"|'${escName}')[^>]*/?>`, 'i');
+      html = html.replace(re, `<style>\n${buf}\n<\/style>`);
+    } else if(rel.endsWith('.js')){
+      const re = new RegExp(`<script\\b[^>]*\\bsrc=(?:"${escName}"|'${escName}')[^>]*><\/script>`, 'i');
+      html = html.replace(re, `<script>\n${buf}\n<\/script>`);
+    }
+  }
+  return html;
+}
+
+function renderPreview(){
+  let html = buildPreviewHtml();
+  // Inject <base href="..."> so relative URLs the lesson does NOT have us
+  // inline (images, fonts, sibling files we don't manage) resolve to the
+  // lesson's folder instead of the synthetic about:srcdoc origin.
+  const file = state.active;
+  if(file){
+    const dir = file.split('/').slice(0, -1).join('/');
+    const baseUrl = dir ? new URL(encodeURI(dir) + '/', document.baseURI).href : document.baseURI;
+    const baseTag = `<base href="${baseUrl}">`;
+    if(/<head\b[^>]*>/i.test(html)){
+      html = html.replace(/<head\b[^>]*>/i, (m) => m + baseTag);
+    } else {
+      html = `<!DOCTYPE html><head>${baseTag}</head>` + html;
+    }
+  }
+  previewStatusEl.classList.add('rendering');
+  previewStatusEl.textContent = 'Rendering';
+  previewEl.srcdoc = html;
+}
+
+function schedulePreview(){
+  // debounced auto-render while typing
+  if(!autoChk.checked) return;
+  clearTimeout(schedulePreview._t);
+  schedulePreview._t = setTimeout(renderPreview, 350);
+}
+
+previewEl.addEventListener('load', ()=>{
+  previewStatusEl.classList.remove('rendering');
+  previewStatusEl.textContent = 'Preview';
+});
+
+document.getElementById('bgToggleBtn').addEventListener('click', (e)=>{
+  previewCardEl.classList.toggle('dark-bg');
+  e.currentTarget.classList.toggle('active', previewCardEl.classList.contains('dark-bg'));
+});
+
+document.getElementById('popoutBtn').addEventListener('click', ()=>{
+  const code = editor.getValue();
+  const w = window.open('', '_blank', 'noopener,noreferrer');
+  if(!w){ toast('Pop-up blocked — allow popups for this page'); return; }
+  w.document.open(); w.document.write(code); w.document.close();
+});
+
+editor.on('change', schedulePreview);
+
+/* ==========================================================
+   Toast helper
+   ========================================================== */
+const toastEl = document.getElementById('toast');
+let toastTimer;
+function toast(msg, kind){
+  toastEl.textContent = msg;
+  toastEl.classList.toggle('error', kind === 'error');
+  toastEl.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=> toastEl.classList.remove('show'), 1800);
+}
+
+/* ==========================================================
+   Drag-to-resize splitter between editor and preview
+   ========================================================== */
+(function initSplitter(){
+  const pane     = document.querySelector('.editor-pane');
+  const splitter = document.getElementById('splitter');
+  const editorCardEl  = document.querySelector('.editor-pane > .editor-card');
+  const previewCardEl_ = document.querySelector('.editor-pane > .preview-card');
+  if(!pane || !splitter || !editorCardEl || !previewCardEl_) return;
+  const HANDLE_W = 6;        // matches the middle column width in the grid
+  const MIN_PANE = 160;      // minimum width for either side
+  const STORAGE  = 'css-lab-split-ratio';
+
+  // Restore previously-saved ratio (a number between 0 and 1, editor's share)
+  let savedRatio = null;
+  try { const v = parseFloat(localStorage.getItem(STORAGE)); if(v > 0 && v < 1) savedRatio = v; } catch {}
+
+  function applyRatio(ratio){
+    const total = pane.clientWidth - parseFloat(getComputedStyle(pane).paddingLeft) * 2 - HANDLE_W - 14 * 2;
+    // ^^ subtract paddings + two gaps (one on each side of the splitter)
+    if(total <= 0) return;
+    const left  = Math.max(MIN_PANE, Math.min(total - MIN_PANE, total * ratio));
+    const right = total - left;
+    pane.style.setProperty('--col-1', left  + 'px');
+    pane.style.setProperty('--col-2', right + 'px');
+    if(typeof editor !== 'undefined' && editor.refresh){
+      clearTimeout(applyRatio._t);
+      applyRatio._t = setTimeout(() => editor.refresh(), 30);
+    }
+  }
+  if(savedRatio != null) applyRatio(savedRatio);
+
+  let drag = null;
+  function start(e){
+    e.preventDefault();
+    const rect = pane.getBoundingClientRect();
+    const padL = parseFloat(getComputedStyle(pane).paddingLeft) || 0;
+    drag = {
+      paneLeft: rect.left + padL,
+      total: pane.clientWidth - padL * 2 - HANDLE_W - 14 * 2,
+      pointerId: e.pointerId ?? null,
+    };
+    splitter.classList.add('active');
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  }
+  function move(e){
+    if(!drag) return;
+    // editor's effective column = pointer X minus the pane's left padding edge
+    let editorPx = e.clientX - drag.paneLeft;
+    editorPx = Math.max(MIN_PANE, Math.min(drag.total - MIN_PANE, editorPx));
+    const ratio = editorPx / drag.total;
+    applyRatio(ratio);
+  }
+  function end(){
+    if(!drag) return;
+    drag = null;
+    splitter.classList.remove('active');
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+    // Persist current ratio
+    const total = pane.clientWidth - parseFloat(getComputedStyle(pane).paddingLeft) * 2 - HANDLE_W - 14 * 2;
+    const colL = parseFloat(pane.style.getPropertyValue('--col-1')) || total / 2;
+    try { localStorage.setItem(STORAGE, (colL / total).toFixed(4)); } catch {}
+  }
+  splitter.addEventListener('pointerdown', start);
+  window.addEventListener('pointermove', move);
+  window.addEventListener('pointerup',   end);
+  window.addEventListener('pointercancel', end);
+
+  // Double-click resets to 50/50
+  splitter.addEventListener('dblclick', () => {
+    pane.style.removeProperty('--col-1');
+    pane.style.removeProperty('--col-2');
+    try { localStorage.removeItem(STORAGE); } catch {}
+    if(typeof editor !== 'undefined' && editor.refresh) setTimeout(() => editor.refresh(), 30);
+  });
+
+  // Keep CodeMirror's layout correct when the window resizes
+  window.addEventListener('resize', () => {
+    if(savedRatio != null) applyRatio(parseFloat(localStorage.getItem(STORAGE)) || 0.5);
+    if(typeof editor !== 'undefined' && editor.refresh){
+      clearTimeout(applyRatio._t);
+      applyRatio._t = setTimeout(() => editor.refresh(), 60);
+    }
+  });
+})();
+
+/* ==========================================================
+   Boot
+   ========================================================== */
+(async function boot(){
+  // Pre-fetch line counts for sidebar in the background
+  FILES.forEach(f => loadFile(f.file));
+  // Activate first file
+  await activate(FILES[0].file);
+})();
+</script>
+</body>
+</html>
