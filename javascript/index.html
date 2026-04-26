@@ -232,6 +232,13 @@ body::after{
   box-shadow: 0 10px 30px -12px rgba(124,92,255,0.7);
 }
 .run-btn:hover{ filter:brightness(1.08); transform:translateY(-1px); border-color:transparent }
+.stop-btn{
+  background:linear-gradient(135deg,#ff5a7a,#ff8c5a);
+  color:#fff; border-color:transparent;
+  box-shadow: 0 10px 30px -12px rgba(255,90,122,0.65);
+}
+.stop-btn:hover{ filter:brightness(1.08); transform:translateY(-1px); border-color:transparent }
+.stop-btn .k{ background:rgba(255,255,255,0.16) }
 
 /* Editor card with 3D float */
 .editor-card{
@@ -417,6 +424,72 @@ body::after{
 @keyframes floatA{ 0%,100%{transform:translate(0,0)} 50%{transform:translate(-30px,20px)} }
 @keyframes floatB{ 0%,100%{transform:translate(0,0)} 50%{transform:translate(40px,-20px)} }
 
+/* Media modal — embeds external videos in-page */
+.media-modal{
+  position: fixed; inset: 0; z-index: 200; display: none;
+  align-items: center; justify-content: center;
+  padding: 24px;
+  background: rgba(4,4,12,0.78);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  animation: mmFade .18s ease both;
+}
+.media-modal.open{ display: flex }
+@keyframes mmFade{ from{opacity:0} to{opacity:1} }
+.media-panel{
+  width: min(960px, 100%);
+  max-height: 92vh;
+  display: flex; flex-direction: column;
+  background: linear-gradient(180deg, rgba(20,20,40,0.9), rgba(8,8,18,0.9));
+  border: 1px solid var(--border-strong);
+  border-radius: 18px;
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  position: relative;
+}
+.media-panel::before{
+  content:""; position: absolute; inset: -1px; border-radius: 19px; pointer-events: none;
+  background: linear-gradient(135deg, rgba(124,92,255,0.45), rgba(53,208,255,0) 40%, rgba(255,110,199,0.4));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude; padding: 1px;
+  opacity: .55;
+}
+.media-head{
+  display: flex; align-items: center; gap: 12px; padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+}
+.media-head h3{ margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -0.01em; flex: 1; min-width: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.media-host{ font-size: 11px; color: var(--text-faint); font-family: 'JetBrains Mono', monospace }
+.media-close{
+  width: 30px; height: 30px; flex-shrink: 0;
+  border-radius: 50%; border: 1px solid var(--border);
+  background: rgba(255,255,255,0.04); color: var(--text-dim);
+  font-size: 17px; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.media-close:hover{ background: rgba(255,90,122,0.14); color: #fff; border-color: rgba(255,90,122,0.4) }
+.media-body{
+  flex: 1; min-height: 0; padding: 14px 18px;
+  display: flex; align-items: center; justify-content: center;
+  background: #000;
+}
+.media-body video{
+  max-width: 100%; max-height: 70vh;
+  display: block; border-radius: 10px;
+  background: #000;
+}
+.media-foot{
+  padding: 10px 18px; border-top: 1px solid var(--border);
+  font-size: 12px; color: var(--text-faint);
+  display: flex; align-items: center; gap: 10px;
+}
+.media-foot a{ color: var(--accent-2); text-decoration: none }
+.media-foot a:hover{ text-decoration: underline }
+.media-loading{ color: var(--text-dim); font-size: 13px; padding: 60px 0 }
+
 /* Toast / status */
 .toast{
   position:fixed; bottom:22px; right:22px; z-index:50;
@@ -451,7 +524,6 @@ body::after{
     <ul class="file-list" id="fileList"></ul>
 
     <a class="back-link" href="../index.html" style="margin-top:18px">⌂ Home</a>
-    <a class="back-link" href="../tools.html" style="margin-top:8px">↗ BergerOverflow</a>
   </aside>
 
   <main class="editor-pane">
@@ -503,10 +575,22 @@ body::after{
 
 <div class="toast" id="toast"></div>
 
-<!-- Embedded source — kept in sync with sibling .js files -->
-<script type="text/plain" data-jsfile="hello_world.js">// couldn't be simpler 
+<div class="media-modal" id="mediaModal" role="dialog" aria-modal="true" aria-labelledby="mediaTitle">
+  <div class="media-panel">
+    <div class="media-head">
+      <h3 id="mediaTitle">Loading…</h3>
+      <span class="media-host" id="mediaHost"></span>
+      <button class="media-close" id="mediaClose" type="button" title="Close (Esc)" aria-label="Close">×</button>
+    </div>
+    <div class="media-body" id="mediaBody"></div>
+    <div class="media-foot">
+      <span>Embedded from <a id="mediaSource" href="#" target="_blank" rel="noopener">source ↗</a></span>
+    </div>
+  </div>
+</div>
 
-console.log("Hello World!")
+<!-- Embedded source — kept in sync with sibling .js files -->
+<script type="text/plain" data-jsfile="hello_world.js">console.log("Hello World!")
 </script>
 <script type="text/plain" data-jsfile="const_values.js">// a const is a variable defined in current scope (just like let)
 // but it's value can't be changed
@@ -1346,7 +1430,20 @@ main();
    File registry — every .js file in this directory
    ========================================================== */
 const FILES = [
-  { file: 'hello_world.js',         label: 'Hello World' },
+  { file: 'hello_world.js',         label: 'Hello World',
+    links: [
+      {
+        title: 'Web browsers over the last 28 years — visualization',
+        url: 'https://www.reddit.com/r/dataisbeautiful/comments/v3c9nv/oc_web_browsers_over_the_last_28_years/',
+        embed: {
+          type: 'video',
+          videoSrc: 'https://v.redd.it/lin5e4yde8391/DASH_1080.mp4?source=fallback',
+          audioSrc: 'https://v.redd.it/lin5e4yde8391/DASH_audio.mp4',
+          width: 1080, height: 1080,
+        },
+      },
+    ],
+  },
   { file: 'let_vs_var.js',          label: 'let vs var' },
   { file: 'const_values.js',        label: 'Const Values' },
   { file: 'closures.js',            label: 'Closures' },
@@ -1615,11 +1712,12 @@ function renderStepTabs(){
   }
   const cur = state.activeStep[file] || 0;
   const esc = (s) => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
-  let html = `<button class="step-tab ${cur===0?'active':''}" data-step="0" title="Run the full file">All</button>`;
+  let html = '';
   steps.forEach(s => {
     const tip = `${s.n}) ${s.title || 'Step '+s.n}`;
     html += `<button class="step-tab ${cur===s.n?'active':''}" data-step="${s.n}" title="${esc(tip)}">${s.n}</button>`;
   });
+  html += `<button class="step-tab ${cur===0?'active':''}" data-step="0" title="Run the full file">All</button>`;
   tabsEl.innerHTML = html;
   tabsEl.querySelectorAll('.step-tab').forEach(b => {
     b.addEventListener('click', () => switchStep(parseInt(b.dataset.step, 10)));
@@ -1632,15 +1730,115 @@ function renderFileLinks(){
   const links = (entry && entry.links) || [];
   if(!links.length){ linksEl.innerHTML = ''; return; }
   const esc = (s) => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
-  linksEl.innerHTML = links.map(l => {
+  linksEl.innerHTML = links.map((l, i) => {
     let host = '';
     try { host = new URL(l.url).hostname.replace(/^www\./,''); } catch {}
-    return `<a class="file-link" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer" title="${esc(l.url)}">`
-         + `<span class="ico">📚</span><span>${esc(l.title)}</span>`
+    const isEmbed = !!l.embed;
+    const ico = isEmbed ? '▶' : '📚';
+    const arrow = isEmbed ? '⤢' : '↗';
+    const tag = isEmbed ? 'button type="button"' : `a href="${esc(l.url)}" target="_blank" rel="noopener noreferrer"`;
+    const close = isEmbed ? 'button' : 'a';
+    return `<${tag} class="file-link" data-link-index="${i}" title="${esc(l.url)}">`
+         + `<span class="ico">${ico}</span><span>${esc(l.title)}</span>`
          + (host ? `<span class="host">${esc(host)}</span>` : '')
-         + `<span class="arrow">↗</span></a>`;
+         + `<span class="arrow">${arrow}</span></${close}>`;
   }).join('');
+  // Attach click handlers for embed-style links
+  linksEl.querySelectorAll('button.file-link').forEach(btn => {
+    const idx = parseInt(btn.dataset.linkIndex, 10);
+    const link = links[idx];
+    if(!link) return;
+    btn.addEventListener('click', () => openMediaModal(link));
+  });
 }
+
+/* ==========================================================
+   Media modal — plays cross-origin video (and optional separate
+   audio track, e.g. Reddit DASH) inside the lab.
+   ========================================================== */
+const mediaModalEl = document.getElementById('mediaModal');
+const mediaTitleEl = document.getElementById('mediaTitle');
+const mediaHostEl  = document.getElementById('mediaHost');
+const mediaBodyEl  = document.getElementById('mediaBody');
+const mediaSrcLink = document.getElementById('mediaSource');
+
+function openMediaModal(link){
+  if(!link || !link.embed) return;
+  const e = link.embed;
+  mediaTitleEl.textContent = link.title || 'Embedded media';
+  let host = '';
+  try { host = new URL(link.url).hostname.replace(/^www\./,''); } catch {}
+  mediaHostEl.textContent = host;
+  mediaSrcLink.href = link.url;
+  mediaSrcLink.textContent = host || 'source';
+  mediaSrcLink.title = link.url;
+
+  mediaBodyEl.innerHTML = '<div class="media-loading">Loading…</div>';
+  mediaModalEl.classList.add('open');
+
+  if(e.type === 'video'){
+    const video = document.createElement('video');
+    video.src = e.videoSrc;
+    video.controls = true;
+    video.playsInline = true;
+    video.preload = 'metadata';
+    if(e.poster) video.poster = e.poster;
+    if(e.width) video.width = e.width;
+    if(e.height) video.height = e.height;
+
+    let audio = null;
+    if(e.audioSrc){
+      // Reddit DASH videos have audio in a separate file; play in sync
+      audio = document.createElement('audio');
+      audio.src = e.audioSrc;
+      audio.preload = 'metadata';
+      const sync = () => { try { audio.currentTime = video.currentTime; } catch {} };
+      video.addEventListener('play',   () => { sync(); audio.play().catch(()=>{}); });
+      video.addEventListener('pause',  () => audio.pause());
+      video.addEventListener('seeking',() => sync());
+      video.addEventListener('seeked', () => sync());
+      video.addEventListener('ratechange', () => { audio.playbackRate = video.playbackRate; });
+      video.addEventListener('volumechange', () => { audio.volume = video.volume; audio.muted = video.muted; });
+      // Periodically nudge if drift > 0.25s
+      setInterval(() => {
+        if(audio.paused || video.paused) return;
+        const drift = audio.currentTime - video.currentTime;
+        if(Math.abs(drift) > 0.25) sync();
+      }, 1000);
+    }
+
+    mediaBodyEl.innerHTML = '';
+    mediaBodyEl.appendChild(video);
+    if(audio) mediaBodyEl.appendChild(audio);
+  } else if(e.type === 'iframe'){
+    mediaBodyEl.innerHTML = '';
+    const ifr = document.createElement('iframe');
+    ifr.src = e.src;
+    ifr.style.cssText = 'border:0;width:100%;height:60vh;border-radius:10px;background:#000';
+    if(e.allow) ifr.allow = e.allow;
+    mediaBodyEl.appendChild(ifr);
+  } else {
+    mediaBodyEl.innerHTML = '<div class="media-loading">Unsupported embed type.</div>';
+  }
+}
+
+function closeMediaModal(){
+  mediaModalEl.classList.remove('open');
+  // Tear down media to stop playback and free the network stream
+  mediaBodyEl.querySelectorAll('video, audio, iframe').forEach(n => {
+    if(n.tagName === 'IFRAME'){ n.src = 'about:blank'; }
+    else { try { n.pause(); } catch {} n.removeAttribute('src'); n.load && n.load(); }
+  });
+  mediaBodyEl.innerHTML = '';
+}
+
+document.getElementById('mediaClose').addEventListener('click', closeMediaModal);
+mediaModalEl.addEventListener('click', (e) => {
+  if(e.target === mediaModalEl) closeMediaModal();
+});
+window.addEventListener('keydown', (e) => {
+  if(e.key === 'Escape' && mediaModalEl.classList.contains('open')) closeMediaModal();
+});
 
 function fileButtonNode(entry){
   const li = document.createElement('li');
@@ -1718,10 +1916,16 @@ async function activate(name){
   }
   // (Re)compute steps from the current "All" buffer
   state.steps[name] = parseSteps(state.buffers[name] ?? state.originals[name] ?? '');
-  if(state.activeStep[name] == null) state.activeStep[name] = 0;
-  // If a previously-active step no longer exists (e.g. headings removed), fall back to All
+  // First time this file is opened: default to the LAST step when there are
+  // multiple steps; otherwise fall back to All (0).
+  if(state.activeStep[name] == null){
+    const ss = state.steps[name];
+    state.activeStep[name] = (ss && ss.length >= 2) ? ss[ss.length - 1].n : 0;
+  }
+  // If a previously-active step no longer exists (e.g. headings removed), fall back to the last available step or All
   if(state.activeStep[name] !== 0 && !(state.steps[name] || []).some(s => s.n === state.activeStep[name])){
-    state.activeStep[name] = 0;
+    const ss = state.steps[name];
+    state.activeStep[name] = (ss && ss.length) ? ss[ss.length - 1].n : 0;
   }
   loadEditorForCurrentStep();
   renderStepTabs();
@@ -1782,7 +1986,10 @@ document.getElementById('resetBtn').addEventListener('click', ()=>{
 });
 document.getElementById('clearBtn').addEventListener('click', clearConsole);
 document.getElementById('clearOutBtn').addEventListener('click', clearConsole);
-document.getElementById('runBtn').addEventListener('click', runCode);
+document.getElementById('runBtn').addEventListener('click', () => {
+  if(isRunning) stopRun('user');
+  else runCode();
+});
 document.getElementById('copyOutBtn').addEventListener('click', ()=>{
   const out = document.getElementById('consoleOut');
   const text = Array.from(out.querySelectorAll('.line .c')).map(n=>n.textContent).join('\n');
@@ -1907,6 +2114,55 @@ function killSandbox(){
   if(sandbox){ sandbox.remove(); sandbox = null; }
 }
 
+/* Run/Stop button state — keeps Stop visible while the iframe is alive
+   (so async setTimeout/Promise output can still arrive). Auto-reverts to
+   Run after a brief idle window with no incoming messages, or immediately
+   if the user clicks Stop. */
+let isRunning = false;
+let idleTimer = null;
+const IDLE_WINDOW_MS = 800;
+
+function setRunButton(running){
+  const btn = document.getElementById('runBtn');
+  if(!btn) return;
+  if(running){
+    btn.classList.remove('run-btn');
+    btn.classList.add('stop-btn');
+    btn.title = 'Stop running code';
+    btn.innerHTML = '■ Stop <span class="k">⌘↵</span>';
+  }else{
+    btn.classList.remove('stop-btn');
+    btn.classList.add('run-btn');
+    btn.title = 'Run code';
+    btn.innerHTML = '▶ Run <span class="k">⌘↵</span>';
+  }
+}
+
+function scheduleIdle(){
+  if(idleTimer) clearTimeout(idleTimer);
+  idleTimer = setTimeout(()=>{
+    idleTimer = null;
+    if(!isRunning) return;
+    killSandbox();
+    isRunning = false;
+    setRunButton(false);
+  }, IDLE_WINDOW_MS);
+}
+
+function stopRun(reason){
+  if(idleTimer){ clearTimeout(idleTimer); idleTimer = null; }
+  const wasRunning = isRunning;
+  killSandbox();
+  isRunning = false;
+  setRunButton(false);
+  if(wasRunning){
+    consoleStatus.classList.remove('running');
+    if(errorCount > 0){ consoleStatus.classList.add('error'); consoleStatus.textContent = 'Failed'; }
+    else { consoleStatus.textContent = reason === 'user' ? 'Stopped' : 'Done'; }
+    if(reason === 'user') appendLine('system', ['■ Stopped by user']);
+  }
+}
+
 function buildSandboxSrc(code, runId){
   // serialize the user code as a JSON string so quotes/backticks survive intact
   const codeJson = JSON.stringify(code);
@@ -1965,19 +2221,26 @@ window.addEventListener('message', (ev)=>{
   if(data.runId !== sandboxId) return;
   const { kind, payload } = data;
   if(kind === 'done'){
+    // Sync user code finished — start the idle window. Any further
+    // async output (setTimeout/Promise) will reset it.
     consoleStatus.classList.remove('running');
     if(errorCount > 0){ consoleStatus.classList.add('error'); consoleStatus.textContent = 'Failed'; }
     else { consoleStatus.textContent = 'Done'; }
+    if(isRunning) scheduleIdle();
     return;
   }
-  if(kind === 'table'){ appendTable(payload); return; }
-  // unwrap structured errors
-  const display = payload.map(p => {
-    if(p && p.__t === 'error') return `${p.name}: ${p.message}` + (p.stack ? '\n' + indent(p.stack) : '');
-    return p;
-  });
-  appendLine(kind, display);
-  bumpStats(kind);
+  if(kind === 'table'){ appendTable(payload); }
+  else {
+    // unwrap structured errors
+    const display = payload.map(p => {
+      if(p && p.__t === 'error') return `${p.name}: ${p.message}` + (p.stack ? '\n' + indent(p.stack) : '');
+      return p;
+    });
+    appendLine(kind, display);
+    bumpStats(kind);
+  }
+  // Any async output extends the idle window — keep Stop visible
+  if(isRunning && idleTimer) scheduleIdle();
 });
 function indent(s){ return s.split('\n').map(l=>'    '+l).join('\n'); }
 
@@ -1994,6 +2257,8 @@ function runCode(){
   const _step = state.activeStep[state.active] || 0;
   appendLine('system', [`▶ Running ${state.active}${_step ? ' — step ' + _step : ''}`]);
 
+  // Tear down any previous run, including its idle timer
+  if(idleTimer){ clearTimeout(idleTimer); idleTimer = null; }
   killSandbox();
   sandboxId += 1;
   runStartTime = performance.now();
@@ -2003,6 +2268,8 @@ function runCode(){
   iframe.srcdoc = buildSandboxSrc(code, sandboxId);
   document.body.appendChild(iframe);
   sandbox = iframe;
+  isRunning = true;
+  setRunButton(true);
 }
 
 /* ==========================================================
