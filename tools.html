@@ -2659,7 +2659,10 @@ tool({
       .ds-panel{display:grid;gap:14px}
       .ds-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
       @media (max-width:780px){.ds-row{grid-template-columns:1fr}}
-      .ds-box{background:rgba(0,0,0,0.35);border:1px solid var(--border);border-radius:10px;padding:12px}
+      .ds-box{background:rgba(0,0,0,0.35);border:1px solid var(--border);border-radius:10px;padding:12px;transition:border-color .15s ease,background .15s ease}
+      .ds-box.ds-drop-target.dragover{border-color:var(--accent);background:rgba(124,92,255,0.10)}
+      .ds-drop-hint{font-size:11px;color:var(--text-faint);margin-top:6px;display:flex;align-items:center;gap:6px}
+      .ds-drop-hint::before{content:"⤓";font-size:13px;color:var(--accent-2)}
       .ds-label{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--text-faint);margin-bottom:6px;font-weight:600}
       .ds-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
       .ds-file-info{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-dim);margin-top:6px;word-break:break-all}
@@ -2795,6 +2798,26 @@ tool({
       return {signedBytes, payload};
     }
 
+    // Shared drag-and-drop wiring: only reacts when the dragged item is a file,
+    // so plain text drags onto the textareas inside a box still behave normally.
+    const wireDrop = (box, handler) => {
+      const hasFile = (e) => e.dataTransfer && Array.from(e.dataTransfer.types || []).includes('Files');
+      ['dragenter','dragover'].forEach(ev => box.addEventListener(ev, (e) => {
+        if (!hasFile(e)) return;
+        e.preventDefault(); e.stopPropagation();
+        e.dataTransfer.dropEffect = 'copy';
+        box.classList.add('dragover');
+      }));
+      ['dragleave','dragend'].forEach(ev => box.addEventListener(ev, () => box.classList.remove('dragover')));
+      box.addEventListener('drop', async (e) => {
+        if (!hasFile(e)) return;
+        e.preventDefault(); e.stopPropagation();
+        box.classList.remove('dragover');
+        const f = e.dataTransfer.files && e.dataTransfer.files[0];
+        if (f) await handler(f);
+      });
+    };
+
     // ===== Sign tab =====
     let signFile = null;      // File
     let signFileAb = null;    // ArrayBuffer
@@ -2804,17 +2827,27 @@ tool({
     let signOutAb   = null;   // ArrayBuffer of signature
     let signedPdfAb = null;   // Uint8Array of signed PDF (if input was PDF)
 
-    const signFileInp = el('input', {type:'file'});
-    const signFileInfo = el('div', {class:'ds-file-info'}, 'No file selected.');
-    signFileInp.addEventListener('change', async () => {
-      const f = signFileInp.files && signFileInp.files[0];
-      if (!f){ signFile = null; signFileAb = null; signedPdfAb = null; dlSignedPdfBtn.style.display = 'none'; signFileInfo.textContent = 'No file selected.'; return; }
+    async function loadSignFile(f){
+      if (!f){
+        signFile = null; signFileAb = null; signedPdfAb = null;
+        dlSignedPdfBtn.style.display = 'none';
+        signFileInfo.textContent = 'No file selected.';
+        return;
+      }
       signFile = f;
       signFileAb = await f.arrayBuffer();
-      signedPdfAb = null; dlSignedPdfBtn.style.display = 'none';
+      signedPdfAb = null;
+      dlSignedPdfBtn.style.display = 'none';
       const hash = await sha256Hex(signFileAb);
       const pdfTag = isPdfBytes(signFileAb) ? ' <span style="color:#cfc2ff">· PDF detected — the signature can be embedded inside the PDF itself</span>' : '';
       signFileInfo.innerHTML = `<b>${escHtml(f.name)}</b> · ${fmtSize(f.size)} · ${f.type || 'application/octet-stream'}${pdfTag}<br>SHA-256: <span style="color:#7dd3ae">${hash}</span>`;
+    }
+    const signFileInp = el('input', {type:'file', style:{display:'none'}});
+    const signFileBtn = el('button', {class:'btn ghost', type:'button', onclick:() => signFileInp.click()}, '⤒ Upload file');
+    const signFileInfo = el('div', {class:'ds-file-info'}, 'No file selected.');
+    signFileInp.addEventListener('change', async () => {
+      await loadSignFile(signFileInp.files && signFileInp.files[0]);
+      signFileInp.value = '';
     });
 
     const modeSelS = el('select', {},
@@ -3107,11 +3140,14 @@ tool({
       } catch(e){ /* silent — user may still be typing */ }
     });
 
-    panelSign.appendChild(el('div', {class:'ds-box'},
+    const signFileBox = el('div', {class:'ds-box ds-drop-target'},
       el('div', {class:'ds-label'}, 'File to sign'),
-      signFileInp,
+      el('div', {class:'ds-actions'}, signFileBtn, signFileInp),
+      el('div', {class:'ds-drop-hint'}, 'Drop a file here, or click upload'),
       signFileInfo,
-    ));
+    );
+    wireDrop(signFileBox, loadSignFile);
+    panelSign.appendChild(signFileBox);
     panelSign.appendChild(el('div', {class:'ds-box'},
       el('div', {class:'ds-label'}, 'Algorithm'),
       modeSelS,
@@ -3156,12 +3192,13 @@ tool({
     let verifyFileAb = null;
     let verifyFileName = '';
     let verifySigAb = null;
-
-    const verFileInp = el('input', {type:'file'});
-    const verFileInfo = el('div', {class:'ds-file-info'}, 'No file selected.');
     let autoExtractedPdfSig = null; // {signedBytes, payload} or null
-    verFileInp.addEventListener('change', async () => {
-      const f = verFileInp.files && verFileInp.files[0];
+
+    // Forward-declarations so loadVerifyFile can write to them when a signed PDF
+    // is dropped onto the file box (these are constructed below).
+    let sigTaV, pubPemV, modeSelV;
+
+    async function loadVerifyFile(f){
       if (!f){ verifyFileAb = null; verifyFileName = ''; verFileInfo.textContent = 'No file selected.'; autoExtractedPdfSig = null; return; }
       verifyFileName = f.name;
       verifyFileAb = await f.arrayBuffer();
@@ -3187,28 +3224,42 @@ tool({
       }
       const hash = await sha256Hex(verifyFileAb);
       verFileInfo.innerHTML = `<b>${escHtml(f.name)}</b> · ${fmtSize(f.size)}<br>SHA-256: <span style="color:#7dd3ae">${hash}</span>`;
+    }
+
+    const verFileInp = el('input', {type:'file', style:{display:'none'}});
+    const verFileBtn = el('button', {class:'btn ghost', type:'button', onclick:() => verFileInp.click()}, '⤒ Upload file');
+    const verFileInfo = el('div', {class:'ds-file-info'}, 'No file selected.');
+    verFileInp.addEventListener('change', async () => {
+      await loadVerifyFile(verFileInp.files && verFileInp.files[0]);
+      verFileInp.value = '';
     });
 
-    const sigFileInp = el('input', {type:'file', accept:'.sig,application/octet-stream', style:{display:'none'}});
-    const sigTaV  = el('textarea', {class:'ds-sig-out', placeholder:'Paste base64 signature or upload a .sig file'});
-    const sigFileBtn = el('button', {class:'btn ghost', type:'button', onclick:() => sigFileInp.click()}, '⤒ Upload .sig');
-    sigFileInp.addEventListener('change', async () => {
-      const f = sigFileInp.files && sigFileInp.files[0]; if (!f) return;
+    async function loadSigFile(f){
+      if (!f) return;
       verifySigAb = await f.arrayBuffer();
       sigTaV.value = abToBase64(verifySigAb);
+    }
+    const sigFileInp = el('input', {type:'file', accept:'.sig,application/octet-stream', style:{display:'none'}});
+    sigTaV = el('textarea', {class:'ds-sig-out', placeholder:'Paste base64 signature or upload / drop a .sig file'});
+    const sigFileBtn = el('button', {class:'btn ghost', type:'button', onclick:() => sigFileInp.click()}, '⤒ Upload .sig');
+    sigFileInp.addEventListener('change', async () => {
+      await loadSigFile(sigFileInp.files && sigFileInp.files[0]);
       sigFileInp.value = '';
     });
 
-    const pubPemV = el('textarea', {class:'ds-pem', placeholder:'-----BEGIN PUBLIC KEY-----\n... paste SPKI PEM here ...\n-----END PUBLIC KEY-----'});
+    async function loadPubKeyFile(f){
+      if (!f) return;
+      pubPemV.value = (await f.text()).trim();
+    }
+    pubPemV = el('textarea', {class:'ds-pem', placeholder:'-----BEGIN PUBLIC KEY-----\n... paste SPKI PEM here, or upload / drop a .pem file ...\n-----END PUBLIC KEY-----'});
     const pubFileInp = el('input', {type:'file', accept:'.pem,.txt,application/x-pem-file', style:{display:'none'}});
     const pubFileBtn = el('button', {class:'btn ghost', type:'button', onclick:() => pubFileInp.click()}, '⤒ Upload public key');
     pubFileInp.addEventListener('change', async () => {
-      const f = pubFileInp.files && pubFileInp.files[0]; if (!f) return;
-      pubPemV.value = (await f.text()).trim();
+      await loadPubKeyFile(pubFileInp.files && pubFileInp.files[0]);
       pubFileInp.value = '';
     });
 
-    const modeSelV = el('select', {},
+    modeSelV = el('select', {},
       el('option', {value:'pkcs1'}, 'RSASSA-PKCS1-v1_5 + SHA-256'),
       el('option', {value:'pss'},   'RSA-PSS (salt 32) + SHA-256'));
 
@@ -3244,27 +3295,35 @@ tool({
       }
     });
 
-    panelVerify.appendChild(el('div', {class:'ds-box'},
+    const verFileBox = el('div', {class:'ds-box ds-drop-target'},
       el('div', {class:'ds-label'}, 'Original file'),
-      verFileInp,
+      el('div', {class:'ds-actions'}, verFileBtn, verFileInp),
+      el('div', {class:'ds-drop-hint'}, 'Drop a file here, or click upload'),
       verFileInfo,
-    ));
+    );
+    const sigBox = el('div', {class:'ds-box ds-drop-target'},
+      el('div', {class:'ds-label'}, 'Signature'),
+      sigTaV,
+      el('div', {class:'ds-actions'}, sigFileBtn, sigFileInp),
+      el('div', {class:'ds-drop-hint'}, 'Drop a .sig file here'),
+    );
+    const pubBox = el('div', {class:'ds-box ds-drop-target'},
+      el('div', {class:'ds-label'}, 'Public key (SPKI PEM)'),
+      pubPemV,
+      el('div', {class:'ds-actions'}, pubFileBtn, pubFileInp),
+      el('div', {class:'ds-drop-hint'}, 'Drop a .pem file here'),
+    );
+
+    wireDrop(verFileBox, loadVerifyFile);
+    wireDrop(sigBox, loadSigFile);
+    wireDrop(pubBox, loadPubKeyFile);
+
+    panelVerify.appendChild(verFileBox);
     panelVerify.appendChild(el('div', {class:'ds-box'},
       el('div', {class:'ds-label'}, 'Algorithm'),
       modeSelV,
     ));
-    panelVerify.appendChild(el('div', {class:'ds-row'},
-      el('div', {class:'ds-box'},
-        el('div', {class:'ds-label'}, 'Signature'),
-        sigTaV,
-        el('div', {class:'ds-actions'}, sigFileBtn, sigFileInp),
-      ),
-      el('div', {class:'ds-box'},
-        el('div', {class:'ds-label'}, 'Public key (SPKI PEM)'),
-        pubPemV,
-        el('div', {class:'ds-actions'}, pubFileBtn, pubFileInp),
-      ),
-    ));
+    panelVerify.appendChild(el('div', {class:'ds-row'}, sigBox, pubBox));
     panelVerify.appendChild(el('div', {class:'ds-actions'}, verifyBtn));
     panelVerify.appendChild(resultDiv);
   }
