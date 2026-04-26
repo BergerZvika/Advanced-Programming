@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Embedding external pages</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; max-width: 600px; }
+    iframe {
+      display: block;
+      margin: 12px 0;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      max-width: 100%;
+    }
+    .note {
+      background: #fff8e1;
+      padding: 10px 14px;
+      border-left: 3px solid #f59e0b;
+      border-radius: 4px;
+      font-size: 13px;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+<h1>Embedding external content</h1>
+
+<h2>A YouTube video</h2>
+<iframe width="420" height="236"
+        src="https://www.youtube.com/embed/aqz-KE-bpKQ"
+        title="Big Buck Bunny (Creative Commons)"
+        allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+        allowfullscreen></iframe>
+
+<h2>A Wikipedia page</h2>
+<iframe width="420" height="280"
+        src="https://en.wikipedia.org/wiki/HTML"
+        title="HTML on Wikipedia"></iframe>
+
+<p class="note">Many sites refuse framing with
+  <code>X-Frame-Options</code> or <code>Content-Security-Policy:
+  frame-ancestors</code>. YouTube provides a dedicated embed URL at
+  <code>youtube.com/embed/{id}</code> exactly so it can be framed.</p>
+
+<p>The <code>allow</code> attribute opts the iframe into specific
+   browser features (camera, autoplay, clipboard, etc.).
+   The <code>sandbox</code> attribute does the opposite — it takes
+   capabilities <em>away</em>.</p>
+
+<script src="../../home.js" defer></script>
+</body>
+</html>

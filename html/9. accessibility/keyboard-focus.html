@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Keyboard Navigation & Focus Management</title>
+  <style>
+    body { font-family: sans-serif; max-width: 750px; margin: 2rem auto; padding: 0 1rem; }
+    code { background: #eee; padding: 2px 5px; border-radius: 3px; font-size: 0.85em; }
+    pre { background: #1e1e1e; color: #d4d4d4; padding: 1rem; border-radius: 6px; font-size: 0.82em; overflow-x: auto; }
+    .demo { border: 1px solid #ccc; border-radius: 6px; padding: 1rem; margin: 1rem 0; background: #fafafa; }
+
+    /* Always show focus ring — never remove it without replacement */
+    :focus-visible { outline: 3px solid #2e7d32; outline-offset: 2px; }
+
+    /* Skip link */
+    .skip-link {
+      position: absolute; top: -100%; left: 1rem;
+      background: #2e7d32; color: white; padding: 0.5rem 1rem;
+      border-radius: 0 0 4px 4px; text-decoration: none; font-weight: bold;
+      transition: top 0.1s;
+    }
+    .skip-link:focus { top: 0; }
+
+    button, a.btn {
+      padding: 0.4rem 1rem; cursor: pointer; border-radius: 4px;
+      border: 1px solid #2e7d32; background: white; font-size: 0.95rem;
+      text-decoration: none; display: inline-block; color: inherit;
+    }
+    button:hover, a.btn:hover { background: #e8f5e9; }
+
+    /* Focus trap demo modal */
+    #modal-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+      justify-content: center; align-items: center; z-index: 100;
+    }
+    #modal-overlay.open { display: flex; }
+    #modal-box {
+      background: white; border-radius: 8px; padding: 2rem; max-width: 400px; width: 90%;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.25);
+    }
+    #modal-box h2 { margin-top: 0; }
+
+    table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+    th, td { border: 1px solid #ccc; padding: 0.45rem 0.65rem; text-align: left; vertical-align: top; }
+    th { background: #2e7d32; color: white; }
+  </style>
+</head>
+<body>
+
+  <!-- Skip link: first focusable element on the page -->
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+
+  <h1>Keyboard Navigation &amp; Focus Management</h1>
+
+  <h2>Tab Order</h2>
+  <p>By default, keyboard focus moves through these elements in DOM order:</p>
+  <table>
+    <thead><tr><th>Natively focusable</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td><code>&lt;a href&gt;</code></td><td>Links with an href</td></tr>
+      <tr><td><code>&lt;button&gt;</code></td><td>Unless <code>disabled</code></td></tr>
+      <tr><td><code>&lt;input&gt;</code>, <code>&lt;select&gt;</code>, <code>&lt;textarea&gt;</code></td><td>Unless <code>disabled</code></td></tr>
+      <tr><td><code>&lt;details&gt;</code></td><td>The summary is focusable</td></tr>
+      <tr><td>Any element with <code>tabindex="0"</code></td><td>Added to natural tab order</td></tr>
+    </tbody>
+  </table>
+
+  <h2>tabindex Values</h2>
+  <table>
+    <thead><tr><th>Value</th><th>Effect</th></tr></thead>
+    <tbody>
+      <tr><td><code>tabindex="0"</code></td><td>Add any element to the natural tab order (at its DOM position)</td></tr>
+      <tr><td><code>tabindex="-1"</code></td><td>Programmatically focusable with <code>.focus()</code> but skipped by Tab key — used in JS-managed widgets</td></tr>
+      <tr><td><code>tabindex="N"</code> (N &gt; 0)</td><td>Avoid — creates unpredictable tab order; use DOM order instead</td></tr>
+    </tbody>
+  </table>
+
+  <div class="demo">
+    <p>Tab through these elements and watch the green focus ring:</p>
+    <button>Button 1</button>
+    <button>Button 2</button>
+    <div tabindex="0" style="display:inline-block;padding:0.4rem 1rem;border:1px solid #aaa;border-radius:4px;cursor:pointer">
+      Custom div (tabindex="0")
+    </div>
+    <button>Button 3</button>
+  </div>
+
+  <h2>Focus Ring — Never Remove Without Replacement</h2>
+  <pre>/* BAD — makes keyboard navigation invisible */
+:focus { outline: none; }
+
+/* GOOD — only hide for mouse users, keep for keyboard */
+:focus:not(:focus-visible) { outline: none; }
+:focus-visible { outline: 3px solid #2e7d32; outline-offset: 2px; }</pre>
+
+  <h2>Skip Navigation Link</h2>
+  <p>The first focusable element on every page should be a link that jumps past repeated navigation to main content. It's invisible until focused (press <kbd>Tab</kbd> on this page to see it).</p>
+  <pre>&lt;a href="#main-content" class="skip-link"&gt;Skip to main content&lt;/a&gt;
+
+&lt;!-- ...header, nav... --&gt;
+&lt;main id="main-content"&gt;...&lt;/main&gt;</pre>
+
+  <h2 id="main-content">Focus Trap — Modal Dialog</h2>
+  <p>When a modal is open, Tab must stay <em>inside</em> it. Focus must return to the trigger when it closes.</p>
+
+  <div class="demo">
+    <button id="open-modal">Open Modal</button>
+  </div>
+
+  <!-- Modal -->
+  <div id="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div id="modal-box">
+      <h2 id="modal-title">Example Modal</h2>
+      <p>Tab cycles only inside this modal. Press <kbd>Escape</kbd> or use the buttons to close.</p>
+      <label style="display:block;margin-bottom:0.5rem">
+        Name: <input type="text" id="modal-input" style="margin-left:0.5rem;padding:0.3rem">
+      </label>
+      <div style="display:flex;gap:0.5rem;margin-top:1rem">
+        <button id="modal-confirm">Confirm</button>
+        <button id="modal-close">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const overlay   = document.getElementById('modal-overlay');
+    const openBtn   = document.getElementById('open-modal');
+    const closeBtn  = document.getElementById('modal-close');
+    const confirmBtn= document.getElementById('modal-confirm');
+
+    const FOCUSABLE = 'a[href],button:not([disabled]),input,select,textarea,[tabindex]:not([tabindex="-1"])';
+
+    function openModal() {
+      overlay.classList.add('open');
+      // Move focus into the modal
+      document.getElementById('modal-input').focus();
+    }
+
+    function closeModal() {
+      overlay.classList.remove('open');
+      // Return focus to the trigger
+      openBtn.focus();
+    }
+
+    openBtn.addEventListener('click', openModal);
+    closeBtn.addEventListener('click', closeModal);
+    confirmBtn.addEventListener('click', closeModal);
+
+    // Trap focus inside modal
+    overlay.addEventListener('keydown', e => {
+      if (e.key === 'Escape') { closeModal(); return; }
+      if (e.key !== 'Tab') return;
+
+      const focusable = [...overlay.querySelectorAll(FOCUSABLE)];
+      const first = focusable[0];
+      const last  = focusable[focusable.length - 1];
+
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault(); last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault(); first.focus();
+      }
+    });
+  </script>
+
+
+<script src="../../home.js" defer></script>
+</body>
+</html>

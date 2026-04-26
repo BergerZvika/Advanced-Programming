@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Responsive basics</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      margin: 0;
+    }
+    .card {
+      padding: 28px 24px;
+      border-radius: 12px;
+      background: #e0ecff;
+      color: #1a2a5a;
+      transition: background .25s, color .25s;
+    }
+    .card::before {
+      content: "Phone layout";
+      display: block;
+      font-weight: 700;
+      font-size: 12px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    .card h2 { margin: 0 0 10px; font-size: 22px; }
+    .card p  { margin: 0; line-height: 1.6; }
+
+    @media (min-width: 600px) {
+      .card { background: #e0ffe8; color: #1a5a2a; }
+      .card::before { content: "Tablet layout"; }
+    }
+    @media (min-width: 900px) {
+      .card { background: #ffe8d0; color: #6a3a1a; }
+      .card::before { content: "Desktop layout"; }
+    }
+  </style>
+</head>
+<body>
+<h1>Resize me!</h1>
+<div class="card">
+  <h2>I change with the viewport</h2>
+  <p>Drag the editor/preview divider (or resize the window) to see
+     this card switch colours at 600px and 900px.</p>
+</div>
+
+<p>The <code>&lt;meta name="viewport"&gt;</code> tag tells mobile
+   browsers to render at the device's real width — without it,
+   phones simulate a ~980px desktop and zoom out.</p>
+
+<p>CSS <code>@media (min-width: ...)</code> queries branch styles
+   based on the current viewport size. Mobile-first writes the
+   default styles for the smallest screen and adds rules for
+   wider ones.</p>
+
+<script src="../../home.js" defer></script>
+</body>
+</html>

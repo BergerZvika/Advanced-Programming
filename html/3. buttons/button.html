@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Interactive Button</title>
+</head>
+<body>
+    <h1>Click the Button</h1>
+    <button onclick="changeColor()">Click Me</button>
+
+    <script>
+        let cliked = false
+        function changeColor() {
+            if (!cliked) {
+                document.body.style.backgroundColor = "lightblue"
+                cliked = true
+            } else {
+                document.body.style.backgroundColor = "white"
+                cliked = false
+            }
+        }
+    
+    </script>
+
+<script src="../../home.js" defer></script>
+</body>
+</html>

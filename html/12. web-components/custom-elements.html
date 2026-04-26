@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Custom Elements</title>
+  <style>
+    body { font-family: sans-serif; max-width: 780px; margin: 2rem auto; padding: 0 1rem; }
+    code { background: #eee; padding: 2px 5px; border-radius: 3px; font-size: 0.85em; }
+    pre { background: #1e1e1e; color: #d4d4d4; padding: 1rem; border-radius: 6px; font-size: 0.82em; overflow-x: auto; }
+    .demo { border: 1px solid #ccc; border-radius: 6px; padding: 1rem; margin: 1rem 0; background: #fafafa; }
+    table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+    th, td { border: 1px solid #ccc; padding: 0.45rem 0.65rem; text-align: left; vertical-align: top; }
+    th { background: #8e44ad; color: white; }
+  </style>
+</head>
+<body>
+
+  <h1>Custom Elements</h1>
+  <p>Custom elements let you define your own HTML tags with built-in behaviour — part of the Web Components standard.</p>
+
+  <h2>Lifecycle Callbacks</h2>
+  <table>
+    <thead><tr><th>Callback</th><th>When it fires</th></tr></thead>
+    <tbody>
+      <tr><td><code>constructor()</code></td><td>Element is created (don't touch the DOM here)</td></tr>
+      <tr><td><code>connectedCallback()</code></td><td>Element is inserted into the document</td></tr>
+      <tr><td><code>disconnectedCallback()</code></td><td>Element is removed from the document</td></tr>
+      <tr><td><code>attributeChangedCallback(name, oldVal, newVal)</code></td><td>An observed attribute changes</td></tr>
+      <tr><td><code>static observedAttributes</code></td><td>Return an array of attribute names to watch</td></tr>
+      <tr><td><code>adoptedCallback()</code></td><td>Element is moved to a new document (rare)</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Example 1 — &lt;progress-ring&gt;</h2>
+  <div class="demo" style="display:flex;gap:1.5rem;align-items:center;flex-wrap:wrap">
+    <progress-ring value="75" size="90" color="#4a90d9"></progress-ring>
+    <progress-ring value="42" size="90" color="#e74c3c"></progress-ring>
+    <progress-ring value="100" size="90" color="#27ae60"></progress-ring>
+    <progress-ring value="10" size="90" color="#f39c12"></progress-ring>
+
+    <div style="flex:1;min-width:220px">
+      <label style="display:block;margin-bottom:0.5rem">
+        Live value: <strong id="ring-val">75</strong>%
+      </label>
+      <input type="range" min="0" max="100" value="75" id="ring-slider" style="width:100%">
+    </div>
+  </div>
+
+  <h2>Example 2 — &lt;copy-code&gt;</h2>
+  <p>Wraps any <code>&lt;pre&gt;</code> and adds a "Copy" button:</p>
+  <div class="demo">
+    <copy-code>
+      <pre>const greeting = 'Hello, Web Components!';\nconsole.log(greeting);</pre>
+    </copy-code>
+  </div>
+
+  <h2>Example 3 — &lt;count-down&gt;</h2>
+  <div class="demo">
+    <count-down seconds="10"></count-down>
+    <count-down seconds="30"></count-down>
+  </div>
+
+  <h2>Defining Custom Elements</h2>
+  <pre>class MyElement extends HTMLElement {
+  // Attributes to watch for changes
+  static get observedAttributes() { return ['value', 'color']; }
+
+  constructor() {
+    super();
+    // Attach a shadow root (encapsulated DOM + CSS)
+    this.attachShadow({ mode: 'open' });
+  }
+
+  connectedCallback() {
+    this.render();
+  }
+
+  attributeChangedCallback(name, oldVal, newVal) {
+    if (oldVal !== newVal) this.render();
+  }
+
+  render() {
+    const value = this.getAttribute('value') ?? 0;
+    this.shadowRoot.innerHTML = `&lt;span&gt;Value: ${value}&lt;/span&gt;`;
+  }
+}
+
+// Register the tag name (must contain a hyphen)
+customElements.define('my-element', MyElement);</pre>
+
+  <script>
+  // ── &lt;progress-ring&gt; ──────────────────────────────────────────────────────────
+  class ProgressRing extends HTMLElement {
+    static get observedAttributes() { return ['value', 'color', 'size']; }
+
+    connectedCallback() { this.render(); }
+    attributeChangedCallback() { this.render(); }
+
+    render() {
+      const value = parseFloat(this.getAttribute('value')) || 0;
+      const color = this.getAttribute('color') || '#4a90d9';
+      const size  = parseFloat(this.getAttribute('size')) || 80;
+      const R     = size / 2 - 8;
+      const circ  = 2 * Math.PI * R;
+      const offset = circ * (1 - value / 100);
+
+      if (!this.shadowRoot) this.attachShadow({ mode: 'open' });
+      this.shadowRoot.innerHTML = `
+        <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+          <circle cx="${size/2}" cy="${size/2}" r="${R}"
+            fill="none" stroke="#e0e0e0" stroke-width="8"/>
+          <circle cx="${size/2}" cy="${size/2}" r="${R}"
+            fill="none" stroke="${color}" stroke-width="8"
+            stroke-linecap="round"
+            stroke-dasharray="${circ.toFixed(2)}"
+            stroke-dashoffset="${offset.toFixed(2)}"
+            transform="rotate(-90 ${size/2} ${size/2})"
+            style="transition: stroke-dashoffset 0.4s ease"/>
+          <text x="${size/2}" y="${size/2 + 5}" text-anchor="middle"
+                font-size="${size * 0.22}px" font-weight="bold" fill="${color}">
+            ${Math.round(value)}%
+          </text>
+        </svg>
+      `;
+    }
+  }
+  customElements.define('progress-ring', ProgressRing);
+
+  // Live slider
+  const slider = document.getElementById('ring-slider');
+  const liveRing = document.querySelector('progress-ring');
+  slider.addEventListener('input', () => {
+    document.getElementById('ring-val').textContent = slider.value;
+    liveRing.setAttribute('value', slider.value);
+  });
+
+  // ── &lt;copy-code&gt; ───────────────────────────────────────────────────────────────
+  class CopyCode extends HTMLElement {
+    connectedCallback() {
+      if (!this.shadowRoot) this.attachShadow({ mode: 'open' });
+      const pre = this.querySelector('pre');
+      const code = pre ? pre.textContent : '';
+
+      this.shadowRoot.innerHTML = `
+        <style>
+          :host { display: block; position: relative; }
+          ::slotted(pre) { margin: 0; padding: 1rem; background: #1e1e1e; color: #d4d4d4;
+                           border-radius: 6px; overflow-x: auto; font-size: 0.85em; }
+          button { position: absolute; top: 0.5rem; right: 0.5rem; padding: 0.25rem 0.65rem;
+                   font-size: 0.78em; border: none; border-radius: 4px; cursor: pointer;
+                   background: #555; color: white; }
+          button.copied { background: #27ae60; }
+        </style>
+        <slot></slot>
+        <button>Copy</button>
+      `;
+
+      this.shadowRoot.querySelector('button').addEventListener('click', async (e) => {
+        try {
+          await navigator.clipboard.writeText(code);
+          e.target.textContent = 'Copied!';
+          e.target.classList.add('copied');
+          setTimeout(() => { e.target.textContent = 'Copy'; e.target.classList.remove('copied'); }, 2000);
+        } catch { e.target.textContent = 'Failed'; }
+      });
+    }
+  }
+  customElements.define('copy-code', CopyCode);
+
+  // ── &lt;count-down&gt; ──────────────────────────────────────────────────────────────
+  class CountDown extends HTMLElement {
+    connectedCallback() {
+      if (!this.shadowRoot) this.attachShadow({ mode: 'open' });
+      this.remaining = parseInt(this.getAttribute('seconds')) || 10;
+      this.shadowRoot.innerHTML = `
+        <style>
+          :host { display: inline-flex; align-items: center; gap: 0.5rem; margin-right: 1rem; }
+          .display { font-size: 1.4rem; font-weight: bold; font-variant-numeric: tabular-nums; min-width: 2.5ch; }
+          button { padding: 0.3rem 0.7rem; border-radius: 4px; cursor: pointer; border: 1px solid #aaa; }
+          .done { color: #e74c3c; }
+        </style>
+        <span class="display">${this.remaining}s</span>
+        <button>Start</button>
+      `;
+      const display = this.shadowRoot.querySelector('.display');
+      const btn     = this.shadowRoot.querySelector('button');
+      let timer;
+
+      btn.addEventListener('click', () => {
+        if (timer) { clearInterval(timer); timer = null; btn.textContent = 'Start'; return; }
+        this.remaining = parseInt(this.getAttribute('seconds')) || 10;
+        display.classList.remove('done');
+        btn.textContent = 'Stop';
+        timer = setInterval(() => {
+          this.remaining--;
+          display.textContent = `${this.remaining}s`;
+          if (this.remaining <= 0) {
+            clearInterval(timer); timer = null;
+            display.textContent = 'Done!';
+            display.classList.add('done');
+            btn.textContent = 'Start';
+          }
+        }, 1000);
+      });
+    }
+  }
+  customElements.define('count-down', CountDown);
+  </script>
+
+
+<script src="../../home.js" defer></script>
+</body>
+</html>

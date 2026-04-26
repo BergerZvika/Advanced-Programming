@@ -1,0 +1,7 @@
+stats-dump.sh
+
+# WSL/NTFS Alternate Data Stream artifacts
+*:Zone.Identifier
+
+# Claude Code per-project settings
+.claude/

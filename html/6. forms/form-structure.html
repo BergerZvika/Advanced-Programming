@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Form Structure</title>
+  <style>
+    body { font-family: sans-serif; max-width: 700px; margin: 2rem auto; padding: 0 1rem; }
+    code { background: #eee; padding: 2px 5px; border-radius: 3px; font-size: 0.85em; }
+    pre { background: #1e1e1e; color: #d4d4d4; padding: 1rem; border-radius: 6px; font-size: 0.85em; overflow-x: auto; }
+    table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+    th, td { border: 1px solid #ccc; padding: 0.45rem 0.6rem; text-align: left; vertical-align: top; }
+    th { background: #4a90d9; color: white; }
+
+    /* Complete form demo */
+    .form-demo { border: 2px solid #4a90d9; border-radius: 8px; padding: 1.5rem; margin: 1rem 0; }
+    .form-demo label { display: block; font-weight: bold; margin: 0.75rem 0 0.2rem; font-size: 0.9em; }
+    .form-demo input[type="text"],
+    .form-demo input[type="email"],
+    .form-demo select,
+    .form-demo textarea {
+      width: 100%; box-sizing: border-box; padding: 0.4rem 0.6rem;
+      border: 1px solid #aaa; border-radius: 4px; font-size: 0.95rem;
+    }
+    .form-demo fieldset { border: 1px solid #aaa; border-radius: 4px; padding: 0.75rem 1rem; margin: 0.75rem 0; }
+    .form-demo legend { font-weight: bold; padding: 0 0.4rem; }
+    .form-demo button { margin-top: 1rem; padding: 0.5rem 1.5rem; font-size: 1rem;
+      background: #4a90d9; color: white; border: none; border-radius: 4px; cursor: pointer; }
+    .form-demo button:hover { background: #357abd; }
+    .form-demo .hint { font-size: 0.8em; color: #666; margin: 0.1rem 0 0; }
+  </style>
+</head>
+<body>
+
+  <h1>Form Structure</h1>
+
+  <h2>The &lt;form&gt; Element</h2>
+  <table>
+    <thead><tr><th>Attribute</th><th>Effect</th></tr></thead>
+    <tbody>
+      <tr><td><code>action</code></td><td>URL where form data is sent (omit for JS-handled forms)</td></tr>
+      <tr><td><code>method</code></td><td><code>get</code> (data in URL) or <code>post</code> (data in request body)</td></tr>
+      <tr><td><code>enctype</code></td><td><code>multipart/form-data</code> required for file uploads</td></tr>
+      <tr><td><code>novalidate</code></td><td>Skip browser built-in validation (handle in JS instead)</td></tr>
+      <tr><td><code>autocomplete</code></td><td><code>on</code> or <code>off</code> for the whole form</td></tr>
+    </tbody>
+  </table>
+
+  <h2>label Association</h2>
+  <p>Always link labels to inputs — clicking the label focuses the input, and screen readers announce both together.</p>
+  <pre>&lt;!-- Method 1: for/id pairing (most common) --&gt;
+&lt;label for="username"&gt;Username&lt;/label&gt;
+&lt;input type="text" id="username" name="username"&gt;
+
+&lt;!-- Method 2: wrapping (implicit) --&gt;
+&lt;label&gt;
+  Username
+  &lt;input type="text" name="username"&gt;
+&lt;/label&gt;</pre>
+
+  <h2>select &amp; textarea</h2>
+  <pre>&lt;!-- Dropdown --&gt;
+&lt;select name="country"&gt;
+  &lt;option value=""&gt;-- choose --&lt;/option&gt;
+  &lt;option value="de"&gt;Germany&lt;/option&gt;
+  &lt;option value="us" selected&gt;United States&lt;/option&gt;
+  &lt;optgroup label="Asia"&gt;
+    &lt;option value="jp"&gt;Japan&lt;/option&gt;
+    &lt;option value="kr"&gt;Korea&lt;/option&gt;
+  &lt;/optgroup&gt;
+&lt;/select&gt;
+
+&lt;!-- Multi-line text --&gt;
+&lt;textarea name="bio" rows="4" cols="40"
+          maxlength="500" placeholder="Tell us about yourself…"&gt;&lt;/textarea&gt;</pre>
+
+  <h2>fieldset &amp; legend</h2>
+  <p>Group related inputs with <code>&lt;fieldset&gt;</code> and label the group with <code>&lt;legend&gt;</code>:</p>
+
+  <h2>Complete Form Demo</h2>
+  <form class="form-demo" action="#" method="post">
+    <label for="name">Full Name <span style="color:red">*</span></label>
+    <input type="text" id="name" name="name" required placeholder="Alice Smith" autocomplete="name">
+
+    <label for="email">Email <span style="color:red">*</span></label>
+    <input type="email" id="email" name="email" required placeholder="alice@example.com" autocomplete="email">
+
+    <label for="country">Country</label>
+    <select id="country" name="country">
+      <option value="">-- Select --</option>
+      <option value="de">Germany</option>
+      <option value="us">United States</option>
+      <option value="jp">Japan</option>
+    </select>
+
+    <fieldset>
+      <legend>Experience Level</legend>
+      <label style="font-weight:normal;display:flex;align-items:center;gap:0.4rem;margin:0.3rem 0">
+        <input type="radio" name="level" value="beginner"> Beginner
+      </label>
+      <label style="font-weight:normal;display:flex;align-items:center;gap:0.4rem;margin:0.3rem 0">
+        <input type="radio" name="level" value="intermediate" checked> Intermediate
+      </label>
+      <label style="font-weight:normal;display:flex;align-items:center;gap:0.4rem;margin:0.3rem 0">
+        <input type="radio" name="level" value="advanced"> Advanced
+      </label>
+    </fieldset>
+
+    <label for="bio">Bio</label>
+    <textarea id="bio" name="bio" rows="4" maxlength="300" placeholder="Tell us about yourself…"></textarea>
+    <p class="hint">Max 300 characters</p>
+
+    <label style="display:flex;align-items:center;gap:0.4rem;font-weight:normal;margin-top:0.75rem">
+      <input type="checkbox" name="terms" required>
+      I agree to the <a href="#">Terms of Service</a>
+    </label>
+
+    <div style="display:flex;gap:0.75rem">
+      <button type="submit">Submit</button>
+      <button type="reset" style="background:#888">Reset</button>
+    </div>
+  </form>
+
+
+<script src="../../home.js" defer></script>
+</body>
+</html>

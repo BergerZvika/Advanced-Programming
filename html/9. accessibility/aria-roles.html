@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ARIA Roles & Attributes</title>
+  <style>
+    body { font-family: sans-serif; max-width: 750px; margin: 2rem auto; padding: 0 1rem; }
+    code { background: #eee; padding: 2px 5px; border-radius: 3px; font-size: 0.85em; }
+    pre { background: #1e1e1e; color: #d4d4d4; padding: 1rem; border-radius: 6px; font-size: 0.82em; overflow-x: auto; }
+    table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+    th, td { border: 1px solid #ccc; padding: 0.45rem 0.65rem; text-align: left; vertical-align: top; }
+    th { background: #2e7d32; color: white; }
+    .demo { border: 1px solid #ccc; border-radius: 6px; padding: 1rem; margin: 1rem 0; background: #fafafa; }
+    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
+
+    /* Custom tab widget */
+    .tabs [role="tablist"] { display: flex; border-bottom: 2px solid #2e7d32; gap: 4px; list-style: none; padding: 0; margin: 0; }
+    .tabs [role="tab"] { padding: 0.4rem 1rem; cursor: pointer; border: 1px solid transparent; border-radius: 4px 4px 0 0;
+                         background: none; font-size: 0.95rem; }
+    .tabs [role="tab"][aria-selected="true"] { background: #2e7d32; color: white; border-color: #2e7d32; }
+    .tabs [role="tabpanel"] { padding: 1rem; border: 1px solid #ccc; border-top: none; display: none; }
+    .tabs [role="tabpanel"].active { display: block; }
+
+    /* Custom alert / live region demo */
+    #live-output { min-height: 2rem; padding: 0.5rem; border: 1px dashed #aaa; border-radius: 4px; font-size: 0.9em; }
+    button { padding: 0.4rem 1rem; cursor: pointer; border-radius: 4px; border: 1px solid #aaa; }
+  </style>
+</head>
+<body>
+
+  <h1>ARIA Roles &amp; Attributes</h1>
+  <p>ARIA (Accessible Rich Internet Applications) lets you expose the <em>meaning</em> of custom widgets to assistive technologies when native HTML semantics aren't enough.</p>
+  <p><strong>Rule #1:</strong> Use native HTML elements first. ARIA is for when no native element fits.</p>
+
+  <h2>Core ARIA Attributes</h2>
+  <table>
+    <thead><tr><th>Attribute</th><th>Purpose</th><th>Example</th></tr></thead>
+    <tbody>
+      <tr><td><code>role</code></td><td>Override or add a semantic role</td><td><code>role="button"</code>, <code>role="alert"</code></td></tr>
+      <tr><td><code>aria-label</code></td><td>Provide an accessible name (no visible text needed)</td><td><code>aria-label="Close dialog"</code></td></tr>
+      <tr><td><code>aria-labelledby</code></td><td>Point to another element as the label</td><td><code>aria-labelledby="heading-id"</code></td></tr>
+      <tr><td><code>aria-describedby</code></td><td>Point to an element with a longer description</td><td><code>aria-describedby="hint-id"</code></td></tr>
+      <tr><td><code>aria-hidden</code></td><td>Hide element from assistive tech (decorative icons)</td><td><code>aria-hidden="true"</code></td></tr>
+      <tr><td><code>aria-expanded</code></td><td>State of a collapsible region</td><td><code>aria-expanded="false"</code></td></tr>
+      <tr><td><code>aria-selected</code></td><td>Selected state (tabs, listboxes)</td><td><code>aria-selected="true"</code></td></tr>
+      <tr><td><code>aria-checked</code></td><td>Checked state of custom checkboxes/radios</td><td><code>aria-checked="true"</code></td></tr>
+      <tr><td><code>aria-disabled</code></td><td>Disabled state without removing from tab order</td><td><code>aria-disabled="true"</code></td></tr>
+      <tr><td><code>aria-live</code></td><td>Announce dynamic content updates to screen readers</td><td><code>aria-live="polite"</code></td></tr>
+      <tr><td><code>aria-atomic</code></td><td>Read the entire region on update, not just changed part</td><td><code>aria-atomic="true"</code></td></tr>
+      <tr><td><code>aria-required</code></td><td>Mark field as required (use HTML <code>required</code> instead when possible)</td><td><code>aria-required="true"</code></td></tr>
+      <tr><td><code>aria-invalid</code></td><td>Signal a validation error</td><td><code>aria-invalid="true"</code></td></tr>
+      <tr><td><code>aria-controls</code></td><td>Point to the element this control affects</td><td><code>aria-controls="panel-id"</code></td></tr>
+      <tr><td><code>aria-current</code></td><td>Current item in a navigation</td><td><code>aria-current="page"</code></td></tr>
+    </tbody>
+  </table>
+
+  <h2>Live Demo: Accessible Tab Widget</h2>
+  <p>Keyboard: <kbd>Tab</kbd> to reach tabs, <kbd>←</kbd><kbd>→</kbd> to switch, <kbd>Enter</kbd>/<kbd>Space</kbd> to activate.</p>
+  <div class="tabs demo">
+    <ul role="tablist" aria-label="Code examples">
+      <li role="presentation">
+        <button role="tab" id="tab-html" aria-selected="true" aria-controls="panel-html" tabindex="0">HTML</button>
+      </li>
+      <li role="presentation">
+        <button role="tab" id="tab-css" aria-selected="false" aria-controls="panel-css" tabindex="-1">CSS</button>
+      </li>
+      <li role="presentation">
+        <button role="tab" id="tab-js" aria-selected="false" aria-controls="panel-js" tabindex="-1">JavaScript</button>
+      </li>
+    </ul>
+    <div role="tabpanel" id="panel-html" aria-labelledby="tab-html" class="active">
+      <p>HTML structures the content. It provides meaning and hierarchy.</p>
+    </div>
+    <div role="tabpanel" id="panel-css" aria-labelledby="tab-css">
+      <p>CSS controls appearance — layout, colors, typography.</p>
+    </div>
+    <div role="tabpanel" id="panel-js" aria-labelledby="tab-js">
+      <p>JavaScript adds interactivity and dynamic behaviour.</p>
+    </div>
+  </div>
+
+  <h2>Live Regions — Announcing Dynamic Updates</h2>
+  <div class="demo">
+    <button onclick="announceUpdate()">Trigger update</button>
+    <!-- aria-live="polite" waits for the user to finish what they're doing before reading -->
+    <div id="live-output" aria-live="polite" aria-atomic="true" style="margin-top:0.5rem">
+      Press the button to see a live region update.
+    </div>
+    <p style="font-size:0.85em;color:#555;margin-top:0.5rem">
+      Screen readers will announce changes to this region automatically.
+      Use <code>aria-live="assertive"</code> for urgent messages (errors, alerts).
+    </p>
+  </div>
+
+  <h2>Screen-reader-only Text</h2>
+  <p>The <code>.sr-only</code> pattern hides text visually but keeps it accessible:</p>
+  <pre>.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}</pre>
+  <p>Use case: an icon button with no visible label.</p>
+  <pre>&lt;button&gt;
+  &lt;svg aria-hidden="true"&gt;...&lt;/svg&gt;
+  &lt;span class="sr-only"&gt;Close dialog&lt;/span&gt;
+&lt;/button&gt;</pre>
+
+  <script>
+    // Tab widget keyboard & click behaviour
+    const tablist = document.querySelector('[role="tablist"]');
+    const tabs = [...tablist.querySelectorAll('[role="tab"]')];
+
+    function activateTab(tab) {
+      tabs.forEach(t => {
+        t.setAttribute('aria-selected', 'false');
+        t.setAttribute('tabindex', '-1');
+        document.getElementById(t.getAttribute('aria-controls')).classList.remove('active');
+      });
+      tab.setAttribute('aria-selected', 'true');
+      tab.setAttribute('tabindex', '0');
+      document.getElementById(tab.getAttribute('aria-controls')).classList.add('active');
+      tab.focus();
+    }
+
+    tabs.forEach((tab, i) => {
+      tab.addEventListener('click', () => activateTab(tab));
+      tab.addEventListener('keydown', e => {
+        if (e.key === 'ArrowRight') activateTab(tabs[(i + 1) % tabs.length]);
+        if (e.key === 'ArrowLeft')  activateTab(tabs[(i - 1 + tabs.length) % tabs.length]);
+      });
+    });
+
+    let updateCount = 0;
+    function announceUpdate() {
+      updateCount++;
+      document.getElementById('live-output').textContent =
+        `Update #${updateCount}: Data refreshed at ${new Date().toLocaleTimeString()}.`;
+    }
+  </script>
+
+
+<script src="../../home.js" defer></script>
+</body>
+</html>

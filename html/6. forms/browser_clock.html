@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Browser Clock</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+    </head>
+    <body>
+        <script src="validation.js"></script>
+        <p id="clock"></p>
+        <input type="text" id="seconds">
+        <button onclick="startClock()">Start Clock</button>
+    
+<script src="../../home.js" defer></script>
+</body>
+
+    <script lang="javascript">
+        let isCounting = false;
+
+        
+        function startClock() {
+            if (isCounting) {
+                return;
+            }
+
+            let seconds = document.getElementById("seconds").value;
+            
+            // validate given value
+            if (!isPositiveInteger(seconds)) {
+                window.alert("Error: Invalid Input! Please make sure you pass an integer.");
+                return;
+            }
+
+            // input is valid
+            // turn the input into an integer
+            seconds = parseInt(seconds);
+
+            // start the clock ...
+
+            isCounting = true;
+            const oneSecond = 1_000;
+            
+            // initial state
+            setClock(seconds)
+
+            for (let i = 1; i < seconds; i++) {
+                setTimeout(setClock, oneSecond * i, seconds - i)
+            }
+
+            setTimeout(() => {
+                document.getElementById("clock").innerText = "Time's Up!";
+                isCounting = false;
+            }, oneSecond * seconds)
+        };
+
+        function setClock(seconds) {
+            document.getElementById("clock").innerText = seconds;
+        }
+    </script>
+</html>

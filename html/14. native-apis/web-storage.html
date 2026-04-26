@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Web Storage — localStorage</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; max-width: 500px; }
+    input, button {
+      padding: 8px 12px; font-size: 14px; margin: 2px 0;
+      border-radius: 6px; border: 1px solid #cbd5e1;
+    }
+    button { cursor: pointer; background: #7c8cff; color: white; border-color: #7c8cff; }
+    button:hover { opacity: 0.9; }
+    .clear { background: transparent; color: #64748b; border-color: #cbd5e1; }
+    ul { padding-left: 20px; line-height: 2; }
+    .hint {
+      color: #666; font-size: 12px; margin-top: 14px;
+      background: #f5f6fa; padding: 10px 14px; border-radius: 6px;
+    }
+    li button { padding: 2px 8px; font-size: 12px; margin-left: 8px; background: #ef4444; border-color: #ef4444; }
+  </style>
+</head>
+<body>
+<h1>Persistent notes</h1>
+
+<input id="note" placeholder="Type a note...">
+<button onclick="save()">Save</button>
+<button class="clear" onclick="clearAll()">Clear all</button>
+
+<h2>Saved</h2>
+<ul id="list"></ul>
+
+<p class="hint">Reload the page — your notes survive.
+   Open DevTools → Application → Local Storage to inspect the raw data.</p>
+
+<script>
+  const KEY = 'lab.notes';
+
+  function getNotes() {
+    return JSON.parse(localStorage.getItem(KEY) || '[]');
+  }
+
+  function render() {
+    const list = document.getElementById('list');
+    list.innerHTML = '';
+    getNotes().forEach((n, i) => {
+      const li = document.createElement('li');
+      li.textContent = n;
+      const del = document.createElement('button');
+      del.textContent = '×';
+      del.onclick = () => remove(i);
+      li.appendChild(del);
+      list.appendChild(li);
+    });
+  }
+
+  function save() {
+    const input = document.getElementById('note');
+    const val = input.value.trim();
+    if (!val) return;
+    const notes = getNotes();
+    notes.push(val);
+    localStorage.setItem(KEY, JSON.stringify(notes));
+    input.value = '';
+    render();
+  }
+
+  function remove(i) {
+    const notes = getNotes();
+    notes.splice(i, 1);
+    localStorage.setItem(KEY, JSON.stringify(notes));
+    render();
+  }
+
+  function clearAll() {
+    localStorage.removeItem(KEY);
+    render();
+  }
+
+  render();
+</script>
+
+<script src="../../home.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Cool calculator 2.0</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+        <style>
+            .center {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                -moz-transform: translateX(-50%) translateY(-50%);
+                -webkit-transform: translateX(-50%) translateY(-50%);
+                transform: translateX(-50%) translateY(-50%);
+            }
+
+            .card {
+                border-radius: 25px;
+                border-width: 8px;
+            }
+
+            .calculator-card {
+                padding: 15px;
+                width: 400px;
+                height: 400px;
+                text-align: center;
+                justify-content: center;
+                font-size: 200%;
+                border-color: black;
+                background-color: darkgray;
+            }
+
+            .calculator-btn {
+                height:50px;
+                width:50px;
+                border-style: solid;
+                border-color: black;
+                color: black;
+                border-width: 6px;
+                border-radius: 10px;
+                text-align: center;
+                font-size: 25px;
+                font-weight: bold;
+                font-family: 'Courier New', monospace;
+                background-color: white;
+            }
+
+            #result-div {
+                /*position: absolute;*/
+                position: absolute;
+                top: 10%;
+                width: 92.4%;
+                text-align: left;
+                padding: 5px;
+                border-color: black;
+                background-color: #E6FFFE;
+                font-weight: bold;
+                font-family: 'Courier New', monospace;
+            }
+
+            #buttons-div {
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                border-color: black;
+                padding: 30px;
+                background-color: transparent;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="calculator-div" class="center calculator-card card">
+            <div id="result-div" class="card">
+                <p id="result-p">0</p>
+            </div>
+
+            <div id="buttons-div">
+                <div id="buttons-123" role="group">
+                    <button onclick="writeToResultField('1')" class="calculator-btn" id="btn-1">1</button>
+                    <button onclick="writeToResultField('2')" class="calculator-btn" id="btn-2">2</button>
+                    <button onclick="writeToResultField('3')" class="calculator-btn" id="btn-3">3</button>
+                </div>
+                    
+                <div id="buttons-456" role="group">
+                    <button onclick="writeToResultField('4')" class="calculator-btn" id="btn-4">4</button>
+                    <button onclick="writeToResultField('5')" class="calculator-btn" id="btn-5">5</button>
+                    <button onclick="writeToResultField('6')" class="calculator-btn" id="btn-6">6</button>
+                </div>
+
+                <div id="buttons-789" role="group">
+                    <button onclick="writeToResultField('7')" class="calculator-btn" id="btn-7">7</button>
+                    <button onclick="writeToResultField('8')" class="calculator-btn" id="btn-8">8</button>
+                    <button onclick="writeToResultField('9')" class="calculator-btn" id="btn-9">9</button>
+                </div>
+
+                <div id="buttons-plus-minus-eq" role="group">
+                    <button onclick="setMathematicalOperation('-')" class="calculator-btn" id="btn-minus">-</button>
+                    <button onclick="setMathematicalOperation('+')" class="calculator-btn" id="btn-plus">+</button>
+                    <button onclick="calculateResultAndWriteIt()" class="calculator-btn" id="btn-eq">=</button>
+                </div>
+            </div>
+        </div>
+    
+<script src="../../home.js" defer></script>
+</body>
+
+    <script lang="javascript">
+        let isClear = true;
+        let mathOperation = null;
+
+        let firstNumber = null;
+        let secondNumber = null;
+
+        let writingToFirstNumber = true;
+
+
+        function writeToResultField(digit) {
+            const resultField = document.getElementById("result-p")
+
+            if (isClear) {
+                isClear = false;
+                resultField.innerText = digit;
+            }
+            
+            else {
+                resultField.innerText += digit;
+            }
+
+            digit = parseInt(digit);
+
+            if (isNaN(digit)) {
+                alert("Could not parse the new digit.");
+                return;
+            }
+
+            if (writingToFirstNumber) {
+                firstNumber *= 10; 
+                firstNumber += digit;
+            }
+
+            else {
+                secondNumber *= 10;
+                secondNumber += digit;
+            }
+
+        }
+
+        function setMathematicalOperation(operation) {
+            if (isClear) {
+                alert("Please enter a number first");
+                return;
+            }
+            
+            if (mathOperation !== null) {
+                alert("Math operation is set. Can't reset.");
+                return;
+            }
+
+            const resultField = document.getElementById("result-p")
+
+            mathOperation = operation;
+
+            resultField.innerHTML += mathOperation;
+
+            writingToFirstNumber = !writingToFirstNumber;
+        }
+
+
+        function calculateResultAndWriteIt() {
+            if (mathOperation === null) {
+                alert("Please choose an operation.");
+                return;
+            }
+
+            if (secondNumber === null) {
+                alert("Please enter a second number.");
+                return;
+            }
+
+            let result;
+
+            switch (mathOperation) {
+                case '+': result = firstNumber + secondNumber; break;
+                case '-': result = firstNumber - secondNumber; break;
+                default: result = null;
+            }
+
+            const resultField = document.getElementById("result-p")
+
+            resultField.innerText = result;
+
+            isClear = true;
+            mathOperation = null;
+
+            firstNumber = null;
+            secondNumber = null;
+        }
+    </script>
+</html>

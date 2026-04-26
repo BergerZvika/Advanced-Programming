@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Todo</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: system-ui, sans-serif;
+      max-width: 480px;
+      margin: 40px auto;
+      padding: 0 16px;
+      color: #1f2937;
+    }
+    h1 {
+      font-weight: 100;
+      font-size: 72px;
+      letter-spacing: -0.04em;
+      color: #e0e7ff;
+      margin: 0 0 16px;
+      text-align: center;
+    }
+    .add { display: flex; gap: 8px; }
+    .add input {
+      flex: 1; padding: 12px 14px; font-size: 15px;
+      border: 1px solid #cbd5e1; border-radius: 6px; outline: none;
+    }
+    .add input:focus { border-color: #7c8cff; box-shadow: 0 0 0 3px rgba(124,140,255,.2); }
+    .add button {
+      padding: 12px 20px; font-size: 15px; cursor: pointer;
+      background: #7c8cff; color: white; border: none; border-radius: 6px;
+    }
+    .add button:hover { background: #6b7aff; }
+    ul { list-style: none; padding: 0; margin: 20px 0 0; }
+    li {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 4px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    li input[type=checkbox] { cursor: pointer; transform: scale(1.2); }
+    li.done .text { text-decoration: line-through; color: #94a3b8; }
+    li .text { flex: 1; cursor: pointer; }
+    li .del {
+      background: none; border: none; color: #94a3b8;
+      cursor: pointer; font-size: 20px; padding: 0 8px;
+    }
+    li .del:hover { color: #ef4444; }
+    .empty { color: #94a3b8; text-align: center; padding: 40px 0; }
+    .stats {
+      color: #94a3b8; font-size: 13px; margin-top: 16px;
+      padding-top: 12px; border-top: 1px solid #e5e7eb;
+      display: flex; justify-content: space-between;
+    }
+    .stats button {
+      background: none; border: none; color: #94a3b8;
+      cursor: pointer; font-size: 13px; padding: 0;
+    }
+    .stats button:hover { color: #ef4444; }
+  </style>
+</head>
+<body>
+<h1>todo</h1>
+
+<form class="add" onsubmit="return addItem(event)">
+  <input id="new" placeholder="What needs doing?" autofocus>
+  <button type="submit">Add</button>
+</form>
+
+<ul id="list"></ul>
+
+<div class="stats" id="stats"></div>
+
+<script>
+  const KEY = 'lab.todos';
+
+  const load = () => JSON.parse(localStorage.getItem(KEY) || '[]');
+  const save = items => localStorage.setItem(KEY, JSON.stringify(items));
+
+  function addItem(e) {
+    e.preventDefault();
+    const input = document.getElementById('new');
+    const text = input.value.trim();
+    if (!text) return false;
+    const items = load();
+    items.push({ id: Date.now(), text, done: false });
+    save(items);
+    input.value = '';
+    render();
+    return false;
+  }
+
+  function toggle(id) {
+    const items = load().map(i => i.id === id ? { ...i, done: !i.done } : i);
+    save(items);
+    render();
+  }
+
+  function remove(id) {
+    save(load().filter(i => i.id !== id));
+    render();
+  }
+
+  function clearDone() {
+    save(load().filter(i => !i.done));
+    render();
+  }
+
+  function render() {
+    const items = load();
+    const list = document.getElementById('list');
+    list.innerHTML = '';
+
+    if (items.length === 0) {
+      const li = document.createElement('li');
+      li.className = 'empty';
+      li.textContent = 'Nothing here — add your first item above.';
+      list.appendChild(li);
+    } else {
+      items.forEach(item => {
+        const li = document.createElement('li');
+        if (item.done) li.className = 'done';
+
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.checked = item.done;
+        cb.onchange = () => toggle(item.id);
+
+        const text = document.createElement('span');
+        text.className = 'text';
+        text.textContent = item.text;
+        text.onclick = () => toggle(item.id);
+
+        const del = document.createElement('button');
+        del.className = 'del';
+        del.textContent = '×';
+        del.title = 'Delete';
+        del.onclick = () => remove(item.id);
+
+        li.appendChild(cb);
+        li.appendChild(text);
+        li.appendChild(del);
+        list.appendChild(li);
+      });
+    }
+
+    const remaining = items.filter(i => !i.done).length;
+    const total = items.length;
+    const stats = document.getElementById('stats');
+    if (total === 0) {
+      stats.innerHTML = '';
+    } else {
+      stats.innerHTML = `<span>${remaining} of ${total} left</span>` +
+        (remaining < total ? '<button onclick="clearDone()">Clear completed</button>' : '');
+    }
+  }
+
+  render();
+</script>
+
+<script src="../../home.js" defer></script>
+</body>
+</html>

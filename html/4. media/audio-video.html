@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Audio & Video</title>
+  <style>
+    body { font-family: sans-serif; max-width: 750px; margin: 2rem auto; padding: 0 1rem; }
+    .demo { border: 1px solid #ccc; border-radius: 6px; padding: 1rem; margin: 1rem 0; background: #fafafa; }
+    code { background: #eee; padding: 2px 5px; border-radius: 3px; font-size: 0.85em; }
+    pre { background: #1e1e1e; color: #d4d4d4; padding: 1rem; border-radius: 6px; font-size: 0.85em; overflow-x: auto; }
+    table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+    th, td { border: 1px solid #ccc; padding: 0.5rem; text-align: left; }
+    th { background: #4a90d9; color: white; }
+  </style>
+</head>
+<body>
+
+  <h1>Audio &amp; Video</h1>
+
+  <h2>&lt;audio&gt;</h2>
+  <div class="demo">
+    <!-- controls attribute shows the browser's built-in player -->
+    <audio controls style="width:100%">
+      <source src="audio.mp3" type="audio/mpeg">
+      <source src="audio.ogg" type="audio/ogg">
+      Your browser doesn't support the audio element.
+    </audio>
+    <pre>&lt;audio controls&gt;
+  &lt;source src="audio.mp3" type="audio/mpeg"&gt;
+  &lt;source src="audio.ogg" type="audio/ogg"&gt;
+  Your browser doesn't support the audio element.
+&lt;/audio&gt;</pre>
+  </div>
+
+  <h2>Audio Attributes</h2>
+  <table>
+    <thead><tr><th>Attribute</th><th>Effect</th></tr></thead>
+    <tbody>
+      <tr><td><code>controls</code></td><td>Show browser's play/pause/volume bar</td></tr>
+      <tr><td><code>autoplay</code></td><td>Play immediately (blocked by browsers without <code>muted</code>)</td></tr>
+      <tr><td><code>muted</code></td><td>Start muted (allows autoplay to work)</td></tr>
+      <tr><td><code>loop</code></td><td>Replay from the start when finished</td></tr>
+      <tr><td><code>preload</code></td><td><code>none</code> / <code>metadata</code> / <code>auto</code> — hint to browser how much to preload</td></tr>
+    </tbody>
+  </table>
+
+  <h2>&lt;video&gt;</h2>
+  <div class="demo">
+    <video controls width="100%" poster="thumbnail.jpg">
+      <source src="video.mp4" type="video/mp4">
+      <source src="video.webm" type="video/webm">
+      <track kind="subtitles" src="captions.vtt" srclang="en" label="English">
+      Your browser doesn't support the video element.
+    </video>
+    <pre>&lt;video controls width="640" poster="thumbnail.jpg"&gt;
+  &lt;source src="video.mp4" type="video/mp4"&gt;
+  &lt;source src="video.webm" type="video/webm"&gt;
+  &lt;track kind="subtitles" src="captions.vtt" srclang="en" label="English"&gt;
+  Your browser doesn't support the video element.
+&lt;/video&gt;</pre>
+  </div>
+
+  <h2>Video-specific Attributes</h2>
+  <table>
+    <thead><tr><th>Attribute</th><th>Effect</th></tr></thead>
+    <tbody>
+      <tr><td><code>poster</code></td><td>Image shown before the video plays (thumbnail)</td></tr>
+      <tr><td><code>width</code> / <code>height</code></td><td>Dimensions in pixels</td></tr>
+      <tr><td><code>playsinline</code></td><td>Play inline on iOS instead of fullscreen</td></tr>
+      <tr><td><code>&lt;track&gt;</code></td><td>Subtitle/caption file in WebVTT format — required for accessibility</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Embedding YouTube / Vimeo</h2>
+  <p>External videos are embedded with <code>&lt;iframe&gt;</code>, not <code>&lt;video&gt;</code>:</p>
+  <pre>&lt;iframe
+  width="560" height="315"
+  src="https://www.youtube.com/embed/VIDEO_ID"
+  title="Video title"
+  allowfullscreen&gt;
+&lt;/iframe&gt;</pre>
+
+
+<script src="../../home.js" defer></script>
+</body>
+</html>

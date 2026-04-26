@@ -1,0 +1,3026 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HTML Lab — Interactive Tutorial</title>
+
+<!-- CodeMirror 5 for syntax-highlighted editing (IDE feel) -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/theme/material-darker.min.css">
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/xml/xml.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/javascript/javascript.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/css/css.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/htmlmixed/htmlmixed.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/edit/matchbrackets.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/edit/closetag.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/edit/closebrackets.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/edit/matchtags.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/selection/active-line.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/fold/foldgutter.min.css">
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/fold/foldcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/fold/foldgutter.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/fold/xml-fold.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/fold/brace-fold.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/fold/comment-fold.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/fold/indent-fold.min.js"></script>
+<style>
+  :root {
+    --bg: #0b1020;
+    --panel: #0f172a;
+    --panel-2: #111a33;
+    --line: #1f2a44;
+    --muted: #8aa0c8;
+    --text: #e6edf8;
+    --ink: #0b1020;
+    --paper: #f6f8fc;
+    --paper-line: #e3e8f0;
+    --accent: #7c8cff;
+    --accent-2: #b58bff;
+    --accent-3: #44d7b6;
+    --warn: #ffb86b;
+    --bad: #ff6e8a;
+    --radius: 14px;
+    --shadow: 0 10px 30px rgba(5, 10, 30, .35);
+    --code-font: ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, Consolas, monospace;
+    --ui-font: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    font-family: var(--ui-font);
+    color: var(--text);
+    background:
+      radial-gradient(900px 600px at 85% -10%, #26306a 0%, transparent 60%),
+      radial-gradient(800px 500px at -10% 110%, #3b1f6b 0%, transparent 55%),
+      var(--bg);
+    overflow: hidden;
+  }
+
+  /* ── Header ───────────────────────────────────────── */
+  header.top {
+    height: 56px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 0 20px;
+    border-bottom: 1px solid var(--line);
+    background: rgba(10, 14, 30, .65);
+    backdrop-filter: blur(10px);
+    position: relative;
+    z-index: 5;
+  }
+  .brand {
+    display: flex; align-items: center; gap: 10px;
+    font-weight: 700; letter-spacing: .2px;
+  }
+  .brand .logo {
+    width: 28px; height: 28px; border-radius: 8px;
+    background: conic-gradient(from 210deg, var(--accent), var(--accent-2), var(--accent-3), var(--accent));
+    box-shadow: 0 0 0 1px rgba(255,255,255,.08) inset, 0 8px 20px rgba(124,140,255,.35);
+    display: grid; place-items: center;
+    color: #0b1020; font-weight: 900; font-size: 14px;
+  }
+  .brand small { color: var(--muted); font-weight: 500; margin-left: 2px; }
+  .spacer { flex: 1; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 10px; border-radius: 999px;
+    background: rgba(255,255,255,.05);
+    border: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 12px;
+  }
+  .pill b { color: var(--text); }
+  .btn {
+    background: linear-gradient(180deg, #1a2547, #121a33);
+    color: var(--text);
+    border: 1px solid var(--line);
+    padding: 8px 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    font: inherit;
+    font-size: 13px;
+    transition: transform .08s ease, border-color .15s ease, background .15s ease;
+  }
+  .btn:hover { border-color: #2d3d6d; }
+  .btn:active { transform: translateY(1px); }
+  .btn.primary {
+    background: linear-gradient(180deg, #7c8cff, #5865e8);
+    border-color: transparent;
+    color: white;
+    box-shadow: 0 6px 20px rgba(124,140,255,.35);
+  }
+
+  /* ── Shell layout ─────────────────────────────────── */
+  .shell {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    height: calc(100vh - 56px);
+  }
+
+  /* ── Sidebar ─────────────────────────────────────── */
+  aside.side {
+    border-right: 1px solid var(--line);
+    background: linear-gradient(180deg, rgba(18, 25, 52, .9), rgba(11, 16, 32, .9));
+    padding: 14px 10px;
+    overflow-y: auto;
+  }
+  .side h3 {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px;
+    color: var(--muted); margin: 10px 10px 6px;
+  }
+  .topic-btn {
+    width: 100%;
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 10px;
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text);
+    text-align: left;
+    border-radius: 10px;
+    cursor: pointer;
+    font: inherit;
+    font-size: 13.5px;
+    margin: 2px 0;
+    transition: background .15s, border-color .15s, transform .05s;
+  }
+  .topic-btn:hover { background: rgba(255,255,255,.04); }
+  .topic-btn.active {
+    background: linear-gradient(180deg, rgba(124,140,255,.18), rgba(181,139,255,.12));
+    border-color: rgba(124,140,255,.45);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.03);
+  }
+  .topic-btn .num {
+    width: 26px; height: 26px; border-radius: 7px;
+    display: grid; place-items: center;
+    background: rgba(255,255,255,.05);
+    color: var(--muted);
+    font-weight: 700; font-size: 12px;
+    flex: 0 0 auto;
+  }
+  .topic-btn.active .num {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: #0b1020;
+  }
+  .topic-btn .meta { display: flex; flex-direction: column; line-height: 1.15; }
+  .topic-btn .meta small { color: var(--muted); font-size: 11px; }
+
+  /* ── Main ───────────────────────────────────────── */
+  main.main { display: flex; flex-direction: column; min-width: 0; }
+
+  .crumb {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; gap: 14px;
+    flex-wrap: wrap;
+  }
+  .crumb h1 {
+    font-size: 18px; margin: 0; font-weight: 700;
+    background: linear-gradient(90deg, #fff, #c9d2ff);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .crumb .sep { color: var(--muted); }
+  .crumb .hint { color: var(--muted); font-size: 12.5px; }
+
+  .steps-row {
+    display: flex; gap: 8px; padding: 10px 20px 4px;
+    overflow-x: auto; scrollbar-width: thin;
+    border-bottom: 1px solid var(--line);
+  }
+  .step-chip {
+    flex: 0 0 auto;
+    padding: 7px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: rgba(255,255,255,.03);
+    color: var(--muted);
+    cursor: pointer;
+    font: inherit; font-size: 12.5px;
+    white-space: nowrap;
+    transition: background .15s, color .15s, border-color .15s;
+  }
+  .step-chip:hover { color: var(--text); }
+  .step-chip.active {
+    background: linear-gradient(180deg, var(--accent), #5865e8);
+    color: white;
+    border-color: transparent;
+  }
+
+  .stage {
+    flex: 1;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    min-height: 0;
+  }
+
+  .step-head {
+    padding: 14px 20px 8px;
+  }
+  .step-head h2 {
+    margin: 0 0 4px;
+    font-size: 20px;
+    letter-spacing: .1px;
+  }
+  .step-head p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 13.5px;
+    line-height: 1.55;
+    max-width: 900px;
+  }
+  .step-head code {
+    background: rgba(255,255,255,.06);
+    border: 1px solid var(--line);
+    padding: 1px 6px;
+    border-radius: 5px;
+    font-family: var(--code-font);
+    font-size: 12px;
+    color: #e7e0ff;
+  }
+  .step-head .step-note {
+    margin-top: 8px;
+    padding: 10px 14px;
+    background: rgba(124,140,255,.07);
+    border-left: 3px solid var(--accent);
+    border-radius: 4px;
+    color: var(--text);
+    font-size: 13px;
+    line-height: 1.6;
+    max-width: 900px;
+  }
+  .step-head .step-note:empty { display: none; }
+  .step-head .step-note::before {
+    content: "Note — ";
+    font-family: var(--code-font);
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--accent);
+    margin-right: 4px;
+    font-weight: 600;
+  }
+  .step-head .step-note b,
+  .step-head .step-note strong {
+    color: var(--accent-3);
+    font-weight: 600;
+  }
+
+  /* ── Workbench ─────────────────────────────────── */
+  .workbench {
+    padding: 10px 20px 12px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    min-height: 0;
+  }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    display: flex; flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  .panel-head {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--line);
+    background: linear-gradient(180deg, #121a33, #0e1530);
+  }
+  .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  .dot.r { background: #ff6e8a; } .dot.y { background: #ffb86b; } .dot.g { background: #44d7b6; }
+  .panel-title {
+    font-size: 12.5px; color: var(--muted);
+    margin-left: 6px; letter-spacing: .3px;
+  }
+  .panel-actions { margin-left: auto; display: flex; gap: 8px; }
+  .icon-btn {
+    background: rgba(255,255,255,.04);
+    border: 1px solid var(--line);
+    color: var(--text);
+    padding: 5px 9px; border-radius: 8px; cursor: pointer;
+    font: inherit; font-size: 11.5px;
+    transition: background .15s, border-color .15s;
+  }
+  .icon-btn:hover { background: rgba(255,255,255,.08); }
+
+  .editor {
+    flex: 1; min-height: 0;
+    width: 100%;
+    background: #0b1024;
+    color: #e6edf8;
+    border: none; outline: none; resize: none;
+    padding: 14px 16px;
+    font-family: var(--code-font);
+    font-size: 13px; line-height: 1.6;
+    tab-size: 2;
+  }
+  .editor::selection { background: rgba(124,140,255,.35); }
+
+  /* ── CodeMirror — IDE-style editor ─────────────── */
+  .CodeMirror {
+    flex: 1 1 0;
+    min-height: 0;
+    height: 100%;
+    font-family: var(--code-font);
+    font-size: 13px;
+    line-height: 1.6;
+    background: #0b1024 !important;
+  }
+  .CodeMirror-scroll {
+    background: #0b1024;
+    min-height: 0;
+    overflow: auto !important;
+  }
+  /* Styled scrollbars inside the editor */
+  .CodeMirror-scroll::-webkit-scrollbar,
+  .CodeMirror-hscrollbar::-webkit-scrollbar,
+  .CodeMirror-vscrollbar::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+    background: transparent;
+  }
+  .CodeMirror-scroll::-webkit-scrollbar-thumb,
+  .CodeMirror-hscrollbar::-webkit-scrollbar-thumb,
+  .CodeMirror-vscrollbar::-webkit-scrollbar-thumb {
+    background: rgba(124,140,255,.25);
+    border-radius: 6px;
+    border: 2px solid #0b1024;
+  }
+  .CodeMirror-scroll::-webkit-scrollbar-thumb:hover,
+  .CodeMirror-hscrollbar::-webkit-scrollbar-thumb:hover,
+  .CodeMirror-vscrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(124,140,255,.45);
+  }
+  .CodeMirror-gutters {
+    background: #0b1024 !important;
+    border-right: 1px solid var(--line) !important;
+  }
+  .CodeMirror-linenumber { color: #3f4a66 !important; padding: 0 8px 0 6px; }
+
+  /* ── Fold gutter (tree-hierarchy triangles) ────── */
+  .CodeMirror-foldgutter { width: 14px; }
+  .CodeMirror-foldgutter-open,
+  .CodeMirror-foldgutter-folded {
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 10px;
+    line-height: 1.6;
+    text-align: center;
+  }
+  .CodeMirror-foldgutter-open:hover,
+  .CodeMirror-foldgutter-folded:hover { color: var(--accent); }
+  .CodeMirror-foldgutter-open::after  { content: "▾"; }
+  .CodeMirror-foldgutter-folded::after { content: "▸"; color: var(--accent); }
+  .CodeMirror-foldmarker {
+    color: var(--accent-3);
+    background: rgba(68,215,182,.12);
+    border: 1px solid rgba(68,215,182,.35);
+    border-radius: 4px;
+    padding: 0 6px;
+    margin: 0 2px;
+    font-family: var(--code-font);
+    font-size: 11px;
+    cursor: pointer;
+  }
+  .CodeMirror-foldmarker:hover { background: rgba(68,215,182,.22); }
+  .CodeMirror-cursor { border-left: 1.5px solid var(--accent) !important; }
+  .CodeMirror-activeline-background { background: rgba(124,140,255,.06) !important; }
+  .CodeMirror-matchingbracket {
+    color: var(--accent-3) !important;
+    text-decoration: none;
+    font-weight: 600;
+    background: rgba(68,215,182,.1);
+    border-radius: 2px;
+  }
+  .CodeMirror-selected { background: rgba(124,140,255,.28) !important; }
+  .CodeMirror-focused .CodeMirror-selected { background: rgba(124,140,255,.32) !important; }
+  /* Richer syntax colours layered on top of material-darker */
+  .cm-s-material-darker.CodeMirror { background: #0b1024 !important; color: #e6edf8 !important; }
+  .cm-s-material-darker .cm-tag      { color: #ff6e8a; }
+  .cm-s-material-darker .cm-bracket  { color: #6b7a96; }
+  .cm-s-material-darker .cm-attribute { color: #b58bff; }
+  .cm-s-material-darker .cm-string   { color: #44d7b6; }
+  .cm-s-material-darker .cm-string-2 { color: #44d7b6; }
+  .cm-s-material-darker .cm-keyword  { color: #ff6e8a; font-style: italic; }
+  .cm-s-material-darker .cm-def      { color: #7c8cff; }
+  .cm-s-material-darker .cm-variable { color: #e6edf8; }
+  .cm-s-material-darker .cm-variable-2 { color: #c5cde6; }
+  .cm-s-material-darker .cm-variable-3 { color: #ffb86b; }
+  .cm-s-material-darker .cm-number   { color: #ffb86b; }
+  .cm-s-material-darker .cm-property { color: #7c8cff; }
+  .cm-s-material-darker .cm-operator { color: #b58bff; }
+  .cm-s-material-darker .cm-comment  { color: #5b6682; font-style: italic; }
+  .cm-s-material-darker .cm-atom     { color: #ffb86b; }
+  .cm-s-material-darker .cm-builtin  { color: #44d7b6; }
+  .cm-s-material-darker .cm-meta     { color: #6b7a96; }
+
+  .tab-bar {
+    display: flex;
+    gap: 2px;
+    padding: 6px 10px 0;
+    background: #0b1024;
+    border-bottom: 1px solid var(--line);
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+  .tab-bar:empty { display: none; }
+  .tab {
+    background: transparent;
+    border: 1px solid transparent;
+    border-bottom: none;
+    color: var(--muted);
+    padding: 6px 12px;
+    font-family: var(--code-font);
+    font-size: 11.5px;
+    cursor: pointer;
+    border-radius: 6px 6px 0 0;
+    transition: background .15s, color .15s, border-color .15s;
+    white-space: nowrap;
+  }
+  .tab:hover { color: var(--text); background: rgba(255,255,255,.04); }
+  .tab.active {
+    color: var(--accent);
+    background: var(--panel-2);
+    border-color: var(--line);
+    border-bottom-color: var(--panel-2);
+    margin-bottom: -1px;
+  }
+
+  .preview-wrap { flex: 1; min-height: 0; display: flex; background: white; }
+  .preview {
+    flex: 1; border: none; width: 100%; height: 100%;
+    background: white;
+  }
+
+  /* ── Footer nav ────────────────────────────────── */
+  .navbar {
+    padding: 12px 20px;
+    border-top: 1px solid var(--line);
+    display: flex; align-items: center; gap: 10px;
+    background: rgba(10, 14, 30, .5);
+  }
+  .navbar .progress {
+    flex: 1;
+    height: 6px;
+    background: rgba(255,255,255,.05);
+    border-radius: 999px;
+    overflow: hidden;
+    margin: 0 12px;
+  }
+  .navbar .bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2), var(--accent-3));
+    transition: width .25s ease;
+  }
+
+  /* ── Scrollbars ─────────────────────────────────── */
+  aside.side::-webkit-scrollbar,
+  .steps-row::-webkit-scrollbar { width: 8px; height: 8px; }
+  aside.side::-webkit-scrollbar-thumb,
+  .steps-row::-webkit-scrollbar-thumb {
+    background: #2a3559; border-radius: 10px;
+  }
+
+  /* ── Responsive ─────────────────────────────────── */
+  @media (max-width: 960px) {
+    .shell { grid-template-columns: 1fr; }
+    aside.side {
+      max-height: 180px;
+      display: flex; flex-direction: row; gap: 6px;
+      overflow-x: auto; padding: 10px;
+      border-right: none; border-bottom: 1px solid var(--line);
+    }
+    aside.side h3 { display: none; }
+    .topic-btn { flex: 0 0 auto; padding: 8px 10px; }
+    .topic-btn .meta small { display: none; }
+    .workbench { grid-template-columns: 1fr; }
+    .panel { min-height: 220px; }
+  }
+
+  /* tiny entrance anim on step change */
+  .fade-in { animation: fade .25s ease both; }
+  @keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">
+    <div class="logo">&lt;/&gt;</div>
+    <div>HTML Lab <small>interactive tutorial</small></div>
+  </div>
+  <div class="spacer"></div>
+  <span class="pill">Topic <b id="pillTopic">1 / 14</b></span>
+  <span class="pill">Step <b id="pillStep">1 / 1</b></span>
+  <button class="btn" id="resetBtn" title="Reset this step">Reset step</button>
+</header>
+
+<div class="shell">
+  <aside class="side" id="sideNav">
+    <h3>Tutorial</h3>
+  </aside>
+
+  <main class="main">
+    <div class="crumb">
+      <h1 id="topicTitle">…</h1>
+      <span class="sep">›</span>
+      <span class="hint" id="topicHint">…</span>
+    </div>
+
+    <div class="steps-row" id="stepsRow"></div>
+
+    <div class="stage">
+      <div class="step-head">
+        <h2 id="stepTitle">…</h2>
+        <p id="stepDesc">…</p>
+        <p id="stepNote" class="step-note"></p>
+      </div>
+
+      <div class="workbench">
+        <section class="panel">
+          <div class="panel-head">
+            <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+            <span class="panel-title">editor.html</span>
+            <div class="panel-actions">
+              <button class="icon-btn" id="copyBtn">Copy</button>
+              <button class="icon-btn" id="formatBtn">Format</button>
+            </div>
+          </div>
+          <div class="tab-bar" id="tabBar"></div>
+          <textarea class="editor" id="editor" spellcheck="false" autocomplete="off"></textarea>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+            <span class="panel-title">live preview</span>
+            <div class="panel-actions">
+              <button class="icon-btn" id="openTabBtn">Open in tab ↗</button>
+            </div>
+          </div>
+          <div class="preview-wrap">
+            <iframe class="preview" id="preview" title="preview" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"></iframe>
+          </div>
+        </section>
+      </div>
+
+      <div class="navbar">
+        <button class="btn" id="prevBtn">← Prev</button>
+        <div class="progress"><div class="bar" id="progressBar"></div></div>
+        <button class="btn primary" id="nextBtn">Next →</button>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+/* ──────────────────────────────────────────────────────
+   Curriculum data — 14 topics mirroring the tutorial
+   Each step: { title, desc, code }
+   ────────────────────────────────────────────────────── */
+const TOPICS = [
+  {
+    id: 'basics', name: 'Hello HTML', sub: 'Document anatomy',
+    steps: [
+      {
+        title: 'Hello HTML — a minimal page',
+        note: 'HTML is a nested tree rooted at <code>&lt;html&gt;</code>. <b>Head</b> holds information <em>about</em> the page; <b>body</b> holds what the user sees.',
+        desc: 'The simplest possible complete page — a <code>&lt;!DOCTYPE&gt;</code>, a title, a heading, a paragraph. Nothing else needed.',
+        code:
+`<!DOCTYPE html>
+<html>
+<head>
+    <title>Hello HTML</title>
+</head>
+<body>
+    <h1>Hello HTML!</h1>
+    <p>Welcome to your first HTML page.</p>
+</body>
+</html>`
+      }
+    ]
+  },
+
+  {
+    id: 'text', name: 'Text', sub: 'Headings, links, lists',
+    steps: [
+      {
+        title: 'Headings & paragraphs',
+        note: 'Headings aren\'t about font size — they\'re the document\'s outline. Screen readers and search engines use them to build a table of contents.',
+        desc: 'Use <code>&lt;h1&gt;</code>–<code>&lt;h6&gt;</code> for hierarchy. One <code>&lt;h1&gt;</code> per page. Use <code>&lt;p&gt;</code> for paragraphs and <code>&lt;pre&gt;</code> to preserve whitespace.',
+        code:
+`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Headings &amp; paragraphs</title>
+</head>
+<body>
+<h1>Main title</h1>
+<h2>Section heading</h2>
+<h3>Subsection</h3>
+<p>Paragraphs wrap naturally no matter how many
+   spaces   or   line breaks you type.</p>
+<pre>
+  Inside &lt;pre&gt;:
+     spacing  IS  preserved.
+</pre>
+</body>
+</html>`
+      },
+      {
+        title: 'Links',
+        note: '<code>rel="noopener"</code> pairs with <code>target="_blank"</code>. Without it the new tab gets <code>window.opener</code> access — a performance and phishing trap.',
+        desc: '<code>&lt;a href&gt;</code> can point to URLs, anchors (<code>#id</code>), emails (<code>mailto:</code>) or phones (<code>tel:</code>). Use <code>target="_blank"</code> + <code>rel="noopener"</code> for new tabs.',
+        code:
+`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Links</title>
+</head>
+<body>
+<p>Visit <a href="https://developer.mozilla.org" target="_blank" rel="noopener">MDN ↗</a></p>
+<p>Jump to the <a href="#bottom">bottom</a>.</p>
+<p>Email: <a href="mailto:hi@example.com">hi@example.com</a></p>
+<p>Call: <a href="tel:+15551234">+1 (555) 1234</a></p>
+<hr><div style="height:200px"></div>
+<p id="bottom">You reached the bottom! 🎯</p>
+</body>
+</html>`
+      },
+      {
+        title: 'Quotations',
+        desc: '<code>&lt;blockquote&gt;</code> for block quotes, <code>&lt;q&gt;</code> for short inline quotes (browsers add the quote marks), <code>&lt;cite&gt;</code> names the source, <code>&lt;abbr&gt;</code> adds a hover tooltip, <code>&lt;bdo&gt;</code> flips text direction.',
+        note: 'Semantics matter even here. A <code>&lt;blockquote&gt;</code> is not just indented text — screen readers announce it as a quotation, and the <code>cite</code> attribute points to the source.',
+        code:
+`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Quotations</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; max-width: 640px; line-height: 1.6; }
+    blockquote {
+      border-left: 3px solid #7c8cff;
+      padding: 10px 16px;
+      margin: 16px 0;
+      font-style: italic;
+      color: #333;
+      background: #f8f9ff;
+    }
+    cite { color: #666; font-style: normal; font-size: 13px; }
+    abbr { border-bottom: 1px dotted #999; cursor: help; }
+    q { color: #1a3a8a; }
+  </style>
+</head>
+<body>
+<h1>Quoting sources in HTML</h1>
+
+<blockquote cite="https://en.wikipedia.org/wiki/Ada_Lovelace">
+  The Analytical Engine weaves algebraic patterns just as the
+  Jacquard loom weaves flowers and leaves.
+</blockquote>
+<p>— <cite>Ada Lovelace, 1843</cite></p>
+
+<p>Short inline quotes use the <q>q element</q> — the browser inserts
+   quotation marks automatically based on the page language.</p>
+
+<p><abbr title="Cascading Style Sheets">CSS</abbr> and
+   <abbr title="HyperText Markup Language">HTML</abbr> —
+   hover to reveal the full words.</p>
+
+<p>Flip text direction with <bdo dir="rtl">bi-directional override</bdo>
+   — useful for mixing scripts.</p>
+
+<address>
+  Written by <a href="mailto:nobody@example.com">nobody</a> · Zurich, 2026
+</address>
+</body>
+</html>`
+      },
+      {
+        title: 'Lists',
+        note: 'Pick <code>&lt;ul&gt;</code> when the order doesn\'t matter, <code>&lt;ol&gt;</code> when it does. Swapping them shouldn\'t break the meaning of your content.',
+        desc: 'Unordered <code>&lt;ul&gt;</code>, ordered <code>&lt;ol&gt;</code> (supports <code>start</code>, <code>reversed</code>, <code>type</code>), and description lists <code>&lt;dl&gt;</code>.',
+        code:
+`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Lists</title>
+</head>
+<body>
+<h3>Shopping</h3>
+<ul>
+  <li>Apples</li>
+  <li>Coffee
+    <ul><li>Dark roast</li><li>Oat milk</li></ul>
+  </li>
+</ul>
+
+<h3>Top 3 (countdown)</h3>
+<ol reversed>
+  <li>Semantic HTML</li>
+  <li>Good contrast</li>
+  <li>Keyboard support</li>
+</ol>
+
+<h3>Glossary</h3>
+<dl>
+  <dt>HTML</dt><dd>HyperText Markup Language</dd>
+  <dt>DOM</dt><dd>Document Object Model</dd>
+</dl>
+</body>
+</html>`
+      },
+      {
+        title: 'Inline formatting',
+        note: 'These tags look like styling but they carry <b>semantics</b>. <code>&lt;em&gt;</code> and <code>&lt;i&gt;</code> render the same, but <code>&lt;em&gt;</code> adds meaning for screen readers.',
+        desc: 'Each tag carries meaning, not just style: <code>&lt;strong&gt;</code> = importance, <code>&lt;em&gt;</code> = emphasis, <code>&lt;mark&gt;</code> = highlight, <code>&lt;code&gt;</code> = code, <code>&lt;kbd&gt;</code> = keys.',
+        code:
+`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Inline formatting</title>
+</head>
+<body>
+<p><strong>Warning:</strong> <em>always</em> escape user input.</p>
+<p>Press <kbd>Ctrl</kbd> + <kbd>S</kbd> to save.</p>
+<p>The <mark>highlighted phrase</mark> stands out.</p>
+<p>Inline code: <code>const x = 1;</code></p>
+<p>H<sub>2</sub>O and E = mc<sup>2</sup></p>
+<p><del>old price $50</del> <ins>now $35</ins></p>
+<p><abbr title="HyperText Markup Language">HTML</abbr> (hover me)</p>
+</body>
+</html>`
+      },
+      {
+        title: 'Entities & symbols',
+        desc: 'Some characters must be escaped in HTML: <code>&amp;lt;</code> for <code>&lt;</code>, <code>&amp;amp;</code> for <code>&amp;</code>, <code>&amp;nbsp;</code> for a non-breaking space. Named entities also cover copyright, arrows, Greek, and math symbols.',
+        note: 'UTF-8 makes most entities optional — paste <code>©</code>, <code>→</code>, <code>π</code> directly. Keep entities for the four that <em>must</em> escape in HTML: <code>&amp;</code>, <code>&lt;</code>, <code>&gt;</code>, <code>"</code>.',
+        code:
+`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Entities & symbols</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; line-height: 1.8; max-width: 640px; }
+    section {
+      margin: 14px 0;
+      padding: 10px 16px;
+      background: #f5f6fa;
+      border-radius: 8px;
+    }
+    h3 {
+      margin: 0 0 8px;
+      font-size: 13px;
+      color: #556;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    code {
+      background: #fff;
+      padding: 1px 5px;
+      border: 1px solid #dcdfe6;
+      border-radius: 3px;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+<h1>HTML entities & symbols</h1>
+
+<section>
+  <h3>Reserved characters</h3>
+  To show <code>&lt;</code>, write <code>&amp;lt;</code>.
+  To show <code>&amp;</code>, write <code>&amp;amp;</code>.
+  To put a <code>"</code> inside an attribute, write <code>&amp;quot;</code>.
+</section>
+
+<section>
+  <h3>Spaces and punctuation</h3>
+  Non-breaking: Mr.&nbsp;Smith · em-dash &mdash; ·
+  en-dash &ndash; · ellipsis &hellip; · bullet &bull;
+</section>
+
+<section>
+  <h3>Legal & commercial</h3>
+  &copy; 2026 · &reg; registered · &trade; trademark ·
+  &sect; 4.2 · &para; paragraph
+</section>
+
+<section>
+  <h3>Math</h3>
+  x &ne; y · a &le; b &le; c · &pi; &approx; 3.14 ·
+  &radic;2 · 1&frasl;2 + 1&frasl;4 = 3&frasl;4 · &infin;
+</section>
+
+<section>
+  <h3>Arrows</h3>
+  &larr; &uarr; &rarr; &darr; &harr; · &rArr; &lArr; &dArr; &uArr;
+</section>
+
+<section>
+  <h3>Currency</h3>
+  &euro; 100 · &pound; 80 · &yen; 12,000 · &cent; 50
+</section>
+
+<section>
+  <h3>Greek</h3>
+  &alpha; &beta; &gamma; &delta; &epsilon; &pi; &sigma; &omega;
+</section>
+</body>
+</html>`
+      },
+    ]
+  },
+
+  {
+    id: 'buttons', name: 'Buttons', sub: 'Clickable interactivity',
+    steps: [
+      {
+        title: 'Button with inline JS',
+        note: '<code>onclick</code> attributes are fine for demos. In real apps prefer <code>addEventListener</code> — it supports multiple handlers and separates markup from behaviour.',
+        desc: 'A <code>&lt;button&gt;</code> with an <code>onclick</code> handler and a <code>&lt;script&gt;</code> tag at the bottom of the body — the simplest way to make a page interactive.',
+        code:
+`<!DOCTYPE html>
+<html>
+<head>
+    <title>Interactive Button</title>
+    <style>body { font-family: sans-serif; padding: 20px; transition: background .2s; }</style>
+</head>
+<body>
+    <h1>Click the Button</h1>
+    <button onclick="changeColor()">Click Me</button>
+
+    <script>
+        let clicked = false;
+        function changeColor() {
+            if (!clicked) {
+                document.body.style.backgroundColor = "lightblue";
+                clicked = true;
+            } else {
+                document.body.style.backgroundColor = "white";
+                clicked = false;
+            }
+        }
+    <\/script>
+</body>
+</html>`
+      },
+      {
+        title: 'External JavaScript file',
+        note: 'One HTML file + one JS file, linked by a plain string filename. Rename the JS and nothing runs. Keep the wiring boring and explicit.',
+        desc: 'A two-file project: <code>button_file.html</code> loads its behaviour from <code>button_script.js</code> via <code>&lt;script src="..."&gt;</code>. Switch tabs to see each file.',
+        files: [
+          { name: 'button_file.html', code:
+`<!DOCTYPE html>
+<html>
+<head>
+    <title>External JS</title>
+    <script src="button_script.js"><\/script>
+</head>
+<body>
+    <h1>Click the Button</h1>
+    <button onclick="changeColor()">Click Me</button>
+</body>
+</html>` },
+          { name: 'button_script.js', code:
+`let cliked = false
+function changeColor() {
+    if (!cliked) {
+        document.body.style.backgroundColor = "lightblue"
+        cliked = true
+    } else {
+            document.body.style.backgroundColor = "white"
+            cliked = false
+    }
+}` }
+        ]
+      },
+      {
+        title: 'Navigate between pages',
+        note: 'Each page is its own HTML document. Navigating throws away the current document and loads another — any JS state is lost between pages.',
+        desc: 'Two real files navigating to each other via <code>location.href</code> — a JS-driven alternative to an <code>&lt;a href&gt;</code> link. Note: iframe-sandboxed cross-file navigation is blocked — use "Open in tab ↗" to test the actual flow.',
+        files: [
+          { name: 'first.html', code:
+`<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>First</title>
+</head>
+<body>
+    <h1>I'm the first page!</h1>
+    <button onclick="toSecond()">To second</button>
+</body>
+
+<script>
+    function toSecond() {
+        location.href = "./second.html";
+    };
+<\/script>
+</html>` },
+          { name: 'second.html', code:
+`<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Second</title>
+</head>
+<body>
+    <h1>I'm the second page!</h1>
+    <button onclick="toFirst()">Back to first</button>
+</body>
+
+<script>
+    function toFirst() {
+        location.href = "./first.html";
+    };
+<\/script>
+</html>` }
+        ]
+      },
+    ]
+  },
+
+  {
+    id: 'media', name: 'Media', sub: 'Images, audio, video',
+    steps: [
+      {
+        title: 'Images',
+        note: 'Every <code>&lt;img&gt;</code> needs an <code>alt</code> — even if empty. Missing <code>alt</code> is an accessibility bug; <code>alt=""</code> intentionally marks a purely decorative image.',
+        desc: '<code>&lt;img&gt;</code> needs <code>src</code> and <code>alt</code>. Use <code>&lt;figure&gt;</code>+<code>&lt;figcaption&gt;</code> for captioned media. <code>loading="lazy"</code> defers offscreen images.',
+        code:
+`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Images</title>
+</head>
+<body>
+<figure>
+  <img
+    src="https://picsum.photos/seed/lab/480/260"
+    alt="Random scenic placeholder"
+    loading="lazy"
+    width="480" height="260">
+  <figcaption>Fig.1 — a lazily-loaded placeholder image.</figcaption>
+</figure>
+</body>
+</html>`
+      },
+      {
+        title: 'Audio & video',
+        note: 'Autoplay only works when the video is <code>muted</code>. Browsers block unmuted autoplay by default — that policy is the reason, not a bug in your code.',
+        desc: '<code>&lt;audio&gt;</code> and <code>&lt;video&gt;</code> take <code>controls</code>, <code>autoplay</code>, <code>muted</code>, <code>loop</code>, and a <code>poster</code>. Provide multiple <code>&lt;source&gt;</code> for format fallback.',
+        code:
+`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Audio &amp; video</title>
+</head>
+<body>
+<video controls muted width="420"
+       poster="https://picsum.photos/seed/poster/420/240">
+  <source src="https://cdn.jsdelivr.net/gh/mdn/dom-examples/media/videos/flower.mp4" type="video/mp4">
+  Sorry, your browser can't play this video.
+</video>
+
+<audio controls style="display:block;margin-top:1rem">
+  <source src="https://cdn.jsdelivr.net/gh/anars/blank-audio/5-seconds-of-silence.mp3" type="audio/mpeg">
+</audio>
+</body>
+</html>`
+      },
+      {
+        title: 'iframe — embedding',
+        note: 'Without <code>sandbox</code>, an embedded page has full powers: scripts, forms, popups, top-level navigation. Always sandbox third-party content.',
+        desc: '<code>&lt;iframe&gt;</code> embeds another page. Use the <code>sandbox</code> attribute for untrusted content to restrict scripts, forms, top-level nav, etc.',
+        code:
+`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>iframe — embedding</title>
+</head>
+<body>
+<iframe
+  src="https://example.com"
+  width="100%" height="260"
+  sandbox="allow-same-origin"
+  title="example.com"
+  style="border:1px solid #ccc;border-radius:8px">
+</iframe>
+<p><small>Some sites block embedding via X-Frame-Options — that's normal.</small></p>
+</body>
+</html>`
+      },
+      {
+        title: 'YouTube & external embeds',
+        desc: 'Any reachable URL can be embedded in an <code>&lt;iframe&gt;</code>. YouTube exposes a framing-friendly URL at <code>youtube.com/embed/{id}</code>. Use <code>allow</code> to opt into features (fullscreen, autoplay, picture-in-picture).',
+        note: 'Many sites refuse framing with <code>X-Frame-Options</code> or <code>Content-Security-Policy: frame-ancestors</code>. <code>allow</code> <em>grants</em> capabilities; <code>sandbox</code> <em>removes</em> them — opposite tools for the same iframe.',
+        code:
+`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Embedding external pages</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; max-width: 600px; }
+    iframe {
+      display: block;
+      margin: 12px 0;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      max-width: 100%;
+    }
+    .note {
+      background: #fff8e1;
+      padding: 10px 14px;
+      border-left: 3px solid #f59e0b;
+      border-radius: 4px;
+      font-size: 13px;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+<h1>Embedding external content</h1>
+
+<h2>A YouTube video</h2>
+<iframe width="420" height="236"
+        src="https://www.youtube.com/embed/aqz-KE-bpKQ"
+        title="Big Buck Bunny (Creative Commons)"
+        allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+        allowfullscreen></iframe>
+
+<h2>A Wikipedia page</h2>
+<iframe width="420" height="280"
+        src="https://en.wikipedia.org/wiki/HTML"
+        title="HTML on Wikipedia"></iframe>
+
+<p class="note">Many sites refuse framing with
+  <code>X-Frame-Options</code> or <code>Content-Security-Policy:
+  frame-ancestors</code>. YouTube provides a dedicated embed URL at
+  <code>youtube.com/embed/{id}</code> exactly so it can be framed.</p>
+
+<p>The <code>allow</code> attribute opts the iframe into specific
+   browser features (camera, autoplay, clipboard, etc.).
+   The <code>sandbox</code> attribute does the opposite — it takes
+   capabilities <em>away</em>.</p>
+</body>
+</html>`
+      }
+    ]
+  },
+
+  {
+    id: 'tables', name: 'Tables', sub: 'Tabular data',
+    steps: [
+      {
+        title: 'Basic table',
+        note: 'Tables are for <b>data</b>, not layout. Use CSS Grid for columns-and-rows layout; save <code>&lt;table&gt;</code> for rows-of-records.',
+        desc: 'Use <code>&lt;thead&gt;</code>/<code>&lt;tbody&gt;</code>/<code>&lt;tfoot&gt;</code> for structure, <code>&lt;caption&gt;</code> for a title, and <code>&lt;th scope&gt;</code> for accessibility.',
+        code:
+`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Basic table</title>
+  <style>
+  table { border-collapse: collapse; width: 100%; font-family: sans-serif; }
+  caption { caption-side: top; padding: 6px; font-weight: 700; text-align: left; }
+  th, td { border: 1px solid #d0d7e2; padding: 8px 10px; text-align: left; }
+  thead { background: #eef2ff; }
+  tfoot { background: #f6f8fc; font-weight: 700; }
+</style>
+</head>
+<body>
+<table>
+  <caption>Quarterly revenue</caption>
+  <thead><tr><th scope="col">Qtr</th><th scope="col">Sales</th></tr></thead>
+  <tbody>
+    <tr><th scope="row">Q1</th><td>$120k</td></tr>
+    <tr><th scope="row">Q2</th><td>$145k</td></tr>
+    <tr><th scope="row">Q3</th><td>$180k</td></tr>
+  </tbody>
+  <tfoot><tr><th scope="row">Total</th><td>$445k</td></tr></tfoot>
+</table>
+</body>
+</html>`
+      },
+      {
+        title: 'Spanning — colspan & rowspan',
+        note: 'A span extends one cell into neighbouring cells: <code>colspan="2"</code> swallows the next column, <code>rowspan="2"</code> swallows the next row.',
+        desc: 'Cells can span across columns with <code>colspan</code> or down rows with <code>rowspan</code>.',
+        code:
+`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Spanning — colspan &amp; rowspan</title>
+  <style>
+  table { border-collapse: collapse; font-family: sans-serif; }
+  th, td { border: 1px solid #8898b7; padding: 8px 14px; text-align: center; }
+  thead th { background: #e9eefc; }
+  .merge { background: #fff4d6; }
+</style>
+</head>
+<body>
+<table>
+  <thead>
+    <tr>
+      <th rowspan="2">Name</th>
+      <th colspan="2">Scores</th>
+    </tr>
+    <tr><th>Math</th><th>Code</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Ada</td><td>98</td><td>95</td></tr>
+    <tr><td>Linus</td><td>88</td><td>99</td></tr>
+    <tr><td colspan="3" class="merge">— end of roster —</td></tr>
+  </tbody>
+</table>
+</body>
+</html>`
+      }
+    ]
+  },
+
+  {
+    id: 'forms', name: 'Forms', sub: 'User input',
+    steps: [
+      {
+        title: 'Input types',
+        note: 'On mobile, <code>type="email"</code> brings up the @ keyboard; <code>type="number"</code> brings up digits; <code>type="tel"</code> brings up the dial pad. Free UX by picking the right type.',
+        desc: 'HTML5 input types give free validation and mobile keyboards: <code>email</code>, <code>number</code>, <code>range</code>, <code>date</code>, <code>color</code>, <code>file</code>, etc.',
+        code:
+`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Input types</title>
+  <style>
+  form { font-family: sans-serif; display: grid; gap: 10px; max-width: 360px; }
+  label { display: grid; gap: 4px; font-size: 14px; }
+  input, select { padding: 6px 8px; border: 1px solid #c3cbda; border-radius: 6px; font: inherit; }
+</style>
+</head>
+<body>
+<form>
+  <label>Email <input type="email" placeholder="you@example.com" required></label>
+  <label>Age   <input type="number" min="0" max="120" value="18"></label>
+  <label>Volume <input type="range" min="0" max="100" value="40"></label>
+  <label>Date <input type="date"></label>
+  <label>Color <input type="color" value="#7c8cff"></label>
+  <label>File <input type="file"></label>
+  <button type="submit">Send</button>
+</form>
+</body>
+</html>`
+      },
+      {
+        title: 'Form structure',
+        note: '<code>&lt;label&gt;</code>/input pairing is mandatory for accessibility. Either wrap the input or use <code>for="id"</code> — both make the label clickable and announced together.',
+        desc: 'Group fields with <code>&lt;fieldset&gt;</code>+<code>&lt;legend&gt;</code>. <code>&lt;label for&gt;</code> pairs labels to inputs. <code>&lt;select&gt;</code>+<code>&lt;optgroup&gt;</code> for dropdowns.',
+        code:
+`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Form structure</title>
+  <style>
+  fieldset { border: 1px solid #c3cbda; border-radius: 8px; padding: 12px; font-family: sans-serif; }
+  legend { padding: 0 6px; font-weight: 700; }
+  label { display: block; margin: 6px 0; }
+</style>
+</head>
+<body>
+<form>
+  <fieldset>
+    <legend>Account</legend>
+    <label><span>Username</span><br>
+      <input id="u" name="username" autocomplete="username"></label>
+    <label for="country">Country</label>
+    <select id="country" name="country">
+      <optgroup label="Europe">
+        <option>Germany</option><option>France</option>
+      </optgroup>
+      <optgroup label="Asia">
+        <option>Japan</option><option>India</option>
+      </optgroup>
+    </select>
+    <label>Bio<br>
+      <textarea rows="3" cols="30"></textarea></label>
+  </fieldset>
+  <button type="submit">Create</button>
+  <button type="reset">Reset</button>
+</form>
+</body>
+</html>`
+      },
+      {
+        title: 'Form submits to results page',
+        note: 'A plain form with <code>action="other.html"</code> navigates to that page, passing fields as URL parameters. This is how the web worked long before AJAX — and it still works.',
+        desc: 'Two real files: <code>simple_form.html</code> submits via GET to <code>show_result.html</code>, which reads <code>URLSearchParams</code> and computes area/perimeter. Note: iframe-sandboxed cross-file navigation is blocked — use "Open in tab ↗" to test the real flow.',
+        files: [
+          { name: 'simple_form.html', code:
+`<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Form</title>
+</head>
+<body>
+    <form action="./show_result.html" method="get">
+        <label for="fname">Width:</label><br>
+        <input type="number" id="width" name="width"><br>
+
+        <label for="lname">Height:</label><br>
+        <input type="number" id="height" name="height"><br><br>
+
+        <input type="submit" value="Submit">
+    </form>
+</body>
+</html>` },
+          { name: 'show_result.html', code:
+`<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Results</title>
+</head>
+<body>
+    <div id="results"></div>
+</body>
+
+<script>
+    function putResults() {
+        const resultsDiv = document.getElementById("results");
+
+        const params = new URLSearchParams(window.location.search);
+        const height = parseFloat(params.get("height"));
+        const width = parseFloat(params.get("width"));
+        const perimeter = (height + width) * 2
+        const area = height * width
+
+        resultsDiv.innerHTML = \`
+            <h2>Height \${height}</h2>
+            <h2>Width \${width}</h2>
+            <h2>Area \${area}</h2>
+            <h2>Perimeter \${perimeter}</h2>
+        \`
+    };
+
+    window.onload = putResults;
+
+<\/script>
+
+</html>` }
+        ]
+      },
+      {
+        title: 'Native validation API',
+        note: 'The browser validates before submit — no JS required. Use <code>:user-invalid</code> in CSS to show errors only after the user interacts, not on first paint.',
+        desc: 'Attributes like <code>required</code>, <code>minlength</code>, <code>pattern</code> provide free validation. Style state with <code>:user-invalid</code> / <code>:user-valid</code>.',
+        code:
+`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Native validation API</title>
+  <style>
+  form { font-family: sans-serif; display: grid; gap: 10px; max-width: 320px; }
+  input { padding: 8px; border: 1px solid #c3cbda; border-radius: 6px; font: inherit; }
+  input:user-invalid { border-color: #ff6e8a; background: #fff0f3; }
+  input:user-valid   { border-color: #44d7b6; background: #f1fbf6; }
+  small.err { color: #c0263e; font-size: 12px; min-height: 1em; }
+</style>
+</head>
+<body>
+<form>
+  <label>Username (3–12 letters)
+    <input required pattern="[A-Za-z]{3,12}" placeholder="letters only">
+  </label>
+  <label>Email
+    <input type="email" required placeholder="you@example.com">
+  </label>
+  <label>Password (≥ 8 chars)
+    <input type="password" required minlength="8">
+  </label>
+  <button>Sign up</button>
+  <small class="err"></small>
+</form>
+<script>
+  document.querySelector('form').addEventListener('submit', e => {
+    if (!e.target.checkValidity()) return;
+    e.preventDefault();
+    e.target.querySelector('.err').textContent = '✓ All fields are valid!';
+  });
+<\/script>
+</body>
+</html>`
+      },
+      {
+        title: 'datalist, output & meter',
+        note: '<code>&lt;datalist&gt;</code> = autocomplete without a backend. <code>&lt;meter&gt;</code> = measurement with known range (disk usage). <code>&lt;progress&gt;</code> = task completing over time.',
+        desc: '<code>&lt;datalist&gt;</code> = native autocomplete. <code>&lt;output&gt;</code> = computed result. <code>&lt;meter&gt;</code> = a gauge with low/high/optimum ranges.',
+        code:
+`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>datalist, output &amp; meter</title>
+  <style>
+  body { font-family: sans-serif; }
+  label { display: block; margin: 10px 0; }
+  meter { width: 220px; height: 16px; }
+</style>
+</head>
+<body>
+<label>Choose a color (try typing "re"):
+  <input list="colors" name="color">
+  <datalist id="colors">
+    <option>red</option><option>green</option>
+    <option>blue</option><option>teal</option>
+    <option>rebeccapurple</option>
+  </datalist>
+</label>
+
+<form oninput="total.value = (+a.value) + (+b.value)">
+  <input type="number" id="a" value="2"> +
+  <input type="number" id="b" value="3"> =
+  <output name="total">5</output>
+</form>
+
+<p>Disk used:
+  <meter min="0" max="100" low="30" high="80" optimum="20" value="72"></meter>
+  72 %
+</p>
+<p>Download: <progress value="40" max="100"></progress> 40 %</p>
+</body>
+</html>`
+      },
+      {
+        title: 'Browser countdown clock',
+        note: 'Notice the <code>isCounting</code> guard: timing code must prevent double-starts. Every <code>setTimeout</code>/<code>setInterval</code> deserves a flag or a handle to cancel.',
+        desc: 'Type a number of seconds and watch the clock tick down. The HTML loads the shared <code>validation.js</code> helper from a sibling file — switch tabs to see each one.',
+        files: [
+          { name: 'browser_clock.html', code:
+`<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Browser Clock</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+    </head>
+    <body>
+        <script src="validation.js"><\/script>
+        <p id="clock"></p>
+        <input type="text" id="seconds">
+        <button onclick="startClock()">Start Clock</button>
+    </body>
+
+    <script lang="javascript">
+        let isCounting = false;
+
+
+        function startClock() {
+            if (isCounting) {
+                return;
+            }
+
+            let seconds = document.getElementById("seconds").value;
+
+            // validate given value
+            if (!isPositiveInteger(seconds)) {
+                window.alert("Error: Invalid Input! Please make sure you pass an integer.");
+                return;
+            }
+
+            // input is valid
+            // turn the input into an integer
+            seconds = parseInt(seconds);
+
+            // start the clock ...
+
+            isCounting = true;
+            const oneSecond = 1_000;
+
+            // initial state
+            setClock(seconds)
+
+            for (let i = 1; i < seconds; i++) {
+                setTimeout(setClock, oneSecond * i, seconds - i)
+            }
+
+            setTimeout(() => {
+                document.getElementById("clock").innerText = "Time's Up!";
+                isCounting = false;
+            }, oneSecond * seconds)
+        };
+
+        function setClock(seconds) {
+            document.getElementById("clock").innerText = seconds;
+        }
+    <\/script>
+</html>` },
+          { name: 'validation.js', code:
+`function isPositiveInteger(str) {
+    if (typeof str !== "string") {
+        return false; // we only process strings!
+    }
+
+    // turn the string into a number
+    const inputAsNum = Number(str);
+
+    if (isNaN(inputAsNum)) {
+        return false;  // parsing into a number failed
+    }
+
+    if (Number.isInteger(inputAsNum) && inputAsNum > 0)
+        return true;
+
+    return false;
+}` }
+        ]
+      },
+      {
+        title: 'Shopping list with datalist',
+        note: 'Building HTML via string concatenation is quick but brittle. In real apps prefer <code>document.createElement</code> or a framework — strings can\'t escape user input safely.',
+        desc: 'Uses <code>&lt;datalist&gt;</code> for autocomplete, validates the amount with a reusable helper loaded from <code>validation.js</code>, and builds a running results table. Shown as the real two-file project.',
+        files: [
+          { name: 'shopping_list.html', code:
+`<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Shopping List</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    </head>
+    <body>
+        <script src="validation.js"><\/script>
+        <label for="new-item">Please choose an item & an amount:</label>
+        <input id="new-item" list="items">
+
+        <datalist id="items">
+            <option>T-Shirt</option>
+            <option>Shoes</option>
+            <option>Pants</option>
+            <option>Dress</option>
+            <option>Socks</option>
+            <option>Coat</option>
+            <option>Gloves</option>
+        </datalist>
+
+        <input id="amount" type="number" min="1" value="1">
+
+        <button id="add-item-btn" onclick="addItem()">Add Item</button>
+        <br><br>
+        <div id="shopping-list-div">
+           <text>No items yet.</text>
+        </div>
+    </body>
+
+    <script lang="javascript">
+        let tableIsInitialized = false;
+
+        const prices = {
+            'T-Shirt': 90,
+            'Shoes': 250,
+            'Pants': 100,
+            'Dress': 300,
+            'Socks': 35,
+            'Coat': 280,
+            'Gloves': 50
+        }
+
+        function addItem() {
+            // add  a new item
+
+            // get its value, amount, price and total price first
+            const item = document.getElementById("new-item").value;
+            let amount = document.getElementById("amount").value;
+
+            // validate the input
+            if (item === undefined || item === "") {
+                alert("Invalid input. Please choose an item.");
+                return;
+            }
+
+            if (!isPositiveInteger(amount)) {
+                alert("Invalid input. The amount should be an integer which is greater that 1.");
+                return;
+            }
+            else {
+                amount = parseInt(amount)
+                if (amount < 1) {
+                    alert("Invalid input. The amount should be an integer which is greater that 1.");
+                    return;
+                }
+            }
+
+            // input is valid
+
+            // initialize the table if it's
+            // the first item we are addig
+            if (!tableIsInitialized) {
+                initializeTable();
+            }
+
+            const price = prices[item];
+            const totalPrice = price * amount
+
+            // add the item to the table
+            const table = document.getElementById("shopping-list-table")
+
+            table.innerHTML += \`<tr>
+                <td>\${item}</td>
+                <td>\${amount}</td>
+                <td>\${price}</td>
+                <td>\${totalPrice}</td>
+            </tr>\`
+
+            // clean the input fields
+            document.getElementById("new-item").value = "";
+            document.getElementById("amount").value = 1;
+        };
+
+        function initializeTable() {
+            tableIsInitialized = true;
+
+            const startingHTML = \`<table id='shopping-list-table' class='table'>
+                <tr>
+                    <th>Item</th>
+                    <th>Amount</th>
+                    <th>Price per unit</th>
+                    <th>Total price</th>
+                </tr>
+            </table>\`;
+
+            // replace the initial text with an empty table
+            const shoppingListDiv = document.getElementById("shopping-list-div");
+            shoppingListDiv.innerHTML = startingHTML;
+        };
+    <\/script>
+</html>` },
+          { name: 'validation.js', code:
+`function isPositiveInteger(str) {
+    if (typeof str !== "string") {
+        return false; // we only process strings!
+    }
+
+    // turn the string into a number
+    const inputAsNum = Number(str);
+
+    if (isNaN(inputAsNum)) {
+        return false;  // parsing into a number failed
+    }
+
+    if (Number.isInteger(inputAsNum) && inputAsNum > 0)
+        return true;
+
+    return false;
+}` }
+        ]
+      }
+    ]
+  },
+
+  {
+    id: 'semantic', name: 'Semantic', sub: 'Meaningful structure',
+    steps: [
+      {
+        title: 'Landmark elements',
+        note: 'Semantic tags replace <code>&lt;div class="header"&gt;</code>. Screen readers jump between landmarks; divs give them nothing to navigate to.',
+        desc: 'Semantic tags — <code>&lt;header&gt;</code>, <code>&lt;nav&gt;</code>, <code>&lt;main&gt;</code>, <code>&lt;article&gt;</code>, <code>&lt;section&gt;</code>, <code>&lt;aside&gt;</code>, <code>&lt;footer&gt;</code> — describe regions to browsers & assistive tech.',
+        code:
+`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Landmark elements</title>
+  <style>
+  body { font-family: sans-serif; margin: 0; }
+  header, nav, main, aside, footer, article { padding: 12px 16px; }
+  header { background: #1f2a44; color: white; }
+  nav { background: #eef2ff; }
+  nav a { margin-right: 12px; }
+  main { display: grid; grid-template-columns: 2fr 1fr; gap: 14px; }
+  aside { background: #fff7e6; border-left: 4px solid #ffb86b; }
+  footer { background: #f3f5fa; font-size: 12px; color: #555; }
+</style>
+</head>
+<body>
+<header><h1>My Blog</h1></header>
+<nav><a href="#">Home</a><a href="#">Posts</a><a href="#">About</a></nav>
+<main>
+  <article>
+    <h2>A semantic post</h2>
+    <p>Published on <time datetime="2025-06-01">June 1, 2025</time>.</p>
+    <p>Semantic HTML helps screen readers and SEO alike.</p>
+  </article>
+  <aside><strong>Related:</strong> ARIA basics, landmark nav.</aside>
+</main>
+<footer>© 2025 HTML Lab</footer>
+</body>
+</html>`
+      },
+      {
+        title: 'Details, summary & dialog',
+        note: '<code>&lt;details&gt;</code> is the original collapse widget — zero JS. <code>&lt;dialog&gt;</code> with <code>showModal()</code> gives you focus trapping and a backdrop for free.',
+        desc: '<code>&lt;details&gt;</code>/<code>&lt;summary&gt;</code> create native disclosure widgets. <code>&lt;dialog&gt;</code> is a built-in modal — call <code>.showModal()</code>.',
+        code:
+`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Details, summary &amp; dialog</title>
+</head>
+<body>
+<details>
+  <summary>Click to expand</summary>
+  <p>Hidden content, revealed without any JavaScript.</p>
+</details>
+
+<hr>
+
+<button onclick="document.getElementById('d').showModal()">Open dialog</button>
+<dialog id="d" style="border:none;border-radius:10px;padding:20px">
+  <h3>Hello, dialog!</h3>
+  <p>This is a native modal with its own backdrop.</p>
+  <form method="dialog"><button>Close</button></form>
+</dialog>
+</body>
+</html>`
+      }
+    ]
+  },
+
+  {
+    id: 'head', name: 'Head & Meta', sub: 'SEO & sharing',
+    steps: [
+      {
+        title: 'Metadata that matters',
+        note: 'Most <code>&lt;meta&gt;</code> tags don\'t change what users see on the page — they tell browsers, search engines, and social networks how to <b>treat</b> the page.',
+        desc: 'Inside <code>&lt;head&gt;</code>: charset, viewport, title, description, Open Graph for social sharing, favicons, and script-loading hints (<code>defer</code>/<code>async</code>).',
+        code:
+`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HTML Lab — Meta demo</title>
+  <meta name="description" content="A tiny page demonstrating head metadata.">
+
+  <!-- Open Graph / Twitter -->
+  <meta property="og:title" content="HTML Lab">
+  <meta property="og:description" content="Learn HTML interactively.">
+  <meta property="og:image" content="https://picsum.photos/seed/og/600/315">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext y='52' font-size='56'%3E🧪%3C/text%3E%3C/svg%3E">
+
+  <!-- async = fetch in parallel, run ASAP; defer = run after parse -->
+  <script defer src="about:blank"><\/script>
+</head>
+<body style="font-family:sans-serif">
+  <h1>View source to see the head metadata.</h1>
+  <p>Check the browser tab title and favicon 👆</p>
+</body>
+</html>`
+      },
+      {
+        title: 'Responsive viewport & media queries',
+        desc: 'The <code>&lt;meta name="viewport"&gt;</code> tag makes pages mobile-aware. CSS <code>@media (min-width: ...)</code> branches styles based on viewport size. Together they make one HTML file render well on any screen.',
+        note: 'Mobile-first writes default styles for the smallest screen, then <code>@media (min-width: ...)</code> layers on space. Desktop-first with <code>max-width</code> tends to accumulate override cruft.',
+        code:
+`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Responsive basics</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      margin: 0;
+    }
+    .card {
+      padding: 28px 24px;
+      border-radius: 12px;
+      background: #e0ecff;
+      color: #1a2a5a;
+      transition: background .25s, color .25s;
+    }
+    .card::before {
+      content: "Phone layout";
+      display: block;
+      font-weight: 700;
+      font-size: 12px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    .card h2 { margin: 0 0 10px; font-size: 22px; }
+    .card p  { margin: 0; line-height: 1.6; }
+
+    @media (min-width: 600px) {
+      .card { background: #e0ffe8; color: #1a5a2a; }
+      .card::before { content: "Tablet layout"; }
+    }
+    @media (min-width: 900px) {
+      .card { background: #ffe8d0; color: #6a3a1a; }
+      .card::before { content: "Desktop layout"; }
+    }
+  </style>
+</head>
+<body>
+<h1>Resize me!</h1>
+<div class="card">
+  <h2>I change with the viewport</h2>
+  <p>Drag the editor/preview divider (or resize the window) to see
+     this card switch colours at 600px and 900px.</p>
+</div>
+
+<p>The <code>&lt;meta name="viewport"&gt;</code> tag tells mobile
+   browsers to render at the device's real width — without it,
+   phones simulate a ~980px desktop and zoom out.</p>
+
+<p>CSS <code>@media (min-width: ...)</code> queries branch styles
+   based on the current viewport size. Mobile-first writes the
+   default styles for the smallest screen and adds rules for
+   wider ones.</p>
+</body>
+</html>`
+      },
+    ]
+  },
+
+  {
+    id: 'a11y', name: 'Accessibility', sub: 'ARIA & keyboard',
+    steps: [
+      {
+        title: 'ARIA roles & live regions',
+        note: 'ARIA is a safety net, not a replacement. A real <code>&lt;button&gt;</code> beats <code>&lt;div role="button"&gt;</code> every time. <code>aria-live</code> is the exception — pure-ARIA behaviour with no HTML equivalent.',
+        desc: 'Use semantic HTML first; reach for <code>role</code> / <code>aria-label</code> only when meaning isn\'t already conveyed. <code>aria-live</code> announces dynamic changes to screen readers.',
+        code:
+`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ARIA roles &amp; live regions</title>
+  <style>
+  body { font-family: sans-serif; }
+  button { padding: 8px 12px; border-radius: 6px; border: 1px solid #aaa; cursor: pointer; }
+  [role="status"] { margin-top: 10px; padding: 8px; background: #eef7ee; border-left: 4px solid #44d7b6; }
+</style>
+</head>
+<body>
+<button aria-label="Save document" onclick="announce()">💾</button>
+<div id="live" role="status" aria-live="polite">Waiting for action…</div>
+<script>
+  function announce() {
+    document.getElementById('live').textContent = 'Saved at ' + new Date().toLocaleTimeString();
+  }
+<\/script>
+</body>
+</html>`
+      },
+      {
+        title: 'Keyboard & focus',
+        note: 'Tab through your page right now. If you can\'t reach every interactive element, some users can\'t use your site. <code>outline: 0</code> without a replacement is an a11y regression.',
+        desc: 'Interactive elements must be focusable. Use <code>tabindex="0"</code> to add non-buttons to the tab order and visible focus rings to help keyboard users.',
+        code:
+`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Keyboard &amp; focus</title>
+  <style>
+  body { font-family: sans-serif; }
+  .card {
+    display: inline-block; padding: 12px 16px;
+    border: 2px solid #d0d7e2; border-radius: 10px; margin: 4px;
+    cursor: pointer;
+  }
+  .card:focus { outline: 3px solid #7c8cff; outline-offset: 2px; }
+  a.skip {
+    position: absolute; left: -200px; top: 6px;
+    background: #111; color: white; padding: 6px 10px; border-radius: 4px;
+  }
+  a.skip:focus { left: 6px; }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<p>Press <kbd>Tab</kbd> to see focus move:</p>
+<div class="card" tabindex="0">Card 1</div>
+<div class="card" tabindex="0">Card 2</div>
+<button>Real button</button>
+<main id="main"><p>— main content —</p></main>
+</body>
+</html>`
+      }
+    ]
+  },
+
+  {
+    id: 'canvas', name: 'Canvas', sub: '2D drawing & animation',
+    steps: [
+      {
+        title: 'Canvas basics — shapes & gradients',
+        note: 'Canvas is <b>pixels</b>, not DOM. Once you draw a circle you can\'t query for it later — there\'s no element to click. Redraw the whole frame each time.',
+        desc: '<code>&lt;canvas&gt;</code> is a bitmap you paint with JS. Get a <code>2d</code> context and use <code>fillRect</code>, <code>arc</code>, paths, gradients, and text.',
+        code:
+`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Canvas basics — shapes &amp; gradients</title>
+</head>
+<body>
+<canvas id="c" width="420" height="220" style="background:#0b1020;border-radius:10px"></canvas>
+<script>
+  const ctx = document.getElementById('c').getContext('2d');
+
+  // gradient fill
+  const g = ctx.createLinearGradient(0, 0, 420, 0);
+  g.addColorStop(0, '#7c8cff'); g.addColorStop(1, '#44d7b6');
+  ctx.fillStyle = g;
+  ctx.fillRect(20, 20, 380, 60);
+
+  // circle
+  ctx.beginPath();
+  ctx.arc(80, 150, 40, 0, Math.PI * 2);
+  ctx.fillStyle = '#ffb86b'; ctx.fill();
+
+  // path
+  ctx.beginPath();
+  ctx.moveTo(170, 190); ctx.lineTo(220, 120); ctx.lineTo(270, 190);
+  ctx.closePath();
+  ctx.fillStyle = '#ff6e8a'; ctx.fill();
+
+  // text
+  ctx.fillStyle = 'white';
+  ctx.font = 'bold 20px sans-serif';
+  ctx.fillText('Hello, <canvas>!', 40, 58);
+<\/script>
+</body>
+</html>`
+      },
+      {
+        title: 'Animation loop',
+        note: '<code>requestAnimationFrame</code> pauses when the tab is hidden and syncs to the display refresh rate. <code>setInterval</code> keeps running — and drifts.',
+        desc: 'Use <code>requestAnimationFrame</code> for smooth animation — it syncs to the display refresh rate.',
+        code:
+`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Animation loop</title>
+</head>
+<body>
+<canvas id="c" width="420" height="220" style="background:#0b1020;border-radius:10px"></canvas>
+<script>
+  const ctx = document.getElementById('c').getContext('2d');
+  let t = 0;
+  function loop() {
+    ctx.fillStyle = 'rgba(11,16,32,.25)';       // trailing fade
+    ctx.fillRect(0, 0, 420, 220);
+
+    for (let i = 0; i < 5; i++) {
+      const x = 60 + i * 70;
+      const y = 110 + Math.sin(t / 20 + i) * 60;
+      ctx.beginPath();
+      ctx.arc(x, y, 14, 0, Math.PI * 2);
+      ctx.fillStyle = \`hsl(\${(t + i * 40) % 360} 80% 65%)\`;
+      ctx.fill();
+    }
+    t++;
+    requestAnimationFrame(loop);
+  }
+  loop();
+<\/script>
+</body>
+</html>`
+      }
+    ]
+  },
+
+  {
+    id: 'svg', name: 'SVG', sub: 'Vector graphics',
+    steps: [
+      {
+        title: 'SVG shapes & gradients',
+        note: 'SVG is DOM — every shape is an element you can inspect, style with CSS, and attach events to. That\'s why SVG beats canvas for interactive graphics.',
+        desc: 'SVG uses XML tags for shapes — <code>rect</code>, <code>circle</code>, <code>path</code> — that scale perfectly and are styleable with CSS.',
+        code:
+`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>SVG shapes &amp; gradients</title>
+</head>
+<body>
+<svg viewBox="0 0 300 160" width="100%" style="background:#f6f8fc;border-radius:10px">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0"   stop-color="#7c8cff"/>
+      <stop offset="1"   stop-color="#b58bff"/>
+    </linearGradient>
+  </defs>
+  <rect x="10" y="10" width="280" height="80" rx="14" fill="url(#g)"/>
+  <circle cx="60" cy="120" r="22" fill="#44d7b6" stroke="#0b1020" stroke-width="2"/>
+  <polygon points="130,100 170,140 90,140" fill="#ffb86b"/>
+  <path d="M200 140 Q230 90 260 140" stroke="#ff6e8a" stroke-width="4" fill="none"/>
+  <text x="28" y="55" font-family="sans-serif" font-size="26" fill="white" font-weight="700">Hello SVG</text>
+</svg>
+</body>
+</html>`
+      },
+      {
+        title: 'SVG animation',
+        note: 'CSS transitions work on SVG attributes too. SMIL (<code>&lt;animate&gt;</code>) is slowly being deprecated — prefer CSS animations unless you need path-following motion.',
+        desc: 'Animate with CSS (great for looping effects) or SMIL (<code>&lt;animate&gt;</code> inside SVG) — even without JS.',
+        code:
+`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>SVG animation</title>
+  <style>
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spin { transform-origin: 50% 50%; animation: spin 3s linear infinite; }
+  @keyframes draw { to { stroke-dashoffset: 0; } }
+  .draw { stroke-dasharray: 300; stroke-dashoffset: 300; animation: draw 2.5s ease forwards; }
+</style>
+</head>
+<body>
+<svg viewBox="0 0 200 200" width="280" style="background:#f6f8fc;border-radius:10px">
+  <g class="spin">
+    <circle cx="100" cy="100" r="60" fill="none" stroke="#7c8cff" stroke-width="6" stroke-dasharray="10 8"/>
+  </g>
+  <path class="draw" d="M40 140 Q100 20 160 140"
+        stroke="#ff6e8a" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <!-- SMIL -->
+  <circle cx="50" cy="50" r="8" fill="#44d7b6">
+    <animate attributeName="cx" from="40" to="160" dur="2s" repeatCount="indefinite"/>
+  </circle>
+</svg>
+</body>
+</html>`
+      }
+    ]
+  },
+
+  {
+    id: 'wc', name: 'Web Components', sub: 'Native components',
+    steps: [
+      {
+        title: 'Templates & slots',
+        note: '<code>&lt;template&gt;</code> content is parsed but not rendered — a mould you clone each time you need a card. Slots let the component consumer decide what fills each hole.',
+        desc: '<code>&lt;template&gt;</code> is inert markup you can clone. Named <code>&lt;slot&gt;</code>s let a component receive content from its users.',
+        code:
+`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Templates &amp; slots</title>
+</head>
+<body>
+<template id="card-tpl">
+  <style>
+    :host { display:inline-block; padding:14px 18px; border-radius:12px;
+           background:#eef2ff; font-family:sans-serif; margin:4px }
+    ::slotted(h3) { margin:0 0 6px; color:#3949ab }
+  </style>
+  <slot name="title"></slot>
+  <slot>(default content)</slot>
+</template>
+
+<simple-card>
+  <h3 slot="title">A slotted card</h3>
+  <p>Content projected via a default slot.</p>
+</simple-card>
+<simple-card><h3 slot="title">Another one</h3><p>Slots are powerful 🔌</p></simple-card>
+
+<script>
+  class SimpleCard extends HTMLElement {
+    constructor() {
+      super();
+      const tpl = document.getElementById('card-tpl').content.cloneNode(true);
+      this.attachShadow({ mode: 'open' }).append(tpl);
+    }
+  }
+  customElements.define('simple-card', SimpleCard);
+<\/script>
+</body>
+</html>`
+      },
+      {
+        title: 'Custom element — lifecycle',
+        note: '<code>connectedCallback</code> = added to a document. <code>disconnectedCallback</code> = removed. <code>attributeChangedCallback</code> = an <i>observed</i> attribute changed. Mirrors React lifecycle in spirit.',
+        desc: 'Register a class extending <code>HTMLElement</code>. Use <code>connectedCallback</code> for setup and <code>observedAttributes</code> + <code>attributeChangedCallback</code> to react to attribute changes.',
+        code:
+`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Custom element — lifecycle</title>
+</head>
+<body>
+<count-down seconds="10"></count-down>
+<count-down seconds="5"></count-down>
+
+<script>
+  class CountDown extends HTMLElement {
+    static get observedAttributes() { return ['seconds']; }
+    connectedCallback() {
+      this.style.cssText = 'display:inline-block;padding:12px 18px;margin:6px;border-radius:10px;background:#0b1020;color:#fff;font:700 22px ui-monospace;min-width:60px;text-align:center';
+      this.tick();
+      this.timer = setInterval(() => this.tick(), 1000);
+    }
+    disconnectedCallback() { clearInterval(this.timer); }
+    attributeChangedCallback() { this.tick(); }
+    tick() {
+      const n = +this.getAttribute('seconds') || 0;
+      this.textContent = n;
+      if (n <= 0) { this.textContent = '💥'; clearInterval(this.timer); return; }
+      this.setAttribute('seconds', n - 1);
+    }
+  }
+  customElements.define('count-down', CountDown);
+<\/script>
+</body>
+</html>`
+      }
+    ]
+  },
+
+  {
+    id: 'media-adv', name: 'Media — Advanced', sub: 'Responsive images',
+    steps: [
+      {
+        title: '<picture>, srcset & sizes',
+        note: '<code>srcset</code> lets the <b>browser</b> pick resolution. <code>&lt;picture&gt;</code> lets <b>you</b> pick a different image per breakpoint. Density vs art direction — different jobs.',
+        desc: '<code>&lt;picture&gt;</code> picks the best <code>&lt;source&gt;</code> by media query (art direction). <code>srcset</code> + <code>sizes</code> lets the browser pick a resolution.',
+        code:
+`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>&lt;picture&gt;, srcset &amp; sizes</title>
+  <style>
+  body { font-family: sans-serif; }
+  img, picture img { max-width: 100%; border-radius: 10px; display: block; }
+  figure { margin: 0 0 20px; }
+</style>
+</head>
+<body>
+<figure>
+  <picture>
+    <source media="(min-width: 700px)"
+            srcset="https://picsum.photos/seed/wide/800/260">
+    <source media="(min-width: 400px)"
+            srcset="https://picsum.photos/seed/mid/500/260">
+    <img src="https://picsum.photos/seed/small/320/200" alt="Art-directed hero">
+  </picture>
+  <figcaption>Resize the preview pane → the image swaps.</figcaption>
+</figure>
+
+<figure>
+  <img alt="Density selection"
+    src="https://picsum.photos/seed/r/400/200"
+    srcset="https://picsum.photos/seed/r/400/200 1x,
+            https://picsum.photos/seed/r/800/400 2x">
+  <figcaption>1× vs 2× density — HiDPI screens load the sharper one.</figcaption>
+</figure>
+</body>
+</html>`
+      }
+    ]
+  },
+
+  {
+    id: 'native', name: 'Native APIs', sub: 'Drag, dialog, editable',
+    steps: [
+      {
+        title: 'Drag & drop',
+        note: 'Most elements <b>refuse</b> drops by default — that\'s why <code>dragover</code> must <code>preventDefault()</code> for the drop to fire. The HTML5 drag spec is full of these inversions.',
+        desc: 'Listen for <code>dragstart</code>, <code>dragover</code> (prevent default to allow drop), and <code>drop</code>. Transfer data via <code>dataTransfer</code>.',
+        code:
+`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Drag &amp; drop</title>
+  <style>
+  body { font-family: sans-serif; }
+  .lane { display: inline-block; vertical-align: top; width: 160px; margin: 6px;
+          padding: 10px; border: 2px dashed #c3cbda; border-radius: 10px; min-height: 160px; }
+  .lane h4 { margin: 0 0 8px; }
+  .card { padding: 8px 10px; margin: 6px 0; background: #eef2ff;
+          border-radius: 6px; cursor: grab; user-select: none; }
+  .card:active { cursor: grabbing; }
+  .lane.over { background: #f1fbf6; border-color: #44d7b6; }
+</style>
+</head>
+<body>
+<div class="lane" data-name="Todo"><h4>Todo</h4>
+  <div class="card" draggable="true">Write blog</div>
+  <div class="card" draggable="true">Fix bug #42</div>
+</div>
+<div class="lane" data-name="Done"><h4>Done</h4>
+  <div class="card" draggable="true">Coffee ☕</div>
+</div>
+<script>
+  let dragging = null;
+  document.querySelectorAll('.card').forEach(c => {
+    c.addEventListener('dragstart', e => { dragging = c; c.style.opacity = .4; });
+    c.addEventListener('dragend',   e => { c.style.opacity = 1; });
+  });
+  document.querySelectorAll('.lane').forEach(l => {
+    l.addEventListener('dragover', e => { e.preventDefault(); l.classList.add('over'); });
+    l.addEventListener('dragleave', () => l.classList.remove('over'));
+    l.addEventListener('drop', e => {
+      e.preventDefault(); l.classList.remove('over');
+      if (dragging) l.appendChild(dragging);
+    });
+  });
+<\/script>
+</body>
+</html>`
+      },
+      {
+        title: 'Dialog & popover',
+        note: 'Modal = must dismiss before interacting with the page. Popover = can dismiss by clicking outside. <code>&lt;dialog&gt;</code> does the former, the <code>popover</code> attribute does the latter.',
+        desc: '<code>&lt;dialog&gt;</code> — modal with native backdrop + focus trap. The <code>popover</code> attribute + <code>popovertarget</code> give you lightweight, non-modal popovers.',
+        code:
+`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Dialog &amp; popover</title>
+  <style>
+  body { font-family: sans-serif; }
+  button { padding: 8px 12px; border-radius: 6px; border: 1px solid #aaa;
+           background: #eef2ff; cursor: pointer; }
+  dialog { border: none; border-radius: 12px; padding: 20px; box-shadow: 0 10px 40px rgba(0,0,0,.2) }
+  dialog::backdrop { background: rgba(15,23,42,.55); backdrop-filter: blur(2px); }
+  [popover] { border: 1px solid #c3cbda; border-radius: 10px; padding: 14px; }
+</style>
+</head>
+<body>
+<button onclick="m.showModal()">Open modal</button>
+<button popovertarget="tip">Show popover</button>
+
+<dialog id="m">
+  <h3>Confirm</h3>
+  <p>Proceed with deletion?</p>
+  <form method="dialog">
+    <button value="cancel">Cancel</button>
+    <button value="ok">OK</button>
+  </form>
+</dialog>
+
+<div id="tip" popover>
+  <strong>💡 Tip</strong>
+  <p>Popovers auto-dismiss on outside click or <kbd>Esc</kbd>.</p>
+</div>
+</body>
+</html>`
+      },
+      {
+        title: 'contenteditable — inline editing',
+        note: '<code>contenteditable</code> is powerful but the resulting DOM is messy — browsers insert random <code>&lt;div&gt;</code>/<code>&lt;br&gt;</code>. Real rich-text editors replace this with a custom model.',
+        desc: 'Add <code>contenteditable="true"</code> to make any element editable. Pair with the Selection API or (legacy) <code>document.execCommand</code> for a tiny rich-text editor.',
+        code:
+`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>contenteditable — inline editing</title>
+  <style>
+  body { font-family: sans-serif; }
+  .bar { display: flex; gap: 6px; margin-bottom: 6px; }
+  .bar button { padding: 6px 10px; border: 1px solid #c3cbda;
+                background: #eef2ff; border-radius: 6px; cursor: pointer; font-weight: 700; }
+  .paper {
+    min-height: 150px; padding: 12px 14px;
+    border: 1px solid #c3cbda; border-radius: 10px; background: white;
+    outline: none;
+  }
+  .paper:focus { border-color: #7c8cff; box-shadow: 0 0 0 3px rgba(124,140,255,.2); }
+</style>
+</head>
+<body>
+<div class="bar">
+  <button onmousedown="event.preventDefault();document.execCommand('bold')"><b>B</b></button>
+  <button onmousedown="event.preventDefault();document.execCommand('italic')"><i>I</i></button>
+  <button onmousedown="event.preventDefault();document.execCommand('underline')"><u>U</u></button>
+  <button onmousedown="event.preventDefault();document.execCommand('insertUnorderedList')">• List</button>
+</div>
+<div class="paper" contenteditable="true">
+  Start typing here. Select text and use the toolbar above to format it.
+</div>
+</body>
+</html>`
+      },
+      {
+        title: 'Web Storage — localStorage',
+        desc: '<code>localStorage</code> persists across sessions; <code>sessionStorage</code> clears on tab close. Both store strings — use <code>JSON.stringify</code> / <code>JSON.parse</code> for objects. Scoped per origin, capped around 5–10 MB.',
+        note: 'localStorage is synchronous and blocks the main thread on big reads. For serious data use <code>IndexedDB</code>; for live cross-tab communication use <code>BroadcastChannel</code> or the <code>storage</code> event.',
+        code:
+`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Web Storage — localStorage</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; max-width: 500px; }
+    input, button {
+      padding: 8px 12px; font-size: 14px; margin: 2px 0;
+      border-radius: 6px; border: 1px solid #cbd5e1;
+    }
+    button { cursor: pointer; background: #7c8cff; color: white; border-color: #7c8cff; }
+    button:hover { opacity: 0.9; }
+    .clear { background: transparent; color: #64748b; border-color: #cbd5e1; }
+    ul { padding-left: 20px; line-height: 2; }
+    .hint {
+      color: #666; font-size: 12px; margin-top: 14px;
+      background: #f5f6fa; padding: 10px 14px; border-radius: 6px;
+    }
+    li button { padding: 2px 8px; font-size: 12px; margin-left: 8px; background: #ef4444; border-color: #ef4444; }
+  </style>
+</head>
+<body>
+<h1>Persistent notes</h1>
+
+<input id="note" placeholder="Type a note...">
+<button onclick="save()">Save</button>
+<button class="clear" onclick="clearAll()">Clear all</button>
+
+<h2>Saved</h2>
+<ul id="list"></ul>
+
+<p class="hint">Reload the page — your notes survive.
+   Open DevTools → Application → Local Storage to inspect the raw data.</p>
+
+<script>
+  const KEY = 'lab.notes';
+
+  function getNotes() {
+    return JSON.parse(localStorage.getItem(KEY) || '[]');
+  }
+
+  function render() {
+    const list = document.getElementById('list');
+    list.innerHTML = '';
+    getNotes().forEach((n, i) => {
+      const li = document.createElement('li');
+      li.textContent = n;
+      const del = document.createElement('button');
+      del.textContent = '×';
+      del.onclick = () => remove(i);
+      li.appendChild(del);
+      list.appendChild(li);
+    });
+  }
+
+  function save() {
+    const input = document.getElementById('note');
+    const val = input.value.trim();
+    if (!val) return;
+    const notes = getNotes();
+    notes.push(val);
+    localStorage.setItem(KEY, JSON.stringify(notes));
+    input.value = '';
+    render();
+  }
+
+  function remove(i) {
+    const notes = getNotes();
+    notes.splice(i, 1);
+    localStorage.setItem(KEY, JSON.stringify(notes));
+    render();
+  }
+
+  function clearAll() {
+    localStorage.removeItem(KEY);
+    render();
+  }
+
+  render();
+<\/script>
+</body>
+</html>`
+      }
+    ]
+  },
+
+  {
+    id: 'end-projects', name: 'End Projects', sub: 'Putting it all together',
+    steps: [
+      {
+        title: 'Mini calculator',
+        note: 'This is how UI frameworks begin conceptually: variables hold state, click handlers update state, then the DOM is refreshed. Frameworks automate only the last step.',
+        desc: 'A two-operand calculator (+, −) — full original file with Bootstrap styling and button-driven state. Click digits, pick an operation, press =.',
+        files: [
+          { name: 'cool_calculator2.0.html', code:
+`<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Cool calculator 2.0</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+        <style>
+            .center {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                -moz-transform: translateX(-50%) translateY(-50%);
+                -webkit-transform: translateX(-50%) translateY(-50%);
+                transform: translateX(-50%) translateY(-50%);
+            }
+
+            .card {
+                border-radius: 25px;
+                border-width: 8px;
+            }
+
+            .calculator-card {
+                padding: 15px;
+                width: 400px;
+                height: 400px;
+                text-align: center;
+                justify-content: center;
+                font-size: 200%;
+                border-color: black;
+                background-color: darkgray;
+            }
+
+            .calculator-btn {
+                height:50px;
+                width:50px;
+                border-style: solid;
+                border-color: black;
+                color: black;
+                border-width: 6px;
+                border-radius: 10px;
+                text-align: center;
+                font-size: 25px;
+                font-weight: bold;
+                font-family: 'Courier New', monospace;
+                background-color: white;
+            }
+
+            #result-div {
+                /*position: absolute;*/
+                position: absolute;
+                top: 10%;
+                width: 92.4%;
+                text-align: left;
+                padding: 5px;
+                border-color: black;
+                background-color: #E6FFFE;
+                font-weight: bold;
+                font-family: 'Courier New', monospace;
+            }
+
+            #buttons-div {
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                border-color: black;
+                padding: 30px;
+                background-color: transparent;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="calculator-div" class="center calculator-card card">
+            <div id="result-div" class="card">
+                <p id="result-p">0</p>
+            </div>
+
+            <div id="buttons-div">
+                <div id="buttons-123" role="group">
+                    <button onclick="writeToResultField('1')" class="calculator-btn" id="btn-1">1</button>
+                    <button onclick="writeToResultField('2')" class="calculator-btn" id="btn-2">2</button>
+                    <button onclick="writeToResultField('3')" class="calculator-btn" id="btn-3">3</button>
+                </div>
+
+                <div id="buttons-456" role="group">
+                    <button onclick="writeToResultField('4')" class="calculator-btn" id="btn-4">4</button>
+                    <button onclick="writeToResultField('5')" class="calculator-btn" id="btn-5">5</button>
+                    <button onclick="writeToResultField('6')" class="calculator-btn" id="btn-6">6</button>
+                </div>
+
+                <div id="buttons-789" role="group">
+                    <button onclick="writeToResultField('7')" class="calculator-btn" id="btn-7">7</button>
+                    <button onclick="writeToResultField('8')" class="calculator-btn" id="btn-8">8</button>
+                    <button onclick="writeToResultField('9')" class="calculator-btn" id="btn-9">9</button>
+                </div>
+
+                <div id="buttons-plus-minus-eq" role="group">
+                    <button onclick="setMathematicalOperation('-')" class="calculator-btn" id="btn-minus">-</button>
+                    <button onclick="setMathematicalOperation('+')" class="calculator-btn" id="btn-plus">+</button>
+                    <button onclick="calculateResultAndWriteIt()" class="calculator-btn" id="btn-eq">=</button>
+                </div>
+            </div>
+        </div>
+    </body>
+
+    <script lang="javascript">
+        let isClear = true;
+        let mathOperation = null;
+
+        let firstNumber = null;
+        let secondNumber = null;
+
+        let writingToFirstNumber = true;
+
+
+        function writeToResultField(digit) {
+            const resultField = document.getElementById("result-p")
+
+            if (isClear) {
+                isClear = false;
+                resultField.innerText = digit;
+            }
+
+            else {
+                resultField.innerText += digit;
+            }
+
+            digit = parseInt(digit);
+
+            if (isNaN(digit)) {
+                alert("Could not parse the new digit.");
+                return;
+            }
+
+            if (writingToFirstNumber) {
+                firstNumber *= 10;
+                firstNumber += digit;
+            }
+
+            else {
+                secondNumber *= 10;
+                secondNumber += digit;
+            }
+
+        }
+
+        function setMathematicalOperation(operation) {
+            if (isClear) {
+                alert("Please enter a number first");
+                return;
+            }
+
+            if (mathOperation !== null) {
+                alert("Math operation is set. Can't reset.");
+                return;
+            }
+
+            const resultField = document.getElementById("result-p")
+
+            mathOperation = operation;
+
+            resultField.innerHTML += mathOperation;
+
+            writingToFirstNumber = !writingToFirstNumber;
+        }
+
+
+        function calculateResultAndWriteIt() {
+            if (mathOperation === null) {
+                alert("Please choose an operation.");
+                return;
+            }
+
+            if (secondNumber === null) {
+                alert("Please enter a second number.");
+                return;
+            }
+
+            let result;
+
+            switch (mathOperation) {
+                case '+': result = firstNumber + secondNumber; break;
+                case '-': result = firstNumber - secondNumber; break;
+                default: result = null;
+            }
+
+            const resultField = document.getElementById("result-p")
+
+            resultField.innerText = result;
+
+            isClear = true;
+            mathOperation = null;
+
+            firstNumber = null;
+            secondNumber = null;
+        }
+    <\/script>
+</html>` }
+        ]
+      },
+      {
+        title: 'Todo list with localStorage',
+        desc: 'A full mini-app: add items, check them off, delete, clear completed — all saved across reloads via <code>localStorage</code>. Combines forms, buttons, lists, checkboxes, dynamic DOM, and persistent state.',
+        note: 'This is the shape of 90% of CRUD apps: load → render → mutate → save → re-render. Everything harder (offline sync, conflict resolution, undo/redo) iterates on this pattern.',
+        code:
+`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Todo</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: system-ui, sans-serif;
+      max-width: 480px;
+      margin: 40px auto;
+      padding: 0 16px;
+      color: #1f2937;
+    }
+    h1 {
+      font-weight: 100;
+      font-size: 72px;
+      letter-spacing: -0.04em;
+      color: #e0e7ff;
+      margin: 0 0 16px;
+      text-align: center;
+    }
+    .add { display: flex; gap: 8px; }
+    .add input {
+      flex: 1; padding: 12px 14px; font-size: 15px;
+      border: 1px solid #cbd5e1; border-radius: 6px; outline: none;
+    }
+    .add input:focus { border-color: #7c8cff; box-shadow: 0 0 0 3px rgba(124,140,255,.2); }
+    .add button {
+      padding: 12px 20px; font-size: 15px; cursor: pointer;
+      background: #7c8cff; color: white; border: none; border-radius: 6px;
+    }
+    .add button:hover { background: #6b7aff; }
+    ul { list-style: none; padding: 0; margin: 20px 0 0; }
+    li {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 4px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    li input[type=checkbox] { cursor: pointer; transform: scale(1.2); }
+    li.done .text { text-decoration: line-through; color: #94a3b8; }
+    li .text { flex: 1; cursor: pointer; }
+    li .del {
+      background: none; border: none; color: #94a3b8;
+      cursor: pointer; font-size: 20px; padding: 0 8px;
+    }
+    li .del:hover { color: #ef4444; }
+    .empty { color: #94a3b8; text-align: center; padding: 40px 0; }
+    .stats {
+      color: #94a3b8; font-size: 13px; margin-top: 16px;
+      padding-top: 12px; border-top: 1px solid #e5e7eb;
+      display: flex; justify-content: space-between;
+    }
+    .stats button {
+      background: none; border: none; color: #94a3b8;
+      cursor: pointer; font-size: 13px; padding: 0;
+    }
+    .stats button:hover { color: #ef4444; }
+  </style>
+</head>
+<body>
+<h1>todo</h1>
+
+<form class="add" onsubmit="return addItem(event)">
+  <input id="new" placeholder="What needs doing?" autofocus>
+  <button type="submit">Add</button>
+</form>
+
+<ul id="list"></ul>
+
+<div class="stats" id="stats"></div>
+
+<script>
+  const KEY = 'lab.todos';
+
+  const load = () => JSON.parse(localStorage.getItem(KEY) || '[]');
+  const save = items => localStorage.setItem(KEY, JSON.stringify(items));
+
+  function addItem(e) {
+    e.preventDefault();
+    const input = document.getElementById('new');
+    const text = input.value.trim();
+    if (!text) return false;
+    const items = load();
+    items.push({ id: Date.now(), text, done: false });
+    save(items);
+    input.value = '';
+    render();
+    return false;
+  }
+
+  function toggle(id) {
+    const items = load().map(i => i.id === id ? { ...i, done: !i.done } : i);
+    save(items);
+    render();
+  }
+
+  function remove(id) {
+    save(load().filter(i => i.id !== id));
+    render();
+  }
+
+  function clearDone() {
+    save(load().filter(i => !i.done));
+    render();
+  }
+
+  function render() {
+    const items = load();
+    const list = document.getElementById('list');
+    list.innerHTML = '';
+
+    if (items.length === 0) {
+      const li = document.createElement('li');
+      li.className = 'empty';
+      li.textContent = 'Nothing here — add your first item above.';
+      list.appendChild(li);
+    } else {
+      items.forEach(item => {
+        const li = document.createElement('li');
+        if (item.done) li.className = 'done';
+
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.checked = item.done;
+        cb.onchange = () => toggle(item.id);
+
+        const text = document.createElement('span');
+        text.className = 'text';
+        text.textContent = item.text;
+        text.onclick = () => toggle(item.id);
+
+        const del = document.createElement('button');
+        del.className = 'del';
+        del.textContent = '×';
+        del.title = 'Delete';
+        del.onclick = () => remove(item.id);
+
+        li.appendChild(cb);
+        li.appendChild(text);
+        li.appendChild(del);
+        list.appendChild(li);
+      });
+    }
+
+    const remaining = items.filter(i => !i.done).length;
+    const total = items.length;
+    const stats = document.getElementById('stats');
+    if (total === 0) {
+      stats.innerHTML = '';
+    } else {
+      stats.innerHTML = \`<span>\${remaining} of \${total} left</span>\` +
+        (remaining < total ? '<button onclick="clearDone()">Clear completed</button>' : '');
+    }
+  }
+
+  render();
+<\/script>
+</body>
+</html>`
+      }
+    ]
+  }
+
+];
+
+/* ──────────────────────────────────────────────────────
+   App state + rendering
+   ────────────────────────────────────────────────────── */
+const $ = sel => document.querySelector(sel);
+const state = {
+  topic: 0,
+  step: 0,
+  tab: 0,
+  // per-file edit buffer: key = "topicIdx:stepIdx:fileIdx"
+  buffers: {}
+};
+
+const keyFor = (t, s, f) => `${t}:${s}:${f}`;
+
+// A step may expose a single `code` string (legacy) OR an array of `files`.
+// Normalise to an array so the rest of the app can treat them uniformly.
+function getFiles(step) {
+  if (step.files && step.files.length) return step.files;
+  return [{ name: 'editor.html', code: step.code }];
+}
+
+// Return the live code for a given file, falling back to its original source.
+function fileCode(topicIdx, stepIdx, files, fileIdx) {
+  const k = keyFor(topicIdx, stepIdx, fileIdx);
+  return (k in state.buffers) ? state.buffers[k] : files[fileIdx].code;
+}
+
+function render() {
+  renderSide();
+  const topic = TOPICS[state.topic];
+  const step = topic.steps[state.step];
+  const files = getFiles(step);
+  if (state.tab >= files.length) state.tab = 0;
+
+  $('#topicTitle').textContent = `${state.topic + 1}. ${topic.name}`;
+  $('#topicHint').textContent = topic.sub;
+  $('#pillTopic').textContent = `${state.topic + 1} / ${TOPICS.length}`;
+  $('#pillStep').textContent = `${state.step + 1} / ${topic.steps.length}`;
+
+  // step chips
+  const row = $('#stepsRow');
+  row.innerHTML = '';
+  topic.steps.forEach((s, i) => {
+    const b = document.createElement('button');
+    b.className = 'step-chip' + (i === state.step ? ' active' : '');
+    b.textContent = `Step ${i + 1} · ${s.title}`;
+    b.addEventListener('click', () => { state.step = i; state.tab = 0; render(); });
+    row.appendChild(b);
+  });
+
+  // step content
+  const head = $('.step-head');
+  head.classList.remove('fade-in'); void head.offsetWidth; head.classList.add('fade-in');
+  $('#stepTitle').textContent = step.title;
+  $('#stepDesc').innerHTML = step.desc;
+  $('#stepNote').innerHTML = step.note || '';
+
+  // file tabs (only render when more than one file)
+  const tabBar = $('#tabBar');
+  tabBar.innerHTML = '';
+  if (files.length > 1) {
+    files.forEach((f, i) => {
+      const b = document.createElement('button');
+      b.className = 'tab' + (i === state.tab ? ' active' : '');
+      b.textContent = f.name;
+      b.addEventListener('click', () => { state.tab = i; render(); });
+      tabBar.appendChild(b);
+    });
+  }
+
+  // editor — show the active file's current content
+  const fileName = files[state.tab].name;
+  const code = fileCode(state.topic, state.step, files, state.tab);
+  if (cm) {
+    suppressEditorChange = true;
+    cm.setOption('mode', modeForFile(fileName));
+    cm.setValue(code);
+    cm.clearHistory();
+    suppressEditorChange = false;
+  } else {
+    $('#editor').value = code;
+  }
+
+  // panel title reflects the active file's name
+  const editorTitle = document.querySelector('.panel .panel-title');
+  if (editorTitle) editorTitle.textContent = fileName;
+
+  updatePreview();
+  updateProgress();
+}
+
+function renderSide() {
+  const side = $('#sideNav');
+  side.innerHTML = '<h3>Tutorial</h3>';
+  TOPICS.forEach((t, i) => {
+    const b = document.createElement('button');
+    b.className = 'topic-btn' + (i === state.topic ? ' active' : '');
+    b.innerHTML = `
+      <span class="num">${i + 1}</span>
+      <span class="meta"><span>${t.name}</span><small>${t.sub}</small></span>`;
+    b.addEventListener('click', () => {
+      if (state.topic !== i) { state.topic = i; state.step = 0; render(); }
+    });
+    side.appendChild(b);
+  });
+}
+
+function updatePreview() {
+  const step = TOPICS[state.topic].steps[state.step];
+  const files = getFiles(step);
+
+  // Pick the entry HTML: active tab if it's HTML, otherwise the first HTML file.
+  const activeName = files[state.tab].name.toLowerCase();
+  let entryIdx = activeName.endsWith('.html') ? state.tab : files.findIndex(f => f.name.toLowerCase().endsWith('.html'));
+  if (entryIdx < 0) entryIdx = state.tab;
+
+  // Collect live contents for every file so edits are reflected in the preview.
+  const live = files.map((f, i) => ({
+    name: f.name,
+    code: fileCode(state.topic, state.step, files, i)
+  }));
+
+  // Inline sibling <script src="..."> references.
+  let html = live[entryIdx].code;
+  html = html.replace(/<script\b[^>]*\bsrc=["']([^"']+)["'][^>]*>\s*<\/script>/gi, (match, src) => {
+    const f = live.find(ff => ff.name === src || ff.name.endsWith('/' + src));
+    return f ? `<script>\n${f.code}\n<\/script>` : match;
+  });
+  // Inline sibling <link rel=stylesheet href="..."> references (skip external URLs).
+  html = html.replace(/<link\b[^>]*\bhref=["']([^"']+)["'][^>]*>/gi, (match, href) => {
+    if (/^https?:\/\//i.test(href) || /^\/\//.test(href)) return match;
+    const f = live.find(ff => ff.name === href);
+    return f ? `<style>\n${f.code}\n</style>` : match;
+  });
+
+  $('#preview').srcdoc = html;
+}
+
+function updateProgress() {
+  let total = 0, done = 0;
+  TOPICS.forEach((t, ti) => {
+    t.steps.forEach((s, si) => {
+      total++;
+      if (ti < state.topic || (ti === state.topic && si <= state.step)) done++;
+    });
+  });
+  $('#progressBar').style.width = (done / total * 100) + '%';
+}
+
+/* ── Helpers: CodeMirror read/write ─────────────────── */
+function editorValue() {
+  return cm ? cm.getValue() : $('#editor').value;
+}
+
+function modeForFile(name) {
+  const ext = (name.split('.').pop() || '').toLowerCase();
+  if (ext === 'js')   return 'javascript';
+  if (ext === 'mjs')  return 'javascript';
+  if (ext === 'json') return { name: 'javascript', json: true };
+  if (ext === 'css')  return 'css';
+  if (ext === 'xml' || ext === 'svg') return 'xml';
+  return 'htmlmixed';
+}
+
+/* ── Events ─────────────────────────────────────────── */
+let debounce;
+
+$('#resetBtn').addEventListener('click', () => {
+  // Clear every file's buffer for the current step.
+  const files = getFiles(TOPICS[state.topic].steps[state.step]);
+  files.forEach((_, i) => delete state.buffers[keyFor(state.topic, state.step, i)]);
+  render();
+});
+
+$('#prevBtn').addEventListener('click', () => {
+  if (state.step > 0) state.step--;
+  else if (state.topic > 0) {
+    state.topic--;
+    state.step = TOPICS[state.topic].steps.length - 1;
+  }
+  state.tab = 0;
+  render();
+});
+
+$('#nextBtn').addEventListener('click', () => {
+  const t = TOPICS[state.topic];
+  if (state.step < t.steps.length - 1) state.step++;
+  else if (state.topic < TOPICS.length - 1) { state.topic++; state.step = 0; }
+  state.tab = 0;
+  render();
+});
+
+$('#copyBtn').addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.writeText(editorValue());
+    flash($('#copyBtn'), 'Copied!');
+  } catch { flash($('#copyBtn'), 'Copy failed'); }
+});
+
+$('#formatBtn').addEventListener('click', () => {
+  // minimal reflow: trim trailing spaces on each line
+  const formatted = editorValue().split('\n').map(l => l.replace(/\s+$/,'')).join('\n');
+  if (cm) {
+    suppressEditorChange = true;
+    cm.setValue(formatted);
+    suppressEditorChange = false;
+  } else {
+    $('#editor').value = formatted;
+  }
+  state.buffers[keyFor(state.topic, state.step, state.tab)] = formatted;
+  updatePreview();
+});
+
+$('#openTabBtn').addEventListener('click', () => {
+  const blob = new Blob([editorValue()], { type: 'text/html' });
+  window.open(URL.createObjectURL(blob), '_blank', 'noopener');
+});
+
+function flash(btn, msg) {
+  const old = btn.textContent;
+  btn.textContent = msg;
+  setTimeout(() => btn.textContent = old, 900);
+}
+
+// keyboard shortcuts: Ctrl/Cmd + ← / →
+document.addEventListener('keydown', e => {
+  if (!(e.ctrlKey || e.metaKey)) return;
+  if (e.key === 'ArrowRight') { e.preventDefault(); $('#nextBtn').click(); }
+  if (e.key === 'ArrowLeft')  { e.preventDefault(); $('#prevBtn').click(); }
+});
+
+/* ── CodeMirror init ──────────────────────────────── */
+let cm = null;
+let suppressEditorChange = false;
+
+if (typeof CodeMirror !== 'undefined') {
+  try {
+    cm = CodeMirror.fromTextArea(document.getElementById('editor'), {
+      mode: 'htmlmixed',
+      theme: 'material-darker',
+      lineNumbers: true,
+      lineWrapping: false,
+      indentUnit: 2,
+      tabSize: 2,
+      indentWithTabs: false,
+      matchBrackets: true,
+      matchTags: { bothTags: true },
+      autoCloseTags: true,
+      autoCloseBrackets: true,
+      styleActiveLine: { nonEmpty: true },
+      foldGutter: true,
+      gutters: ['CodeMirror-linenumbers', 'CodeMirror-foldgutter'],
+      extraKeys: {
+        Tab: cm => cm.replaceSelection('  ', 'end'),
+        'Ctrl-Q': cm => cm.foldCode(cm.getCursor()),
+        'Ctrl-.': cm => cm.foldCode(cm.getCursor()),
+      },
+    });
+    cm.on('change', () => {
+      if (suppressEditorChange) return;
+      state.buffers[keyFor(state.topic, state.step, state.tab)] = cm.getValue();
+      clearTimeout(debounce);
+      debounce = setTimeout(updatePreview, 250);
+    });
+
+    // Alt-click on a tag token folds/unfolds that block (click the tag, like a tree).
+    cm.on('mousedown', (instance, event) => {
+      if (!event.altKey) return;
+      const pos = instance.coordsChar({ left: event.clientX, top: event.clientY });
+      const tok = instance.getTokenAt(pos);
+      // Fold if we clicked on a tag name or bracket within a tag
+      if (tok && tok.type && /\b(tag|bracket)\b/.test(tok.type)) {
+        event.preventDefault();
+        instance.foldCode(pos);
+      }
+    });
+  } catch (err) {
+    console.warn('CodeMirror init failed, falling back to plain textarea:', err);
+    cm = null;
+    // If CM partially wrapped the textarea, unhide it so editing still works.
+    const ta = document.getElementById('editor');
+    if (ta) ta.style.display = '';
+    // Plain textarea fallback: propagate edits to state + preview.
+    ta?.addEventListener('input', () => {
+      state.buffers[keyFor(state.topic, state.step, state.tab)] = ta.value;
+      clearTimeout(debounce);
+      debounce = setTimeout(updatePreview, 250);
+    });
+  }
+} else {
+  // No CodeMirror available at all — plain textarea fallback.
+  const ta = document.getElementById('editor');
+  ta?.addEventListener('input', () => {
+    state.buffers[keyFor(state.topic, state.step, state.tab)] = ta.value;
+    clearTimeout(debounce);
+    debounce = setTimeout(updatePreview, 250);
+  });
+}
+
+render();
+</script>
+
+<script src="../home.js" defer></script>
+</body>
+</html>

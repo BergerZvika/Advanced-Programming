@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Semantic HTML</title>
+  <style>
+    body { font-family: sans-serif; max-width: 750px; margin: 2rem auto; padding: 0 1rem; }
+    code { background: #eee; padding: 2px 5px; border-radius: 3px; font-size: 0.85em; }
+    table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+    th, td { border: 1px solid #ccc; padding: 0.5rem 0.75rem; text-align: left; vertical-align: top; }
+    th { background: #4a90d9; color: white; }
+
+    /* Page layout diagram */
+    .layout { display: grid; gap: 6px; font-size: 0.8em; font-weight: bold; text-align: center;
+              grid-template-areas:
+                "hdr hdr"
+                "nav nav"
+                "main aside"
+                "ftr ftr";
+              grid-template-columns: 1fr 220px;
+              margin: 1.5rem 0; }
+    .layout > * { padding: 0.75rem; border-radius: 4px; }
+    .lhdr  { grid-area: hdr;  background: #4a90d9; color: white; }
+    .lnav  { grid-area: nav;  background: #6aadff; color: white; }
+    .lmain { grid-area: main; background: #d0e8ff; min-height: 80px; }
+    .laside{ grid-area: aside;background: #ffe0b2; }
+    .lftr  { grid-area: ftr;  background: #b0b0b0; color: white; }
+  </style>
+</head>
+<body>
+
+  <h1>Semantic HTML Elements</h1>
+  <p>Semantic elements tell the browser (and screen readers, search engines, and developers) <em>what</em> a section is — not just how it looks.</p>
+
+  <h2>Page Layout Elements</h2>
+  <div class="layout">
+    <div class="lhdr">&lt;header&gt;</div>
+    <div class="lnav">&lt;nav&gt;</div>
+    <div class="lmain">&lt;main&gt;<br>&nbsp;&nbsp;&lt;article&gt;<br>&nbsp;&nbsp;&nbsp;&nbsp;&lt;section&gt;</div>
+    <div class="laside">&lt;aside&gt;</div>
+    <div class="lftr">&lt;footer&gt;</div>
+  </div>
+
+  <h2>Element Reference</h2>
+  <table>
+    <thead><tr><th>Element</th><th>Use it for</th></tr></thead>
+    <tbody>
+      <tr><td><code>&lt;header&gt;</code></td><td>Site or section header — logo, site title, top nav. Can appear inside <code>&lt;article&gt;</code> too.</td></tr>
+      <tr><td><code>&lt;nav&gt;</code></td><td>Major navigation links. Don't wrap every link group — only primary nav menus.</td></tr>
+      <tr><td><code>&lt;main&gt;</code></td><td>The primary content of the page. Only one per page.</td></tr>
+      <tr><td><code>&lt;article&gt;</code></td><td>Self-contained content that makes sense on its own: blog post, news story, forum thread, card.</td></tr>
+      <tr><td><code>&lt;section&gt;</code></td><td>Thematic grouping of content. Should have a heading (<code>&lt;h2&gt;</code>+).</td></tr>
+      <tr><td><code>&lt;aside&gt;</code></td><td>Content tangentially related to the main content: sidebar, pull quote, ad, related links.</td></tr>
+      <tr><td><code>&lt;footer&gt;</code></td><td>Page or section footer — copyright, links, contact info. Can appear inside <code>&lt;article&gt;</code>.</td></tr>
+      <tr><td><code>&lt;address&gt;</code></td><td>Contact information for the nearest <code>&lt;article&gt;</code> or the page author.</td></tr>
+      <tr><td><code>&lt;time&gt;</code></td><td>Machine-readable date/time: <code>&lt;time datetime="2024-01-15"&gt;January 15&lt;/time&gt;</code></td></tr>
+      <tr><td><code>&lt;figure&gt;</code> + <code>&lt;figcaption&gt;</code></td><td>Image, diagram, or code with an optional caption.</td></tr>
+      <tr><td><code>&lt;details&gt;</code> + <code>&lt;summary&gt;</code></td><td>Native disclosure widget — expand/collapse without JavaScript.</td></tr>
+      <tr><td><code>&lt;dialog&gt;</code></td><td>Native modal/dialog (use JS <code>.showModal()</code> to open).</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Live Examples</h2>
+
+  <details style="border:1px solid #ccc;border-radius:6px;padding:0.75rem;margin:0.75rem 0">
+    <summary style="cursor:pointer;font-weight:bold">Native accordion with &lt;details&gt; + &lt;summary&gt;</summary>
+    <p style="margin:0.5rem 0 0">This content is hidden by default and revealed on click — no JavaScript needed!</p>
+  </details>
+
+  <details style="border:1px solid #ccc;border-radius:6px;padding:0.75rem;margin:0.75rem 0">
+    <summary style="cursor:pointer;font-weight:bold">Another accordion item</summary>
+    <p style="margin:0.5rem 0 0">Each <code>&lt;details&gt;</code> is independent. Add <code>open</code> attribute to start expanded.</p>
+  </details>
+
+  <article style="border:2px solid #4a90d9;border-radius:8px;padding:1rem;margin:1rem 0">
+    <header>
+      <h2 style="margin:0">Article: Learning HTML</h2>
+      <p style="margin:0.25rem 0;color:#555;font-size:0.85em">
+        by Alice &nbsp;|&nbsp; <time datetime="2024-06-01">June 1, 2024</time>
+      </p>
+    </header>
+    <section>
+      <p>HTML is the foundation of every web page...</p>
+    </section>
+    <footer style="font-size:0.8em;color:#666;margin-top:0.5rem">
+      Tags: <a href="#">html</a>, <a href="#">tutorial</a>
+    </footer>
+  </article>
+
+  <h2>Semantic vs. Non-Semantic</h2>
+  <table>
+    <thead><tr><th>Avoid (non-semantic)</th><th>Prefer (semantic)</th></tr></thead>
+    <tbody>
+      <tr><td><code>&lt;div id="header"&gt;</code></td><td><code>&lt;header&gt;</code></td></tr>
+      <tr><td><code>&lt;div id="nav"&gt;</code></td><td><code>&lt;nav&gt;</code></td></tr>
+      <tr><td><code>&lt;div class="article"&gt;</code></td><td><code>&lt;article&gt;</code></td></tr>
+      <tr><td><code>&lt;div id="footer"&gt;</code></td><td><code>&lt;footer&gt;</code></td></tr>
+      <tr><td><code>&lt;b&gt;</code> (purely visual)</td><td><code>&lt;strong&gt;</code> (meaningful)</td></tr>
+      <tr><td><code>&lt;i&gt;</code> (purely visual)</td><td><code>&lt;em&gt;</code> (meaningful)</td></tr>
+    </tbody>
+  </table>
+
+
+<script src="../../home.js" defer></script>
+</body>
+</html>

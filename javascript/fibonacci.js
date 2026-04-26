@@ -6,13 +6,12 @@ function fibonacci(n) {
     }
 }
 
-function fibonacci_dm(n) {
-    let memo = {}
+function fibonacci_dm(n, memo = {}) {
     if (n in memo) {
         return memo[n];
     }
     if (n <= 1) {
-        return n;
+        return BigInt(n);
     }
     memo[n] = fibonacci_dm(n - 1, memo) + fibonacci_dm(n - 2, memo);
     return memo[n];

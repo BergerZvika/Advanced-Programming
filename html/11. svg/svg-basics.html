@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inline SVG</title>
+  <style>
+    body { font-family: sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
+    code { background: #eee; padding: 2px 5px; border-radius: 3px; font-size: 0.85em; }
+    pre { background: #1e1e1e; color: #d4d4d4; padding: 1rem; border-radius: 6px; font-size: 0.82em; overflow-x: auto; }
+    .row { display: flex; gap: 1.5rem; flex-wrap: wrap; align-items: flex-start; margin: 1rem 0; }
+    h3 { margin: 0.25rem 0 0.5rem; }
+    table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+    th, td { border: 1px solid #ccc; padding: 0.45rem 0.65rem; text-align: left; vertical-align: top; }
+    th { background: #c0392b; color: white; }
+    svg { display: block; }
+  </style>
+</head>
+<body>
+
+  <h1>Inline SVG</h1>
+  <p>SVG (Scalable Vector Graphics) is an XML-based format for vector drawings. Unlike <code>&lt;canvas&gt;</code>, SVG elements are in the DOM — you can style them with CSS and target them with JavaScript.</p>
+
+  <h2>Basic Shapes</h2>
+  <div class="row">
+
+    <div>
+      <h3>rect</h3>
+      <svg width="120" height="80" viewBox="0 0 120 80">
+        <rect x="10" y="10" width="100" height="60" rx="8" ry="8"
+              fill="#4a90d9" stroke="#2c5f8a" stroke-width="2"/>
+      </svg>
+      <pre style="font-size:0.75em">&lt;rect x="10" y="10" width="100" height="60"
+      rx="8" fill="#4a90d9"/&gt;</pre>
+    </div>
+
+    <div>
+      <h3>circle</h3>
+      <svg width="100" height="100" viewBox="0 0 100 100">
+        <circle cx="50" cy="50" r="40" fill="#e74c3c" stroke="#922b21" stroke-width="2"/>
+      </svg>
+      <pre style="font-size:0.75em">&lt;circle cx="50" cy="50" r="40"
+        fill="#e74c3c"/&gt;</pre>
+    </div>
+
+    <div>
+      <h3>ellipse</h3>
+      <svg width="140" height="100" viewBox="0 0 140 100">
+        <ellipse cx="70" cy="50" rx="60" ry="35" fill="#27ae60" stroke="#1a6b3c" stroke-width="2"/>
+      </svg>
+    </div>
+
+    <div>
+      <h3>line &amp; polyline</h3>
+      <svg width="140" height="100" viewBox="0 0 140 100">
+        <line x1="10" y1="20" x2="130" y2="20" stroke="#333" stroke-width="2"/>
+        <polyline points="10,90 40,40 80,70 110,30 130,55"
+                  fill="none" stroke="#8e44ad" stroke-width="2.5" stroke-linejoin="round"/>
+      </svg>
+    </div>
+
+    <div>
+      <h3>polygon</h3>
+      <svg width="120" height="110" viewBox="0 0 120 110">
+        <!-- Star -->
+        <polygon points="60,5 72,40 110,40 80,62 90,98 60,75 30,98 40,62 10,40 48,40"
+                 fill="#f39c12" stroke="#b7770d" stroke-width="1.5"/>
+      </svg>
+    </div>
+
+  </div>
+
+  <h2>The path Element</h2>
+  <p><code>&lt;path d="..."&gt;</code> is the most powerful SVG element — it can draw any shape.</p>
+  <table>
+    <thead><tr><th>Command</th><th>Meaning</th><th>Example</th></tr></thead>
+    <tbody>
+      <tr><td><code>M x y</code></td><td>Move to (no line)</td><td><code>M 10 20</code></td></tr>
+      <tr><td><code>L x y</code></td><td>Line to</td><td><code>L 100 20</code></td></tr>
+      <tr><td><code>H x</code></td><td>Horizontal line</td><td><code>H 100</code></td></tr>
+      <tr><td><code>V y</code></td><td>Vertical line</td><td><code>V 80</code></td></tr>
+      <tr><td><code>C cx1 cy1 cx2 cy2 x y</code></td><td>Cubic Bezier</td><td></td></tr>
+      <tr><td><code>Q cx cy x y</code></td><td>Quadratic Bezier</td><td></td></tr>
+      <tr><td><code>A rx ry rot large sweep x y</code></td><td>Arc</td><td></td></tr>
+      <tr><td><code>Z</code></td><td>Close path (back to start)</td><td></td></tr>
+    </tbody>
+  </table>
+
+  <svg width="100%" height="140" viewBox="0 0 700 140" style="border:1px solid #ccc;border-radius:6px;background:#fafafa">
+    <!-- Arrow shape via path -->
+    <path d="M 20 60 L 120 60 L 120 30 L 180 70 L 120 110 L 120 80 L 20 80 Z"
+          fill="#4a90d9" stroke="#2c5f8a" stroke-width="2"/>
+
+    <!-- Speech bubble -->
+    <path d="M 220 20 Q 220 10 230 10 L 390 10 Q 400 10 400 20 L 400 80
+             Q 400 90 390 90 L 280 90 L 260 115 L 265 90 L 230 90
+             Q 220 90 220 80 Z"
+          fill="#27ae60" stroke="#1a6b3c" stroke-width="1.5"/>
+    <text x="310" y="55" text-anchor="middle" fill="white" font-size="14">path speech bubble</text>
+
+    <!-- Arc / pie slice -->
+    <path d="M 550 70 L 620 70 A 70 70 0 0 0 585 5 Z"
+          fill="#e74c3c" stroke="#922b21" stroke-width="1.5"/>
+    <path d="M 550 70 L 585 5 A 70 70 0 0 0 480 70 Z"
+          fill="#f39c12" stroke="#b7770d" stroke-width="1.5"/>
+    <path d="M 550 70 L 480 70 A 70 70 0 0 0 620 70 Z"
+          fill="#4a90d9" stroke="#2c5f8a" stroke-width="1.5"/>
+  </svg>
+
+  <h2>Text, Gradients &amp; Filters</h2>
+  <svg width="100%" height="180" viewBox="0 0 700 180" style="border:1px solid #ccc;border-radius:6px;background:#111">
+    <defs>
+      <!-- Linear gradient -->
+      <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%"   stop-color="#e74c3c"/>
+        <stop offset="50%"  stop-color="#f39c12"/>
+        <stop offset="100%" stop-color="#27ae60"/>
+      </linearGradient>
+
+      <!-- Drop shadow filter -->
+      <filter id="shadow">
+        <feDropShadow dx="3" dy="3" stdDeviation="4" flood-color="#000" flood-opacity="0.5"/>
+      </filter>
+
+      <!-- Blur filter -->
+      <filter id="blur">
+        <feGaussianBlur stdDeviation="3"/>
+      </filter>
+    </defs>
+
+    <!-- Gradient fill on text -->
+    <text x="350" y="70" text-anchor="middle" font-size="52" font-weight="bold"
+          font-family="sans-serif" fill="url(#grad1)" filter="url(#shadow)">SVG Text</text>
+
+    <!-- Gradient rect -->
+    <rect x="50" y="110" width="280" height="50" rx="8" fill="url(#grad1)" filter="url(#shadow)"/>
+    <text x="190" y="140" text-anchor="middle" fill="white" font-size="16" font-weight="bold">Gradient rect</text>
+
+    <!-- Blurred circle -->
+    <circle cx="550" cy="135" r="40" fill="#4a90d9" filter="url(#blur)" opacity="0.7"/>
+    <circle cx="570" cy="130" r="35" fill="#e74c3c" filter="url(#blur)" opacity="0.6"/>
+    <text x="555" y="175" text-anchor="middle" fill="#aaa" font-size="12">feGaussianBlur</text>
+  </svg>
+
+  <h2>CSS &amp; JS Integration</h2>
+  <p>SVG elements inside HTML can be styled with CSS and targeted with JavaScript just like regular elements.</p>
+  <div style="display:flex;gap:1.5rem;align-items:center;flex-wrap:wrap">
+    <svg id="interactive-svg" width="200" height="140" viewBox="0 0 200 140"
+         style="border:1px solid #ccc;border-radius:6px;cursor:pointer">
+      <circle id="svg-circle" cx="100" cy="70" r="50" fill="#4a90d9"
+              style="transition: fill 0.3s, r 0.3s;"/>
+      <text x="100" y="75" text-anchor="middle" fill="white" font-size="14" pointer-events="none">
+        Click me
+      </text>
+    </svg>
+    <pre style="flex:1">// CSS hover via stylesheet
+#svg-circle:hover { fill: #e74c3c; }
+
+// JavaScript interaction
+circle.addEventListener('click', () => {
+  circle.setAttribute('r', '60');
+  circle.style.fill = '#f39c12';
+});</pre>
+  </div>
+
+  <style>
+    #svg-circle:hover { fill: #27ae60 !important; }
+  </style>
+  <script>
+    const circle = document.getElementById('svg-circle');
+    let big = false;
+    circle.addEventListener('click', () => {
+      big = !big;
+      circle.setAttribute('r', big ? '65' : '50');
+      circle.style.fill = big ? '#f39c12' : '#4a90d9';
+    });
+  </script>
+
+
+<script src="../../home.js" defer></script>
+</body>
+</html>

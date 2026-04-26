@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Drag & Drop API</title>
+  <style>
+    body { font-family: sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
+    code { background: #eee; padding: 2px 5px; border-radius: 3px; font-size: 0.85em; }
+    pre { background: #1e1e1e; color: #d4d4d4; padding: 1rem; border-radius: 6px; font-size: 0.82em; overflow-x: auto; }
+    table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+    th, td { border: 1px solid #ccc; padding: 0.45rem 0.65rem; text-align: left; vertical-align: top; }
+    th { background: #d35400; color: white; }
+
+    /* Kanban board */
+    .board { display: flex; gap: 1rem; margin: 1rem 0; }
+    .column {
+      flex: 1; background: #f4f4f4; border-radius: 8px; padding: 0.75rem;
+      min-height: 200px; border: 2px solid transparent; transition: border-color 0.15s;
+    }
+    .column.over { border-color: #d35400; background: #fff3e0; }
+    .column h3 { margin: 0 0 0.75rem; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.05em; color: #555; }
+    .card {
+      background: white; border-radius: 6px; padding: 0.6rem 0.8rem; margin-bottom: 0.5rem;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.15); cursor: grab; user-select: none;
+      border-left: 4px solid #4a90d9; transition: box-shadow 0.15s, opacity 0.15s;
+    }
+    .card:active { cursor: grabbing; }
+    .card.dragging { opacity: 0.4; box-shadow: none; }
+    .card[data-priority="high"]   { border-left-color: #e74c3c; }
+    .card[data-priority="medium"] { border-left-color: #f39c12; }
+    .card[data-priority="low"]    { border-left-color: #27ae60; }
+    .badge { font-size: 0.7em; padding: 1px 6px; border-radius: 10px; color: white; display: inline-block; margin-top: 4px; }
+    .badge-high   { background: #e74c3c; }
+    .badge-medium { background: #f39c12; }
+    .badge-low    { background: #27ae60; }
+
+    /* File drop zone */
+    .drop-zone {
+      border: 2px dashed #aaa; border-radius: 8px; padding: 2rem;
+      text-align: center; color: #777; transition: all 0.2s; margin: 1rem 0;
+      background: #fafafa;
+    }
+    .drop-zone.over { border-color: #4a90d9; background: #f0f7ff; color: #333; }
+    #file-list { list-style: none; padding: 0; margin: 0; }
+    #file-list li { padding: 0.35rem 0.5rem; border-bottom: 1px solid #eee; font-size: 0.88em; }
+    #file-list li:last-child { border-bottom: none; }
+  </style>
+</head>
+<body>
+
+  <h1>Drag &amp; Drop API</h1>
+
+  <h2>Drag Events</h2>
+  <table>
+    <thead><tr><th>Event</th><th>Fires on</th><th>When</th></tr></thead>
+    <tbody>
+      <tr><td><code>dragstart</code></td><td>Dragged element</td><td>User starts dragging</td></tr>
+      <tr><td><code>drag</code></td><td>Dragged element</td><td>Continuously while dragging</td></tr>
+      <tr><td><code>dragend</code></td><td>Dragged element</td><td>Mouse released (drop or cancel)</td></tr>
+      <tr><td><code>dragenter</code></td><td>Drop target</td><td>Dragged item enters a valid target</td></tr>
+      <tr><td><code>dragleave</code></td><td>Drop target</td><td>Dragged item leaves the target</td></tr>
+      <tr><td><code>dragover</code></td><td>Drop target</td><td>Item is hovering over target (must <code>preventDefault()</code> to allow drop)</td></tr>
+      <tr><td><code>drop</code></td><td>Drop target</td><td>Item is released on a valid target</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Demo 1 — Kanban Board</h2>
+  <p>Drag tasks between columns. Cards carry data via <code>dataTransfer.setData()</code>.</p>
+
+  <div class="board" id="board">
+    <div class="column" id="col-todo">
+      <h3>To Do</h3>
+      <div class="card" draggable="true" data-priority="high">
+        Design wireframes
+        <div><span class="badge badge-high">high</span></div>
+      </div>
+      <div class="card" draggable="true" data-priority="medium">
+        Write tests
+        <div><span class="badge badge-medium">medium</span></div>
+      </div>
+    </div>
+    <div class="column" id="col-progress">
+      <h3>In Progress</h3>
+      <div class="card" draggable="true" data-priority="high">
+        Implement API
+        <div><span class="badge badge-high">high</span></div>
+      </div>
+    </div>
+    <div class="column" id="col-done">
+      <h3>Done</h3>
+      <div class="card" draggable="true" data-priority="low">
+        Set up repo
+        <div><span class="badge badge-low">low</span></div>
+      </div>
+    </div>
+  </div>
+
+  <h2>Demo 2 — File Drop Zone</h2>
+  <p>Drop files from your OS onto the zone below. <code>dataTransfer.files</code> exposes the dropped <code>FileList</code>.</p>
+
+  <div class="drop-zone" id="drop-zone">
+    <svg viewBox="0 0 24 24" width="40" height="40" style="margin-bottom:0.5rem;fill:#aaa">
+      <path d="M19.35 10.04A7.49 7.49 0 0 0 12 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 0 0 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/>
+    </svg>
+    <p style="margin:0;font-weight:bold">Drop files here</p>
+    <p style="margin:0;font-size:0.85em">or click to browse</p>
+    <input type="file" id="file-input" multiple style="position:absolute;width:1px;height:1px;opacity:0">
+  </div>
+  <ul id="file-list"></ul>
+
+  <h2>Key Code Pattern</h2>
+  <pre>// Make something draggable
+el.setAttribute('draggable', 'true');
+el.addEventListener('dragstart', e => {
+  e.dataTransfer.setData('text/plain', el.id);
+  e.dataTransfer.effectAllowed = 'move';
+});
+
+// Accept drops on a target
+target.addEventListener('dragover', e => {
+  e.preventDefault();                      // required to allow drop
+  e.dataTransfer.dropEffect = 'move';
+});
+target.addEventListener('drop', e => {
+  e.preventDefault();
+  const id = e.dataTransfer.getData('text/plain');
+  target.appendChild(document.getElementById(id));
+});
+
+// File drops
+zone.addEventListener('drop', e => {
+  e.preventDefault();
+  const files = e.dataTransfer.files;      // FileList
+  [...files].forEach(f => console.log(f.name, f.size, f.type));
+});</pre>
+
+  <script>
+    // ── Kanban ─────────────────────────────────────────────────
+    let dragged = null;
+
+    document.querySelectorAll('.card').forEach(card => {
+      card.addEventListener('dragstart', e => {
+        dragged = card;
+        card.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+      });
+      card.addEventListener('dragend', () => {
+        dragged = null;
+        card.classList.remove('dragging');
+      });
+    });
+
+    document.querySelectorAll('.column').forEach(col => {
+      col.addEventListener('dragover', e => {
+        e.preventDefault();
+        col.classList.add('over');
+        e.dataTransfer.dropEffect = 'move';
+      });
+      col.addEventListener('dragleave', () => col.classList.remove('over'));
+      col.addEventListener('drop', e => {
+        e.preventDefault();
+        col.classList.remove('over');
+        if (dragged && dragged.parentElement !== col) {
+          col.appendChild(dragged);
+        }
+      });
+    });
+
+    // ── File drop zone ─────────────────────────────────────────
+    const zone    = document.getElementById('drop-zone');
+    const fileList= document.getElementById('file-list');
+    const input   = document.getElementById('file-input');
+
+    function showFiles(files) {
+      fileList.innerHTML = '';
+      if (!files.length) return;
+      [...files].forEach(f => {
+        const li = document.createElement('li');
+        const size = f.size > 1048576
+          ? `${(f.size/1048576).toFixed(1)} MB`
+          : `${(f.size/1024).toFixed(1)} KB`;
+        li.textContent = `${f.name} — ${size} — ${f.type || 'unknown type'}`;
+        fileList.appendChild(li);
+      });
+    }
+
+    zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('over'); });
+    zone.addEventListener('dragleave', () => zone.classList.remove('over'));
+    zone.addEventListener('drop', e => {
+      e.preventDefault();
+      zone.classList.remove('over');
+      showFiles(e.dataTransfer.files);
+    });
+    zone.addEventListener('click', () => input.click());
+    input.addEventListener('change', () => showFiles(input.files));
+  </script>
+
+
+<script src="../../home.js" defer></script>
+</body>
+</html>

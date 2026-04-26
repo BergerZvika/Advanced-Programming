@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>contenteditable & execCommand</title>
+  <style>
+    body { font-family: sans-serif; max-width: 760px; margin: 2rem auto; padding: 0 1rem; }
+    code { background: #eee; padding: 2px 5px; border-radius: 3px; font-size: 0.85em; }
+    pre { background: #1e1e1e; color: #d4d4d4; padding: 1rem; border-radius: 6px; font-size: 0.82em; overflow-x: auto; }
+    table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+    th, td { border: 1px solid #ccc; padding: 0.45rem 0.65rem; text-align: left; vertical-align: top; }
+    th { background: #6c3483; color: white; }
+
+    /* Rich text editor */
+    #toolbar {
+      display: flex; flex-wrap: wrap; gap: 4px;
+      padding: 0.5rem; background: #f0f0f0; border: 1px solid #ccc;
+      border-radius: 6px 6px 0 0;
+    }
+    #toolbar button {
+      padding: 0.3rem 0.6rem; border: 1px solid #ccc; border-radius: 4px;
+      background: white; cursor: pointer; font-size: 0.88rem; min-width: 32px;
+    }
+    #toolbar button:hover { background: #e0e0e0; }
+    #toolbar button.active { background: #6c3483; color: white; border-color: #6c3483; }
+    #toolbar select { padding: 0.3rem; border: 1px solid #ccc; border-radius: 4px; font-size: 0.88rem; }
+    #toolbar input[type="color"] { width: 32px; height: 28px; padding: 1px; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; }
+
+    #editor {
+      min-height: 180px; padding: 1rem; border: 1px solid #ccc; border-top: none;
+      border-radius: 0 0 6px 6px; outline: none; font-size: 1rem; line-height: 1.6;
+    }
+    #editor:empty:before { content: 'Start typing here…'; color: #aaa; }
+    #editor:focus { border-color: #6c3483; }
+
+    #html-output {
+      background: #1e1e1e; color: #d4d4d4; padding: 1rem; border-radius: 6px;
+      font-size: 0.82em; white-space: pre-wrap; word-break: break-all;
+      min-height: 60px; margin-top: 0.5rem;
+    }
+
+    /* Inline edit demo */
+    [contenteditable="true"] {
+      border-bottom: 2px dashed #6c3483; padding: 0 2px; outline: none; display: inline;
+    }
+    [contenteditable="true"]:hover { background: #f8f0ff; }
+    [contenteditable="true"]:focus { background: #f0e8ff; }
+  </style>
+</head>
+<body>
+
+  <h1>contenteditable</h1>
+  <p>The <code>contenteditable</code> attribute makes any element directly editable by the user — the foundation of rich-text editors like Medium, Notion, and Quill.</p>
+
+  <h2>Values</h2>
+  <table>
+    <thead><tr><th>Value</th><th>Effect</th></tr></thead>
+    <tbody>
+      <tr><td><code>contenteditable="true"</code></td><td>Element and its children are editable</td></tr>
+      <tr><td><code>contenteditable="false"</code></td><td>Explicitly not editable (useful inside a <code>true</code> parent)</td></tr>
+      <tr><td><code>contenteditable="plaintext-only"</code></td><td>Editable but strips all formatting — plain text only</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Inline Editing Demo</h2>
+  <p>Click any <span style="border-bottom:2px dashed #6c3483;padding:0 2px">underlined value</span> to edit it in place:</p>
+  <div style="border:1px solid #ccc;border-radius:8px;padding:1.25rem;background:#fafafa;margin:1rem 0">
+    <h3 style="margin:0 0 0.75rem">User Profile</h3>
+    <p><strong>Name:</strong> <span contenteditable="true" role="textbox" aria-label="Name">Alice Smith</span></p>
+    <p><strong>Title:</strong> <span contenteditable="true" role="textbox" aria-label="Title">Senior Developer</span></p>
+    <p><strong>Bio:</strong> <span contenteditable="true" role="textbox" aria-label="Bio">Loves building accessible web experiences.</span></p>
+    <p style="font-size:0.82em;color:#777;margin-top:0.75rem">Changes are local to this page and not persisted.</p>
+  </div>
+
+  <h2>Mini Rich-Text Editor</h2>
+  <div id="toolbar">
+    <select onchange="exec('formatBlock', this.value); this.value='div'">
+      <option value="div">Normal</option>
+      <option value="h1">Heading 1</option>
+      <option value="h2">Heading 2</option>
+      <option value="h3">Heading 3</option>
+      <option value="pre">Code block</option>
+    </select>
+
+    <button onclick="exec('bold')"          title="Bold"><b>B</b></button>
+    <button onclick="exec('italic')"        title="Italic"><i>I</i></button>
+    <button onclick="exec('underline')"     title="Underline"><u>U</u></button>
+    <button onclick="exec('strikeThrough')" title="Strikethrough"><s>S</s></button>
+
+    <span style="width:1px;background:#ccc;margin:0 4px"></span>
+
+    <button onclick="exec('justifyLeft')"   title="Align left">&#8676;</button>
+    <button onclick="exec('justifyCenter')" title="Center">&#8596;</button>
+    <button onclick="exec('justifyRight')"  title="Align right">&#8677;</button>
+
+    <span style="width:1px;background:#ccc;margin:0 4px"></span>
+
+    <button onclick="exec('insertUnorderedList')" title="Bullet list">&#8226; List</button>
+    <button onclick="exec('insertOrderedList')"   title="Numbered list">1. List</button>
+    <button onclick="exec('indent')"              title="Indent">&#8677;</button>
+    <button onclick="exec('outdent')"             title="Outdent">&#8676;</button>
+
+    <span style="width:1px;background:#ccc;margin:0 4px"></span>
+
+    <input type="color" id="fg-color" value="#000000" title="Text color"
+           oninput="exec('foreColor', this.value)">
+    <input type="color" id="bg-color" value="#ffff00" title="Highlight"
+           oninput="exec('hiliteColor', this.value)">
+
+    <span style="width:1px;background:#ccc;margin:0 4px"></span>
+
+    <button onclick="insertLink()"  title="Insert link">&#128279; Link</button>
+    <button onclick="exec('removeFormat')" title="Clear formatting">&#10007; Clear</button>
+    <button onclick="exec('undo')"  title="Undo">&#8630;</button>
+    <button onclick="exec('redo')"  title="Redo">&#8631;</button>
+  </div>
+
+  <div id="editor" contenteditable="true" spellcheck="true"
+       role="textbox" aria-multiline="true" aria-label="Rich text editor">
+    <p>This is an editable rich-text area. Try the toolbar above!</p>
+    <p>You can <strong>bold</strong>, <em>italicize</em>, <u>underline</u>, and more.</p>
+  </div>
+
+  <details style="margin-top:0.75rem">
+    <summary style="cursor:pointer;font-weight:bold;font-size:0.9em">Show HTML output</summary>
+    <div id="html-output"></div>
+  </details>
+
+  <h2>Important Notes</h2>
+  <table>
+    <thead><tr><th>Topic</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td>Accessibility</td><td>Add <code>role="textbox"</code> and <code>aria-multiline="true"</code> so screen readers announce the field correctly</td></tr>
+      <tr><td>execCommand</td><td><code>document.execCommand()</code> is deprecated but still works everywhere. Modern replacement: <strong>Selection API</strong> + <code>insertText</code> via <code>InputEvent</code></td></tr>
+      <tr><td>XSS risk</td><td>Never insert <code>innerHTML</code> from a <code>contenteditable</code> directly into the page without sanitization (<code>DOMPurify</code>)</td></tr>
+      <tr><td>Persistence</td><td>Read the content with <code>element.innerHTML</code> or <code>element.innerText</code> and POST it to your server</td></tr>
+      <tr><td>plaintext-only</td><td>Use <code>contenteditable="plaintext-only"</code> to strip pasted HTML — good for simple input fields</td></tr>
+    </tbody>
+  </table>
+
+  <script>
+    const editor = document.getElementById('editor');
+    const htmlOut = document.getElementById('html-output');
+
+    function exec(cmd, value = null) {
+      editor.focus();
+      document.execCommand(cmd, false, value);
+      updateOutput();
+    }
+
+    function insertLink() {
+      const url = prompt('Enter URL:', 'https://');
+      if (url) exec('createLink', url);
+    }
+
+    function updateOutput() {
+      htmlOut.textContent = editor.innerHTML;
+    }
+
+    editor.addEventListener('input', updateOutput);
+    updateOutput();
+  </script>
+
+
+<script src="../../home.js" defer></script>
+</body>
+</html>

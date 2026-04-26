@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Advanced Form Validation</title>
+  <style>
+    body { font-family: sans-serif; max-width: 700px; margin: 2rem auto; padding: 0 1rem; }
+    code { background: #eee; padding: 2px 5px; border-radius: 3px; font-size: 0.85em; }
+    pre { background: #1e1e1e; color: #d4d4d4; padding: 1rem; border-radius: 6px; font-size: 0.82em; overflow-x: auto; }
+
+    /* Form styles */
+    form { background: #fafafa; border: 1px solid #ddd; border-radius: 8px; padding: 1.5rem; }
+    .field { margin-bottom: 1.1rem; }
+    label { display: block; font-weight: bold; font-size: 0.9em; margin-bottom: 0.25rem; }
+    input, select, textarea {
+      width: 100%; box-sizing: border-box; padding: 0.45rem 0.65rem;
+      border: 2px solid #ccc; border-radius: 5px; font-size: 0.95rem; transition: border-color 0.2s;
+    }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: #4a90d9; }
+
+    /* Validity states */
+    input:user-invalid, select:user-invalid, textarea:user-invalid {
+      border-color: #e74c3c;
+    }
+    input:user-valid, select:user-valid, textarea:user-valid {
+      border-color: #27ae60;
+    }
+
+    .error { color: #e74c3c; font-size: 0.82em; margin-top: 0.2rem; display: none; }
+    .field.invalid .error { display: block; }
+    .field.invalid input, .field.invalid select, .field.invalid textarea { border-color: #e74c3c; }
+    .field.valid   input, .field.valid   select, .field.valid   textarea { border-color: #27ae60; }
+
+    .hint { font-size: 0.8em; color: #777; margin-top: 0.2rem; }
+    .strength-bar { height: 6px; border-radius: 3px; background: #eee; margin-top: 0.3rem; overflow: hidden; }
+    .strength-fill { height: 100%; width: 0; border-radius: 3px; transition: width 0.3s, background 0.3s; }
+
+    button[type="submit"] {
+      width: 100%; padding: 0.65rem; font-size: 1rem; border: none; border-radius: 5px;
+      background: #4a90d9; color: white; cursor: pointer; font-weight: bold;
+    }
+    button[type="submit"]:hover { background: #357abd; }
+
+    #form-result { margin-top: 1rem; padding: 0.75rem 1rem; border-radius: 6px; display: none; }
+    #form-result.success { background: #e8f5e9; border: 1px solid #27ae60; color: #1b5e20; }
+    #form-result.error   { background: #ffebee; border: 1px solid #e74c3c; color: #b71c1c; }
+  </style>
+</head>
+<body>
+
+  <h1>Advanced Form Validation</h1>
+  <p>Combines HTML5 constraint attributes, <code>:user-invalid</code> / <code>:user-valid</code> CSS pseudo-classes, and the Constraint Validation API for full control.</p>
+
+  <form id="signup-form" novalidate>
+
+    <div class="field" id="f-username">
+      <label for="username">Username <span style="color:red">*</span></label>
+      <input type="text" id="username" name="username"
+             required minlength="3" maxlength="20"
+             pattern="[a-zA-Z0-9_]+"
+             autocomplete="username">
+      <p class="hint">3–20 characters. Letters, numbers, underscores only.</p>
+      <div class="error" id="e-username"></div>
+    </div>
+
+    <div class="field" id="f-email">
+      <label for="email">Email <span style="color:red">*</span></label>
+      <input type="email" id="email" name="email" required autocomplete="email">
+      <div class="error" id="e-email"></div>
+    </div>
+
+    <div class="field" id="f-password">
+      <label for="password">Password <span style="color:red">*</span></label>
+      <input type="password" id="password" name="password"
+             required minlength="8" autocomplete="new-password">
+      <div class="strength-bar"><div class="strength-fill" id="strength-fill"></div></div>
+      <p class="hint" id="strength-label">Strength: —</p>
+      <div class="error" id="e-password"></div>
+    </div>
+
+    <div class="field" id="f-confirm">
+      <label for="confirm">Confirm Password <span style="color:red">*</span></label>
+      <input type="password" id="confirm" name="confirm" required autocomplete="new-password">
+      <div class="error" id="e-confirm"></div>
+    </div>
+
+    <div class="field" id="f-age">
+      <label for="age">Age <span style="color:red">*</span></label>
+      <input type="number" id="age" name="age" required min="18" max="120">
+      <div class="error" id="e-age"></div>
+    </div>
+
+    <div class="field" id="f-website">
+      <label for="website">Website (optional)</label>
+      <input type="url" id="website" name="website" placeholder="https://example.com" autocomplete="url">
+      <div class="error" id="e-website"></div>
+    </div>
+
+    <button type="submit">Create Account</button>
+  </form>
+
+  <div id="form-result"></div>
+
+  <h2>Constraint Validation API</h2>
+  <pre>const input = document.getElementById('username');
+
+// Check validity
+input.checkValidity();       // true / false
+input.reportValidity();      // same + shows browser tooltip
+
+// ValidityState properties
+input.validity.valueMissing  // true if required and empty
+input.validity.typeMismatch  // true if email/url format wrong
+input.validity.patternMismatch // true if pattern doesn't match
+input.validity.tooShort      // true if below minlength
+input.validity.tooLong       // true if above maxlength
+input.validity.rangeUnderflow // true if below min
+input.validity.rangeOverflow  // true if above max
+input.validity.valid         // true only if all checks pass
+
+// Custom error message
+input.setCustomValidity('Username is taken');
+input.setCustomValidity(''); // clear custom error</pre>
+
+  <script>
+    const form = document.getElementById('signup-form');
+
+    // ── Validation messages ────────────────────────────────────
+    const rules = {
+      username: (el) => {
+        if (el.validity.valueMissing)    return 'Username is required.';
+        if (el.validity.tooShort)        return `At least ${el.minLength} characters required.`;
+        if (el.validity.tooLong)         return `Maximum ${el.maxLength} characters.`;
+        if (el.validity.patternMismatch) return 'Only letters, numbers, and underscores.';
+        return '';
+      },
+      email: (el) => {
+        if (el.validity.valueMissing)  return 'Email is required.';
+        if (el.validity.typeMismatch)  return 'Enter a valid email address.';
+        return '';
+      },
+      password: (el) => {
+        if (el.validity.valueMissing) return 'Password is required.';
+        if (el.validity.tooShort)     return `Password must be at least ${el.minLength} characters.`;
+        return '';
+      },
+      confirm: (el) => {
+        if (el.validity.valueMissing) return 'Please confirm your password.';
+        if (el.value !== document.getElementById('password').value) return 'Passwords do not match.';
+        return '';
+      },
+      age: (el) => {
+        if (el.validity.valueMissing)    return 'Age is required.';
+        if (el.validity.rangeUnderflow)  return 'You must be at least 18 years old.';
+        if (el.validity.rangeOverflow)   return 'Please enter a valid age.';
+        if (el.validity.badInput)        return 'Enter a number.';
+        return '';
+      },
+      website: (el) => {
+        if (!el.value) return '';
+        if (el.validity.typeMismatch) return 'Enter a valid URL (include https://).';
+        return '';
+      },
+    };
+
+    function validateField(id) {
+      const el     = document.getElementById(id);
+      const field  = document.getElementById('f-' + id);
+      const errEl  = document.getElementById('e-' + id);
+      if (!el || !field) return true;
+
+      // Custom cross-field check
+      if (id === 'confirm') {
+        const match = el.value === document.getElementById('password').value;
+        el.setCustomValidity(match ? '' : 'mismatch');
+      } else {
+        el.setCustomValidity('');
+      }
+
+      const msg = rules[id]?.(el) ?? '';
+      errEl.textContent = msg;
+      field.classList.toggle('invalid', !!msg);
+      field.classList.toggle('valid',   !msg && el.value !== '');
+      return !msg;
+    }
+
+    // Live validation on blur & input
+    Object.keys(rules).forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener('blur',  () => validateField(id));
+      el.addEventListener('input', () => {
+        if (document.getElementById('f-' + id).classList.contains('invalid')) {
+          validateField(id);
+        }
+      });
+    });
+
+    // ── Password strength ──────────────────────────────────────
+    document.getElementById('password').addEventListener('input', function() {
+      const v = this.value;
+      let score = 0;
+      if (v.length >= 8)              score++;
+      if (/[A-Z]/.test(v))            score++;
+      if (/[0-9]/.test(v))            score++;
+      if (/[^a-zA-Z0-9]/.test(v))     score++;
+      const labels = ['', 'Weak', 'Fair', 'Good', 'Strong'];
+      const colors = ['', '#e74c3c', '#f39c12', '#4a90d9', '#27ae60'];
+      const fill = document.getElementById('strength-fill');
+      fill.style.width = `${score * 25}%`;
+      fill.style.background = colors[score] || '#eee';
+      document.getElementById('strength-label').textContent =
+        v.length ? `Strength: ${labels[score] || 'Weak'}` : 'Strength: —';
+    });
+
+    // ── Submit ─────────────────────────────────────────────────
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const allValid = Object.keys(rules).map(id => validateField(id)).every(Boolean);
+      const result = document.getElementById('form-result');
+      result.style.display = 'block';
+      if (allValid) {
+        result.className = 'success';
+        result.textContent = 'Form submitted successfully! (Demo — no data sent.)';
+      } else {
+        result.className = 'error';
+        result.textContent = 'Please fix the errors above before submitting.';
+      }
+    });
+  </script>
+
+
+<script src="../../home.js" defer></script>
+</body>
+</html>

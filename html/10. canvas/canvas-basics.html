@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Canvas 2D Basics</title>
+  <style>
+    body { font-family: sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
+    code { background: #eee; padding: 2px 5px; border-radius: 3px; font-size: 0.85em; }
+    pre { background: #1e1e1e; color: #d4d4d4; padding: 1rem; border-radius: 6px; font-size: 0.82em; overflow-x: auto; }
+    canvas { border: 1px solid #ccc; border-radius: 4px; display: block; margin: 0.5rem 0; }
+    .row { display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-start; margin: 1rem 0; }
+    .box { flex: 1; min-width: 220px; }
+    h3 { margin: 0.5rem 0 0.25rem; }
+    button { padding: 0.4rem 1rem; cursor: pointer; border-radius: 4px; border: 1px solid #aaa; margin-top: 0.5rem; }
+  </style>
+</head>
+<body>
+
+  <h1>&lt;canvas&gt; — 2D Drawing API</h1>
+  <p>The <code>&lt;canvas&gt;</code> element is a pixel-based drawing surface. Everything is drawn via JavaScript — the canvas itself is just an empty bitmap.</p>
+
+  <pre>&lt;canvas id="myCanvas" width="400" height="200"&gt;
+  Fallback text for browsers without canvas support.
+&lt;/canvas&gt;
+
+&lt;script&gt;
+  const canvas = document.getElementById('myCanvas');
+  const ctx = canvas.getContext('2d'); // 2D rendering context
+&lt;/script&gt;</pre>
+
+  <div class="row">
+
+    <div class="box">
+      <h3>Shapes</h3>
+      <canvas id="c-shapes" width="240" height="180"></canvas>
+    </div>
+
+    <div class="box">
+      <h3>Paths &amp; Curves</h3>
+      <canvas id="c-paths" width="240" height="180"></canvas>
+    </div>
+
+    <div class="box">
+      <h3>Text</h3>
+      <canvas id="c-text" width="240" height="180"></canvas>
+    </div>
+
+    <div class="box">
+      <h3>Gradients &amp; Shadows</h3>
+      <canvas id="c-gradient" width="240" height="180"></canvas>
+    </div>
+
+    <div class="box">
+      <h3>Transforms</h3>
+      <canvas id="c-transform" width="240" height="180"></canvas>
+    </div>
+
+    <div class="box">
+      <h3>Image Data</h3>
+      <canvas id="c-pixels" width="240" height="180"></canvas>
+    </div>
+
+  </div>
+
+  <h2>Interactive: Paint Canvas</h2>
+  <canvas id="c-paint" width="700" height="200" style="cursor:crosshair;touch-action:none"></canvas>
+  <div style="margin-bottom:0.5rem">
+    <label>Color: <input type="color" id="paint-color" value="#2e7d32"></label>
+    <label style="margin-left:1rem">Size: <input type="range" id="paint-size" min="2" max="30" value="8"></label>
+    <button onclick="clearPaint()">Clear</button>
+  </div>
+  <p style="font-size:0.85em;color:#555">Click and drag to draw.</p>
+
+  <script>
+    // ── Shapes ──────────────────────────────────────────────
+    (function() {
+      const ctx = document.getElementById('c-shapes').getContext('2d');
+
+      // Filled rectangle
+      ctx.fillStyle = '#4a90d9';
+      ctx.fillRect(10, 10, 80, 50);
+
+      // Stroked rectangle
+      ctx.strokeStyle = '#e74c3c';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(110, 10, 80, 50);
+
+      // Circle (arc)
+      ctx.beginPath();
+      ctx.arc(55, 130, 35, 0, Math.PI * 2);
+      ctx.fillStyle = '#f39c12';
+      ctx.fill();
+
+      // Semi-circle
+      ctx.beginPath();
+      ctx.arc(155, 130, 35, 0, Math.PI);
+      ctx.fillStyle = '#8e44ad';
+      ctx.fill();
+    })();
+
+    // ── Paths & Curves ───────────────────────────────────────
+    (function() {
+      const ctx = document.getElementById('c-paths').getContext('2d');
+
+      // Straight-line triangle
+      ctx.beginPath();
+      ctx.moveTo(120, 10);
+      ctx.lineTo(20, 80);
+      ctx.lineTo(220, 80);
+      ctx.closePath();
+      ctx.fillStyle = '#27ae60';
+      ctx.fill();
+      ctx.strokeStyle = '#145a32';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Bezier curve
+      ctx.beginPath();
+      ctx.moveTo(20, 140);
+      ctx.bezierCurveTo(60, 90, 180, 190, 220, 140);
+      ctx.strokeStyle = '#e74c3c';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+
+      // Quadratic curve
+      ctx.beginPath();
+      ctx.moveTo(20, 170);
+      ctx.quadraticCurveTo(120, 110, 220, 170);
+      ctx.strokeStyle = '#3498db';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    })();
+
+    // ── Text ─────────────────────────────────────────────────
+    (function() {
+      const ctx = document.getElementById('c-text').getContext('2d');
+      ctx.fillStyle = '#2c3e50';
+
+      ctx.font = 'bold 28px sans-serif';
+      ctx.fillText('Hello!', 20, 50);
+
+      ctx.font = '16px serif';
+      ctx.fillStyle = '#7f8c8d';
+      ctx.fillText('Serif text', 20, 85);
+
+      // Stroked text
+      ctx.font = 'bold 30px sans-serif';
+      ctx.strokeStyle = '#e74c3c';
+      ctx.lineWidth = 1;
+      ctx.strokeText('Outlined', 20, 125);
+
+      // Measure text width
+      ctx.font = '14px sans-serif';
+      ctx.fillStyle = '#333';
+      const w = ctx.measureText('Hello!').width;
+      ctx.fillText(`"Hello!" width: ${w.toFixed(0)}px`, 20, 160);
+    })();
+
+    // ── Gradients & Shadows ──────────────────────────────────
+    (function() {
+      const ctx = document.getElementById('c-gradient').getContext('2d');
+
+      // Linear gradient
+      const lg = ctx.createLinearGradient(0, 0, 240, 0);
+      lg.addColorStop(0, '#e74c3c');
+      lg.addColorStop(0.5, '#f39c12');
+      lg.addColorStop(1, '#27ae60');
+      ctx.fillStyle = lg;
+      ctx.fillRect(10, 10, 220, 60);
+
+      // Radial gradient
+      const rg = ctx.createRadialGradient(120, 130, 5, 120, 130, 50);
+      rg.addColorStop(0, '#fff');
+      rg.addColorStop(1, '#3498db');
+      ctx.fillStyle = rg;
+      ctx.beginPath();
+      ctx.arc(120, 130, 50, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Shadow
+      ctx.shadowColor = 'rgba(0,0,0,0.4)';
+      ctx.shadowBlur = 10;
+      ctx.shadowOffsetX = 4;
+      ctx.shadowOffsetY = 4;
+      ctx.fillStyle = '#8e44ad';
+      ctx.fillRect(170, 110, 55, 55);
+      ctx.shadowColor = 'transparent';
+    })();
+
+    // ── Transforms ───────────────────────────────────────────
+    (function() {
+      const ctx = document.getElementById('c-transform').getContext('2d');
+
+      // Translate
+      ctx.save();
+      ctx.translate(60, 50);
+      ctx.fillStyle = '#4a90d9';
+      ctx.fillRect(-25, -25, 50, 50);
+      ctx.restore();
+
+      // Rotate
+      ctx.save();
+      ctx.translate(150, 50);
+      ctx.rotate(Math.PI / 6);       // 30°
+      ctx.fillStyle = '#e74c3c';
+      ctx.fillRect(-25, -25, 50, 50);
+      ctx.restore();
+
+      // Scale
+      ctx.save();
+      ctx.translate(60, 140);
+      ctx.scale(1.5, 0.6);
+      ctx.fillStyle = '#27ae60';
+      ctx.fillRect(-25, -25, 50, 50);
+      ctx.restore();
+
+      // Combined
+      ctx.save();
+      ctx.translate(170, 130);
+      ctx.rotate(Math.PI / 4);
+      ctx.scale(0.8, 1.3);
+      ctx.fillStyle = '#f39c12';
+      ctx.fillRect(-20, -20, 40, 40);
+      ctx.restore();
+    })();
+
+    // ── Pixel manipulation ───────────────────────────────────
+    (function() {
+      const canvas = document.getElementById('c-pixels');
+      const ctx = canvas.getContext('2d');
+      const W = canvas.width, H = canvas.height;
+
+      // Draw a gradient background
+      const grad = ctx.createLinearGradient(0, 0, W, H);
+      grad.addColorStop(0, '#3498db');
+      grad.addColorStop(1, '#e74c3c');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, W, H);
+
+      // Read pixels, invert colors in top half
+      const imgData = ctx.getImageData(0, 0, W, H / 2);
+      const d = imgData.data;
+      for (let i = 0; i < d.length; i += 4) {
+        d[i]   = 255 - d[i];   // R
+        d[i+1] = 255 - d[i+1]; // G
+        d[i+2] = 255 - d[i+2]; // B
+        // d[i+3] = alpha (unchanged)
+      }
+      ctx.putImageData(imgData, 0, 0);
+
+      ctx.fillStyle = 'white';
+      ctx.font = '13px sans-serif';
+      ctx.fillText('Top: colors inverted', 10, H / 2 - 8);
+      ctx.fillText('Bottom: original', 10, H / 2 + 20);
+    })();
+
+    // ── Paint canvas ─────────────────────────────────────────
+    const paintCanvas = document.getElementById('c-paint');
+    const pctx = paintCanvas.getContext('2d');
+    let painting = false;
+
+    function getPos(e) {
+      const r = paintCanvas.getBoundingClientRect();
+      const src = e.touches ? e.touches[0] : e;
+      return { x: src.clientX - r.left, y: src.clientY - r.top };
+    }
+
+    paintCanvas.addEventListener('pointerdown', e => {
+      painting = true;
+      const p = getPos(e);
+      pctx.beginPath();
+      pctx.moveTo(p.x, p.y);
+    });
+    paintCanvas.addEventListener('pointermove', e => {
+      if (!painting) return;
+      const p = getPos(e);
+      pctx.lineTo(p.x, p.y);
+      pctx.strokeStyle = document.getElementById('paint-color').value;
+      pctx.lineWidth = document.getElementById('paint-size').value;
+      pctx.lineCap = 'round';
+      pctx.lineJoin = 'round';
+      pctx.stroke();
+    });
+    paintCanvas.addEventListener('pointerup',   () => painting = false);
+    paintCanvas.addEventListener('pointerleave',() => painting = false);
+
+    function clearPaint() {
+      pctx.clearRect(0, 0, paintCanvas.width, paintCanvas.height);
+    }
+  </script>
+
+
+<script src="../../home.js" defer></script>
+</body>
+</html>

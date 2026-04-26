@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Shopping List</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    </head>
+    <body>
+        <script src="validation.js"></script>
+        <label for="new-item">Please choose an item & an amount:</label>
+        <input id="new-item" list="items">
+
+        <datalist id="items">
+            <option>T-Shirt</option>
+            <option>Shoes</option>
+            <option>Pants</option>
+            <option>Dress</option>
+            <option>Socks</option>
+            <option>Coat</option>
+            <option>Gloves</option>
+        </datalist>
+
+        <input id="amount" type="number" min="1" value="1">
+
+        <button id="add-item-btn" onclick="addItem()">Add Item</button>
+        <br><br>
+        <div id="shopping-list-div">
+           <text>No items yet.</text>
+        </div>
+    
+<script src="../../home.js" defer></script>
+</body>
+
+    <script lang="javascript">
+        let tableIsInitialized = false;
+
+        const prices = {
+            'T-Shirt': 90,
+            'Shoes': 250,
+            'Pants': 100,
+            'Dress': 300,
+            'Socks': 35,
+            'Coat': 280,
+            'Gloves': 50
+        }
+
+        function addItem() {
+            // add  a new item 
+
+            // get its value, amount, price and total price first
+            const item = document.getElementById("new-item").value;
+            let amount = document.getElementById("amount").value;
+
+            // validate the input
+            if (item === undefined || item === "") {
+                alert("Invalid input. Please choose an item.");
+                return;
+            }
+
+            if (!isPositiveInteger(amount)) {
+                alert("Invalid input. The amount should be an integer which is greater that 1.");
+                return;
+            } 
+            else {
+                amount = parseInt(amount)
+                if (amount < 1) {
+                    alert("Invalid input. The amount should be an integer which is greater that 1.");
+                    return;
+                }
+            }
+
+            // input is valid
+
+            // initialize the table if it's 
+            // the first item we are addig
+            if (!tableIsInitialized) {
+                initializeTable();
+            }
+
+            const price = prices[item];
+            const totalPrice = price * amount
+
+            // add the item to the table
+            const table = document.getElementById("shopping-list-table")
+
+            table.innerHTML += `<tr>
+                <td>${item}</td>
+                <td>${amount}</td>
+                <td>${price}</td>
+                <td>${totalPrice}</td>
+            </tr>`
+
+            // clean the input fields
+            document.getElementById("new-item").value = "";
+            document.getElementById("amount").value = 1;
+        };
+
+        function initializeTable() {
+            tableIsInitialized = true;
+
+            const startingHTML = `<table id='shopping-list-table' class='table'>
+                <tr>
+                    <th>Item</th>
+                    <th>Amount</th>
+                    <th>Price per unit</th>
+                    <th>Total price</th>
+                </tr>
+            </table>`;
+            
+            // replace the initial text with an empty table
+            const shoppingListDiv = document.getElementById("shopping-list-div");
+            shoppingListDiv.innerHTML = startingHTML;
+        };
+    </script>
+</html>

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Basic Tables</title>
+  <style>
+    body { font-family: sans-serif; max-width: 750px; margin: 2rem auto; padding: 0 1rem; }
+    code { background: #eee; padding: 2px 5px; border-radius: 3px; font-size: 0.85em; }
+    pre { background: #1e1e1e; color: #d4d4d4; padding: 1rem; border-radius: 6px; font-size: 0.85em; overflow-x: auto; }
+
+    /* Demo table style */
+    .demo-table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+    .demo-table th,
+    .demo-table td { border: 1px solid #aaa; padding: 0.5rem 0.75rem; text-align: left; }
+    .demo-table thead th { background: #4a90d9; color: white; }
+    .demo-table tfoot td { background: #f0f0f0; font-style: italic; }
+    .demo-table tbody tr:nth-child(even) { background: #f9f9f9; }
+    .demo-table tbody tr:hover { background: #e8f0fe; }
+
+    .annot { font-size: 0.78em; color: #666; }
+  </style>
+</head>
+<body>
+
+  <h1>HTML Tables</h1>
+
+  <h2>Full Structure</h2>
+  <pre>&lt;table&gt;
+  &lt;caption&gt;Monthly Sales&lt;/caption&gt;
+  &lt;thead&gt;
+    &lt;tr&gt;
+      &lt;th scope="col"&gt;Month&lt;/th&gt;
+      &lt;th scope="col"&gt;Units&lt;/th&gt;
+      &lt;th scope="col"&gt;Revenue&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+    &lt;tr&gt;
+      &lt;td&gt;January&lt;/td&gt;&lt;td&gt;120&lt;/td&gt;&lt;td&gt;$2,400&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;February&lt;/td&gt;&lt;td&gt;95&lt;/td&gt;&lt;td&gt;$1,900&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tbody&gt;
+  &lt;tfoot&gt;
+    &lt;tr&gt;
+      &lt;td&gt;Total&lt;/td&gt;&lt;td&gt;215&lt;/td&gt;&lt;td&gt;$4,300&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tfoot&gt;
+&lt;/table&gt;</pre>
+
+  <h2>Rendered Result</h2>
+  <table class="demo-table">
+    <caption style="font-weight:bold;margin-bottom:0.5rem">Monthly Sales</caption>
+    <thead>
+      <tr>
+        <th scope="col">Month</th>
+        <th scope="col">Units</th>
+        <th scope="col">Revenue</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>January</td><td>120</td><td>$2,400</td>
+      </tr>
+      <tr>
+        <td>February</td><td>95</td><td>$1,900</td>
+      </tr>
+      <tr>
+        <td>March</td><td>140</td><td>$2,800</td>
+      </tr>
+    </tbody>
+    <tfoot>
+      <tr>
+        <td>Total</td><td>355</td><td>$7,100</td>
+      </tr>
+    </tfoot>
+  </table>
+
+  <h2>Element Reference</h2>
+  <table class="demo-table">
+    <thead><tr><th>Tag</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td><code>&lt;table&gt;</code></td><td>Wrapper for the entire table</td></tr>
+      <tr><td><code>&lt;caption&gt;</code></td><td>Title/description of the table (accessibility)</td></tr>
+      <tr><td><code>&lt;thead&gt;</code></td><td>Header section — browsers may repeat on print page breaks</td></tr>
+      <tr><td><code>&lt;tbody&gt;</code></td><td>Main data rows (can have multiple <code>&lt;tbody&gt;</code> groups)</td></tr>
+      <tr><td><code>&lt;tfoot&gt;</code></td><td>Footer row (totals, summaries)</td></tr>
+      <tr><td><code>&lt;tr&gt;</code></td><td>Table row</td></tr>
+      <tr><td><code>&lt;th&gt;</code></td><td>Header cell — bold & centered by default; use <code>scope</code> for accessibility</td></tr>
+      <tr><td><code>&lt;td&gt;</code></td><td>Data cell</td></tr>
+    </tbody>
+  </table>
+
+
+<script src="../../home.js" defer></script>
+</body>
+</html>

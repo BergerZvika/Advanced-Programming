@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Results</title>
+</head>
+<body>
+    <div id="results"></div>
+
+<script src="../../home.js" defer></script>
+</body>
+
+<script>
+    function putResults() {
+        const resultsDiv = document.getElementById("results");
+
+        const params = new URLSearchParams(window.location.search);
+        const height = parseFloat(params.get("height"));
+        const width = parseFloat(params.get("width"));
+        const perimeter = (height + width) * 2
+        const area = height * width
+
+        resultsDiv.innerHTML = `
+            <h2>Height ${height}</h2>
+            <h2>Width ${width}</h2>
+            <h2>Area ${area}</h2>
+            <h2>Perimeter ${perimeter}</h2>
+        `
+    };
+
+    window.onload = putResults;
+
+</script>
+
+</html>

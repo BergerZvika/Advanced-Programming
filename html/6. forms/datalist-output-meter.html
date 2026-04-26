@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>datalist, output, meter, progress</title>
+  <style>
+    body { font-family: sans-serif; max-width: 700px; margin: 2rem auto; padding: 0 1rem; }
+    code { background: #eee; padding: 2px 5px; border-radius: 3px; font-size: 0.85em; }
+    pre { background: #1e1e1e; color: #d4d4d4; padding: 1rem; border-radius: 6px; font-size: 0.82em; overflow-x: auto; }
+    .demo { border: 1px solid #ccc; border-radius: 6px; padding: 1.25rem; margin: 1rem 0; background: #fafafa; }
+    label { display: block; font-weight: bold; margin-bottom: 0.25rem; }
+    input, select { padding: 0.4rem 0.65rem; border: 1px solid #aaa; border-radius: 4px; font-size: 0.95rem; }
+    meter, progress { width: 100%; height: 22px; }
+    output { font-size: 1.4rem; font-weight: bold; color: #4a90d9; }
+    table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+    th, td { border: 1px solid #ccc; padding: 0.45rem 0.65rem; text-align: left; vertical-align: top; }
+    th { background: #4a90d9; color: white; }
+  </style>
+</head>
+<body>
+
+  <h1>datalist, output, meter, progress</h1>
+
+  <h2>&lt;datalist&gt; — Autocomplete suggestions</h2>
+  <p><code>&lt;datalist&gt;</code> provides a suggestion list for an <code>&lt;input&gt;</code>. The user can still type anything — it's not a dropdown restriction.</p>
+  <div class="demo">
+    <label for="city">City</label>
+    <input type="text" id="city" list="cities-list" placeholder="Start typing…" style="width:100%;box-sizing:border-box">
+    <datalist id="cities-list">
+      <option value="Berlin">
+      <option value="London">
+      <option value="Paris">
+      <option value="New York">
+      <option value="Tokyo">
+      <option value="Sydney">
+      <option value="Toronto">
+      <option value="Dubai">
+      <option value="Singapore">
+      <option value="Amsterdam">
+    </datalist>
+
+    <br>
+    <label for="lang-pick" style="margin-top:0.75rem">Favorite language</label>
+    <input type="text" id="lang-pick" list="languages" placeholder="Start typing…" style="width:100%;box-sizing:border-box">
+    <datalist id="languages">
+      <option value="Python">
+      <option value="JavaScript">
+      <option value="TypeScript">
+      <option value="Rust">
+      <option value="Go">
+      <option value="Kotlin">
+      <option value="Swift">
+      <option value="C++">
+    </datalist>
+  </div>
+  <pre>&lt;input type="text" list="cities-list" id="city"&gt;
+&lt;datalist id="cities-list"&gt;
+  &lt;option value="Berlin"&gt;
+  &lt;option value="London"&gt;
+  &lt;option value="Paris"&gt;
+&lt;/datalist&gt;</pre>
+
+  <h2>&lt;output&gt; — Computed Result</h2>
+  <p><code>&lt;output&gt;</code> is a semantic element for displaying the result of a calculation. Its <code>for</code> attribute points to input IDs it depends on.</p>
+  <div class="demo">
+    <form oninput="bmi_result.value = calcBMI(weight.valueAsNumber, height.valueAsNumber)">
+      <div style="display:flex;gap:1.5rem;flex-wrap:wrap">
+        <div style="flex:1">
+          <label for="weight">Weight (kg)</label>
+          <input type="number" id="weight" name="weight" value="70" min="1" max="300" style="width:100%;box-sizing:border-box">
+        </div>
+        <div style="flex:1">
+          <label for="height">Height (cm)</label>
+          <input type="number" id="height" name="height" value="175" min="1" max="300" style="width:100%;box-sizing:border-box">
+        </div>
+      </div>
+      <p style="margin:0.75rem 0 0.25rem">BMI: <output name="bmi_result" for="weight height">—</output></p>
+    </form>
+  </div>
+  <pre>&lt;form oninput="result.value = calcBMI(weight.value, height.value)"&gt;
+  &lt;input type="number" id="weight" name="weight"&gt;
+  &lt;input type="number" id="height" name="height"&gt;
+  &lt;output name="result" for="weight height"&gt;&lt;/output&gt;
+&lt;/form&gt;</pre>
+
+  <h2>&lt;meter&gt; — Scalar Gauge</h2>
+  <p><code>&lt;meter&gt;</code> represents a known range — disk usage, score, rating. Browsers apply semantic color (green / yellow / red) based on <code>low</code>, <code>high</code>, and <code>optimum</code>.</p>
+  <div class="demo">
+    <label>Disk usage (75% — in "high" zone → yellow)</label>
+    <meter value="75" min="0" max="100" low="50" high="80" optimum="20"></meter>
+
+    <label style="margin-top:0.75rem">Disk usage (92% — above "high" → red)</label>
+    <meter value="92" min="0" max="100" low="50" high="80" optimum="20"></meter>
+
+    <label style="margin-top:0.75rem">Score (8.5 / 10 — near optimum → green)</label>
+    <meter value="8.5" min="0" max="10" low="3" high="7" optimum="9"></meter>
+  </div>
+  <pre>&lt;meter value="75" min="0" max="100"
+       low="50" high="80" optimum="20"&gt;&lt;/meter&gt;</pre>
+
+  <table>
+    <thead><tr><th>Attribute</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td><code>value</code></td><td>Current value</td></tr>
+      <tr><td><code>min</code> / <code>max</code></td><td>Range boundaries</td></tr>
+      <tr><td><code>low</code></td><td>Threshold below which values are "low"</td></tr>
+      <tr><td><code>high</code></td><td>Threshold above which values are "high"</td></tr>
+      <tr><td><code>optimum</code></td><td>The preferred value — determines which zone is "good"</td></tr>
+    </tbody>
+  </table>
+
+  <h2>&lt;progress&gt; — Task Progress</h2>
+  <p><code>&lt;progress&gt;</code> shows completion of a task. Omit <code>max</code> and <code>value</code> for an indeterminate (spinning) state.</p>
+  <div class="demo">
+    <label>Download: <span id="pct">0</span>%</label>
+    <progress id="dl-bar" value="0" max="100"></progress>
+    <button onclick="startDownload()">Simulate Download</button>
+
+    <label style="margin-top:0.75rem">Indeterminate (no value attribute)</label>
+    <progress></progress>
+  </div>
+  <pre>&lt;!-- Determinate --&gt;
+&lt;progress value="65" max="100"&gt;&lt;/progress&gt;
+
+&lt;!-- Indeterminate --&gt;
+&lt;progress&gt;&lt;/progress&gt;</pre>
+
+  <script>
+    function calcBMI(w, h) {
+      if (!w || !h) return '—';
+      const m = h / 100;
+      return (w / (m * m)).toFixed(1);
+    }
+
+    function startDownload() {
+      const bar = document.getElementById('dl-bar');
+      const pct = document.getElementById('pct');
+      let v = 0;
+      bar.value = 0;
+      const id = setInterval(() => {
+        v += Math.random() * 8;
+        if (v >= 100) { v = 100; clearInterval(id); }
+        bar.value = v;
+        pct.textContent = Math.round(v);
+      }, 150);
+    }
+  </script>
+
+
+<script src="../../home.js" defer></script>
+</body>
+</html>

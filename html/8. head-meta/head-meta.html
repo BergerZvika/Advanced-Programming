@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="A demo page showing how the HTML head and meta tags work.">
+  <meta name="author" content="Alice Smith">
+  <meta name="theme-color" content="#4a90d9">
+
+  <!-- Open Graph (social media previews) -->
+  <meta property="og:title" content="Head & Meta Demo">
+  <meta property="og:description" content="Demonstrates HTML meta tags for SEO and social sharing.">
+  <meta property="og:image" content="https://picsum.photos/1200/630">
+  <meta property="og:url" content="https://example.com/page">
+  <meta property="og:type" content="website">
+
+  <!-- Twitter / X card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Head & Meta Demo">
+  <meta name="twitter:description" content="Demonstrates HTML meta tags for SEO and social sharing.">
+  <meta name="twitter:image" content="https://picsum.photos/1200/630">
+
+  <!-- Favicon -->
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+  <!-- Canonical URL (SEO: prevents duplicate content issues) -->
+  <link rel="canonical" href="https://example.com/page">
+
+  <!-- External CSS -->
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- Preload a critical resource -->
+  <link rel="preload" href="hero.jpg" as="image">
+
+  <!-- Preconnect to a CDN -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+
+  <title>Head & Meta Demo</title>
+  <style>
+    body { font-family: sans-serif; max-width: 750px; margin: 2rem auto; padding: 0 1rem; }
+    code { background: #eee; padding: 2px 5px; border-radius: 3px; font-size: 0.85em; }
+    pre { background: #1e1e1e; color: #d4d4d4; padding: 1rem; border-radius: 6px; font-size: 0.82em; overflow-x: auto; }
+    table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+    th, td { border: 1px solid #ccc; padding: 0.45rem 0.6rem; text-align: left; vertical-align: top; }
+    th { background: #4a90d9; color: white; }
+    .og-card { border: 1px solid #ddd; border-radius: 8px; overflow: hidden; max-width: 480px;
+               font-family: sans-serif; margin: 1rem 0; }
+    .og-card img { width: 100%; height: 200px; object-fit: cover; display: block; }
+    .og-card-body { padding: 0.75rem 1rem; background: #f7f7f7; }
+    .og-card-body .site { font-size: 0.75em; color: #888; text-transform: uppercase; }
+    .og-card-body .title { font-weight: bold; margin: 0.1rem 0; }
+    .og-card-body .desc { font-size: 0.85em; color: #555; }
+  </style>
+</head>
+<body>
+
+  <h1>The &lt;head&gt; Element &amp; Meta Tags</h1>
+  <p>Everything in <code>&lt;head&gt;</code> is metadata — not rendered as visible content.</p>
+
+  <h2>Essential Tags</h2>
+  <table>
+    <thead><tr><th>Tag</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td><code>&lt;meta charset="UTF-8"&gt;</code></td><td>Character encoding — always the first tag in <code>&lt;head&gt;</code></td></tr>
+      <tr><td><code>&lt;meta name="viewport" ...&gt;</code></td><td>Makes the page responsive on mobile (required for all sites)</td></tr>
+      <tr><td><code>&lt;title&gt;</code></td><td>Tab title and search engine headline — keep it under 60 chars</td></tr>
+      <tr><td><code>&lt;meta name="description"&gt;</code></td><td>Snippet shown below the title in search results — 150-160 chars</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Viewport Meta</h2>
+  <pre>&lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;</pre>
+  <ul>
+    <li><code>width=device-width</code> — match the device's screen width</li>
+    <li><code>initial-scale=1.0</code> — don't zoom in/out on load</li>
+    <li>Without this, mobile browsers render pages at ~980px and shrink them — text becomes tiny</li>
+  </ul>
+
+  <h2>Open Graph Tags (Social Previews)</h2>
+  <p>When someone shares your URL on Facebook, LinkedIn, Slack, etc., these tags control the preview card:</p>
+  <pre>&lt;meta property="og:title" content="Page Title"&gt;
+&lt;meta property="og:description" content="Short description."&gt;
+&lt;meta property="og:image" content="https://example.com/thumb.jpg"&gt;
+&lt;meta property="og:url" content="https://example.com/page"&gt;
+&lt;meta property="og:type" content="website"&gt;</pre>
+
+  <p>Preview of what the card looks like:</p>
+  <div class="og-card">
+    <img src="https://picsum.photos/480/200" alt="OG preview image">
+    <div class="og-card-body">
+      <div class="site">example.com</div>
+      <div class="title">Head &amp; Meta Demo</div>
+      <div class="desc">Demonstrates HTML meta tags for SEO and social sharing.</div>
+    </div>
+  </div>
+
+  <h2>&lt;link&gt; Reference</h2>
+  <table>
+    <thead><tr><th>rel value</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td><code>stylesheet</code></td><td>Load an external CSS file</td></tr>
+      <tr><td><code>icon</code></td><td>Favicon shown in the browser tab</td></tr>
+      <tr><td><code>canonical</code></td><td>Tell search engines this is the definitive URL (avoids duplicate content)</td></tr>
+      <tr><td><code>preload</code></td><td>Fetch a critical resource early (fonts, hero images)</td></tr>
+      <tr><td><code>preconnect</code></td><td>Open TCP connection early to a third-party origin (CDN, font service)</td></tr>
+      <tr><td><code>alternate</code></td><td>RSS feed or alternate language version</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Script Loading</h2>
+  <pre>&lt;!-- Blocks HTML parsing — avoid for most scripts --&gt;
+&lt;script src="app.js"&gt;&lt;/script&gt;
+
+&lt;!-- Downloads in parallel, executes when ready (order not preserved) --&gt;
+&lt;script src="app.js" async&gt;&lt;/script&gt;
+
+&lt;!-- Downloads in parallel, executes after HTML is parsed (order preserved) --&gt;
+&lt;script src="app.js" defer&gt;&lt;/script&gt;</pre>
+  <p>Prefer <code>defer</code> for most scripts. Use <code>async</code> only for independent scripts (analytics, ads).</p>
+
+
+<script src="../../home.js" defer></script>
+</body>
+</html>

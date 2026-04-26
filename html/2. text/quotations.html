@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Quotations</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; max-width: 640px; line-height: 1.6; }
+    blockquote {
+      border-left: 3px solid #7c8cff;
+      padding: 10px 16px;
+      margin: 16px 0;
+      font-style: italic;
+      color: #333;
+      background: #f8f9ff;
+    }
+    cite { color: #666; font-style: normal; font-size: 13px; }
+    abbr { border-bottom: 1px dotted #999; cursor: help; }
+    q { color: #1a3a8a; }
+  </style>
+</head>
+<body>
+<h1>Quoting sources in HTML</h1>
+
+<blockquote cite="https://en.wikipedia.org/wiki/Ada_Lovelace">
+  The Analytical Engine weaves algebraic patterns just as the
+  Jacquard loom weaves flowers and leaves.
+</blockquote>
+<p>— <cite>Ada Lovelace, 1843</cite></p>
+
+<p>Short inline quotes use the <q>q element</q> — the browser inserts
+   quotation marks automatically based on the page language.</p>
+
+<p><abbr title="Cascading Style Sheets">CSS</abbr> and
+   <abbr title="HyperText Markup Language">HTML</abbr> —
+   hover to reveal the full words.</p>
+
+<p>Flip text direction with <bdo dir="rtl">bi-directional override</bdo>
+   — useful for mixing scripts.</p>
+
+<address>
+  Written by <a href="mailto:nobody@example.com">nobody</a> · Zurich, 2026
+</address>
+
+<script src="../../home.js" defer></script>
+</body>
+</html>

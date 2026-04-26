@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SVG Animation</title>
+  <style>
+    body { font-family: sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1rem; background: #0f0f0f; color: #eee; }
+    h1, h2, h3 { color: #fff; }
+    code { background: #333; padding: 2px 5px; border-radius: 3px; font-size: 0.85em; }
+    pre { background: #1a1a1a; color: #d4d4d4; padding: 1rem; border-radius: 6px; font-size: 0.8em; overflow-x: auto; border: 1px solid #333; }
+    .row { display: flex; gap: 1.5rem; flex-wrap: wrap; margin: 1rem 0; }
+    .box { flex: 1; min-width: 220px; }
+    h3 { margin: 0.25rem 0 0.5rem; color: #ccc; }
+    svg { display: block; border-radius: 6px; }
+
+    /* CSS animations on SVG */
+    .spin { animation: spin 4s linear infinite; transform-origin: center; }
+    .pulse { animation: pulse 1.5s ease-in-out infinite; transform-origin: center; }
+    .dash { stroke-dasharray: 200; stroke-dashoffset: 200; animation: draw 2s ease forwards infinite; }
+    .float { animation: float 3s ease-in-out infinite; }
+
+    @keyframes spin   { to { transform: rotate(360deg); } }
+    @keyframes pulse  { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.3); } }
+    @keyframes draw   { to { stroke-dashoffset: 0; } }
+    @keyframes float  { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+  </style>
+</head>
+<body>
+
+  <h1>SVG Animation</h1>
+  <p>SVG can be animated in three ways: <strong>CSS animations/transitions</strong>, <strong>SMIL</strong> (built-in SVG animation elements), and <strong>JavaScript</strong>.</p>
+
+  <h2>CSS Animations on SVG</h2>
+  <div class="row">
+
+    <div class="box">
+      <h3>Spin (rotate)</h3>
+      <svg width="120" height="120" viewBox="0 0 120 120" style="background:#111">
+        <g class="spin">
+          <rect x="40" y="40" width="40" height="40" rx="4" fill="#4a90d9"/>
+          <rect x="20" y="20" width="20" height="20" rx="2" fill="#e74c3c"/>
+          <rect x="80" y="20" width="20" height="20" rx="2" fill="#27ae60"/>
+          <rect x="20" y="80" width="20" height="20" rx="2" fill="#f39c12"/>
+          <rect x="80" y="80" width="20" height="20" rx="2" fill="#8e44ad"/>
+        </g>
+      </svg>
+    </div>
+
+    <div class="box">
+      <h3>Pulse (scale)</h3>
+      <svg width="120" height="120" viewBox="0 0 120 120" style="background:#111">
+        <circle cx="60" cy="60" r="35" fill="#e74c3c" class="pulse"/>
+        <circle cx="60" cy="60" r="15" fill="white" class="pulse" style="animation-delay:0.3s"/>
+      </svg>
+    </div>
+
+    <div class="box">
+      <h3>Stroke Draw-on</h3>
+      <svg width="180" height="120" viewBox="0 0 180 120" style="background:#111">
+        <path d="M 20 60 Q 90 10 160 60 Q 90 110 20 60 Z"
+              fill="none" stroke="#4a90d9" stroke-width="3" class="dash"/>
+        <polyline points="20,100 60,40 100,80 140,30 160,55"
+                  fill="none" stroke="#f39c12" stroke-width="2.5"
+                  stroke-dasharray="300" stroke-dashoffset="300"
+                  style="animation: draw 3s ease forwards infinite; animation-delay:0.5s"/>
+      </svg>
+    </div>
+
+    <div class="box">
+      <h3>Float</h3>
+      <svg width="120" height="140" viewBox="0 0 120 140" style="background:#111">
+        <ellipse cx="60" cy="125" rx="30" ry="8" fill="rgba(255,255,255,0.15)"/>
+        <g class="float">
+          <circle cx="60" cy="55" r="35" fill="#8e44ad"/>
+          <circle cx="45" cy="45" r="10" fill="rgba(255,255,255,0.3)"/>
+        </g>
+      </svg>
+    </div>
+
+  </div>
+
+  <h2>SMIL — Built-in SVG Animation</h2>
+  <p>SMIL animations are declared directly in SVG markup using <code>&lt;animate&gt;</code>, <code>&lt;animateTransform&gt;</code>, and <code>&lt;animateMotion&gt;</code>.</p>
+
+  <svg width="100%" height="160" viewBox="0 0 700 160" style="background:#111;border-radius:6px">
+    <!-- animateTransform: rotate a gear -->
+    <g transform="translate(80,80)">
+      <polygon points="0,-45 10,-35 35,-35 35,-10 45,0 35,10 35,35 10,35 0,45 -10,35 -35,35 -35,10 -45,0 -35,-10 -35,-35 -10,-35"
+               fill="#555" stroke="#888" stroke-width="1"/>
+      <circle r="18" fill="#333" stroke="#888" stroke-width="1"/>
+      <animateTransform attributeName="transform" type="rotate"
+                        from="0" to="360" dur="4s" repeatCount="indefinite"/>
+    </g>
+
+    <!-- animate: color cycle on a circle -->
+    <circle cx="220" cy="80" r="40" fill="#e74c3c">
+      <animate attributeName="fill"
+               values="#e74c3c;#f39c12;#27ae60;#4a90d9;#8e44ad;#e74c3c"
+               dur="3s" repeatCount="indefinite"/>
+      <animate attributeName="r"
+               values="40;55;40" dur="1.5s" repeatCount="indefinite"/>
+    </circle>
+
+    <!-- animateMotion: object following a path -->
+    <path id="motion-path" d="M 350 120 Q 450 20 550 120 Q 650 220 700 80"
+          fill="none" stroke="#333" stroke-width="1" stroke-dasharray="4"/>
+    <circle r="14" fill="#f39c12">
+      <animateMotion dur="3s" repeatCount="indefinite" rotate="auto">
+        <mpath href="#motion-path"/>
+      </animateMotion>
+    </circle>
+
+    <!-- Labels -->
+    <text x="80" y="145" text-anchor="middle" fill="#888" font-size="11">animateTransform</text>
+    <text x="220" y="145" text-anchor="middle" fill="#888" font-size="11">animate</text>
+    <text x="520" y="155" text-anchor="middle" fill="#888" font-size="11">animateMotion</text>
+  </svg>
+
+  <h2>JavaScript-driven Animation</h2>
+  <p>For complex or interactive animations, drive SVG attributes directly from JS with <code>requestAnimationFrame</code>:</p>
+  <svg id="js-svg" width="100%" height="180" viewBox="0 0 700 180" style="background:#111;border-radius:6px">
+    <defs>
+      <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#4a90d9" stop-opacity="0.8"/>
+        <stop offset="100%" stop-color="#4a90d9" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+  </svg>
+
+  <script>
+    const svg = document.getElementById('js-svg');
+    const NS = 'http://www.w3.org/2000/svg';
+    const W = 700, H = 180;
+
+    // Create orbiting dots
+    const orbiters = Array.from({ length: 8 }, (_, i) => {
+      const g = document.createElementNS(NS, 'g');
+      const circle = document.createElementNS(NS, 'circle');
+      circle.setAttribute('r', 6 + i % 3 * 3);
+      circle.setAttribute('fill', `hsl(${i * 45},70%,60%)`);
+      g.appendChild(circle);
+      svg.appendChild(g);
+      return { g, phase: (i / 8) * Math.PI * 2, speed: 0.5 + i * 0.1, radius: 40 + i * 12 };
+    });
+
+    // Center glow
+    const glowCircle = document.createElementNS(NS, 'circle');
+    glowCircle.setAttribute('cx', W / 2);
+    glowCircle.setAttribute('cy', H / 2);
+    glowCircle.setAttribute('r', 60);
+    glowCircle.setAttribute('fill', 'url(#glow)');
+    svg.insertBefore(glowCircle, svg.firstChild);
+
+    const sun = document.createElementNS(NS, 'circle');
+    sun.setAttribute('cx', W / 2);
+    sun.setAttribute('cy', H / 2);
+    sun.setAttribute('r', 18);
+    sun.setAttribute('fill', '#fff9c4');
+    svg.appendChild(sun);
+
+    let t = 0;
+    function tick() {
+      t += 0.016;
+      orbiters.forEach(o => {
+        const x = W / 2 + Math.cos(t * o.speed + o.phase) * o.radius;
+        const y = H / 2 + Math.sin(t * o.speed + o.phase) * o.radius * 0.4;
+        o.g.setAttribute('transform', `translate(${x},${y})`);
+      });
+      glowCircle.setAttribute('r', 55 + Math.sin(t * 2) * 10);
+      requestAnimationFrame(tick);
+    }
+    tick();
+  </script>
+
+
+<script src="../../home.js" defer></script>
+</body>
+</html>

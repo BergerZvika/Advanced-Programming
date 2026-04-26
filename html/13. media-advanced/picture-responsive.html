@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>picture & Responsive Images</title>
+  <style>
+    body { font-family: sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
+    code { background: #eee; padding: 2px 5px; border-radius: 3px; font-size: 0.85em; }
+    pre { background: #1e1e1e; color: #d4d4d4; padding: 1rem; border-radius: 6px; font-size: 0.82em; overflow-x: auto; }
+    .demo { border: 1px solid #ccc; border-radius: 6px; padding: 1rem; margin: 1rem 0; background: #fafafa; }
+    table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+    th, td { border: 1px solid #ccc; padding: 0.45rem 0.65rem; text-align: left; vertical-align: top; }
+    th { background: #16a085; color: white; }
+    img { max-width: 100%; border-radius: 4px; }
+  </style>
+</head>
+<body>
+
+  <h1>&lt;picture&gt; &amp; Responsive Images</h1>
+
+  <h2>&lt;picture&gt; — Art Direction</h2>
+  <p><code>&lt;picture&gt;</code> lets you serve different image sources based on viewport size or format support. The browser picks the <em>first matching</em> <code>&lt;source&gt;</code>; the <code>&lt;img&gt;</code> is the required fallback.</p>
+
+  <div class="demo">
+    <!--
+      On narrow screens (max-width: 600px) → show a tall portrait crop.
+      On wider screens → show a wide landscape crop.
+      If the browser supports AVIF → serve .avif, else .webp, else .jpg (fallback).
+    -->
+    <picture>
+      <!-- AVIF format (best compression) — served if supported -->
+      <source
+        media="(max-width: 600px)"
+        srcset="https://picsum.photos/400/500"
+        type="image/jpeg">
+      <source
+        srcset="https://picsum.photos/800/300"
+        type="image/jpeg">
+      <!-- Fallback <img> is always required -->
+      <img src="https://picsum.photos/800/300" alt="Responsive art direction demo"
+           width="800" height="300" loading="lazy">
+    </picture>
+    <p style="font-size:0.82em;color:#555;margin:0.25rem 0 0">
+      Resize the window below 600 px to see the portrait crop load instead.
+    </p>
+  </div>
+
+  <pre>&lt;picture&gt;
+  &lt;!-- Portrait crop on mobile --&gt;
+  &lt;source media="(max-width: 600px)"
+          srcset="photo-portrait.avif" type="image/avif"&gt;
+  &lt;source media="(max-width: 600px)"
+          srcset="photo-portrait.webp" type="image/webp"&gt;
+  &lt;source media="(max-width: 600px)"
+          srcset="photo-portrait.jpg"&gt;
+
+  &lt;!-- Landscape on desktop --&gt;
+  &lt;source srcset="photo-landscape.avif" type="image/avif"&gt;
+  &lt;source srcset="photo-landscape.webp" type="image/webp"&gt;
+
+  &lt;!-- Fallback --&gt;
+  &lt;img src="photo-landscape.jpg" alt="Scenery" width="800" height="300"&gt;
+&lt;/picture&gt;</pre>
+
+  <h2>srcset + sizes — Resolution Switching</h2>
+  <p>When the <em>content</em> is the same but you want the browser to pick the right file size, use <code>srcset</code> + <code>sizes</code> on a plain <code>&lt;img&gt;</code>.</p>
+
+  <div class="demo">
+    <img
+      src="https://picsum.photos/800/400"
+      srcset="
+        https://picsum.photos/400/200  400w,
+        https://picsum.photos/800/400  800w,
+        https://picsum.photos/1200/600 1200w
+      "
+      sizes="(max-width: 600px) 100vw,
+             (max-width: 900px) 80vw,
+             760px"
+      alt="Resolution switching example"
+      width="800" height="400"
+      loading="lazy">
+  </div>
+
+  <pre>&lt;img
+  src="photo-800.jpg"
+  srcset="photo-400.jpg   400w,
+          photo-800.jpg   800w,
+          photo-1600.jpg 1600w"
+  sizes="(max-width: 600px) 100vw,
+         (max-width: 900px) 80vw,
+         760px"
+  alt="Photo"
+  width="800" height="400"
+  loading="lazy"&gt;</pre>
+
+  <table>
+    <thead><tr><th>Concept</th><th>How it works</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>srcset</code> with <code>w</code> descriptors</td>
+        <td>List image files and their actual pixel widths. Browser knows available options.</td>
+      </tr>
+      <tr>
+        <td><code>sizes</code></td>
+        <td>Tell the browser how wide the image will <em>render</em> at various breakpoints. Without this it assumes 100vw.</td>
+      </tr>
+      <tr>
+        <td>Browser choice</td>
+        <td>Browser picks the best candidate based on rendered size × device pixel ratio (DPR). A 2x Retina screen at 400px may load the 800w image.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>2x / 3x Pixel Density (x descriptors)</h2>
+  <p>For fixed-size images (icons, logos), use <code>x</code> descriptors to serve higher-res versions to high-DPI screens:</p>
+  <pre>&lt;img
+  src="logo.png"
+  srcset="logo.png 1x, logo@2x.png 2x, logo@3x.png 3x"
+  alt="Company Logo"
+  width="120" height="40"&gt;</pre>
+
+  <h2>Lazy Loading Strategy</h2>
+  <pre>&lt;!-- Images below the fold --&gt;
+&lt;img src="below-fold.jpg" alt="..." loading="lazy"&gt;
+
+&lt;!-- Hero / LCP image — load eagerly (default) + preload in &lt;head&gt; --&gt;
+&lt;link rel="preload" as="image" href="hero.jpg"&gt;
+&lt;img src="hero.jpg" alt="Hero" loading="eager" fetchpriority="high"&gt;</pre>
+
+  <h2>Format Support Detection with &lt;picture&gt;</h2>
+  <p>Use <code>&lt;picture&gt;</code> to progressively serve modern formats, falling back to JPEG:</p>
+  <pre>&lt;picture&gt;
+  &lt;source srcset="image.avif" type="image/avif"&gt;
+  &lt;source srcset="image.webp" type="image/webp"&gt;
+  &lt;img src="image.jpg" alt="Photo" width="800" height="600"&gt;
+&lt;/picture&gt;</pre>
+
+
+<script src="../../home.js" defer></script>
+</body>
+</html>

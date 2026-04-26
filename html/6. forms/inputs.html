@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Form Inputs</title>
+  <style>
+    body { font-family: sans-serif; max-width: 700px; margin: 2rem auto; padding: 0 1rem; }
+    .demo { border: 1px solid #ccc; border-radius: 6px; padding: 1.25rem; margin: 1rem 0; background: #fafafa; }
+    .demo label { display: block; margin-bottom: 0.25rem; font-weight: bold; font-size: 0.9em; }
+    .demo input, .demo select, .demo textarea {
+      display: block; width: 100%; box-sizing: border-box;
+      padding: 0.4rem 0.6rem; border: 1px solid #aaa; border-radius: 4px;
+      font-size: 0.95rem; margin-bottom: 0.75rem;
+    }
+    code { background: #eee; padding: 2px 5px; border-radius: 3px; font-size: 0.85em; }
+    table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+    th, td { border: 1px solid #ccc; padding: 0.45rem 0.6rem; text-align: left; vertical-align: top; }
+    th { background: #4a90d9; color: white; }
+  </style>
+</head>
+<body>
+
+  <h1>Form Inputs</h1>
+
+  <h2>Text Inputs</h2>
+  <div class="demo">
+    <label for="txt">text</label>
+    <input type="text" id="txt" placeholder="Enter some text">
+
+    <label for="em">email</label>
+    <input type="email" id="em" placeholder="user@example.com">
+
+    <label for="pw">password</label>
+    <input type="password" id="pw" placeholder="••••••••">
+
+    <label for="num">number</label>
+    <input type="number" id="num" min="0" max="100" step="5" value="25">
+
+    <label for="rng">range</label>
+    <input type="range" id="rng" min="0" max="10" value="5">
+
+    <label for="tel">tel</label>
+    <input type="tel" id="tel" placeholder="+1 (555) 000-0000">
+
+    <label for="url">url</label>
+    <input type="url" id="url" placeholder="https://example.com">
+
+    <label for="srch">search</label>
+    <input type="search" id="srch" placeholder="Search…">
+  </div>
+
+  <h2>Date &amp; Time</h2>
+  <div class="demo">
+    <label for="d">date</label>
+    <input type="date" id="d">
+
+    <label for="t">time</label>
+    <input type="time" id="t">
+
+    <label for="dt">datetime-local</label>
+    <input type="datetime-local" id="dt">
+
+    <label for="mo">month</label>
+    <input type="month" id="mo">
+
+    <label for="wk">week</label>
+    <input type="week" id="wk">
+  </div>
+
+  <h2>Pickers</h2>
+  <div class="demo">
+    <label for="col">color</label>
+    <input type="color" id="col" value="#4a90d9">
+
+    <label for="fi">file</label>
+    <input type="file" id="fi" accept=".jpg,.png,.pdf">
+
+    <label for="fis">file (multiple)</label>
+    <input type="file" id="fis" multiple>
+  </div>
+
+  <h2>Checkbox &amp; Radio</h2>
+  <div class="demo" style="display:flex;gap:2rem;flex-wrap:wrap">
+    <div>
+      <p style="margin:0 0 0.5rem;font-weight:bold">Checkboxes (multiple allowed)</p>
+      <label style="display:flex;align-items:center;gap:0.4rem;font-weight:normal;margin-bottom:0.4rem">
+        <input type="checkbox" name="lang" value="html" checked> HTML
+      </label>
+      <label style="display:flex;align-items:center;gap:0.4rem;font-weight:normal;margin-bottom:0.4rem">
+        <input type="checkbox" name="lang" value="css"> CSS
+      </label>
+      <label style="display:flex;align-items:center;gap:0.4rem;font-weight:normal">
+        <input type="checkbox" name="lang" value="js"> JavaScript
+      </label>
+    </div>
+    <div>
+      <p style="margin:0 0 0.5rem;font-weight:bold">Radio (one at a time)</p>
+      <label style="display:flex;align-items:center;gap:0.4rem;font-weight:normal;margin-bottom:0.4rem">
+        <input type="radio" name="level" value="beginner" checked> Beginner
+      </label>
+      <label style="display:flex;align-items:center;gap:0.4rem;font-weight:normal;margin-bottom:0.4rem">
+        <input type="radio" name="level" value="intermediate"> Intermediate
+      </label>
+      <label style="display:flex;align-items:center;gap:0.4rem;font-weight:normal">
+        <input type="radio" name="level" value="advanced"> Advanced
+      </label>
+    </div>
+  </div>
+
+  <h2>Common Input Attributes</h2>
+  <table>
+    <thead><tr><th>Attribute</th><th>Effect</th></tr></thead>
+    <tbody>
+      <tr><td><code>placeholder</code></td><td>Grey hint text inside the input</td></tr>
+      <tr><td><code>required</code></td><td>Block form submission if empty</td></tr>
+      <tr><td><code>disabled</code></td><td>Greyed out, not submitted with form</td></tr>
+      <tr><td><code>readonly</code></td><td>Cannot edit, but IS submitted</td></tr>
+      <tr><td><code>autofocus</code></td><td>Focus this field on page load</td></tr>
+      <tr><td><code>autocomplete</code></td><td><code>on</code> / <code>off</code> / field hint like <code>email</code></td></tr>
+      <tr><td><code>pattern</code></td><td>Regex that the value must match</td></tr>
+      <tr><td><code>minlength</code> / <code>maxlength</code></td><td>Character count limits for text inputs</td></tr>
+      <tr><td><code>min</code> / <code>max</code> / <code>step</code></td><td>Numeric/date constraints</td></tr>
+    </tbody>
+  </table>
+
+
+<script src="../../home.js" defer></script>
+</body>
+</html>

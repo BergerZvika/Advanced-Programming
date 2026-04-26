@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>template & slot</title>
+  <style>
+    body { font-family: sans-serif; max-width: 780px; margin: 2rem auto; padding: 0 1rem; }
+    code { background: #eee; padding: 2px 5px; border-radius: 3px; font-size: 0.85em; }
+    pre { background: #1e1e1e; color: #d4d4d4; padding: 1rem; border-radius: 6px; font-size: 0.82em; overflow-x: auto; }
+    .demo { border: 1px solid #ccc; border-radius: 6px; padding: 1rem; margin: 1rem 0; background: #fafafa; }
+  </style>
+</head>
+<body>
+
+  <h1>&lt;template&gt; &amp; &lt;slot&gt;</h1>
+
+  <h2>&lt;template&gt; — Inert Markup</h2>
+  <p>Content inside <code>&lt;template&gt;</code> is parsed but <em>not rendered</em>. It's a reusable blueprint you clone and insert via JavaScript.</p>
+
+  <!-- Template definition — invisible, not in the rendered page -->
+  <template id="card-template">
+    <div class="card" style="border:1px solid #4a90d9;border-radius:8px;padding:1rem;margin:0.5rem;max-width:220px;display:inline-block;vertical-align:top">
+      <img class="card-img" src="" alt="" style="width:100%;border-radius:4px;display:block;margin-bottom:0.5rem">
+      <h3 class="card-title" style="margin:0 0 0.25rem"></h3>
+      <p  class="card-desc"  style="margin:0;font-size:0.88em;color:#555"></p>
+    </div>
+  </template>
+
+  <div class="demo">
+    <h3>Cards stamped from a &lt;template&gt;</h3>
+    <div id="card-container"></div>
+  </div>
+
+  <pre>&lt;template id="card-template"&gt;
+  &lt;div class="card"&gt;
+    &lt;img class="card-img"&gt;
+    &lt;h3 class="card-title"&gt;&lt;/h3&gt;
+    &lt;p  class="card-desc"&gt;&lt;/p&gt;
+  &lt;/div&gt;
+&lt;/template&gt;
+
+&lt;script&gt;
+  const tpl = document.getElementById('card-template');
+
+  function addCard({ title, desc, img }) {
+    const clone = tpl.content.cloneNode(true); // deep clone
+    clone.querySelector('.card-title').textContent = title;
+    clone.querySelector('.card-desc').textContent  = desc;
+    clone.querySelector('.card-img').src            = img;
+    clone.querySelector('.card-img').alt            = title;
+    container.appendChild(clone);
+  }
+&lt;/script&gt;</pre>
+
+  <h2>&lt;slot&gt; — Placeholders in Shadow DOM</h2>
+  <p><code>&lt;slot&gt;</code> is used inside a Web Component's Shadow DOM template. It marks where the caller's <em>light DOM</em> children are projected.</p>
+
+  <!-- Custom element used on this page -->
+  <div class="demo">
+    <info-box type="tip">
+      <span slot="title">Pro Tip</span>
+      <span slot="body">Named slots let callers inject content into specific positions of a component.</span>
+    </info-box>
+
+    <info-box type="warning">
+      <span slot="title">Warning</span>
+      <span slot="body">Shadow DOM styles are scoped — they don't leak in or out of the component boundary.</span>
+    </info-box>
+
+    <info-box>
+      <span slot="title">Default Box</span>
+      <span slot="body">When no <code>type</code> is provided, the component uses its default style.</span>
+    </info-box>
+  </div>
+
+  <pre>&lt;!-- Usage --&gt;
+&lt;info-box type="tip"&gt;
+  &lt;span slot="title"&gt;Pro Tip&lt;/span&gt;
+  &lt;span slot="body"&gt;Named slots let callers inject content...&lt;/span&gt;
+&lt;/info-box&gt;
+
+&lt;!-- Component definition (Shadow DOM template with slots) --&gt;
+&lt;template id="info-box-tpl"&gt;
+  &lt;style&gt;...&lt;/style&gt;
+  &lt;div class="box"&gt;
+    &lt;strong&gt;&lt;slot name="title"&gt;Info&lt;/slot&gt;&lt;/strong&gt;
+    &lt;p&gt;&lt;slot name="body"&gt;&lt;/slot&gt;&lt;/p&gt;
+  &lt;/div&gt;
+&lt;/template&gt;</pre>
+
+  <!-- info-box shadow DOM template -->
+  <template id="info-box-tpl">
+    <style>
+      :host { display: block; margin: 0.5rem 0; }
+      .box { border-left: 4px solid #4a90d9; padding: 0.65rem 1rem; border-radius: 0 6px 6px 0; background: #f0f7ff; }
+      :host([type="warning"]) .box { border-left-color: #e67e22; background: #fff8f0; }
+      :host([type="tip"])     .box { border-left-color: #27ae60; background: #f0fff4; }
+      :host([type="error"])   .box { border-left-color: #e74c3c; background: #fff0f0; }
+      strong { display: block; margin-bottom: 0.25rem; }
+      p { margin: 0; font-size: 0.9em; color: #444; }
+    </style>
+    <div class="box">
+      <strong><slot name="title">Info</slot></strong>
+      <p><slot name="body"></slot></p>
+    </div>
+  </template>
+
+  <script>
+    // ── Stamp cards from template ─────────────────────────────
+    const tpl = document.getElementById('card-template');
+    const container = document.getElementById('card-container');
+
+    const data = [
+      { title: 'Mountains', desc: 'Scenic alpine views', img: 'https://picsum.photos/220/130?random=1' },
+      { title: 'Forests',   desc: 'Dense woodland paths', img: 'https://picsum.photos/220/130?random=2' },
+      { title: 'Oceans',    desc: 'Deep blue horizons', img: 'https://picsum.photos/220/130?random=3' },
+    ];
+
+    data.forEach(({ title, desc, img }) => {
+      const clone = tpl.content.cloneNode(true);
+      clone.querySelector('.card-title').textContent = title;
+      clone.querySelector('.card-desc').textContent  = desc;
+      const imgEl = clone.querySelector('.card-img');
+      imgEl.src = img;
+      imgEl.alt = title;
+      container.appendChild(clone);
+    });
+
+    // ── info-box custom element ───────────────────────────────
+    class InfoBox extends HTMLElement {
+      connectedCallback() {
+        if (this.shadowRoot) return;
+        const shadow = this.attachShadow({ mode: 'open' });
+        shadow.appendChild(
+          document.getElementById('info-box-tpl').content.cloneNode(true)
+        );
+      }
+    }
+    customElements.define('info-box', InfoBox);
+  </script>
+
+
+<script src="../../home.js" defer></script>
+</body>
+</html>

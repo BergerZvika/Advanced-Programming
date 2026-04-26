@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Links</title>
+  <style>
+    body { font-family: sans-serif; max-width: 700px; margin: 2rem auto; padding: 0 1rem; }
+    .demo { border: 1px solid #ccc; border-radius: 6px; padding: 1rem; margin: 1rem 0; background: #fafafa; }
+    code { background: #eee; padding: 2px 5px; border-radius: 3px; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ccc; padding: 0.5rem; text-align: left; }
+    th { background: #4a90d9; color: white; }
+  </style>
+</head>
+<body>
+
+  <h1>Links</h1>
+
+  <h2>Basic Link</h2>
+  <div class="demo">
+    <a href="https://example.com">Visit Example.com</a>
+    <pre style="margin-top:0.5rem;font-size:0.85em">&lt;a href="https://example.com"&gt;Visit Example.com&lt;/a&gt;</pre>
+  </div>
+
+  <h2>href Values</h2>
+  <table>
+    <thead><tr><th>href value</th><th>What it does</th></tr></thead>
+    <tbody>
+      <tr><td><code>https://...</code></td><td>Absolute URL — external site</td></tr>
+      <tr><td><code>./page.html</code></td><td>Relative URL — file in same folder</td></tr>
+      <tr><td><code>../page.html</code></td><td>Relative URL — file one folder up</td></tr>
+      <tr><td><code>#section-id</code></td><td>Jump to element with that <code>id</code> on the same page</td></tr>
+      <tr><td><code>mailto:a@b.com</code></td><td>Open email client</td></tr>
+      <tr><td><code>tel:+1234567890</code></td><td>Dial number on mobile</td></tr>
+    </tbody>
+  </table>
+
+  <h2>target Attribute</h2>
+  <div class="demo">
+    <a href="https://example.com" target="_blank" rel="noopener noreferrer">Opens in new tab</a>
+    <p style="font-size:0.85em;margin:0.5rem 0 0">Always add <code>rel="noopener noreferrer"</code> with <code>target="_blank"</code> for security.</p>
+  </div>
+
+  <h2>Anchor Links (same-page navigation)</h2>
+  <p>Jump to <a href="#bottom">the bottom section</a> of this page.</p>
+
+  <h2>Link as Button</h2>
+  <div class="demo">
+    <a href="#" style="display:inline-block;padding:0.5rem 1.2rem;background:#4a90d9;color:white;border-radius:4px;text-decoration:none;">Button-style link</a>
+    <p style="font-size:0.85em;margin:0.5rem 0 0">Styled with CSS — still an <code>&lt;a&gt;</code> element, so it remains accessible.</p>
+  </div>
+
+  <h2 id="bottom">Bottom Section</h2>
+  <p>You navigated here via an anchor link. The heading has <code>id="bottom"</code>.</p>
+
+
+<script src="../../home.js" defer></script>
+</body>
+</html>

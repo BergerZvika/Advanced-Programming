@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Images</title>
+  <style>
+    body { font-family: sans-serif; max-width: 750px; margin: 2rem auto; padding: 0 1rem; }
+    .demo { border: 1px solid #ccc; border-radius: 6px; padding: 1rem; margin: 1rem 0; background: #fafafa; }
+    code { background: #eee; padding: 2px 5px; border-radius: 3px; font-size: 0.85em; }
+    pre { background: #1e1e1e; color: #d4d4d4; padding: 1rem; border-radius: 6px; font-size: 0.85em; overflow-x: auto; }
+    table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+    th, td { border: 1px solid #ccc; padding: 0.5rem; text-align: left; }
+    th { background: #4a90d9; color: white; }
+  </style>
+</head>
+<body>
+
+  <h1>Images</h1>
+
+  <h2>Basic Image</h2>
+  <div class="demo">
+    <!-- Using a placeholder image service -->
+    <img src="https://picsum.photos/300/150" alt="A random placeholder photo" width="300" height="150">
+    <pre>&lt;img src="photo.jpg" alt="A random placeholder photo" width="300" height="150"&gt;</pre>
+  </div>
+
+  <h2>Required Attributes</h2>
+  <table>
+    <thead><tr><th>Attribute</th><th>Required?</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td><code>src</code></td><td>Yes</td><td>Path or URL to the image file</td></tr>
+      <tr><td><code>alt</code></td><td>Yes (accessibility)</td><td>Text description shown when image fails; read by screen readers. Use <code>alt=""</code> for decorative images.</td></tr>
+      <tr><td><code>width</code> / <code>height</code></td><td>Recommended</td><td>Prevents layout shift while loading — always set both</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Responsive Images — srcset</h2>
+  <p>Load different image sizes based on screen resolution:</p>
+  <pre>&lt;img
+  src="photo-800.jpg"
+  srcset="photo-400.jpg 400w, photo-800.jpg 800w, photo-1600.jpg 1600w"
+  sizes="(max-width: 600px) 400px, 800px"
+  alt="Responsive photo"&gt;</pre>
+
+  <h2>figure &amp; figcaption</h2>
+  <div class="demo">
+    <figure style="margin:0;display:inline-block">
+      <img src="https://picsum.photos/300/180?grayscale" alt="Grayscale placeholder" width="300" height="180">
+      <figcaption style="font-size:0.85em;color:#555;text-align:center;margin-top:0.25rem">
+        Fig. 1 — A grayscale landscape (caption via &lt;figcaption&gt;)
+      </figcaption>
+    </figure>
+  </div>
+
+  <h2>Supported Formats</h2>
+  <table>
+    <thead><tr><th>Format</th><th>Best for</th></tr></thead>
+    <tbody>
+      <tr><td><code>.jpg / .jpeg</code></td><td>Photos (lossy compression, no transparency)</td></tr>
+      <tr><td><code>.png</code></td><td>Graphics with transparency, screenshots</td></tr>
+      <tr><td><code>.gif</code></td><td>Simple animations (limited colors)</td></tr>
+      <tr><td><code>.svg</code></td><td>Icons, logos — scales perfectly at any size</td></tr>
+      <tr><td><code>.webp</code></td><td>Modern format — smaller than jpg/png, with transparency</td></tr>
+      <tr><td><code>.avif</code></td><td>Newest — even smaller than webp, wide browser support</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Lazy Loading</h2>
+  <pre>&lt;img src="below-fold.jpg" alt="..." loading="lazy"&gt;</pre>
+  <p>The browser skips loading images that are off-screen until the user scrolls near them — reduces initial page load time.</p>
+
+
+<script src="../../home.js" defer></script>
+</body>
+</html>

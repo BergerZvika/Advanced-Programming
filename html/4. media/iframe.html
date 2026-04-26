@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>iframe</title>
+  <style>
+    body { font-family: sans-serif; max-width: 750px; margin: 2rem auto; padding: 0 1rem; }
+    .demo { border: 1px solid #ccc; border-radius: 6px; padding: 1rem; margin: 1rem 0; background: #fafafa; }
+    code { background: #eee; padding: 2px 5px; border-radius: 3px; font-size: 0.85em; }
+    pre { background: #1e1e1e; color: #d4d4d4; padding: 1rem; border-radius: 6px; font-size: 0.85em; overflow-x: auto; }
+    table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+    th, td { border: 1px solid #ccc; padding: 0.5rem; text-align: left; }
+    th { background: #4a90d9; color: white; }
+  </style>
+</head>
+<body>
+
+  <h1>&lt;iframe&gt; — Inline Frames</h1>
+  <p>An iframe embeds another HTML document inside your page — used for maps, YouTube, payment widgets, and more.</p>
+
+  <h2>Basic iframe</h2>
+  <div class="demo">
+    <iframe
+      src="https://example.com"
+      width="100%"
+      height="250"
+      title="Example Domain"
+      style="border:1px solid #ccc">
+    </iframe>
+    <pre>&lt;iframe
+  src="https://example.com"
+  width="100%"
+  height="250"
+  title="Example Domain"&gt;
+&lt;/iframe&gt;</pre>
+  </div>
+
+  <h2>Key Attributes</h2>
+  <table>
+    <thead><tr><th>Attribute</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td><code>src</code></td><td>URL of the document to embed</td></tr>
+      <tr><td><code>title</code></td><td>Accessible label (required for screen readers)</td></tr>
+      <tr><td><code>width</code> / <code>height</code></td><td>Dimensions (pixels or %)</td></tr>
+      <tr><td><code>loading="lazy"</code></td><td>Defer loading until near viewport</td></tr>
+      <tr><td><code>allowfullscreen</code></td><td>Allow the content to go fullscreen</td></tr>
+      <tr><td><code>sandbox</code></td><td>Restrict what the embedded page can do (see below)</td></tr>
+    </tbody>
+  </table>
+
+  <h2>sandbox Attribute</h2>
+  <p>The <code>sandbox</code> attribute applies restrictions by default. Add tokens to <em>re-enable</em> capabilities:</p>
+  <pre>&lt;!-- fully sandboxed (scripts, forms, popups all blocked) --&gt;
+&lt;iframe src="untrusted.html" sandbox&gt;&lt;/iframe&gt;
+
+&lt;!-- allow scripts and same-origin only --&gt;
+&lt;iframe src="widget.html" sandbox="allow-scripts allow-same-origin"&gt;&lt;/iframe&gt;</pre>
+
+  <table>
+    <thead><tr><th>Token</th><th>What it re-enables</th></tr></thead>
+    <tbody>
+      <tr><td><code>allow-scripts</code></td><td>JavaScript execution</td></tr>
+      <tr><td><code>allow-forms</code></td><td>Form submission</td></tr>
+      <tr><td><code>allow-same-origin</code></td><td>Access to cookies/storage from same origin</td></tr>
+      <tr><td><code>allow-popups</code></td><td>window.open() and target="_blank"</td></tr>
+      <tr><td><code>allow-top-navigation</code></td><td>Navigate the parent page</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Embedding a Google Map</h2>
+  <pre>&lt;iframe
+  src="https://maps.google.com/maps?q=Berlin&output=embed"
+  width="600" height="400"
+  title="Map of Berlin"
+  loading="lazy"
+  allowfullscreen&gt;
+&lt;/iframe&gt;</pre>
+
+
+<script src="../../home.js" defer></script>
+</body>
+</html>
