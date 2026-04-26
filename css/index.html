@@ -1,0 +1,4071 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CSS Lab — Advanced Programming</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/theme/dracula.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/dialog/dialog.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/hint/show-hint.min.css">
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/xml/xml.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/javascript/javascript.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/css/css.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/htmlmixed/htmlmixed.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/edit/closebrackets.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/edit/matchbrackets.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/selection/active-line.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/comment/comment.min.js"></script>
+
+<style>
+:root{
+  --bg-0:#06060c;
+  --bg-1:#0c0c18;
+  --bg-2:#15152a;
+  --surface:rgba(255,255,255,0.04);
+  --surface-2:rgba(255,255,255,0.07);
+  --border:rgba(255,255,255,0.09);
+  --border-strong:rgba(255,255,255,0.18);
+  --text:#e8e8f3;
+  --text-dim:#9a9ab0;
+  --text-faint:#666680;
+  --accent:#7c5cff;
+  --accent-2:#35d0ff;
+  --accent-3:#ff6ec7;
+  --css-blue:#264de4;
+  --css-blue-2:#3490ff;
+  --success:#38d39f;
+  --warn:#ffb547;
+  --error:#ff5a7a;
+  --radius:18px;
+  --radius-sm:12px;
+  --shadow-lg: 0 30px 80px -30px rgba(124,92,255,0.35), 0 10px 30px -15px rgba(0,0,0,0.6);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg-0);color:var(--text);font-family:'Inter',system-ui,sans-serif;height:100%;overflow:hidden}
+code,pre,textarea,.mono,.CodeMirror{font-family:'JetBrains Mono',ui-monospace,monospace}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+
+/* 3D Three.js canvas — background layer */
+#bg-3d{
+  position:fixed; inset:0; z-index:-2;
+  display:block;
+  background:
+    radial-gradient(1200px 700px at 8% -10%, rgba(124,92,255,0.30), transparent 60%),
+    radial-gradient(1000px 600px at 110% 0%,  rgba(53,208,255,0.22), transparent 60%),
+    radial-gradient(900px 600px at 50% 130%,  rgba(255,110,199,0.18), transparent 60%),
+    linear-gradient(180deg, #050510 0%, #08081a 50%, #050510 100%);
+}
+/* tiny stars overlay */
+body::after{
+  content:""; position:fixed; inset:0; z-index:-1; pointer-events:none; opacity:.32;
+  background-image:
+    radial-gradient(1px 1px at 20% 30%, #ffffff 100%, transparent),
+    radial-gradient(1px 1px at 70% 60%, #ffffff 100%, transparent),
+    radial-gradient(1.5px 1.5px at 40% 80%, #ffffff 100%, transparent),
+    radial-gradient(1px 1px at 85% 20%, #ffffff 100%, transparent),
+    radial-gradient(1px 1px at 15% 65%, #ffffff 100%, transparent);
+  background-size: 1200px 800px;
+  mask-image:linear-gradient(180deg,transparent,#000 20%,#000 80%,transparent);
+}
+
+/* Layout */
+.app{
+  display:grid; grid-template-columns: 300px 1fr; height:100vh;
+}
+@media (max-width: 980px){
+  .app{ grid-template-columns: 1fr; height:auto; min-height:100vh; overflow:auto }
+  html,body{ overflow:auto; height:auto }
+}
+
+/* Sidebar */
+.sidebar{
+  padding:22px 16px; position:relative; z-index:5;
+  background:linear-gradient(180deg, rgba(12,12,24,0.85), rgba(8,8,18,0.85));
+  backdrop-filter: blur(22px) saturate(140%);
+  -webkit-backdrop-filter: blur(22px) saturate(140%);
+  border-right:1px solid var(--border);
+  overflow-y:auto;
+  scrollbar-width:thin;
+}
+.sidebar::-webkit-scrollbar{width:6px}
+.sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.08);border-radius:6px}
+
+.brand{
+  display:flex;align-items:center;gap:12px;margin-bottom:18px;
+  padding:6px 4px;border-radius:14px;user-select:none;
+}
+.brand-cube{
+  width:46px;height:46px;border-radius:12px;position:relative;
+  background:linear-gradient(135deg,#3490ff,#264de4);
+  box-shadow:
+    0 12px 30px -10px rgba(247,223,30,0.45),
+    inset 0 0 0 1px rgba(255,255,255,0.25),
+    inset 0 -10px 20px -8px rgba(0,0,0,0.35);
+  transform: rotate(-6deg);
+  display:flex;align-items:center;justify-content:center;
+  font-weight:800;font-size:13px;color:#1a1a2a;letter-spacing:0.5px;
+  animation: floatY 5s ease-in-out infinite;
+}
+.brand-cube::after{
+  content:""; position:absolute; inset:auto -6px -6px auto;
+  width:100%;height:100%; border-radius:12px;
+  background:linear-gradient(135deg, rgba(124,92,255,0.5), rgba(53,208,255,0.5));
+  filter:blur(14px); z-index:-1;
+}
+@keyframes floatY{
+  0%,100%{ transform: rotate(-6deg) translateY(0) }
+  50%   { transform: rotate(-2deg) translateY(-4px) }
+}
+.brand h1{margin:0;font-size:17px;font-weight:700;letter-spacing:-0.02em}
+.brand .sub{font-size:11px;color:var(--text-faint);letter-spacing:0.14em;text-transform:uppercase}
+
+.search-wrap{ position:relative; margin-bottom:14px }
+.search{
+  width:100%;padding:10px 14px 10px 34px;border-radius:12px;border:1px solid var(--border);
+  background:rgba(255,255,255,0.03);color:var(--text);font-size:13.5px;outline:none;
+  transition:border-color .2s, box-shadow .2s;
+}
+.search:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(124,92,255,0.2)}
+.search-wrap::before{
+  content:"⌕"; position:absolute; left:11px; top:50%; transform:translateY(-50%);
+  color:var(--text-faint); font-size:14px; pointer-events:none;
+}
+
+.section-label{
+  font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:var(--text-faint);
+  padding:14px 8px 6px;
+}
+
+.file-list{ list-style:none; padding:0; margin:0 }
+.file-list li{ margin:2px 0 }
+.file-btn{
+  width:100%;display:flex;align-items:center;gap:10px;
+  background:transparent;color:var(--text-dim);
+  padding:10px 12px;border-radius:10px;font-size:13.5px;font-weight:500;text-align:left;
+  transition: background .15s, color .15s, transform .15s, box-shadow .2s;
+  border:1px solid transparent;
+}
+.file-btn:hover{ background:var(--surface); color:var(--text); transform:translateX(2px) }
+.file-btn.active{
+  background:linear-gradient(135deg,rgba(124,92,255,0.22),rgba(53,208,255,0.12));
+  color:#fff; border-color:rgba(124,92,255,0.32);
+  box-shadow: inset 0 0 0 1px rgba(124,92,255,0.18), 0 8px 24px -16px rgba(124,92,255,0.55);
+}
+.file-btn .ico{
+  width:24px; height:24px; flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  border-radius:6px;
+  background:linear-gradient(135deg,#3490ff,#264de4);
+  color:#1a1a2a; font-weight:800; font-size:9.5px; letter-spacing:0.5px;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.2);
+}
+.file-btn .label{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+.file-btn .lines{
+  font-size:10.5px; color:var(--text-faint); padding:1px 6px; border-radius:20px;
+  background:rgba(255,255,255,0.04); flex-shrink:0;
+}
+.file-btn.active .lines{ background:rgba(124,92,255,0.22); color:#dcd5ff }
+.file-btn.dirty::before{
+  content:""; width:6px; height:6px; border-radius:50%;
+  background:var(--accent-2); flex-shrink:0;
+  box-shadow: 0 0 8px var(--accent-2);
+}
+
+.back-link{
+  display:flex;align-items:center;gap:8px;
+  margin-top:18px; padding:10px 12px;border-radius:10px;
+  color:var(--text-dim); font-size:13px; text-decoration:none;
+  border:1px solid var(--border);
+  transition: background .15s, color .15s, border-color .15s;
+}
+.back-link:hover{ background:var(--surface); color:var(--text); border-color:var(--border-strong) }
+
+/* Main pane */
+.editor-pane{
+  position:relative; padding:22px 22px 22px 22px;
+  display:grid;
+  /* Both columns default to 1fr; the drag handle overrides --col-1/--col-2 with px values */
+  grid-template-columns: var(--col-1, 1fr) 6px var(--col-2, 1fr);
+  grid-template-rows: auto 1fr;
+  grid-template-areas:
+    "topbar  topbar  topbar"
+    "editor  split   preview";
+  gap:14px;
+  min-width:0; min-height:0; overflow:hidden;
+}
+.editor-pane > .top-bar     { grid-area: topbar }
+.editor-pane > .editor-card { grid-area: editor;  min-width: 0 }
+.editor-pane > .preview-card{ grid-area: preview; min-width: 0 }
+
+/* Drag handle to resize editor / preview split */
+.splitter{
+  grid-area: split;
+  cursor: col-resize;
+  position: relative;
+  background: transparent;
+  user-select: none;
+  touch-action: none;
+}
+.splitter::before{
+  content: ""; position: absolute;
+  left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: 4px; height: 64px; border-radius: 2px;
+  background: var(--border-strong);
+  transition: background .18s, height .18s, box-shadow .18s;
+}
+.splitter:hover::before,
+.splitter.active::before{
+  background: linear-gradient(180deg, var(--accent), var(--accent-2));
+  height: 110px;
+  box-shadow: 0 0 16px -2px rgba(124,92,255,0.55);
+}
+
+@media (max-width: 980px){
+  .editor-pane{
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr 1fr;
+    grid-template-areas:
+      "topbar"
+      "editor"
+      "preview";
+  }
+  .splitter{ display:none }
+}
+
+/* Top header bar with file info & actions */
+.top-bar{
+  display:flex;align-items:center;gap:14px;
+  padding:14px 18px;
+  background: linear-gradient(135deg, rgba(20,20,40,0.7), rgba(12,12,24,0.7));
+  border:1px solid var(--border); border-radius: var(--radius);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  box-shadow: var(--shadow-lg);
+}
+.file-meta{ display:flex; align-items:center; gap:12px; min-width:0 }
+.file-icon{
+  width:36px;height:36px;border-radius:10px;
+  background:linear-gradient(135deg,#3490ff,#264de4);
+  color:#1a1a2a; font-weight:800; font-size:13px; letter-spacing:0.5px;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow: 0 6px 18px -8px rgba(247,223,30,0.55), inset 0 0 0 1px rgba(255,255,255,0.25);
+  flex-shrink:0;
+}
+.file-name{ font-size:15px; font-weight:600; letter-spacing:-0.01em }
+.file-name .dirty-mark{ color:var(--accent-2); margin-left:6px; opacity:0; transition:opacity .15s }
+.file-name.dirty .dirty-mark{ opacity:1 }
+.file-sub{ font-size:11.5px; color:var(--text-faint); margin-top:1px; font-family:'JetBrains Mono',monospace }
+.spacer{ flex:1 }
+
+.action-btn{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:8px 14px; border-radius:10px;
+  border:1px solid var(--border); background:rgba(255,255,255,0.03);
+  color:var(--text-dim); font-size:13px; font-weight:600;
+  transition: background .15s, color .15s, border-color .15s, transform .15s;
+}
+.action-btn:hover{ background:var(--surface-2); color:var(--text); border-color:var(--border-strong) }
+.action-btn:active{ transform:translateY(1px) }
+.action-btn .k{ font-family:'JetBrains Mono',monospace; font-size:10.5px; opacity:.6; padding:1px 5px; border-radius:5px; background:rgba(255,255,255,0.06) }
+.run-btn{
+  background:linear-gradient(135deg,#7c5cff,#35d0ff);
+  color:#fff; border-color:transparent;
+  box-shadow: 0 10px 30px -12px rgba(124,92,255,0.7);
+}
+.run-btn:hover{ filter:brightness(1.08); transform:translateY(-1px); border-color:transparent }
+.stop-btn{
+  background:linear-gradient(135deg,#ff5a7a,#ff8c5a);
+  color:#fff; border-color:transparent;
+  box-shadow: 0 10px 30px -12px rgba(255,90,122,0.65);
+}
+.stop-btn:hover{ filter:brightness(1.08); transform:translateY(-1px); border-color:transparent }
+.stop-btn .k{ background:rgba(255,255,255,0.16) }
+
+/* Editor card with 3D float */
+.editor-card{
+  position:relative; min-height:0;
+  background: linear-gradient(180deg, rgba(20,20,40,0.65), rgba(8,8,18,0.65));
+  border:1px solid var(--border); border-radius: var(--radius);
+  overflow:hidden;
+  backdrop-filter: blur(22px) saturate(150%);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  box-shadow: var(--shadow-lg);
+  transform-style: preserve-3d;
+  transition: transform .25s cubic-bezier(.2,.7,.2,1);
+}
+.editor-card::before{
+  content:""; position:absolute; inset:-1px; border-radius: calc(var(--radius) + 1px); pointer-events:none;
+  background: linear-gradient(135deg, rgba(124,92,255,0.45), rgba(53,208,255,0.0) 40%, rgba(255,110,199,0.35));
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  padding:1px;
+  opacity:.55;
+}
+.editor-chrome{
+  display:flex; align-items:center; gap:10px; padding:9px 14px;
+  border-bottom:1px solid var(--border);
+  background: linear-gradient(180deg, rgba(255,255,255,0.025), transparent);
+}
+.dot{ width:11px; height:11px; border-radius:50% }
+.dot.r{ background:#ff5a7a; box-shadow:0 0 10px rgba(255,90,122,0.55) }
+.dot.y{ background:#ffb547; box-shadow:0 0 10px rgba(255,181,71,0.55) }
+.dot.g{ background:#38d39f; box-shadow:0 0 10px rgba(56,211,159,0.55) }
+.editor-chrome .filename{
+  margin-left:8px; font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--text-dim);
+}
+.editor-chrome .badge{
+  margin-left:auto; font-size:10.5px; letter-spacing:0.14em; text-transform:uppercase;
+  color:var(--text-faint); padding:3px 9px; border-radius:20px;
+  background:rgba(52,144,255,0.10); border:1px solid rgba(52,144,255,0.32);
+  color:#9bd0ff;
+}
+
+/* Step tabs (per-file numbered runners) */
+.step-tabs{
+  display:flex; gap:5px; margin: 0 6px 0 12px;
+  flex:1; min-width:0; overflow-x:auto;
+  scrollbar-width:none;
+}
+.step-tabs::-webkit-scrollbar{ display:none }
+.step-tabs:empty{ display:none }
+.step-tab{
+  flex-shrink:0;
+  padding: 3px 11px; font-size:11px; border-radius:7px;
+  border:1px solid var(--border); background:rgba(255,255,255,0.025);
+  color:var(--text-dim); font-weight:600;
+  font-family:'JetBrains Mono',ui-monospace,monospace;
+  transition: background .15s, color .15s, border-color .15s, transform .15s;
+}
+.step-tab:hover{ background:var(--surface-2); color:var(--text); border-color:var(--border-strong) }
+.step-tab.active{
+  background:linear-gradient(135deg, rgba(124,92,255,0.32), rgba(53,208,255,0.20));
+  color:#fff; border-color:rgba(124,92,255,0.45);
+  box-shadow: 0 0 0 1px rgba(124,92,255,0.28), 0 6px 14px -8px rgba(124,92,255,0.55);
+}
+.step-tab .lbl{ opacity:.85; margin-left:2px; font-weight:500 }
+
+/* Sub-file tabs (when a lesson has companion .css/.js files) */
+.file-tabs{
+  display:flex; gap:4px; margin: 0 6px 0 12px;
+  flex:1; min-width:0; overflow-x:auto;
+  scrollbar-width:none;
+}
+.file-tabs::-webkit-scrollbar{ display:none }
+.file-tabs:empty{ display:none }
+.file-tab{
+  flex-shrink:0;
+  padding: 3px 11px; font-size:11.5px; border-radius:7px;
+  border:1px solid var(--border); background:rgba(255,255,255,0.025);
+  color:var(--text-dim); font-weight:500;
+  font-family:'JetBrains Mono', ui-monospace, monospace;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.file-tab:hover{ background:var(--surface-2); color:var(--text); border-color:var(--border-strong) }
+.file-tab.active{
+  background:linear-gradient(135deg, rgba(52,144,255,0.30), rgba(38,77,228,0.18));
+  color:#fff; border-color:rgba(52,144,255,0.45);
+  box-shadow: 0 0 0 1px rgba(52,144,255,0.25), 0 6px 14px -8px rgba(38,77,228,0.45);
+}
+
+/* Per-file external links (e.g. wikipedia / MDN) */
+.file-links{
+  display:flex; gap:6px; margin-top:6px; flex-wrap:wrap;
+}
+.file-links:empty{ display:none }
+.file-link{
+  display:inline-flex; align-items:center; gap:6px;
+  padding: 4px 9px; border-radius: 8px;
+  font-size: 11.5px; line-height:1.2;
+  border:1px solid rgba(53,208,255,0.28);
+  background:linear-gradient(135deg, rgba(53,208,255,0.10), rgba(124,92,255,0.08));
+  color:#cfeaff; text-decoration:none;
+  transition: background .15s, color .15s, border-color .15s, transform .15s;
+}
+.file-link:hover{
+  background:linear-gradient(135deg, rgba(53,208,255,0.20), rgba(124,92,255,0.16));
+  border-color:rgba(53,208,255,0.55);
+  color:#fff; transform: translateY(-1px);
+}
+.file-link .ico{ font-size:12px; opacity:.85 }
+.file-link .arrow{ font-size:10px; opacity:.65 }
+.file-link .host{ font-size:10px; color:var(--text-faint); font-family:'JetBrains Mono',monospace }
+.cm-host{ position:relative; height:calc(100% - 41px) }
+.CodeMirror{
+  height:100% !important; background:transparent;
+  font-size:14px; line-height:1.55;
+  padding: 6px 0;
+}
+.CodeMirror-gutters{ background:transparent; border-right:1px solid var(--border) }
+.CodeMirror-linenumber{ color:rgba(154,154,176,0.4) }
+.CodeMirror-cursor{ border-left-color:#fff }
+.CodeMirror-activeline-background{ background:rgba(124,92,255,0.05) !important }
+.CodeMirror-selected{ background:rgba(124,92,255,0.22) !important }
+.CodeMirror-matchingbracket{ color:#35d0ff !important; text-shadow:0 0 8px rgba(53,208,255,0.6) }
+
+/* Console card */
+.preview-card{
+  background: linear-gradient(180deg, rgba(20,20,40,0.7), rgba(8,8,18,0.7));
+  border:1px solid var(--border); border-radius: var(--radius);
+  display:flex; flex-direction:column; min-height:0;
+  backdrop-filter: blur(22px) saturate(150%);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  box-shadow: var(--shadow-lg);
+  overflow:hidden;
+  position: relative;
+}
+.preview-card::before{
+  content:""; position: absolute; inset:-1px; border-radius: calc(var(--radius) + 1px); pointer-events:none;
+  background: linear-gradient(135deg, rgba(52,144,255,0.45), rgba(124,92,255,0) 40%, rgba(53,208,255,0.4));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude; padding: 1px;
+  opacity: .55;
+}
+.preview-head{
+  display:flex; align-items:center; gap:10px; padding:9px 14px;
+  border-bottom:1px solid var(--border);
+  background: linear-gradient(180deg, rgba(255,255,255,0.025), transparent);
+  position: relative; z-index: 1;
+}
+.preview-head .label{
+  font-size:11.5px; letter-spacing:0.18em; text-transform:uppercase; color:var(--text-dim);
+  display:flex; align-items:center; gap:8px;
+}
+.preview-head .label::before{
+  content:""; width:8px; height:8px; border-radius:50%;
+  background: var(--success); box-shadow: 0 0 10px rgba(56,211,159,0.7);
+}
+.preview-head .label.rendering::before{ background: var(--accent-2); box-shadow: 0 0 10px rgba(53,208,255,0.7); animation: pulse 1s ease infinite }
+@keyframes pulse{
+  0%,100%{ transform: scale(1); opacity:1 }
+  50%   { transform: scale(1.4); opacity:.55 }
+}
+.preview-head .right{ margin-left:auto; display:flex; gap:6px; align-items:center }
+.preview-head .icon-btn{
+  padding:5px 10px; border-radius:8px; border:1px solid var(--border);
+  background:rgba(255,255,255,0.02); color:var(--text-dim); font-size:11.5px;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.preview-head .icon-btn:hover{ background:var(--surface-2); color:var(--text); border-color:var(--border-strong) }
+.preview-head .icon-btn.active{
+  background: linear-gradient(135deg, rgba(124,92,255,0.30), rgba(53,208,255,0.20));
+  color: #fff; border-color: rgba(124,92,255,0.45);
+}
+.preview-frame{
+  flex: 1; min-height: 0;
+  background: #fff;
+  border: 0;
+  width: 100%;
+}
+.preview-card.dark-bg .preview-frame{ background: #1a1a2a }
+
+/* Old console styles kept defensively to avoid breaking anything that
+   might still reference them — unused in the CSS lab. */
+.console-card{
+  height: 220px;
+  background: linear-gradient(180deg, rgba(8,8,18,0.78), rgba(6,6,14,0.78));
+  border:1px solid var(--border); border-radius: var(--radius);
+  display:flex; flex-direction:column; min-height:0;
+  backdrop-filter: blur(22px) saturate(150%);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  box-shadow: var(--shadow-lg);
+  overflow:hidden;
+}
+.console-head{
+  display:flex; align-items:center; gap:10px; padding:10px 14px;
+  border-bottom:1px solid var(--border);
+}
+.console-head .label{
+  font-size:11.5px; letter-spacing:0.18em; text-transform:uppercase; color:var(--text-dim);
+  display:flex; align-items:center; gap:8px;
+}
+.console-head .label::before{
+  content:""; width:8px; height:8px; border-radius:50%;
+  background: var(--success); box-shadow: 0 0 10px rgba(56,211,159,0.7);
+}
+.console-head .label.running::before{ background: var(--accent-2); box-shadow: 0 0 10px rgba(53,208,255,0.7); animation: pulse 1s ease infinite }
+.console-head .label.error::before{ background: var(--error); box-shadow: 0 0 10px rgba(255,90,122,0.7) }
+@keyframes pulse{
+  0%,100%{ transform: scale(1); opacity:1 }
+  50%   { transform: scale(1.4); opacity:.55 }
+}
+.console-head .stats{
+  font-size:11px; color:var(--text-faint); font-family:'JetBrains Mono',monospace;
+}
+.console-head .right{ margin-left:auto; display:flex; gap:6px }
+.console-head .icon-btn{
+  padding:5px 10px; border-radius:8px; border:1px solid var(--border);
+  background:rgba(255,255,255,0.02); color:var(--text-dim); font-size:11.5px;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.console-head .icon-btn:hover{ background:var(--surface-2); color:var(--text); border-color:var(--border-strong) }
+.console-out{
+  flex:1; overflow:auto; padding:10px 14px;
+  font-family:'JetBrains Mono',monospace; font-size:12.5px; line-height:1.55;
+  scrollbar-width:thin;
+}
+.console-out::-webkit-scrollbar{ width:8px; height:8px }
+.console-out::-webkit-scrollbar-thumb{ background:rgba(255,255,255,0.08); border-radius:8px }
+.console-out .empty{
+  color:var(--text-faint); text-align:center; padding:34px 0; font-style:italic; font-family:'Inter',sans-serif;
+}
+.line{
+  padding:3px 8px; margin:1px 0; border-radius:6px;
+  display:flex; gap:10px; align-items:flex-start;
+  border-left:2px solid transparent;
+  white-space:pre-wrap; word-break:break-word;
+}
+.line .t{ flex-shrink:0; color:var(--text-faint); font-size:10.5px; padding-top:2px; min-width:62px }
+.line .c{ flex:1; min-width:0 }
+.line.log{ color:#dcd5ff; border-left-color:rgba(124,92,255,0.4) }
+.line.info{ color:#9bd9ff; border-left-color:rgba(53,208,255,0.5) }
+.line.warn{ color:#ffe0a3; border-left-color:rgba(255,181,71,0.6); background:rgba(255,181,71,0.04) }
+.line.error{ color:#ffb1bf; border-left-color:rgba(255,90,122,0.7); background:rgba(255,90,122,0.06) }
+.line.system{ color:var(--text-faint); border-left-color:rgba(255,255,255,0.15); font-style:italic }
+.line.result{ color:#a8f5d2; border-left-color:rgba(56,211,159,0.55) }
+.console-out table{
+  border-collapse:collapse; margin:4px 0; font-size:12px;
+}
+.console-out th, .console-out td{
+  border:1px solid rgba(255,255,255,0.1); padding:3px 8px; text-align:left;
+}
+.console-out th{ background:rgba(124,92,255,0.12); color:#fff }
+
+/* Floating ambient glow shape */
+.ambient{
+  position:absolute; border-radius:50%; pointer-events:none; z-index:0;
+  filter: blur(60px); opacity:.5;
+}
+.ambient.a{ width:340px;height:340px; background:rgba(124,92,255,0.35); top:-80px; right:-100px; animation:floatA 14s ease-in-out infinite }
+.ambient.b{ width:280px;height:280px; background:rgba(53,208,255,0.28); bottom:-60px; left:8%; animation:floatB 18s ease-in-out infinite }
+@keyframes floatA{ 0%,100%{transform:translate(0,0)} 50%{transform:translate(-30px,20px)} }
+@keyframes floatB{ 0%,100%{transform:translate(0,0)} 50%{transform:translate(40px,-20px)} }
+
+/* Media modal — embeds external videos in-page */
+.media-modal{
+  position: fixed; inset: 0; z-index: 200; display: none;
+  align-items: center; justify-content: center;
+  padding: 24px;
+  background: rgba(4,4,12,0.78);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  animation: mmFade .18s ease both;
+}
+.media-modal.open{ display: flex }
+@keyframes mmFade{ from{opacity:0} to{opacity:1} }
+.media-panel{
+  width: min(960px, 100%);
+  max-height: 92vh;
+  display: flex; flex-direction: column;
+  background: linear-gradient(180deg, rgba(20,20,40,0.9), rgba(8,8,18,0.9));
+  border: 1px solid var(--border-strong);
+  border-radius: 18px;
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  position: relative;
+}
+.media-panel::before{
+  content:""; position: absolute; inset: -1px; border-radius: 19px; pointer-events: none;
+  background: linear-gradient(135deg, rgba(124,92,255,0.45), rgba(53,208,255,0) 40%, rgba(255,110,199,0.4));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude; padding: 1px;
+  opacity: .55;
+}
+.media-head{
+  display: flex; align-items: center; gap: 12px; padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+}
+.media-head h3{ margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -0.01em; flex: 1; min-width: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.media-host{ font-size: 11px; color: var(--text-faint); font-family: 'JetBrains Mono', monospace }
+.media-close{
+  width: 30px; height: 30px; flex-shrink: 0;
+  border-radius: 50%; border: 1px solid var(--border);
+  background: rgba(255,255,255,0.04); color: var(--text-dim);
+  font-size: 17px; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.media-close:hover{ background: rgba(255,90,122,0.14); color: #fff; border-color: rgba(255,90,122,0.4) }
+.media-body{
+  flex: 1; min-height: 0; padding: 14px 18px;
+  display: flex; align-items: center; justify-content: center;
+  background: #000;
+}
+.media-body video{
+  max-width: 100%; max-height: 70vh;
+  display: block; border-radius: 10px;
+  background: #000;
+}
+.media-foot{
+  padding: 10px 18px; border-top: 1px solid var(--border);
+  font-size: 12px; color: var(--text-faint);
+  display: flex; align-items: center; gap: 10px;
+}
+.media-foot a{ color: var(--accent-2); text-decoration: none }
+.media-foot a:hover{ text-decoration: underline }
+.media-loading{ color: var(--text-dim); font-size: 13px; padding: 60px 0 }
+
+/* HTML-content mode for the modal — used for install guides etc. */
+.media-body.html-mode{
+  background: linear-gradient(180deg, rgba(20,20,35,0.95), rgba(10,10,22,0.95));
+  display: block; align-items: stretch; justify-content: stretch;
+  padding: 20px 26px 24px;
+  overflow: auto;
+  font-family: 'Inter', system-ui, sans-serif;
+  color: var(--text); line-height: 1.65; text-align: left;
+}
+.media-body.html-mode h4{
+  margin: 18px 0 8px; font-size: 14px; font-weight: 700; color: #fff; letter-spacing: -0.005em;
+}
+.media-body.html-mode h4:first-child{ margin-top: 0 }
+.media-body.html-mode p{ margin: 8px 0; font-size: 14px; color: var(--text) }
+.media-body.html-mode ul{ margin: 8px 0; padding-left: 22px }
+.media-body.html-mode li{ margin: 4px 0; font-size: 14px }
+.media-body.html-mode a{
+  color: var(--accent-2); text-decoration: none;
+  border-bottom: 1px dashed rgba(53,208,255,0.4);
+  transition: color .15s, border-color .15s;
+}
+.media-body.html-mode a:hover{ color: #fff; border-bottom-color: rgba(53,208,255,0.85) }
+.media-body.html-mode code{
+  background: rgba(124,92,255,0.14);
+  border: 1px solid rgba(124,92,255,0.28);
+  color: #d4cbff; padding: 1px 6px; border-radius: 5px;
+  font-size: 12.5px; font-family: 'JetBrains Mono', monospace;
+}
+.media-body.html-mode pre{
+  background: rgba(6,6,14,0.85);
+  border: 1px solid var(--border); border-radius: 10px;
+  padding: 14px 16px; overflow-x: auto; margin: 12px 0;
+}
+.media-body.html-mode pre code{
+  background: none; border: 0; padding: 0;
+  color: #cfeaff; font-size: 12.5px; line-height: 1.55;
+}
+.media-body.html-mode kbd{
+  display: inline-block; padding: 2px 8px; margin: 0 2px;
+  font-family: 'JetBrains Mono', monospace; font-size: 11px; line-height: 1.35;
+  color: #f0e8ff;
+  background: rgba(124,92,255,0.18);
+  border: 1px solid rgba(124,92,255,0.42);
+  border-bottom-width: 2px; border-radius: 5px;
+}
+.media-body.html-mode small,
+.media-body.html-mode .note{ color: var(--text-faint); font-size: 12px; font-style: italic }
+.media-body.html-mode .arrow-note{ color: var(--text-dim); font-size: 12px; margin-top: 6px }
+.media-body.html-mode .step-pill{
+  display: inline-block; min-width: 20px; height: 20px; padding: 0 6px;
+  border-radius: 999px; background: rgba(53,208,255,0.16);
+  border: 1px solid rgba(53,208,255,0.4); color: #a4e2ff;
+  font-size: 11px; font-weight: 700; text-align: center; line-height: 18px;
+  margin-right: 8px; font-family: 'JetBrains Mono', monospace;
+}
+
+/* Toast / status */
+.toast{
+  position:fixed; bottom:22px; right:22px; z-index:50;
+  padding:10px 14px; border-radius:12px; font-size:13px;
+  background:linear-gradient(135deg,#7c5cff,#35d0ff); color:#fff;
+  box-shadow: 0 18px 40px -18px rgba(124,92,255,0.7);
+  transform: translateY(20px); opacity:0;
+  transition: transform .25s ease, opacity .25s ease;
+}
+.toast.show{ transform: translateY(0); opacity:1 }
+.toast.error{ background:linear-gradient(135deg,#ff5a7a,#ff8c5a) }
+</style>
+</head>
+<body>
+<canvas id="bg-3d"></canvas>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-cube">CSS</div>
+      <div>
+        <h1>CSS Lab</h1>
+        <div class="sub">Live Preview</div>
+      </div>
+    </div>
+
+    <div class="search-wrap">
+      <input class="search" id="search" placeholder="Filter files…" />
+    </div>
+
+    <div class="section-label">Files</div>
+    <ul class="file-list" id="fileList"></ul>
+
+    <a class="back-link" href="../index.html" style="margin-top:18px">⌂ Home</a>
+  </aside>
+
+  <main class="editor-pane">
+    <div class="ambient a"></div>
+    <div class="ambient b"></div>
+
+    <header class="top-bar">
+      <div class="file-meta">
+        <div class="file-icon">CSS</div>
+        <div style="min-width:0">
+          <div class="file-name" id="fileName">basic selectors.html<span class="dirty-mark">●</span></div>
+          <div class="file-sub" id="fileSub">css/1. selectors/basic selectors.html</div>
+          <div class="file-links" id="fileLinks"></div>
+        </div>
+      </div>
+      <div class="spacer"></div>
+      <label class="action-btn" id="autoLbl" style="cursor:pointer" title="Auto-render preview as you type">
+        <input type="checkbox" id="autoChk" checked style="margin-right:6px;vertical-align:middle"> Auto
+      </label>
+      <button class="action-btn" id="resetBtn" title="Revert to file on disk">⟲ Reset</button>
+      <button class="action-btn run-btn" id="runBtn" title="Refresh preview">▶ Render <span class="k">⌘↵</span></button>
+    </header>
+
+    <section class="editor-card" id="editorCard">
+      <div class="editor-chrome">
+        <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="filename" id="chromeName">basic selectors.html</span>
+        <div class="file-tabs" id="fileTabs"></div>
+        <div class="step-tabs" id="stepTabs"></div>
+        <span class="badge">HTML + CSS</span>
+      </div>
+      <div class="cm-host">
+        <textarea id="editor"></textarea>
+      </div>
+    </section>
+
+    <div class="splitter" id="splitter" role="separator" aria-orientation="vertical" title="Drag to resize"></div>
+
+    <section class="preview-card" id="previewCard">
+      <div class="preview-head">
+        <span class="label" id="previewStatus">Preview</span>
+        <div class="right">
+          <button class="icon-btn" id="bgToggleBtn" title="Toggle preview background (light / dark)">◐ BG</button>
+          <button class="icon-btn" id="popoutBtn" title="Open the rendered preview in a new tab">↗ Pop out</button>
+        </div>
+      </div>
+      <iframe class="preview-frame" id="preview" sandbox="allow-scripts" title="Live preview"></iframe>
+    </section>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="media-modal" id="mediaModal" role="dialog" aria-modal="true" aria-labelledby="mediaTitle">
+  <div class="media-panel">
+    <div class="media-head">
+      <h3 id="mediaTitle">Loading…</h3>
+      <span class="media-host" id="mediaHost"></span>
+      <button class="media-close" id="mediaClose" type="button" title="Close (Esc)" aria-label="Close">×</button>
+    </div>
+    <div class="media-body" id="mediaBody"></div>
+    <div class="media-foot" id="mediaFoot">
+      <span>Embedded from <a id="mediaSource" href="#" target="_blank" rel="noopener">source ↗</a></span>
+    </div>
+  </div>
+</div>
+
+<!-- Embedded source — kept in sync with sibling .html files (home.js stripped) -->
+<script type="text/plain" data-cssfile="1. selectors/basic selectors.html"><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CSS Selector Precedence</title>
+  <style>
+    /* Type selector */
+    p {
+      color: blue;
+    }
+
+    /* Class selector */
+    .my-class {
+      color: green ; /* !important */
+    }
+
+    /* ID selector */
+    #my-id {
+      color: red;
+    }
+
+    #inline {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <h2>CSS Selector Precedence Demo</h2>
+
+  <p>This paragraph is styled by <strong>type selector</strong> (blue).</p>
+
+  <p class="my-class">This paragraph is styled by <strong>class selector</strong> (green overrides type).</p>
+
+  <p id="my-id">This paragraph is styled by <strong>ID selector</strong> (red overrides class and type).</p>
+
+  <p id="inline" class="my-class" style="color: black;">
+    This paragraph uses <strong>inline style</strong> (black overrides everything).
+  </p>
+</body>
+</html>
+</script>
+<script type="text/plain" data-cssfile="1. selectors/child selector.html"><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CSS Selectors: Child, Descendant & Advanced Attribute</title>
+  <style>
+    /* Child selector */
+    div > p {
+      color: blue;
+    }
+
+    /* Descendant selector */
+    div p {
+      background-color: yellow;
+    }
+
+    /* Attribute selector: exact match */
+    input[type="text"] {
+      color: yellow;
+    }
+
+    /* Attribute selector: has placeholder */
+    input[placeholder] {
+      background-color: #00e1ff;
+    }
+
+    /* Attribute selector: placeholder starts with "Enter" */
+    input[placeholder^="Enter"] {
+      border: 2px solid blue;
+    }
+
+    /* Attribute selector: placeholder ends with "name" */
+    input[placeholder$="name"] {
+      border: 2px dashed orange; /* dotted, double */
+    }
+  </style>
+</head>
+<body>
+  <h2>CSS Selectors Demo</h2>
+
+  <div>
+    <p>This is a direct child of div – blue text + yellow background</p>
+
+    <section>
+      <p>This is a nested descendant – yellow background only</p>
+    </section>
+  </div>
+
+  <p>This paragraph is outside div – not selected</p>
+
+  <hr>
+
+  <h3>Attribute Selectors</h3>
+
+  <input type="text" placeholder="Enter your name"><br><br>
+  <input type="text" placeholder="Username"><br><br>
+  <input type="text" placeholder="Enter email"><br><br>
+  <input type="password" placeholder="Enter password"><br><br>
+  <input type="text"><br><br>
+</body>
+</html>
+</script>
+<script type="text/plain" data-cssfile="1. selectors/pseudo selectors.html"><!-- https://www.w3schools.com/css/css_specificity.asp -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Pseudo-classes and Pseudo-elements</title>
+  <style>
+    /* Pseudo-classes */
+    a:hover {
+      color: red;
+      text-decoration: underline;  /* overline, line-through, none */
+    }
+
+    input:focus {
+      background-color: lightyellow;
+    }
+
+    li:first-child {
+      font-weight: bold;
+    }
+
+    li:last-child {
+      color: green;
+    }
+
+    li:nth-child(2) { /* start with 1 */
+      color: #ff0000; 
+    }
+
+    /* Pseudo-elements */
+    h2::before {
+      content: "★ ";
+      color: gold;
+    }
+
+    h2::after {
+      content: " ★";
+      color: gold;
+    }
+
+    p::first-letter {
+      font-size: 200%;
+      color: blue;
+    }
+  </style>
+</head>
+<body>
+  <h1>Pseudo-classes and Pseudo-elements</h1>
+
+  <h2>Pseudo-elements: ::before and ::after</h2>
+
+  <p>This paragraph shows <strong>::first-letter</strong> and <strong>::selection</strong> effects. Try selecting this text!</p>
+
+  <hr>
+
+  <h2>Pseudo-classes Examples</h2>
+
+  <ul>
+    <li>First item (first-child)</li>
+    <li>Second item</li>
+    <li>Last item (last-child)</li>
+  </ul>
+
+  <a href="#">Hover over this link</a><br><br>
+
+  <input type="text" placeholder="Click to focus me">
+</body>
+</html>
+</script>
+<script type="text/plain" data-cssfile="2. colors/colors.html"><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CSS Color Types</title>
+  <link rel="stylesheet" href="colors.css">
+</head>
+<body>
+  <h1>CSS Color Demonstration</h1>
+
+  <section>
+    <h2>1. Named Colors</h2>
+    <div class="named-red">red</div>
+    <div class="named blue">blue</div>
+    <div class="named salmon">salmon</div>
+  </section>
+
+  <section>
+    <h2>2. Hex Colors</h2>
+    <div class="hex color1">#ff0000</div>
+    <div class="hex color2">#00ff00</div>
+    <div class="hex color3">#0000ff</div>
+  </section>
+
+  <section>
+    <h2>3. RGB Colors</h2>
+    <div class="rgb rgb1">rgb(255, 0, 0)</div>
+    <div class="rgb rgb2">rgb(0, 255, 0)</div>
+    <div class="rgb rgb3">rgb(0, 0, 255)</div>
+  </section>
+
+  <section>
+    <h2>4. RGBA (with transparency)</h2>
+    <div class="rgba rgba1">rgba(255, 0, 0, 0.5)</div>
+    <div class="rgba rgba2">rgba(0, 255, 0, 0.5)</div>
+    <div class="rgba rgba3">rgba(0, 0, 255, 0.5)</div>
+  </section>
+
+  <section>
+    <h2>5. HSL Colors</h2>
+    <div class="hsl hsl1">hsl(0, 100%, 50%)</div>
+    <div class="hsl hsl2">hsl(120, 100%, 50%)</div>
+    <div class="hsl hsl3">hsl(240, 100%, 50%)</div>
+  </section>
+
+  <section>
+    <h2>6. HSLA (with transparency)</h2>
+    <div class="hsla hsla1">hsla(0, 100%, 50%, 0.5)</div>
+    <div class="hsla hsla2">hsla(120, 100%, 50%, 0.5)</div>
+    <div class="hsla hsla3">hsla(240, 100%, 50%, 0.5)</div>
+  </section>
+</body>
+</html>
+</script>
+<script type="text/plain" data-cssfile="2. colors/gradients.html"><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CSS Gradient Examples</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 2rem;
+      background-color: #f5f5f5;
+      max-width: 800px;
+      margin: auto;
+    }
+
+    h1, h2 {
+      text-align: center;
+      color: #333;
+    }
+
+    .gradient {
+      height: 150px;
+      margin: 2rem 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      border-radius: 10px;
+      border: 2px solid #ccc;
+    }
+
+    /*  */
+
+    .linear {
+      background: linear-gradient(to right, #ff7e5f, #feb47b);
+    }
+
+    .radial {
+      background: radial-gradient(circle, #6a11cb, #2575fc);
+    }
+
+    .conic {
+      background: conic-gradient(from 0deg, red, yellow, green, cyan, blue, magenta, red);
+    }
+  </style>
+</head>
+<body>
+
+  <h1>CSS Gradients</h1>
+
+  <h2>Linear Gradient</h2>
+  <div class="gradient linear">Linear Gradient</div>
+
+  <h2>Radial Gradient</h2>
+  <div class="gradient radial">Radial Gradient</div>
+
+  <h2>Conic Gradient</h2>
+  <div class="gradient conic">Conic Gradient</div>
+</body>
+</html>
+</script>
+<script type="text/plain" data-cssfile="3. size/advanced-sizing.html"><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CSS clamp(), calc(), and aspect-ratio Demo</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      line-height: 1.6;
+      background-color: #fafafa;
+    }
+
+    h1 {
+      font-size: clamp(24px, 5vw, 48px);
+      color: #2c3e50;
+      border-bottom: 2px solid #ccc;
+      padding-bottom: 10px;
+      margin-bottom: 20px;
+    }
+
+    /* clamp() section */
+    .clamp-section {
+      background-color: #f0f0f0;
+      padding: 20px;
+      border: 2px dashed #333;
+      margin-bottom: 30px;
+    }
+
+    .clamp-text {
+      font-size: clamp(8px, 3vw, 30px);
+      color: #2e7d32;
+    }
+
+    /* calc() section */
+    .calc-section {
+      background-color: #d0f0d8;
+      padding: 20px;
+      border: 2px solid #3c763d;
+      margin-bottom: 30px;
+    }
+
+    .calc-box {
+      width: calc(100% - 200px);
+      padding: 20px;
+      background-color: #b2dfdb;
+      color: #004d40;
+    }
+
+    /* aspect-ratio section */
+    .aspect-section {
+      background-color: #e3f2fd;
+      padding: 20px;
+      border: 2px solid #2196f3;
+    }
+
+    .aspect-box {
+      aspect-ratio: 16 / 9;
+      width: 300%;
+      max-width: 400px;
+      background-color: #bbdefb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid #1565c0;
+      margin-bottom: 20px;
+      color: #0d47a1;
+    }
+
+    .aspect-square {
+      aspect-ratio: 1 / 1;
+      width: 200px;
+      background-color: #fff9c4;
+      border: 2px solid #fbc02d;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #f57f17;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>CSS clamp(), calc(), and aspect-ratio Demo</h1>
+
+  <!-- clamp() section -->
+  <section class="clamp-section">
+    <h2>clamp()</h2>
+    <p class="clamp-text">
+      This text uses <code>font-size: clamp(8px, 3vw, 30px);</code><br>
+      Try resizing the window! It scales fluidly between 8px and 30px based on viewport width.
+    </p>
+  </section>
+
+  <!-- calc() section -->
+  <section class="calc-section">
+    <h2>calc()</h2>
+    <div class="calc-box">
+      This box uses <code>width: calc(100% - 120px);</code><br>
+      The width adjusts dynamically based on available space.
+    </div>
+  </section>
+
+  <!-- aspect-ratio section -->
+  <section class="aspect-section">
+    <h2>aspect-ratio</h2>
+    <div class="aspect-box">16:9 Box</div>
+    <div class="aspect-square">1:1 Box (Square)</div>
+  </section>
+</body>
+</html>
+</script>
+<script type="text/plain" data-cssfile="3. size/basic size.html"><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CSS Width Units</title>
+  <link rel="stylesheet" href="size.css">
+</head>
+<body>
+  <h1>CSS Width Units Demonstration</h1>
+
+  <div class="example px">100px Width</div>
+  <div class="example percent">50% Width</div>
+  <div class="example em">20em Width</div>
+  <div class="example rem">20rem Width</div>
+  <div class="example auto">Auto Width (default)</div>
+</body>
+</html>
+</script>
+<script type="text/plain" data-cssfile="3. size/viewport.html"><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CSS: vh vs vw vs percent</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+
+    header {
+      background-color: #333;
+      color: white;
+      padding: 10px;
+      text-align: center;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      padding: 20px;
+    }
+
+    .section {
+      width: 80%;
+      padding: 10px;
+      border: 2px dashed #aaa;
+      background-color: #f9f9f9;
+    }
+
+    .box {
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      font-weight: bold;
+    }
+
+    .vh-box {
+      height: 30vh;
+      background-color: #2196f3;
+    }
+
+    .vw-box {
+      width: 50vw;
+      height: 100px;
+      background-color: #4caf50;
+    }
+
+    .percent-box {
+      width: 50%;
+      height: 100px;
+      background-color: #f44336;
+    }
+
+    .notes {
+      margin-top: 10px;
+      font-size: 0.95rem;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Learning CSS Units: <code>vh</code>, <code>vw</code>, and <code>%</code></h1>
+  </header>
+
+  <div class="container">
+    
+    <div class="section">
+      <h2><code>%</code> - Percentage of Parent</h2>
+      <div class="box percent-box">Width = 50%</div>
+      <p class="notes">
+        <strong>50%</strong> width means 50% of the width of its parent element (in this case, the section box). It depends on parent size.
+      </p>
+    </div>
+
+    <div class="section">
+      <h2><code>vw</code> - Viewport Width</h2>
+      <div class="box vw-box">Width = 50vw</div>
+      <p class="notes">
+        <strong>50vw</strong> means the width is 50% of the browser's viewport width. Resize the window horizontally to see it change.
+      </p>
+    </div>
+
+    <div class="section">
+      <h2><code>vh</code> - Viewport Height</h2>
+      <div class="box vh-box">Height = 30vh</div>
+      <p class="notes">
+        <strong>30vh</strong> means the height is 30% of the browser's viewport height (screen height), not of the parent element.
+        Try resizing the window vertically!
+      </p>
+    </div>
+
+  </div>
+</body>
+</html>
+</script>
+<script type="text/plain" data-cssfile="4. page decoration/basic decoration.html"><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>CSS: Align, Margin, Padding, Decoration, Gap</title>
+  <style>
+    /* === Example 1: Text Alignment === */
+    .alignment {
+      text-align: center; 
+      background-color: #eef;
+      padding: 10px; 
+      margin-bottom: 20px; 
+    }
+
+    /* === Example 2: Margin === */
+    .margin-example {
+      background-color: #cde;
+      margin: 40px; 
+      padding: 10px; 
+    }
+
+    /* === Example 3: Padding === */
+    .padding-example {
+      background-color: #def; 
+      padding: 30px; 
+      margin-bottom: 20px; 
+    }
+
+    /* === Example 4: Gap === */
+    .gap-container {
+      display: flex;
+      gap: 20px; /* space between children */
+      background-color: #eef;
+      padding: 20px;
+      margin-top: 30px;
+      margin-bottom: 20px;
+    }
+
+    .gap-box {
+      background-color: #ccf;
+      padding: 20px;
+      flex: 1;
+      text-align: center;
+    }
+
+    /* === Base Page Styling === */
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Learn Align, Margin, Padding, Gap</h1>
+
+  <!-- Example 1 -->
+  <div class="alignment">
+    <strong>Example 1: Text Align - Center</strong><br>
+    This text is centered using <code>text-align: center;</code>
+  </div>
+
+  <!-- Example 2 -->
+  <div class="margin-example">
+    <strong>Example 2: Margin</strong><br>
+    This box has <code>margin: 40px;</code> around it.
+  </div>
+
+  <!-- Example 3 -->
+  <div class="padding-example">
+    <strong>Example 3: Padding</strong><br>
+    This box has <code>padding: 30px;</code> inside it.
+  </div>
+  <div class="gap-container">
+    <div class="gap-box">Item 1</div>
+    <div class="gap-box">Item 2</div>
+    <div class="gap-box">Item 3</div>
+  </div>
+</body>
+</html>
+</script>
+<script type="text/plain" data-cssfile="4. page decoration/flex.html"><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Learn CSS Flexbox - New</title>
+  <style>
+    /* === Base styles === */
+    body {
+      font-family: Arial, sans-serif;
+      margin: 2rem;
+      background: #fafafa;
+      color: #222;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    /* Numbered section headings with justified numbers */
+    h2 {
+      margin-top: 3rem;
+      color: #007acc;
+      position: relative;
+      padding-left: 2.5rem;
+      font-weight: 700;
+    }
+    h2::before {
+      content: attr(data-number) ".";
+      position: absolute;
+      left: 0;
+      top: 0;
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #004a99;
+      width: 2rem;
+      text-align: right;
+    }
+
+    /* Flex container base */
+    .flex-container {
+      display: flex;
+      background: #e0e7ff;
+      padding: 1rem;
+      gap: 1rem;
+      border-radius: 8px;
+      border: 1px solid #aac;
+      margin-top: 1rem;
+    }
+
+    /* Flex items base */
+    .flex-item {
+      background: #007acc;
+      color: white;
+      padding: 1rem;
+      border-radius: 5px;
+      font-weight: bold;
+      text-align: center;
+      flex: 1; /* Default grow */
+      min-width: 50px;
+    }
+
+    /* 1. Flex Direction: Row (default) */
+    .flex-row {
+      flex-direction: row;
+    }
+
+    /* 2. Flex Direction: Column */
+    .flex-column {
+      flex-direction: column;
+      height: 180px; /* Set height so vertical stacking is visible */
+    }
+
+    /* 3. Justify Content: Center */
+    .justify-center {
+      justify-content: center;  /* flex-start | flex-end */
+    }
+    /* Fix fixed width boxes for example 3 */
+    .justify-center .flex-item {
+      flex: 0 0 100px;
+    }
+
+    /* 4. Justify Content: Space Between */
+    .justify-between {
+      justify-content: space-between; /* space-around | space-evenly */
+    }
+    /* Fixed width boxes for example 4 */
+    .justify-between .flex-item {
+      flex: 0 0 80px;
+    }
+
+    /* 5. Align Items: Center */
+    .align-center {
+      align-items: center; /* Remove align-items: center to see default stretch behavior */
+      height: 200px; 
+    }
+    /* Specific heights for flex items in example 5 */
+    .align-center .flex-item:first-child {
+      height: 100px;
+    }
+    .align-center .flex-item:last-child {
+      height: 40px;
+    }
+
+    /* 6. Flex Wrap */
+    .flex-wrap {
+      flex-wrap: wrap;   /* Remove flex-wrap to prevent wrapping */
+      max-width: 300px;
+    }
+    /* Fixed widths for flex items in example 6 */
+    .flex-wrap .flex-item:nth-child(1) {
+      width: 100px;
+    }
+    .flex-wrap .flex-item:nth-child(2) {
+      width: 120px;
+    }
+    .flex-wrap .flex-item:nth-child(3) {
+      width: 160px;
+    }
+    .flex-wrap .flex-item:nth-child(4) {
+      width: 140px;
+    }
+
+    /* 7. Flex Grow */
+    .flex-grow {
+      flex-grow: 3;    /* Adjust flex-grow value to see different growth rates */
+    }
+    /* Specific grow values for example 7 */
+    .flex-grow-example .flex-item:nth-child(1),
+    .flex-grow-example .flex-item:nth-child(3) {
+      flex-grow: 1;
+    }
+    .flex-grow-example .flex-item:nth-child(2) {
+      flex-grow: 3; /* same as .flex-grow */
+    }
+
+    /* 8. Flex Shrink */
+    /* Change flex-shrink to 0 to prevent shrinking */
+    .flex-shrink {
+      flex-basis: 200px;
+      flex-shrink: 1;
+      width: 10px;
+    }
+    /* Container width smaller to see shrinking effect */
+    .flex-shrink-container {
+      max-width: 500px;
+    }
+    /* Override shrink for last item */
+    .flex-shrink-container .flex-item:last-child {
+      flex-basis: 200px;
+      flex-shrink: 3;
+    }
+
+    /* 9. Center Content Vertically and Horizontally */
+    .center-content {
+      justify-content: center;  /* Remove either justify-content or align-items to see effect */
+      align-items: center;
+      height: 150px;
+    }
+    /* Fixed size box inside center content example */
+    .center-content .flex-item {
+      flex: none;
+      width: 120px;
+      height: 80px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Learn CSS Flexbox</h1>
+
+  <h2 data-number="1">Flex Direction: Row (default)</h2>
+  <div class="flex-container flex-row">
+    <div class="flex-item">Item 1</div>
+    <div class="flex-item">Item 2</div>
+    <div class="flex-item">Item 3</div>
+  </div>
+
+  <h2 data-number="2">Flex Direction: Column</h2>
+  <div class="flex-container flex-column">
+    <div class="flex-item">Item A</div>
+    <div class="flex-item">Item B</div>
+    <div class="flex-item">Item C</div>
+  </div>
+
+  <h2 data-number="3">Justify Content: Center</h2>
+  <div class="flex-container flex-row justify-center">
+    <div class="flex-item">Box 1</div>
+    <div class="flex-item">Box 2</div>
+  </div>
+
+  <h2 data-number="4">Justify Content: Space Between</h2>
+  <div class="flex-container flex-row justify-between">
+    <div class="flex-item">Left</div>
+    <div class="flex-item">Center</div>
+    <div class="flex-item">Right</div>
+  </div>
+
+  <h2 data-number="5">Align Items: Center</h2>
+  <div class="flex-container flex-row align-center">
+    <div class="flex-item">Tall Box</div>
+    <div class="flex-item">Short Box</div>
+  </div>
+
+  <h2 data-number="6">Flex Wrap</h2>
+  <div class="flex-container flex-row flex-wrap">
+    <div class="flex-item">Box 1</div>
+    <div class="flex-item">Box 2</div>
+    <div class="flex-item">Box 3</div>
+    <div class="flex-item">Box 4</div>
+  </div>
+
+  <h2 data-number="7">Flex Grow</h2>
+  <div class="flex-container flex-row flex-grow-example">
+    <div class="flex-item">Grow 1</div>
+    <div class="flex-item flex-grow">Grow 2 (flex-grow: 3)</div>
+    <div class="flex-item">Grow 3</div>
+  </div>
+
+  <h2 data-number="8">Flex Shrink</h2>
+  <div class="flex-container flex-row flex-shrink-container">
+    <div class="flex-item flex-shrink">Shrink 1</div>
+    <div class="flex-item flex-shrink">Shrink 2</div>
+    <div class="flex-item flex-shrink">No Shrink 3</div>
+  </div>
+
+  <h2 data-number="9">Center Content Both Ways</h2>
+  <div class="flex-container flex-row center-content">
+    <div class="flex-item">
+      I'm perfectly centered!
+    </div>
+  </div>
+</body>
+</html>
+</script>
+<script type="text/plain" data-cssfile="4. page decoration/fonts.html"><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Learn CSS Fonts with Ordered CSS</title>
+
+  <!-- Google Fonts: Roboto and Playfair Display -->
+   <link rel="preconnect" href="https://fonts.googleapis.com">
+   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+   <link href="https://fonts.googleapis.com/css2?family=Playwrite+MX+Guides&display=swap" rel="stylesheet">
+
+  <style>
+    /* Base styling for the page */
+    body {
+      font-family: Arial, sans-serif; /* default font if none specified */
+      padding: 20px;
+      line-height: 1.5; 
+    }
+
+    h1 {
+      text-align: center; 
+      margin-bottom: 30px; 
+    }
+
+    .section {
+      margin-bottom: 40px;
+    }
+
+    .example {
+      background: #f2f2f2; 
+      padding: 15px; 
+      border-left: 4px solid #3498db; 
+      margin-top: 10px;
+    }
+
+    /* 1. System font example (Georgia) */
+    .system-fonts {
+      font-family: Georgia, serif;
+    }
+
+    /* 2. Google font example (Playfair Display italic) */
+    /* https://fonts.google.com/ */
+    /* panagram: https://he.wikipedia.org/wiki/%D7%A4%D7%A0%D7%92%D7%A8%D7%9E%D7%94 */
+    .google-font {
+      font-family: "Playwrite MX Guides", cursive;
+    }
+
+    /* 3. Font size examples */
+    .small {
+      font-size: 12px;
+    }
+
+    .large {
+      font-size: 24px;
+    }
+
+    /* 4. Font weight and font style */
+    .bold {
+      font-weight: 700; /* normal = 200, bold = 700 */
+    }
+
+    .italic {
+      font-style: italic; /* oblique */
+    }
+
+    /* 5. Font spacing: letter and word spacing */
+    .spacing {
+      letter-spacing: 2px;
+      word-spacing: 10px;
+    }
+
+    /* 6. Line height */
+    .line-height {
+      line-height: 2;
+    }
+
+    /* 7. Text transform */
+    .transform {
+      text-transform: capitalize; /* lowercase, capitalize */
+    }
+
+    /* 8. Font variant */
+    .variant {
+      font-variant: small-caps;
+    }
+  </style>
+</head>
+<body>
+  <h1>CSS Fonts: Learn by Example</h1>
+
+  <div class="section">
+    <h2>1. System Font</h2>
+    <p class="example system-fonts">This text uses the Georgia system font.</p>
+  </div>
+
+  <div class="section">
+    <h2>2. Google Font</h2>
+    <p class="example google-font">
+      This text uses a Google Font (Playfair Display, italic).
+    </p>
+  </div>
+
+  <div class="section">
+    <h2>3. Font Size</h2>
+    <p class="example small">Small font size (12px).</p>
+    <p class="example large">Large font size (24px).</p>
+  </div>
+
+  <div class="section">
+    <h2>4. Font Weight and Style</h2>
+    <p class="example bold">Bold text using <code>font-weight: bold</code>.</p>
+    <p class="example italic">Italic text using <code>font-style: italic</code>.</p>
+  </div>
+
+  <div class="section">
+    <h2>5. Font Spacing</h2>
+    <p class="example spacing">Letter and word spacing example.</p>
+  </div>
+
+  <div class="section">
+    <h2>6. Line Height</h2>
+    <p class="example line-height">
+      This paragraph has a large line height.<br />
+      Each line is spaced out using <code>line-height: 2</code>.
+    </p>
+  </div>
+
+  <div class="section">
+    <h2>7. Text Transform</h2>
+    <p class="example transform">uppercase transformation</p>
+  </div>
+
+  <div class="section">
+    <h2>8. Font Variant</h2>
+    <p class="example variant">This uses <code>font-variant: small-caps</code>.</p>
+  </div>
+  </div>
+</body>
+</html>
+</script>
+<script type="text/plain" data-cssfile="4. page decoration/grid.html"><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Learn CSS Grid</title>
+  <style>
+    /* === Base Styles === */
+    body {
+      font-family: sans-serif;
+      margin: 2rem;
+      background: #f9f9f9;
+      color: #333;
+    }
+
+    h1 {
+      text-align: center;
+    }
+
+    /* === Numbered section headings === */
+    h2 {
+      margin-top: 3rem;
+      color: #2196f3;
+      position: relative;
+      padding-left: 2.5rem;
+    }
+
+    h2::before {
+      content: attr(data-number) ".";
+      position: absolute;
+      left: 0;
+      top: 0;
+      color: #1565c0;
+      font-weight: bold;
+      width: 2rem;
+      text-align: right;
+    }
+
+    /* === Grid container shared styles === */
+    .grid-demo {
+      display: grid;
+      gap: 10px;
+      margin: 1rem 0;
+      background: #e0e0e0;
+      padding: 1rem;
+    }
+
+    /* === Grid item styles === */
+    .grid-demo > div {
+      background: #2196f3;
+      color: white;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      border-radius: 5px;
+    }
+
+    /* 1. Two equal columns */
+    .grid-2-cols {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    /* 2. Three unequal columns */
+    .grid-3-cols {
+      grid-template-columns: 1fr 2fr 1fr;
+    }
+
+    /* 3. Fixed + flexible columns */
+    .grid-fixed {
+      grid-template-columns: 100px 200px 1fr;
+    }
+
+    /* 4. Column span example */
+    .grid-span {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    .grid-span .item-1 {
+      grid-column: span 2;
+    }
+
+    .grid-span .item-2 {
+      grid-column: span 1;
+    }
+
+    /* 5. Grid alignment */
+    .grid-align {
+      grid-template-columns: repeat(3, 100px);
+      grid-template-rows: 100px;
+      justify-content: center;
+      align-items: center;
+    }
+
+    /* 6. 4 Rows × 3 Columns Grid */
+    .grid-4x3 {
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(4, 80px);
+    }
+  </style>
+</head>
+<body>
+  <h1>Learn CSS Grid</h1>
+
+  <h2 data-number="1">Two Equal Columns</h2>
+  <div class="grid-demo grid-2-cols">
+    <div>1</div>
+    <div>2</div>
+  </div>
+
+  <h2 data-number="2">Three Unequal Columns</h2>
+  <div class="grid-demo grid-3-cols">
+    <div>A</div>
+    <div>B</div>
+    <div>C</div>
+  </div>
+
+  <h2 data-number="3">Fixed and Flexible Columns</h2>
+  <div class="grid-demo grid-fixed">
+    <div>100px</div>
+    <div>200px</div>
+    <div>flexible</div>
+  </div>
+
+  <h2 data-number="4">Grid Column Span</h2>
+  <div class="grid-demo grid-span">
+    <div class="item-1">Span 2 columns</div>
+    <div class="item-2">Normal</div>
+    <div>Another</div>
+  </div>
+
+  <h2 data-number="5">Grid Alignment</h2>
+  <div class="grid-demo grid-align">
+    <div>Centered</div>
+    <div>Centered</div>
+    <div>Centered</div>
+  </div>
+
+  <h2 data-number="6">4 Rows × 3 Columns Grid</h2>
+  <div class="grid-demo grid-4x3">
+    <div>1</div><div>2</div><div>3</div>
+    <div>4</div><div>5</div><div>6</div>
+    <div>7</div><div>8</div><div>9</div>
+    <div>10</div><div>11</div><div>12</div>
+  </div>
+</body>
+</html>
+</script>
+<script type="text/plain" data-cssfile="4. page decoration/z-index.html"><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Z-Index Examples</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 2rem;
+      background: #f4f4f4;
+    }
+
+    h1 {
+      text-align: center;
+    }
+
+    .example {
+      margin: 3rem 0;
+      padding: 1rem;
+      border: 1px solid #ccc;
+      background: white;
+    }
+
+    .stack-container {
+      position: relative;
+      width: 300px;
+      height: 200px;
+      margin-top: 1rem;
+      border: 2px dashed gray;
+    }
+
+    .box {
+      position: absolute;
+      width: 150px;
+      height: 150px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      color: white;
+    }
+
+    .red-box {
+      background: red;
+      top: 0;
+      left: 0;
+      z-index: 1;
+    }
+
+    .blue-box {
+      background: blue;
+      top: 30px;
+      left: 30px;
+      z-index: 2;
+    }
+
+    .green-box {
+      background: green;
+      top: 60px;
+      left: 60px;
+      z-index: 3;
+    }
+
+    .invisible-blocker {
+      background: black;
+      opacity: 0;
+      z-index: 999;
+      top: 60px;
+      left: 60px;
+      pointer-events: auto; /* Still intercepts clicks */
+    }
+
+    .click-box {
+      background: orange;
+      top: 60px;
+      left: 60px;
+      z-index: 1;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Z-Index Demonstration</h1>
+
+  <div class="example">
+    <h2>1. Basic Z-Index Stacking</h2>
+    <p>This shows how elements with higher z-index appear on top.</p>
+
+    <div class="stack-container">
+      <!-- Red box with z-index: 1 -->
+      <div class="box red-box">Z = 1</div>
+      <!-- Blue box with z-index: 2 -->
+      <div class="box blue-box">Z = 2</div>
+      <!-- Green box with z-index: 3 -->
+      <div class="box green-box">Z = 3</div>
+    </div>
+  </div>
+
+  <div class="example">
+    <h2>2. Z-Index with Opacity 0</h2>
+    <p>
+      The invisible black box has a high z-index and opacity 0. Try clicking the orange box — it won't work because the invisible box is blocking it.
+    </p>
+
+    <div class="stack-container">
+      <!-- Clickable orange box (visible) -->
+      <div class="box click-box" onclick="alert('You clicked the orange box!')">Click me</div>
+
+      <!-- Invisible overlay with high z-index that blocks clicks -->
+      <div class="box invisible-blocker"></div>
+    </div>
+  </div>
+</body>
+</html>
+</script>
+<script type="text/plain" data-cssfile="5. transition/basic-transitions.html"><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>More CSS Transitions</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #f0f0f0;
+      padding: 2rem;
+      max-width: 900px;
+      margin: auto;
+      color: #333;
+    }
+
+    h1 {
+      text-align: center;
+    }
+
+    .section {
+      margin-bottom: 2rem;
+    }
+
+    .label {
+      font-weight: bold;
+      margin-bottom: 0.5rem;
+    }
+
+    .box {
+      width: 150px;
+      height: 150px;
+      background-color: #007bff;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      margin-top: 0.5rem;
+      /* transition: all 0.5s ease; */
+    }
+
+    .box:hover {
+      cursor: pointer;
+    }
+
+    /* 1. Opacity Transition */
+    .opacity-box {
+      transition: opacity 0.5s;
+    }
+
+    .opacity-box:hover {
+      opacity: 0.3;
+    }
+
+    /* 2. Width and Height Transition */
+    .size-box {
+      transition: width 0.5s, height 0.5s;
+      /* transition: width 1s 1s; */
+    }
+
+    .size-box:hover {
+      width: 200px;
+      height: 200px;
+    }
+
+    /* 3. Color and Background Transition */
+    .color-box {
+      transition: background-color 0.5s, color 0.5s;
+    }
+
+    .color-box:hover {
+      background-color: #ffc107;
+      color: #000;
+    }
+
+    /* 4. Border and Border-Radius */
+    .border-box {
+      transition: border 1s, border-radius 1s;
+    }
+
+    .border-box:hover {
+      border: 5px solid #28a745;
+      border-radius: 50%;
+    }
+
+    /* 5. Multiple Sequential Effects */
+    .multi-step-box {
+      transition: transform 0.3s, background-color 3s 0.3s;
+    }
+
+    .multi-step-box:hover {
+      transform: scale(1.2);
+      background-color: #e91e63;
+    }
+
+    /* 6. Transition with Visibility (requires JavaScript normally) */
+    .fade-toggle {
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 1s;
+    }
+
+    .fade-toggle.show {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    button {
+      padding: 0.5rem 1rem;
+      font-size: 1rem;
+      margin-bottom: 1rem;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Advanced CSS Transitions</h1>
+
+  <div class="section">
+    <div class="label">1. Opacity</div>
+    <div class="box opacity-box">Fade</div>
+  </div>
+
+  <div class="section">
+    <div class="label">2. Width & Height</div>
+    <div class="box size-box">Resize</div>
+  </div>
+
+  <div class="section">
+    <div class="label">3. Background & Text Color</div>
+    <div class="box color-box">Color Shift</div>
+  </div>
+
+  <div class="section">
+    <div class="label">4. Border & Border Radius</div>
+    <div class="box border-box">Border Morph</div>
+  </div>
+
+  <div class="section">
+    <div class="label">5. Multiple Steps (Delayed)</div>
+    <div class="box multi-step-box">Step Effect</div>
+  </div>
+
+  <div class="section">
+    <div class="label">6. Toggle Visibility (with JS)</div>
+    <button onclick="toggleFade()">Toggle Box</button>
+    <div id="fadeBox" class="box fade-toggle">I'm fading!</div>
+  </div>
+
+  <script>
+    function toggleFade() {
+      const box = document.getElementById('fadeBox');
+      box.classList.toggle('show');
+    }
+  <\/script>
+</body>
+</html>
+</script>
+<script type="text/plain" data-cssfile="5. transition/cool staff/3dButton.html"><!DOCTYPE html>
+<html>
+<head>
+  <style>
+    .btn-3d {
+      background: #2196f3;
+      color: white;
+      padding: 1em 2em;
+      font-size: 1.2em;
+      border: none;
+      border-radius: 8px;
+      box-shadow: 0 5px #0b7dda;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-3d:active {
+      box-shadow: 0 2px #0b7dda;
+      transform: translateY(3px);
+    }
+  </style>
+</head>
+<body>
+  <button class="btn-3d">Click Me!</button>
+</body>
+</html>
+</script>
+<script type="text/plain" data-cssfile="5. transition/cool staff/backgroud_colors.html"><!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body {
+      margin: 0;
+      height: 100vh;
+      background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+      background-size: 400% 400%;
+      animation: gradient 15s ease infinite;
+    }
+
+    @keyframes gradient {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+  </style>
+</head>
+<body>
+</body>
+</html>
+</script>
+<script type="text/plain" data-cssfile="5. transition/cool staff/darkMode.html"><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dark Mode Landing Page</title>
+  <style>
+    :root {
+      --bg-color: #ffffff;
+      --text-color: #000000;
+      --accent-color: #3498db;
+      --header-footer-bg: #f0f0f0;
+    }
+
+    body.dark {
+      --bg-color: #121212;
+      --text-color: #f5f5f5;
+      --accent-color: #9b59b6;
+      --header-footer-bg: #1e1e1e;
+    }
+
+    * {
+      box-sizing: border-box;
+      transition: background 0.4s, color 0.4s;
+    }
+
+    body {
+      margin: 0;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      font-family: Arial, sans-serif;
+    }
+
+    header, footer {
+      background-color: var(--header-footer-bg);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    header h1, footer p {
+      margin: 0;
+    }
+
+    main {
+      padding: 2rem;
+      max-width: 800px;
+      margin: auto;
+    }
+
+    button.toggle-btn {
+      background: var(--accent-color);
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    button.toggle-btn:hover {
+      opacity: 0.9;
+    }
+
+    .card {
+      margin-top: 2rem;
+      background: var(--header-footer-bg);
+      padding: 1rem;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>My Cool Site</h1>
+    <button class="toggle-btn" onclick="toggleDarkMode()">Toggle Dark Mode</button>
+  </header>
+
+  <main>
+    <article>
+      <h2>Welcome to the Dark Mode Demo</h2>
+      <p>
+        This page demonstrates how to switch between light and dark themes using just CSS variables and a little JavaScript. The entire layout adjusts smoothly, making it perfect for modern websites.
+      </p>
+      <div class="card">
+        <h3>Bonus Tip</h3>
+        <p>You can store theme preferences in localStorage to remember user choices across visits.</p>
+      </div>
+    </article>
+  </main>
+
+  <footer>
+    <p>&copy; 2025 Your Name</p>
+    <span>CSS Demo</span>
+  </footer>
+
+  <script>
+    function toggleDarkMode() {
+      document.body.classList.toggle('dark');
+    }
+  <\/script>
+</body>
+</html>
+</script>
+<script type="text/plain" data-cssfile="5. transition/cool staff/flip.html"><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>3D Flip Card</title>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background: #f8f9fa;
+    }
+
+    .card-container {
+      width: 200px;
+      height: 300px;
+      perspective: 1000px;
+    }
+
+    .card {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.8s;
+    }
+
+    .card-container:hover .card {
+      transform: rotateY(180deg);
+    }
+
+    .front, .back {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 1.5em;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+    }
+
+    .front {
+      background: white;
+    }
+
+    .back {
+      background: #2196f3;
+      color: white;
+      transform: rotateY(180deg);
+    }
+  </style>
+</head>
+<body>
+  <div class="card-container">
+    <div class="card">
+      <div class="front">Front</div>
+      <div class="back">Back</div>
+    </div>
+  </div>
+</body>
+</html>
+</script>
+<script type="text/plain" data-cssfile="5. transition/cool staff/form.html"><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Contact Form</title>
+  <style>
+    body {
+      margin: 0;
+      background: #eef;
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    form {
+      background: white;
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      width: 300px;
+    }
+
+    input, textarea {
+      width: 100%;
+      margin-bottom: 1rem;
+      padding: 0.5rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 1rem;
+    }
+
+    input:focus, textarea:focus {
+      border-color: #3498db;
+      outline: none;
+    }
+
+    button {
+      padding: 0.5rem 1rem;
+      background: #3498db;
+      color: white;
+      border: none;
+      border-radius: 5px;
+    }
+
+    @media (max-width: 400px) {
+      form {
+        width: 90%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <form>
+    <h2>Contact Us</h2>
+    <input type="text" placeholder="Name" required />
+    <input type="email" placeholder="Email" required />
+    <textarea rows="5" placeholder="Your message"></textarea>
+    <button type="submit">Send</button>
+  </form>
+</body>
+</html>
+</script>
+<script type="text/plain" data-cssfile="5. transition/cool staff/icon.html"><!DOCTYPE html>
+<html>
+<head>
+  <style>
+    .hamburger {
+      width: 35px;
+      height: 25px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      cursor: pointer;
+      margin: 100px auto;
+    }
+
+    .bar {
+      height: 4px;
+      background: #333;
+      border-radius: 2px;
+      transition: 0.4s;
+    }
+
+    .hamburger:hover .bar:nth-child(1) {
+      transform: translateY(10px) rotate(45deg);
+    }
+
+    .hamburger:hover .bar:nth-child(2) {
+      opacity: 0;
+    }
+
+    .hamburger:hover .bar:nth-child(3) {
+      transform: translateY(-10px) rotate(-45deg);
+    }
+  </style>
+</head>
+<body>
+  <div class="hamburger">
+    <div class="bar"></div>
+    <div class="bar"></div>
+    <div class="bar"></div>
+  </div>
+</body>
+</html>
+</script>
+<script type="text/plain" data-cssfile="5. transition/cool staff/s.html"><!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body {
+      background: black;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .neon-btn {
+      padding: 15px 30px;
+      color: #0ff;
+      border: 2px solid #0ff;
+      border-radius: 10px;
+      text-transform: uppercase;
+      font-size: 20px;
+      background: transparent;
+      position: relative;
+      box-shadow: 0 0 10px #0ff, 0 0 20px #0ff;
+      animation: glow 1.5s infinite alternate;
+    }
+
+    @keyframes glow {
+      from {
+        box-shadow: 0 0 5px #0ff;
+      }
+      to {
+        box-shadow: 0 0 20px #0ff, 0 0 30px #0ff;
+      }
+    }
+  </style>
+</head>
+<body>
+  <button class="neon-btn">Glowing</button>
+</body>
+</html>
+</script>
+<script type="text/plain" data-cssfile="5. transition/cool staff/spinner.html"><!-- ================== ANIMATED LOADING SPINNER ================== -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Loading Spinner</title>
+  <style>
+    :root {
+      --spinner-color: #3498db;
+    }
+
+    body {
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: #f0f0f0;
+    }
+
+    .spinner {
+      width: 60px;
+      height: 60px;
+      border: 8px solid #ccc;
+      border-top-color: var(--spinner-color);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="spinner"></div>
+</body>
+</html>
+</script>
+<script type="text/plain" data-cssfile="5. transition/darkMode.html"><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Minimal Dark Mode</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 2rem;
+      background-color: #f0f0f0;
+      color: #222;
+      transition: background-color 2s, color 2s;
+    }
+
+    body.dark-mode {
+      background-color: #121212;
+      color: #eee;
+    }
+
+    h1 {
+      font-size: 2rem;
+    }
+
+    p {
+      font-size: 1.1rem;
+      max-width: 600px;
+    }
+
+    button {
+      margin-top: 1rem;
+      padding: 0.5rem 1rem;
+      font-size: 1rem;
+      background-color: #444;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #222;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Hello, World!</h1>
+  <p>This is a minimal page with a dark mode toggle. Click the button to switch themes.</p>
+  <button onclick="toggleDark()">Toggle Dark Mode</button>
+
+  <script>
+    function toggleDark() {
+      document.body.classList.toggle('dark-mode');
+    }
+  <\/script>
+</body>
+</html>
+</script>
+<script type="text/plain" data-cssfile="5. transition/more hover.html"><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CSS Transitions</title>
+  <style>
+    /* === Base Styles === */
+    body {
+      font-family: sans-serif;
+      max-width: 900px;
+      margin: auto;
+      padding: 2rem;
+      background: #f9f9f9;
+      color: #333;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    /* === Shared Box Style === */
+    .box {
+      width: 150px;
+      height: 150px;
+      margin: 1.5rem 0;
+      background: #2196f3;
+      border-radius: 8px;
+      transition: all 0.3s ease;  /* Default transition */
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* === Hover effect shared by all boxes === */
+    .box:hover {
+      background: #f44336;
+      transform: scale(1.2) rotate(5deg);
+    }
+
+    /* === 2. Transition Duration === */
+    .transition-duration {
+      transition-duration: 1s;
+    }
+
+    /* === 3. Transition Delay === */
+    .transition-delay {
+      transition-delay: 0.5s;
+    }
+
+    /* === 4. Timing Function: ease-in === */
+    .timing-ease-in {
+      transition-timing-function: ease-in;
+    }
+
+    /* === 5. Timing Function: ease-out === */
+    .timing-ease-out {
+      transition-timing-function: ease-out;
+    }
+
+    /* === 6. Timing Function: linear === */
+    .timing-linear {
+      transition-timing-function: linear;
+    }
+
+    /* === 7. Multiple Transitions === */
+    .multi {
+      transition: background 0.5s ease, transform 1s ease-in-out;
+    }
+
+    /* === Labels for sections === */
+    .label {
+      margin: 0.5rem 0;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>CSS Transitions Examples</h1>
+
+  <!-- 1. Default transition -->
+  <div class="label">1. Default Transition (0.3s ease)</div>
+  <div class="box">Hover me</div>
+
+  <!-- 2. Longer duration -->
+  <div class="label">2. Transition Duration: 1s</div>
+  <div class="box transition-duration">Hover me</div>
+
+  <!-- 3. Delayed transition -->
+  <div class="label">3. Transition Delay: 0.5s</div>
+  <div class="box transition-delay">Hover me</div>
+
+  <!-- 4. Custom timing function: ease-in -->
+  <div class="label">4. Timing Function: ease-in</div>
+  <div class="box timing-ease-in">Hover me</div>
+
+  <!-- 5. Custom timing function: ease-out -->
+  <div class="label">5. Timing Function: ease-out</div>
+  <div class="box timing-ease-out">Hover me</div>
+
+  <!-- 6. Custom timing function: linear -->
+  <div class="label">6. Timing Function: linear</div>
+  <div class="box timing-linear">Hover me</div>
+
+  <!-- 7. Multiple transition properties -->
+  <div class="label">7. Multiple Transitions (background & transform)</div>
+  <div class="box multi">Hover me</div>
+</body>
+</html>
+</script>
+<script type="text/plain" data-cssfile="5. transition/more-transitions.html"><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Even More CSS Transitions</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background-color: #f5f5f5;
+      padding: 2rem;
+      max-width: 1000px;
+      margin: auto;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .section {
+      margin-bottom: 2rem;
+    }
+
+    .label {
+      font-weight: bold;
+      margin-bottom: 0.5rem;
+    }
+
+    .demo {
+      display: inline-block;
+      padding: 1rem;
+      margin: 0.5rem;
+      background: #2196f3;
+      color: white;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.4s ease;
+    }
+
+    /* 1. Text Color and Letter Spacing */
+    .text-effect:hover {
+      color: #ff4081;
+      letter-spacing: 3px;
+    }
+
+    /* 2. Button Background and Scale */
+    .button-scale:hover {
+      background: #4caf50;
+      transform: scale(1.1);
+    }
+
+    /* 3. Image Zoom on Hover */
+    .image-container {
+      overflow: hidden;
+      display: inline-block;
+      border-radius: 8px;
+    }
+
+    .image-container img {
+      width: 200px;
+      height: auto;
+      transition: transform 0.5s ease;
+    }
+
+    .image-container:hover img {
+      transform: scale(1.2);
+    }
+
+    /* 4. Box Shadow Transition */
+    .shadow-box {
+      background: #673ab7;
+      box-shadow: 0 0 0 transparent;
+      transition: box-shadow 0.5s ease;
+    }
+
+    .shadow-box:hover {
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    /* 5. Skew & Rotate */
+    .skew-rotate:hover {
+      transform: skew(10deg, 10deg) rotate(5deg);
+    }
+
+    /* 6. Custom Timing */
+    .custom-timing {
+      transition: background-color 1s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+    }
+
+    .custom-timing:hover {
+      background-color: #00bcd4;
+    }
+
+    /* 7. Input Focus Transition */
+    input[type="text"] {
+      padding: 0.5rem;
+      border: 2px solid #ccc;
+      border-radius: 5px;
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
+      width: 250px;
+    }
+
+    input[type="text"]:focus {
+      border-color: #3f51b5;
+      box-shadow: 0 0 5px rgba(63, 81, 181, 0.5);
+      outline: none;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Even More CSS Transitions</h1>
+
+  <div class="section">
+    <div class="label">1. Text Hover Effect (Color + Spacing)</div>
+    <div class="demo text-effect">Hover Me</div>
+  </div>
+
+  <div class="section">
+    <div class="label">2. Button Scale and Color</div>
+    <div class="demo button-scale">Click Me</div>
+  </div>
+
+  <div class="section">
+    <div class="label">3. Image Zoom</div>
+    <div class="image-container">
+      <img src="./generic-image.jpg" alt="Zoom Image">
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="label">4. Box Shadow on Hover</div>
+    <div class="demo shadow-box">Shadow Me</div>
+  </div>
+
+  <div class="section">
+    <div class="label">5. Skew and Rotate</div>
+    <div class="demo skew-rotate">Skew Me</div>
+  </div>
+
+  <div class="section">
+    <div class="label">6. Custom Timing Function</div>
+    <div class="demo custom-timing">Bounce Color</div>
+  </div>
+
+  <div class="section">
+    <div class="label">7. Input Focus Transition</div>
+    <input type="text" placeholder="Focus me to see effect" />
+  </div>
+</body>
+</html>
+</script>
+<script type="text/plain" data-cssfile="5. transition/proprety.html"><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CSS @property Examples</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #f0f0f0;
+      padding: 2rem;
+      color: #333;
+      max-width: 800px;
+      margin: auto;
+    }
+
+    h2 {
+      margin-top: 3rem;
+    }
+
+    .box {
+      width: 150px;
+      height: 150px;
+      margin: 1rem 0;
+      border-radius: 10px;
+      transition: all 0.5s ease;
+    }
+
+    /* ========== 1. Simple Example ========== */
+
+    /* Define a custom property --rotate using @property */
+    @property --rotate {
+      syntax: "<angle>";
+      inherits: false;
+      initial-value: 0deg;
+    }
+
+    .simple {
+      background: lightcoral;
+      transform: rotate(var(--rotate));
+      transition: --rotate 0.5s;
+    }
+
+    .simple:hover {
+      --rotate: 15deg; /* When hovered, rotate the box slightly */
+    }
+
+    /* ========== 2. Extended Example ========== */
+
+    /* Define another property --bg using @property */
+    @property --bg {
+      syntax: "<color>";
+      inherits: false;
+      initial-value: lightblue;
+    }
+
+    /* Define a third property --scale */
+    @property --scale {
+      syntax: "<number>";
+      inherits: false;
+      initial-value: 1;
+    }
+
+    .extended {
+      background: var(--bg);
+      transform: scale(var(--scale)) rotate(var(--rotate));
+      transition:
+        --bg 0.6s,
+        --scale 0.6s,
+        --rotate 0.6s;
+    }
+
+    .extended:hover {
+      --bg: lightgreen;
+      --scale: 1.3;
+      --rotate: 30deg;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>CSS <code>@property</code> Tutorial</h1>
+
+  <!-- 1. Simple Example -->
+  <h2>1. Simple Example: Rotate on Hover</h2>
+  <p>This red box rotates slightly when hovered using a custom <code>--rotate</code> property.</p>
+  <div class="box simple"></div>
+
+  <!-- 2. Extended Example -->
+  <h2>2. Extended Example: Rotate + Scale + Color Change</h2>
+  <p>This blue box changes its color, scale, and rotation using three <code>@property</code>-defined custom properties.</p>
+  <div class="box extended"></div>
+</body>
+</html>
+</script>
+<script type="text/plain" data-cssfile="2. colors/colors.css">body {
+  font-family: sans-serif;
+  padding: 2rem;
+  line-height: 1.6;
+}
+
+section {
+  margin-bottom: 2rem;
+}
+
+div {
+  padding: 1rem;
+  margin: 0.5rem 0;
+  color: white;
+}
+
+/* 1. Named colors */
+/* 140 colors: https://www.w3schools.com/cssref/css_colors.php */
+.named-red {
+  background-color: red;
+}
+.named.blue {
+  background-color: blue;
+}
+.named.salmon {
+  background-color: salmon;
+}
+
+/* 2. Hex colors */
+/* https://www.w3schools.com/colors/colors_hexadecimal.asp */
+.hex.color1 {
+  background-color: #ff0000;
+}
+.hex.color2 {
+  background-color: #00ff00;
+}
+.hex.color3 {
+  background-color: #0000ff;
+}
+
+/* 3. RGB */
+/* https://www.w3schools.com/colors/colors_rgb.asp */
+.rgb.rgb1 {
+  background-color: rgb(255, 0, 0);
+}
+.rgb.rgb2 {
+  background-color: rgb(0, 255, 0);
+}
+.rgb.rgb3 {
+  background-color: rgb(0, 0, 255);
+}
+
+/* 4. RGBA */
+/* https://www.w3schools.com/html/html_colors_rgb.asp */
+.rgba.rgba1 {
+  background-color: rgba(255, 0, 0, 0.5);
+}
+.rgba.rgba2 {
+  background-color: rgba(0, 255, 0, 0.5);
+}
+.rgba.rgba3 {
+  background-color: rgba(0, 0, 255, 0.5);
+}
+
+/* 5. HSL */
+/* https://www.w3schools.com/colors/colors_hsl.asp */
+.hsl.hsl1 {
+  background-color: hsl(0, 100%, 50%);
+}
+.hsl.hsl2 {
+  background-color: hsl(120, 100%, 50%);
+}
+.hsl.hsl3 {
+  background-color: hsl(240, 100%, 50%);
+}
+
+/* 6. HSLA */
+.hsla.hsla1 {
+  background-color: hsla(0, 100%, 50%, 0.5);
+}
+.hsla.hsla2 {
+  background-color: hsla(120, 100%, 50%, 0.5);
+}
+.hsla.hsla3 {
+  background-color: hsla(240, 100%, 50%, 0.5);
+}</script>
+<script type="text/plain" data-cssfile="3. size/size.css">/* html {
+    font-size: 8px;
+} */
+
+body {
+  font-family: sans-serif;
+  padding: 2rem;
+  max-width: 1200px;
+  margin: auto;
+  font-size: px;
+}
+
+h1 {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.example {
+  margin: 1rem 0;
+  padding: 1rem;
+  background-color: #4caf50;
+  color: white;
+  border: 1px solid #333;
+  font-size: 1rem;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+/* 1. px */
+.px {
+  width: 100px;
+}
+
+/* 2. % */
+.percent {
+  width: 50%;
+}
+
+/* 3. em */
+.em {
+  width: 20em;
+  font-size: 1em;
+}
+
+/* 4. rem - root (html) em*/
+.rem {
+  width: 20rem;
+}
+
+/* 5. auto */
+.auto {
+  width: auto;
+}
+
+</script>
+
+<script>
+/* ==========================================================
+   File registry — every .html lesson under css/, grouped by folder.
+   `file` is the path relative to css/ and matches the data-cssfile
+   attribute on the embedded source blocks above.
+   ========================================================== */
+const FILES = [
+  // 1. Selectors
+  { file: '1. selectors/basic selectors.html',  label: '1 · Basic Selectors',  group: 'Selectors' },
+  { file: '1. selectors/child selector.html',   label: '1 · Child Selector',   group: 'Selectors' },
+  { file: '1. selectors/pseudo selectors.html', label: '1 · Pseudo Selectors', group: 'Selectors' },
+
+  // 2. Colors
+  { file: '2. colors/colors.html',    label: '2 · Colors',    group: 'Colors',
+    related: ['2. colors/colors.css'] },
+  { file: '2. colors/gradients.html', label: '2 · Gradients', group: 'Colors' },
+
+  // 3. Size
+  { file: '3. size/basic size.html',       label: '3 · Basic Size',      group: 'Size',
+    related: ['3. size/size.css'] },
+  { file: '3. size/advanced-sizing.html',  label: '3 · Advanced Sizing', group: 'Size' },
+  { file: '3. size/viewport.html',         label: '3 · Viewport',        group: 'Size' },
+
+  // 4. Page Decoration
+  { file: '4. page decoration/basic decoration.html', label: '4 · Basic Decoration', group: 'Page Decoration' },
+  { file: '4. page decoration/flex.html',             label: '4 · Flex',             group: 'Page Decoration' },
+  { file: '4. page decoration/fonts.html',            label: '4 · Fonts',            group: 'Page Decoration' },
+  { file: '4. page decoration/grid.html',             label: '4 · Grid',             group: 'Page Decoration' },
+  { file: '4. page decoration/z-index.html',          label: '4 · Z-Index',          group: 'Page Decoration' },
+
+  // 5. Transitions
+  { file: '5. transition/basic-transitions.html', label: '5 · Basic Transitions', group: 'Transitions' },
+  { file: '5. transition/more-transitions.html',  label: '5 · More Transitions',  group: 'Transitions' },
+  { file: '5. transition/proprety.html',          label: '5 · Property',          group: 'Transitions' },
+  { file: '5. transition/more hover.html',        label: '5 · More Hover',        group: 'Transitions' },
+  { file: '5. transition/darkMode.html',          label: '5 · Dark Mode',         group: 'Transitions' },
+
+  // Cool stuff (gallery)
+  { file: '5. transition/cool staff/3dButton.html',         label: '✦ 3D Button',          group: 'Cool Stuff' },
+  { file: '5. transition/cool staff/backgroud_colors.html', label: '✦ Background Colors',  group: 'Cool Stuff' },
+  { file: '5. transition/cool staff/darkMode.html',         label: '✦ Dark Mode',          group: 'Cool Stuff' },
+  { file: '5. transition/cool staff/flip.html',             label: '✦ Flip',               group: 'Cool Stuff' },
+  { file: '5. transition/cool staff/form.html',             label: '✦ Form',               group: 'Cool Stuff' },
+  { file: '5. transition/cool staff/icon.html',             label: '✦ Icon',               group: 'Cool Stuff' },
+  { file: '5. transition/cool staff/s.html',                label: '✦ s',                  group: 'Cool Stuff' },
+  { file: '5. transition/cool staff/spinner.html',          label: '✦ Spinner',            group: 'Cool Stuff' },
+];
+
+/* ==========================================================
+   3D background — Three.js scene with floating wireframes
+   ========================================================== */
+(function init3D(){
+  const canvas = document.getElementById('bg-3d');
+  if(!window.THREE){ return; }
+  const renderer = new THREE.WebGLRenderer({ canvas, alpha:true, antialias:true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 100);
+  camera.position.z = 7;
+
+  // Group of floating wireframe shapes
+  const group = new THREE.Group();
+  scene.add(group);
+
+  const palette = [0x7c5cff, 0x35d0ff, 0xff6ec7, 0xf7df1e];
+
+  function addShape(geom, color, scale, position){
+    const mat = new THREE.LineBasicMaterial({ color, transparent:true, opacity:0.55 });
+    const wire = new THREE.WireframeGeometry(geom);
+    const line = new THREE.LineSegments(wire, mat);
+    line.scale.setScalar(scale);
+    line.position.set(position.x, position.y, position.z);
+    line.userData.spinSpeed = {
+      x: (Math.random() - 0.5) * 0.004,
+      y: (Math.random() - 0.5) * 0.004,
+      z: (Math.random() - 0.5) * 0.0025
+    };
+    line.userData.float = { phase: Math.random()*Math.PI*2, amp: 0.3 + Math.random()*0.4 };
+    group.add(line);
+    return line;
+  }
+
+  addShape(new THREE.IcosahedronGeometry(1, 0), palette[0], 1.6,  { x:-4.5, y:1.6, z:-2 });
+  addShape(new THREE.TorusKnotGeometry(0.7, 0.22, 80, 12), palette[1], 1.4, { x: 4.5, y:-1.8, z:-1 });
+  addShape(new THREE.OctahedronGeometry(1, 0), palette[2], 1.0,  { x: 3.0, y: 2.2, z:-3 });
+  addShape(new THREE.TetrahedronGeometry(1, 0), palette[3], 0.9, { x:-3.2, y:-2.0, z:-2.5 });
+  addShape(new THREE.IcosahedronGeometry(1, 0), palette[1], 0.6, { x: 0.2, y: 0.0, z:-4 });
+  addShape(new THREE.DodecahedronGeometry(1, 0), palette[0], 0.7,{ x:-1.6, y: 2.6, z:-3.5 });
+  addShape(new THREE.OctahedronGeometry(1, 0), palette[3], 0.55, { x: 1.8, y:-2.6, z:-3.5 });
+
+  // Particle field
+  const pCount = 220;
+  const pGeom = new THREE.BufferGeometry();
+  const pPos = new Float32Array(pCount * 3);
+  for(let i=0; i<pCount; i++){
+    pPos[i*3+0] = (Math.random() - 0.5) * 18;
+    pPos[i*3+1] = (Math.random() - 0.5) * 12;
+    pPos[i*3+2] = (Math.random() - 0.5) * 10 - 2;
+  }
+  pGeom.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+  const pMat = new THREE.PointsMaterial({ color:0xffffff, size:0.025, transparent:true, opacity:0.65 });
+  const points = new THREE.Points(pGeom, pMat);
+  scene.add(points);
+
+  // Mouse parallax
+  const target = { x:0, y:0 };
+  const current = { x:0, y:0 };
+  window.addEventListener('mousemove', (e)=>{
+    target.x = (e.clientX / window.innerWidth - 0.5) * 0.6;
+    target.y = (e.clientY / window.innerHeight - 0.5) * 0.4;
+  });
+
+  function resize(){
+    const w = window.innerWidth, h = window.innerHeight;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  let t = 0;
+  function tick(){
+    t += 0.01;
+    current.x += (target.x - current.x) * 0.05;
+    current.y += (target.y - current.y) * 0.05;
+
+    group.children.forEach((m)=>{
+      m.rotation.x += m.userData.spinSpeed.x;
+      m.rotation.y += m.userData.spinSpeed.y;
+      m.rotation.z += m.userData.spinSpeed.z;
+      m.position.y += Math.sin(t + m.userData.float.phase) * 0.0025 * m.userData.float.amp;
+    });
+    group.rotation.y = current.x * 0.4;
+    group.rotation.x = -current.y * 0.3;
+    points.rotation.y += 0.0006;
+    points.rotation.x = -current.y * 0.05;
+
+    renderer.render(scene, camera);
+    requestAnimationFrame(tick);
+  }
+  tick();
+})();
+
+/* ==========================================================
+   CodeMirror setup
+   ========================================================== */
+const editor = CodeMirror.fromTextArea(document.getElementById('editor'), {
+  mode: 'htmlmixed',
+  theme: 'dracula',
+  lineNumbers: true,
+  matchBrackets: true,
+  autoCloseBrackets: true,
+  styleActiveLine: true,
+  indentUnit: 2,
+  tabSize: 2,
+  smartIndent: true,
+  lineWrapping: true,
+  extraKeys: {
+    'Cmd-Enter': () => renderPreview(),
+    'Ctrl-Enter': () => renderPreview(),
+    'Cmd-/': 'toggleComment',
+    'Ctrl-/': 'toggleComment',
+  },
+});
+editor.setValue('// Loading…\n');
+
+/* ==========================================================
+   File loading & state
+   ========================================================== */
+const fileListEl = document.getElementById('fileList');
+const fileNameEl = document.getElementById('fileName');
+const fileSubEl  = document.getElementById('fileSub');
+const chromeNameEl = document.getElementById('chromeName');
+const searchEl = document.getElementById('search');
+
+const state = {
+  active: null,           // current LESSON file path
+  originals: {},          // any path -> original text from disk
+  buffers: {},            // any path -> editable buffer text (preserved per file)
+  loaded: {},             // any path -> bool
+  lineCounts: {},         // any path -> line count
+  steps: {},              // file -> [{n, title, code}] | null  (parsed step list — unused for HTML)
+  activeStep: {},         // file -> 0 (All) | step number
+  stepEdits: {},          // file -> { stepN: editedCode }       (per-step scratch buffer — unused for HTML)
+  activeSubfile: {},      // lesson -> currently shown sub-file path (defaults to lesson itself)
+};
+
+/* Parse "// N) title" headings into step snippets. A step is included only if
+   its extracted code contains at least one console.* call (otherwise running
+   it would produce no visible output). The file gets step tabs only if 2+
+   steps qualify. Bodies that are mostly commented-out get their leading "// "
+   stripped; bodies that already contain live code are left as-is. */
+function parseSteps(source){
+  if(!source) return null;
+  const lines = source.split('\n');
+  const headingRe = /^(\s*)\/\/\s*(\d+)\)\s*(.*)$/;
+  const headings = [];
+  for(let i=0; i<lines.length; i++){
+    const m = lines[i].match(headingRe);
+    if(m) headings.push({ n: parseInt(m[2],10), title: m[3].trim(), line: i });
+  }
+  if(headings.length < 2) return null;
+
+  const result = [];
+  for(let h=0; h<headings.length; h++){
+    const start = headings[h].line;
+    const end = (h+1 < headings.length) ? headings[h+1].line : lines.length;
+    const block = lines.slice(start, end);
+
+    // Decide commented-mode vs live-mode by counting body lines (skip heading)
+    let commented = 0, live = 0;
+    for(let j=1; j<block.length; j++){
+      const t = block[j].trim();
+      if(!t) continue;
+      if(t.startsWith('//')) commented++;
+      else live++;
+    }
+    let code;
+    if(commented > live){
+      // Strip a single "// " (or "//") from each non-heading line
+      code = [block[0]].concat(
+        block.slice(1).map(line => line.replace(/^(\s*)\/\/ ?/, '$1'))
+      ).join('\n');
+    }else{
+      code = block.join('\n');
+    }
+
+    if(/\bconsole\.(log|info|warn|error|table|dir|trace)\b/.test(code)){
+      result.push({ n: headings[h].n, title: headings[h].title, code });
+    }
+  }
+  return result.length >= 2 ? result : null;
+}
+
+/* Save whatever's in the editor into the right slot for the active file/step. */
+function saveCurrentEditor(){
+  const file = state.active;
+  if(!file) return;
+  const step = state.activeStep[file] || 0;
+  const v = editor.getValue();
+  if(step === 0){
+    state.buffers[file] = v;
+    // Editing the canonical "All" view invalidates per-step caches —
+    // they should be regenerated from the new buffer next time.
+    if(state.stepEdits[file]) delete state.stepEdits[file];
+    state.steps[file] = parseSteps(v);
+  }else{
+    if(!state.stepEdits[file]) state.stepEdits[file] = {};
+    state.stepEdits[file][step] = v;
+  }
+}
+
+/* Set the editor content + chrome labels for the currently-active step. */
+function loadEditorForCurrentStep(){
+  const file = state.active;
+  if(!file) return;
+  const step = state.activeStep[file] || 0;
+  let content;
+  if(step === 0){
+    content = state.buffers[file] ?? state.originals[file] ?? '';
+    chromeNameEl.textContent = file;
+    fileSubEl.textContent = 'css/' + file;
+  }else{
+    const cached = state.stepEdits[file] && state.stepEdits[file][step];
+    if(cached != null){
+      content = cached;
+    }else{
+      const steps = parseSteps(state.buffers[file] ?? state.originals[file] ?? '');
+      const s = (steps || []).find(x => x.n === step);
+      content = s ? s.code : '// step ' + step + ' not found';
+    }
+    const s = (state.steps[file] || []).find(x => x.n === step);
+    chromeNameEl.textContent = file + '  ·  step ' + step;
+    fileSubEl.textContent = s ? `step ${step} — ${s.title}` : `step ${step}`;
+  }
+  editor.setValue(content);
+  editor.clearHistory();
+}
+
+function switchStep(stepN){
+  const file = state.active;
+  if(!file) return;
+  saveCurrentEditor();
+  state.activeStep[file] = stepN;
+  loadEditorForCurrentStep();
+  renderStepTabs();
+  refreshDirty(file);
+  editor.focus();
+}
+
+function renderStepTabs(){
+  const tabsEl = document.getElementById('stepTabs');
+  const file = state.active;
+  const steps = state.steps[file];
+  if(!steps || steps.length < 2){
+    tabsEl.innerHTML = '';
+    return;
+  }
+  const cur = state.activeStep[file] || 0;
+  const esc = (s) => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+  let html = '';
+  steps.forEach(s => {
+    const tip = `${s.n}) ${s.title || 'Step '+s.n}`;
+    html += `<button class="step-tab ${cur===s.n?'active':''}" data-step="${s.n}" title="${esc(tip)}">${s.n}</button>`;
+  });
+  html += `<button class="step-tab ${cur===0?'active':''}" data-step="0" title="Run the full file">All</button>`;
+  tabsEl.innerHTML = html;
+  tabsEl.querySelectorAll('.step-tab').forEach(b => {
+    b.addEventListener('click', () => switchStep(parseInt(b.dataset.step, 10)));
+  });
+}
+
+/* Pull every <a href> out of an HTML string. Returns a deduped list of
+   {title, url} pairs. Skips empty / "#" / "javascript:" hrefs and pure
+   in-page anchors. The link's visible text becomes the chip title;
+   if it's empty or just markup, fall back to the URL. */
+function extractLinks(html){
+  if(!html) return [];
+  const out = [];
+  const seen = new Set();
+  const re = /<a\b[^>]*\bhref\s*=\s*("([^"]*)"|'([^']*)')[^>]*>([\s\S]*?)<\/a>/gi;
+  let m;
+  while((m = re.exec(html)) !== null){
+    const url = (m[2] ?? m[3] ?? '').trim();
+    if(!url || url === '#' || url.startsWith('javascript:')) continue;
+    // Skip pure same-page anchors (#section) — they don't navigate to anything useful here
+    if(url.startsWith('#')) continue;
+    if(seen.has(url)) continue;
+    seen.add(url);
+    let text = m[4].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+    if(!text) text = url;
+    out.push({ title: text, url, autoFromFile: true });
+  }
+  return out;
+}
+
+function renderFileLinks(){
+  const linksEl = document.getElementById('fileLinks');
+  const entry = FILES.find(f => f.file === state.active);
+  const manual = (entry && entry.links) || [];
+  // Auto-extract <a href> links from the lesson's current HTML buffer
+  const lesson = state.active;
+  const lessonHtml = lesson ? (state.buffers[lesson] ?? state.originals[lesson] ?? '') : '';
+  const auto = extractLinks(lessonHtml);
+  // Merge: keep manual entries first, then auto entries that aren't duplicates
+  const seenUrls = new Set(manual.filter(l => l.url).map(l => l.url));
+  const links = [...manual, ...auto.filter(l => !seenUrls.has(l.url))];
+  if(!links.length){ linksEl.innerHTML = ''; return; }
+  const esc = (s) => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+  linksEl.innerHTML = links.map((l, i) => {
+    let host = '';
+    try { host = new URL(l.url).hostname.replace(/^www\./,''); } catch {}
+    const isEmbed = !!l.embed;
+    const defaultIco = isEmbed
+      ? (l.embed.type === 'video' ? '▶' : (l.embed.type === 'html' ? '📥' : '⤢'))
+      : (l.autoFromFile ? '🔗' : '📚');
+    const ico = l.icon || defaultIco;
+    const arrow = isEmbed ? '⤢' : '↗';
+    const tag = isEmbed ? 'button type="button"' : `a href="${esc(l.url || '#')}" target="_blank" rel="noopener noreferrer"`;
+    const close = isEmbed ? 'button' : 'a';
+    const tip = l.url ? esc(l.url) : esc(l.title);
+    return `<${tag} class="file-link" data-link-index="${i}" title="${tip}">`
+         + `<span class="ico">${esc(ico)}</span><span>${esc(l.title)}</span>`
+         + (host ? `<span class="host">${esc(host)}</span>` : '')
+         + `<span class="arrow">${arrow}</span></${close}>`;
+  }).join('');
+  // Attach click handlers for embed-style links
+  linksEl.querySelectorAll('button.file-link').forEach(btn => {
+    const idx = parseInt(btn.dataset.linkIndex, 10);
+    const link = links[idx];
+    if(!link) return;
+    btn.addEventListener('click', () => openMediaModal(link));
+  });
+}
+
+/* ==========================================================
+   Media modal — plays cross-origin video (and optional separate
+   audio track, e.g. Reddit DASH) inside the lab.
+   ========================================================== */
+const mediaModalEl = document.getElementById('mediaModal');
+const mediaTitleEl = document.getElementById('mediaTitle');
+const mediaHostEl  = document.getElementById('mediaHost');
+const mediaBodyEl  = document.getElementById('mediaBody');
+const mediaSrcLink = document.getElementById('mediaSource');
+
+function openMediaModal(link){
+  if(!link || !link.embed) return;
+  const e = link.embed;
+  const foot = document.getElementById('mediaFoot');
+  mediaTitleEl.textContent = link.title || 'Embedded media';
+  let host = '';
+  try { if(link.url) host = new URL(link.url).hostname.replace(/^www\./,''); } catch {}
+  mediaHostEl.textContent = host;
+  // Footer is only meaningful when there's an external source URL
+  if(link.url){
+    foot.style.display = '';
+    mediaSrcLink.href = link.url;
+    mediaSrcLink.textContent = host || 'source';
+    mediaSrcLink.title = link.url;
+  }else{
+    foot.style.display = 'none';
+  }
+
+  mediaBodyEl.classList.remove('html-mode');
+  mediaBodyEl.innerHTML = '<div class="media-loading">Loading…</div>';
+  mediaModalEl.classList.add('open');
+
+  if(e.type === 'html'){
+    mediaBodyEl.classList.add('html-mode');
+    mediaBodyEl.innerHTML = e.html || '';
+    return;
+  }
+  if(e.type === 'video'){
+    const video = document.createElement('video');
+    video.src = e.videoSrc;
+    video.controls = true;
+    video.playsInline = true;
+    video.preload = 'metadata';
+    if(e.poster) video.poster = e.poster;
+    if(e.width) video.width = e.width;
+    if(e.height) video.height = e.height;
+
+    let audio = null;
+    if(e.audioSrc){
+      // Reddit DASH videos have audio in a separate file; play in sync
+      audio = document.createElement('audio');
+      audio.src = e.audioSrc;
+      audio.preload = 'metadata';
+      const sync = () => { try { audio.currentTime = video.currentTime; } catch {} };
+      video.addEventListener('play',   () => { sync(); audio.play().catch(()=>{}); });
+      video.addEventListener('pause',  () => audio.pause());
+      video.addEventListener('seeking',() => sync());
+      video.addEventListener('seeked', () => sync());
+      video.addEventListener('ratechange', () => { audio.playbackRate = video.playbackRate; });
+      video.addEventListener('volumechange', () => { audio.volume = video.volume; audio.muted = video.muted; });
+      // Periodically nudge if drift > 0.25s
+      setInterval(() => {
+        if(audio.paused || video.paused) return;
+        const drift = audio.currentTime - video.currentTime;
+        if(Math.abs(drift) > 0.25) sync();
+      }, 1000);
+    }
+
+    mediaBodyEl.innerHTML = '';
+    mediaBodyEl.appendChild(video);
+    if(audio) mediaBodyEl.appendChild(audio);
+  } else if(e.type === 'iframe'){
+    mediaBodyEl.innerHTML = '';
+    const ifr = document.createElement('iframe');
+    ifr.src = e.src;
+    ifr.style.cssText = 'border:0;width:100%;height:60vh;border-radius:10px;background:#000';
+    if(e.allow) ifr.allow = e.allow;
+    mediaBodyEl.appendChild(ifr);
+  } else {
+    mediaBodyEl.innerHTML = '<div class="media-loading">Unsupported embed type.</div>';
+  }
+}
+
+function closeMediaModal(){
+  mediaModalEl.classList.remove('open');
+  // Tear down media to stop playback and free the network stream
+  mediaBodyEl.querySelectorAll('video, audio, iframe').forEach(n => {
+    if(n.tagName === 'IFRAME'){ n.src = 'about:blank'; }
+    else { try { n.pause(); } catch {} n.removeAttribute('src'); n.load && n.load(); }
+  });
+  mediaBodyEl.classList.remove('html-mode');
+  mediaBodyEl.innerHTML = '';
+}
+
+document.getElementById('mediaClose').addEventListener('click', closeMediaModal);
+mediaModalEl.addEventListener('click', (e) => {
+  if(e.target === mediaModalEl) closeMediaModal();
+});
+window.addEventListener('keydown', (e) => {
+  if(e.key === 'Escape' && mediaModalEl.classList.contains('open')) closeMediaModal();
+});
+
+function fileButtonNode(entry){
+  const li = document.createElement('li');
+  const btn = document.createElement('button');
+  btn.className = 'file-btn';
+  btn.dataset.file = entry.file;
+  btn.innerHTML = `
+    <span class="ico">CSS</span>
+    <span class="label">${entry.label}</span>
+    <span class="lines" data-lines>—</span>
+  `;
+  btn.addEventListener('click', ()=> activate(entry.file));
+  li.appendChild(btn);
+  return li;
+}
+
+// Render the sidebar grouped by `entry.group` (with a folder header for each group)
+(function renderFileList(){
+  const groups = [];
+  const seen = new Map();
+  FILES.forEach(f => {
+    const g = f.group || 'Other';
+    if(!seen.has(g)){
+      seen.set(g, { name: g, items: [] });
+      groups.push(seen.get(g));
+    }
+    seen.get(g).items.push(f);
+  });
+  groups.forEach(g => {
+    const head = document.createElement('li');
+    head.className = 'file-group-head';
+    head.innerHTML = `<span>${g.name}</span>`;
+    head.style.cssText = 'list-style:none; padding:14px 12px 4px; font-size:10.5px; letter-spacing:0.18em; text-transform:uppercase; color:var(--text-faint); font-weight:600';
+    fileListEl.appendChild(head);
+    g.items.forEach(f => fileListEl.appendChild(fileButtonNode(f)));
+  });
+})();
+
+searchEl.addEventListener('input', ()=>{
+  const q = searchEl.value.toLowerCase().trim();
+  document.querySelectorAll('.file-btn').forEach(b=>{
+    const f = b.dataset.file;
+    const label = b.querySelector('.label').textContent.toLowerCase();
+    const match = !q || f.toLowerCase().includes(q) || label.includes(q);
+    b.parentElement.style.display = match ? '' : 'none';
+  });
+  // Hide a group header when all its items are filtered out
+  document.querySelectorAll('.file-group-head').forEach(head => {
+    let n = head.nextElementSibling;
+    let anyVisible = false;
+    while(n && !n.classList.contains('file-group-head')){
+      if(n.style.display !== 'none') { anyVisible = true; break; }
+      n = n.nextElementSibling;
+    }
+    head.style.display = anyVisible ? '' : 'none';
+  });
+});
+
+function readEmbedded(name){
+  const node = document.querySelector(`script[type="text/plain"][data-cssfile="${CSS.escape(name)}"]`);
+  if(!node) return null;
+  // Restore "<\/script" → "</script" in case anything was neutralized at embed time
+  return node.textContent.replace(/<\\\/script/gi, '</script');
+}
+
+async function loadFile(name){
+  if(state.loaded[name]) return state.originals[name];
+  let text = readEmbedded(name);
+  if(text == null){
+    // Fall back to fetch when served over http(s) and a file isn't embedded
+    try{
+      const r = await fetch(name + '?t=' + Date.now());
+      if(!r.ok) throw new Error('HTTP ' + r.status);
+      text = await r.text();
+    }catch(err){
+      text = `// Source for ${name} is not embedded in this page and could not be fetched.\n// ${err.message}\n`;
+    }
+  }
+  state.originals[name] = text;
+  state.buffers[name] = text;
+  state.loaded[name] = true;
+  state.lineCounts[name] = text.split('\n').length;
+  const btn = document.querySelector(`.file-btn[data-file="${name}"]`);
+  if(btn){
+    const lines = btn.querySelector('[data-lines]');
+    if(lines) lines.textContent = state.lineCounts[name] + 'L';
+  }
+  return text;
+}
+
+async function activate(name){
+  // Save current view (current sub-file inside the current lesson) into its slot
+  if(state.active){
+    saveCurrentSubEditor();
+    refreshDirty(state.active);
+  }
+  state.active = name;
+  document.querySelectorAll('.file-btn').forEach(b=>{
+    b.classList.toggle('active', b.dataset.file === name);
+  });
+  fileNameEl.firstChild.textContent = name;
+  if(!state.loaded[name]){
+    editor.setValue('// Loading ' + name + '…');
+    await loadFile(name);
+  }
+  // Also pre-load any companion files declared via `related`
+  const entry = FILES.find(f => f.file === name);
+  const related = (entry && entry.related) || [];
+  for(const rel of related){
+    if(!state.loaded[rel]) await loadFile(rel);
+  }
+  // (Re)compute steps from the current "All" buffer (no-op for HTML lessons)
+  state.steps[name] = parseSteps(state.buffers[name] ?? state.originals[name] ?? '');
+  if(state.activeStep[name] == null){
+    const ss = state.steps[name];
+    state.activeStep[name] = (ss && ss.length >= 2) ? ss[ss.length - 1].n : 0;
+  }
+  if(state.activeStep[name] !== 0 && !(state.steps[name] || []).some(s => s.n === state.activeStep[name])){
+    const ss = state.steps[name];
+    state.activeStep[name] = (ss && ss.length) ? ss[ss.length - 1].n : 0;
+  }
+  // Default the sub-file selector to the lesson itself
+  if(!state.activeSubfile[name]) state.activeSubfile[name] = name;
+  loadSubfileIntoEditor();
+  renderStepTabs();
+  renderFileTabs();
+  renderFileLinks();
+  refreshDirty(name);
+  editor.focus();
+  // Refresh the iframe preview for the newly-active file
+  if(typeof renderPreview === 'function') renderPreview();
+}
+
+function refreshDirty(name){
+  // "Dirty" = the lesson's HTML buffer OR any of its related-file buffers
+  // differs from the originals on disk. Switching sub-file tabs is just a
+  // view change, so the editor's current text isn't read here.
+  if(!state.loaded[name]) return;
+  const entry = FILES.find(f => f.file === name);
+  const all = [name, ...((entry && entry.related) || [])];
+  let dirty = false;
+  for(const p of all){
+    if(state.buffers[p] != null && state.buffers[p] !== state.originals[p]){ dirty = true; break; }
+  }
+  const btn = document.querySelector(`.file-btn[data-file="${name}"]`);
+  if(btn) btn.classList.toggle('dirty', dirty);
+  if(name === state.active){
+    fileNameEl.classList.toggle('dirty', dirty);
+  }
+}
+
+/* Sub-file tabs (when a lesson has companion .css/.js files) */
+function saveCurrentSubEditor(){
+  const lesson = state.active;
+  if(!lesson) return;
+  const sub = state.activeSubfile[lesson] || lesson;
+  state.buffers[sub] = editor.getValue();
+}
+function loadSubfileIntoEditor(){
+  const lesson = state.active;
+  if(!lesson) return;
+  const sub = state.activeSubfile[lesson] || lesson;
+  const content = state.buffers[sub] ?? state.originals[sub] ?? '';
+  // Match syntax mode to the file's extension
+  const mode = sub.endsWith('.css') ? 'css'
+             : sub.endsWith('.js')  ? 'javascript'
+             : 'htmlmixed';
+  editor.setOption('mode', mode);
+  editor.setValue(content);
+  editor.clearHistory();
+  // Update chrome name + sub-path display
+  chromeNameEl.textContent = sub.split('/').pop();
+  fileSubEl.textContent = 'css/' + sub;
+}
+function renderFileTabs(){
+  const tabsEl = document.getElementById('fileTabs');
+  const lesson = state.active;
+  if(!lesson){ tabsEl.innerHTML = ''; chromeNameEl.style.display = ''; return; }
+  const entry = FILES.find(f => f.file === lesson);
+  const related = (entry && entry.related) || [];
+  const all = [lesson, ...related];
+  if(all.length < 2){
+    tabsEl.innerHTML = '';
+    chromeNameEl.style.display = '';
+    return;
+  }
+  // Tabs replace the static filename in the chrome
+  chromeNameEl.style.display = 'none';
+  const cur = state.activeSubfile[lesson] || lesson;
+  const esc = (s) => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+  tabsEl.innerHTML = all.map(p => {
+    const name = p.split('/').pop();
+    const cls  = 'file-tab' + (p === cur ? ' active' : '');
+    return `<button class="${cls}" data-path="${esc(p)}" title="${esc(p)}">${esc(name)}</button>`;
+  }).join('');
+  tabsEl.querySelectorAll('.file-tab').forEach(b => {
+    b.addEventListener('click', () => switchSubfile(b.dataset.path));
+  });
+}
+function switchSubfile(path){
+  const lesson = state.active;
+  if(!lesson) return;
+  saveCurrentSubEditor();
+  state.activeSubfile[lesson] = path;
+  loadSubfileIntoEditor();
+  renderFileTabs();
+  refreshDirty(lesson);
+  editor.focus();
+}
+
+editor.on('change', ()=>{
+  if(!state.active) return;
+  const lesson = state.active;
+  const sub = state.activeSubfile[lesson] || lesson;
+  state.buffers[sub] = editor.getValue();
+  refreshDirty(lesson);
+  // If the user just edited the lesson HTML, the set of <a href> links
+  // can change — refresh the chip strip (debounced so we don't churn DOM
+  // on every keystroke).
+  if(sub === lesson){
+    clearTimeout(renderFileLinks._t);
+    renderFileLinks._t = setTimeout(renderFileLinks, 250);
+  }
+});
+
+/* ==========================================================
+   Reset / Render / Preview
+   ========================================================== */
+document.getElementById('resetBtn').addEventListener('click', ()=>{
+  const lesson = state.active;
+  if(!lesson || state.originals[lesson] == null) return;
+  // Reset both the lesson's HTML and every related companion file
+  const entry = FILES.find(f => f.file === lesson);
+  const all = [lesson, ...((entry && entry.related) || [])];
+  for(const p of all){
+    if(state.originals[p] != null) state.buffers[p] = state.originals[p];
+  }
+  loadSubfileIntoEditor();
+  refreshDirty(lesson);
+  renderPreview();
+  toast('Reset ' + lesson);
+});
+document.getElementById('runBtn').addEventListener('click', () => renderPreview());
+window.addEventListener('keydown', (e)=>{
+  if((e.metaKey || e.ctrlKey) && e.key === 'Enter'){
+    e.preventDefault();
+    renderPreview();
+  }
+});
+
+/* ==========================================================
+   Live preview
+   ========================================================== */
+const previewEl = document.getElementById('preview');
+const previewCardEl = document.getElementById('previewCard');
+const previewStatusEl = document.getElementById('previewStatus');
+const autoChk = document.getElementById('autoChk');
+
+/* Compose the lesson's HTML with each companion file inlined, so the user's
+   in-editor edits to a sibling .css / .js show up in the preview. */
+function buildPreviewHtml(){
+  const lesson = state.active;
+  if(!lesson) return '';
+  // Make sure the active sub-file's editor content is captured before we read
+  // the buffers (the change handler usually does this, but be explicit).
+  saveCurrentSubEditor();
+  let html = state.buffers[lesson] ?? state.originals[lesson] ?? '';
+  const entry = FILES.find(f => f.file === lesson);
+  const related = (entry && entry.related) || [];
+  for(const rel of related){
+    const buf = state.buffers[rel] ?? state.originals[rel] ?? '';
+    const fname = rel.split('/').pop();
+    const escName = fname.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    if(rel.endsWith('.css')){
+      const re = new RegExp(`<link\\b[^>]*\\bhref=(?:"${escName}"|'${escName}')[^>]*/?>`, 'i');
+      html = html.replace(re, `<style>\n${buf}\n<\/style>`);
+    } else if(rel.endsWith('.js')){
+      const re = new RegExp(`<script\\b[^>]*\\bsrc=(?:"${escName}"|'${escName}')[^>]*><\/script>`, 'i');
+      html = html.replace(re, `<script>\n${buf}\n<\/script>`);
+    }
+  }
+  return html;
+}
+
+function renderPreview(){
+  let html = buildPreviewHtml();
+  // Inject <base href="..."> so relative URLs the lesson does NOT have us
+  // inline (images, fonts, sibling files we don't manage) resolve to the
+  // lesson's folder instead of the synthetic about:srcdoc origin.
+  const file = state.active;
+  if(file){
+    const dir = file.split('/').slice(0, -1).join('/');
+    const baseUrl = dir ? new URL(encodeURI(dir) + '/', document.baseURI).href : document.baseURI;
+    const baseTag = `<base href="${baseUrl}">`;
+    if(/<head\b[^>]*>/i.test(html)){
+      html = html.replace(/<head\b[^>]*>/i, (m) => m + baseTag);
+    } else {
+      html = `<!DOCTYPE html><head>${baseTag}</head>` + html;
+    }
+  }
+  previewStatusEl.classList.add('rendering');
+  previewStatusEl.textContent = 'Rendering';
+  previewEl.srcdoc = html;
+}
+
+function schedulePreview(){
+  // debounced auto-render while typing
+  if(!autoChk.checked) return;
+  clearTimeout(schedulePreview._t);
+  schedulePreview._t = setTimeout(renderPreview, 350);
+}
+
+previewEl.addEventListener('load', ()=>{
+  previewStatusEl.classList.remove('rendering');
+  previewStatusEl.textContent = 'Preview';
+});
+
+document.getElementById('bgToggleBtn').addEventListener('click', (e)=>{
+  previewCardEl.classList.toggle('dark-bg');
+  e.currentTarget.classList.toggle('active', previewCardEl.classList.contains('dark-bg'));
+});
+
+document.getElementById('popoutBtn').addEventListener('click', ()=>{
+  const code = editor.getValue();
+  const w = window.open('', '_blank', 'noopener,noreferrer');
+  if(!w){ toast('Pop-up blocked — allow popups for this page'); return; }
+  w.document.open(); w.document.write(code); w.document.close();
+});
+
+editor.on('change', schedulePreview);
+
+/* ==========================================================
+   Toast helper
+   ========================================================== */
+const toastEl = document.getElementById('toast');
+let toastTimer;
+function toast(msg, kind){
+  toastEl.textContent = msg;
+  toastEl.classList.toggle('error', kind === 'error');
+  toastEl.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=> toastEl.classList.remove('show'), 1800);
+}
+
+/* ==========================================================
+   Drag-to-resize splitter between editor and preview
+   ========================================================== */
+(function initSplitter(){
+  const pane     = document.querySelector('.editor-pane');
+  const splitter = document.getElementById('splitter');
+  const editorCardEl  = document.querySelector('.editor-pane > .editor-card');
+  const previewCardEl_ = document.querySelector('.editor-pane > .preview-card');
+  if(!pane || !splitter || !editorCardEl || !previewCardEl_) return;
+  const HANDLE_W = 6;        // matches the middle column width in the grid
+  const MIN_PANE = 160;      // minimum width for either side
+  const STORAGE  = 'css-lab-split-ratio';
+
+  // Restore previously-saved ratio (a number between 0 and 1, editor's share)
+  let savedRatio = null;
+  try { const v = parseFloat(localStorage.getItem(STORAGE)); if(v > 0 && v < 1) savedRatio = v; } catch {}
+
+  function applyRatio(ratio){
+    const total = pane.clientWidth - parseFloat(getComputedStyle(pane).paddingLeft) * 2 - HANDLE_W - 14 * 2;
+    // ^^ subtract paddings + two gaps (one on each side of the splitter)
+    if(total <= 0) return;
+    const left  = Math.max(MIN_PANE, Math.min(total - MIN_PANE, total * ratio));
+    const right = total - left;
+    pane.style.setProperty('--col-1', left  + 'px');
+    pane.style.setProperty('--col-2', right + 'px');
+    if(typeof editor !== 'undefined' && editor.refresh){
+      clearTimeout(applyRatio._t);
+      applyRatio._t = setTimeout(() => editor.refresh(), 30);
+    }
+  }
+  if(savedRatio != null) applyRatio(savedRatio);
+
+  let drag = null;
+  function start(e){
+    e.preventDefault();
+    const rect = pane.getBoundingClientRect();
+    const padL = parseFloat(getComputedStyle(pane).paddingLeft) || 0;
+    drag = {
+      paneLeft: rect.left + padL,
+      total: pane.clientWidth - padL * 2 - HANDLE_W - 14 * 2,
+      pointerId: e.pointerId ?? null,
+    };
+    splitter.classList.add('active');
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  }
+  function move(e){
+    if(!drag) return;
+    // editor's effective column = pointer X minus the pane's left padding edge
+    let editorPx = e.clientX - drag.paneLeft;
+    editorPx = Math.max(MIN_PANE, Math.min(drag.total - MIN_PANE, editorPx));
+    const ratio = editorPx / drag.total;
+    applyRatio(ratio);
+  }
+  function end(){
+    if(!drag) return;
+    drag = null;
+    splitter.classList.remove('active');
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+    // Persist current ratio
+    const total = pane.clientWidth - parseFloat(getComputedStyle(pane).paddingLeft) * 2 - HANDLE_W - 14 * 2;
+    const colL = parseFloat(pane.style.getPropertyValue('--col-1')) || total / 2;
+    try { localStorage.setItem(STORAGE, (colL / total).toFixed(4)); } catch {}
+  }
+  splitter.addEventListener('pointerdown', start);
+  window.addEventListener('pointermove', move);
+  window.addEventListener('pointerup',   end);
+  window.addEventListener('pointercancel', end);
+
+  // Double-click resets to 50/50
+  splitter.addEventListener('dblclick', () => {
+    pane.style.removeProperty('--col-1');
+    pane.style.removeProperty('--col-2');
+    try { localStorage.removeItem(STORAGE); } catch {}
+    if(typeof editor !== 'undefined' && editor.refresh) setTimeout(() => editor.refresh(), 30);
+  });
+
+  // Keep CodeMirror's layout correct when the window resizes
+  window.addEventListener('resize', () => {
+    if(savedRatio != null) applyRatio(parseFloat(localStorage.getItem(STORAGE)) || 0.5);
+    if(typeof editor !== 'undefined' && editor.refresh){
+      clearTimeout(applyRatio._t);
+      applyRatio._t = setTimeout(() => editor.refresh(), 60);
+    }
+  });
+})();
+
+/* ==========================================================
+   Boot
+   ========================================================== */
+(async function boot(){
+  // Pre-fetch line counts for sidebar in the background
+  FILES.forEach(f => loadFile(f.file));
+  // Activate first file
+  await activate(FILES[0].file);
+})();
+</script>
+</body>
+</html>

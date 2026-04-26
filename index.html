@@ -207,6 +207,35 @@ section.lab-section{ margin-top: 56px }
 }
 .subgroup-title::after{ flex: 1 }
 
+/* CSS-themed featured card variant */
+.featured-card.css-theme::before{
+  background: linear-gradient(135deg, rgba(38,77,228,0.55), rgba(124,92,255,0) 40%, rgba(53,208,255,0.45));
+}
+.featured-card.css-theme:hover{ border-color: rgba(52,144,255,0.4); box-shadow: 0 36px 90px -30px rgba(38,77,228,0.30), 0 10px 30px -15px rgba(0,0,0,0.7) }
+.featured-card.css-theme .featured-art{
+  background:
+    radial-gradient(420px 220px at 30% 30%, rgba(38,77,228,0.26), transparent 60%),
+    radial-gradient(380px 220px at 80% 70%, rgba(53,208,255,0.20), transparent 60%),
+    linear-gradient(135deg, rgba(38,77,228,0.06), rgba(124,92,255,0.06));
+}
+.featured-card.css-theme .tag{
+  color: #b4d8ff; background: rgba(38,77,228,0.12); border-color: rgba(38,77,228,0.32);
+}
+.css-cube{
+  width: 130px; height: 130px; border-radius: 22px;
+  background: linear-gradient(135deg, #3490ff, #264de4);
+  color: #ffffff; font-weight: 900; font-size: 32px;
+  display: flex; align-items: center; justify-content: center;
+  letter-spacing: 1px;
+  box-shadow:
+    0 30px 70px -22px rgba(38,77,228,0.55),
+    inset 0 0 0 1px rgba(255,255,255,0.20),
+    inset 0 -16px 28px -10px rgba(0,0,0,0.30);
+  transform: rotate(4deg);
+  animation: floatY 5s ease-in-out infinite;
+  text-shadow: 0 2px 0 rgba(0,0,0,0.18);
+}
+
 /* TypeScript-themed featured card variant */
 .featured-card.ts-theme::before{
   background: linear-gradient(135deg, rgba(49,120,198,0.55), rgba(124,92,255,0) 40%, rgba(53,208,255,0.45));
@@ -435,6 +464,7 @@ footer a:hover{ color: var(--text) }
     <a class="nav-link" href="#javascript">JavaScript</a>
     <a class="nav-link" href="#typescript">TypeScript</a>
     <a class="nav-link" href="#html">HTML</a>
+    <a class="nav-link" href="#css">CSS</a>
     <a class="nav-link primary" href="tools.html">BergerOverflow ↗</a>
   </div>
 </nav>
@@ -532,10 +562,38 @@ footer a:hover{ color: var(--text) }
     </a>
   </section>
 
+  <!-- CSS — featured -->
+  <section class="lab-section" id="css">
+    <div class="section-head">
+      <h2>CSS</h2>
+      <span class="count">live preview</span>
+      <p>Side-by-side editor + sandboxed iframe with a draggable splitter — across 26 lessons grouped by selectors, color, sizing, decoration, transitions, and a "cool stuff" gallery.</p>
+    </div>
+
+    <a class="featured-card css-theme" href="css/index.html">
+      <div class="featured-art">
+        <span class="ring r1"></span>
+        <span class="ring r2"></span>
+        <div class="css-cube">CSS</div>
+      </div>
+      <div class="featured-body">
+        <span class="tag">Featured</span>
+        <h3>CSS Lab</h3>
+        <p>Pick a topic — selectors, colors, gradients, sizing, flex, grid, fonts, transitions, dark mode, and a curated gallery of small pretty things — and watch it render in a live iframe as you edit. Drag the splitter to give the preview more room.</p>
+        <div class="meta">
+          <span>26 lessons</span>
+          <span>auto-render</span>
+          <span>tabs for companion files</span>
+        </div>
+        <span class="open">Open the lab <span aria-hidden="true">→</span></span>
+      </div>
+    </a>
+  </section>
+
 </main>
 
 <footer>
-  <p>Advanced Programming · <a href="tools.html">BergerOverflow Tools</a> · <a href="javascript/index.html">JS Lab</a> · <a href="typescript/index.html">TS Lab</a> · <a href="html/lab.html">HTML Lab</a></p>
+  <p>Advanced Programming · <a href="tools.html">BergerOverflow Tools</a> · <a href="javascript/index.html">JS Lab</a> · <a href="typescript/index.html">TS Lab</a> · <a href="css/index.html">CSS Lab</a> · <a href="html/lab.html">HTML Lab</a></p>
 </footer>
 
 <script>
