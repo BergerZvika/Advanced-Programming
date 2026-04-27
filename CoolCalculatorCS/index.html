@@ -1,0 +1,2398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>C# Lab — Advanced Programming</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/theme/dracula.min.css">
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/clike/clike.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/xml/xml.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/edit/closebrackets.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/edit/matchbrackets.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/selection/active-line.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/comment/comment.min.js"></script>
+
+<style>
+:root{
+  --bg-0:#06060c;
+  --surface:rgba(255,255,255,0.04);
+  --surface-2:rgba(255,255,255,0.07);
+  --border:rgba(255,255,255,0.09);
+  --border-strong:rgba(255,255,255,0.18);
+  --text:#e8e8f3;
+  --text-dim:#9a9ab0;
+  --text-faint:#666680;
+  --accent:#7c5cff;
+  --accent-2:#35d0ff;
+  --cs-purple:#512BD4;          /* official .NET brand purple */
+  --cs-purple-light:#9b6bff;
+  --cs-purple-glow:rgba(155,107,255,0.45);
+  --term-green:#7cf0a8;
+  --term-amber:#ffd07a;
+  --success:#38d39f;
+  --warn:#ffb547;
+  --error:#ff5a7a;
+  --radius:18px;
+  --shadow-lg: 0 30px 80px -30px rgba(81,43,212,0.40), 0 10px 30px -15px rgba(0,0,0,0.6);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg-0);color:var(--text);font-family:'Inter',system-ui,sans-serif;height:100%;overflow:hidden}
+code,pre,textarea,.mono,.CodeMirror{font-family:'JetBrains Mono',ui-monospace,monospace}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+
+#bg-3d{
+  position:fixed; inset:0; z-index:-2; display:block;
+  background:
+    radial-gradient(1200px 700px at 8% -10%, rgba(81,43,212,0.30), transparent 60%),
+    radial-gradient(1000px 600px at 110% 0%,  rgba(155,107,255,0.22), transparent 60%),
+    radial-gradient(900px 600px at 50% 130%,  rgba(124,92,255,0.18), transparent 60%),
+    linear-gradient(180deg, #050510 0%, #08081a 50%, #050510 100%);
+}
+body::after{
+  content:""; position:fixed; inset:0; z-index:-1; pointer-events:none; opacity:.32;
+  background-image:
+    radial-gradient(1px 1px at 20% 30%, #ffffff 100%, transparent),
+    radial-gradient(1px 1px at 70% 60%, #ffffff 100%, transparent),
+    radial-gradient(1.5px 1.5px at 40% 80%, #ffffff 100%, transparent),
+    radial-gradient(1px 1px at 85% 20%, #ffffff 100%, transparent),
+    radial-gradient(1px 1px at 15% 65%, #ffffff 100%, transparent);
+  background-size: 1200px 800px;
+  mask-image:linear-gradient(180deg,transparent,#000 20%,#000 80%,transparent);
+}
+
+.app{ display:grid; grid-template-columns: 320px 1fr; height:100vh }
+@media (max-width: 980px){
+  .app{ grid-template-columns: 1fr; height:auto; min-height:100vh; overflow:auto }
+  html,body{ overflow:auto; height:auto }
+}
+
+.sidebar{
+  padding:22px 16px; position:relative; z-index:5;
+  background:linear-gradient(180deg, rgba(12,12,24,0.85), rgba(8,8,18,0.85));
+  backdrop-filter: blur(22px) saturate(140%);
+  -webkit-backdrop-filter: blur(22px) saturate(140%);
+  border-right:1px solid var(--border);
+  overflow-y:auto; scrollbar-width:thin;
+}
+.sidebar::-webkit-scrollbar{width:6px}
+.sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.08);border-radius:6px}
+
+.brand{ display:flex;align-items:center;gap:12px;margin-bottom:18px;padding:6px 4px;border-radius:14px;user-select:none }
+.brand-cube{
+  width:46px;height:46px;border-radius:12px;position:relative;
+  background:linear-gradient(135deg, var(--cs-purple), var(--cs-purple-light));
+  box-shadow:
+    0 12px 30px -10px var(--cs-purple-glow),
+    inset 0 0 0 1px rgba(255,255,255,0.25),
+    inset 0 -10px 20px -8px rgba(0,0,0,0.35);
+  transform: rotate(-6deg);
+  display:flex;align-items:center;justify-content:center;
+  font-weight:800;font-size:18px;color:#fff;letter-spacing:0.5px;
+  animation: floatY 5s ease-in-out infinite;
+  text-shadow: 0 1px 0 rgba(0,0,0,0.25);
+}
+.brand-cube::after{
+  content:""; position:absolute; inset:auto -6px -6px auto;
+  width:100%;height:100%; border-radius:12px;
+  background:linear-gradient(135deg, rgba(81,43,212,0.5), rgba(155,107,255,0.4));
+  filter:blur(14px); z-index:-1;
+}
+@keyframes floatY{ 0%,100%{ transform: rotate(-6deg) translateY(0) } 50%{ transform: rotate(-2deg) translateY(-4px) } }
+.brand h1{margin:0;font-size:17px;font-weight:700;letter-spacing:-0.02em}
+.brand .sub{font-size:11px;color:var(--text-faint);letter-spacing:0.14em;text-transform:uppercase}
+
+.search-wrap{ position:relative; margin-bottom:14px }
+.search{
+  width:100%;padding:10px 14px 10px 34px;border-radius:12px;border:1px solid var(--border);
+  background:rgba(255,255,255,0.03);color:var(--text);font-size:13.5px;outline:none;
+  transition:border-color .2s, box-shadow .2s;
+}
+.search:focus{border-color:var(--cs-purple-light);box-shadow:0 0 0 3px rgba(155,107,255,0.22)}
+.search-wrap::before{
+  content:"⌕"; position:absolute; left:11px; top:50%; transform:translateY(-50%);
+  color:var(--text-faint); font-size:14px; pointer-events:none;
+}
+
+.section-label{ font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:var(--text-faint); padding:14px 8px 6px }
+
+.file-list{ list-style:none; padding:0; margin:0 }
+.file-list li{ margin:2px 0 }
+.file-btn{
+  width:100%;display:flex;align-items:center;gap:10px;
+  background:transparent;color:var(--text-dim);
+  padding:10px 12px;border-radius:10px;font-size:13.5px;font-weight:500;text-align:left;
+  transition: background .15s, color .15s, transform .15s, box-shadow .2s;
+  border:1px solid transparent;
+}
+.file-btn:hover{ background:var(--surface); color:var(--text); transform:translateX(2px) }
+.file-btn.active{
+  background:linear-gradient(135deg,rgba(81,43,212,0.30),rgba(155,107,255,0.15));
+  color:#fff; border-color:rgba(155,107,255,0.32);
+  box-shadow: inset 0 0 0 1px rgba(155,107,255,0.18), 0 8px 24px -16px var(--cs-purple-glow);
+}
+.file-btn .ico{
+  width:24px; height:24px; flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  border-radius:6px;
+  background:linear-gradient(135deg, var(--cs-purple), var(--cs-purple-light));
+  color:#fff; font-weight:800; font-size:9.5px; letter-spacing:0.5px;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.2);
+}
+.file-btn .label{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+.file-btn .lines{
+  font-size:10.5px; color:var(--text-faint); padding:1px 6px; border-radius:20px;
+  background:rgba(255,255,255,0.04); flex-shrink:0;
+}
+.file-btn.active .lines{ background:rgba(155,107,255,0.20); color:#e0d5ff }
+.file-btn.dirty::before{
+  content:""; width:6px; height:6px; border-radius:50%;
+  background:var(--cs-purple-light); flex-shrink:0;
+  box-shadow: 0 0 8px var(--cs-purple-light);
+}
+.file-group-head{
+  list-style:none; padding:14px 12px 4px;
+  font-size:10.5px; letter-spacing:0.18em; text-transform:uppercase;
+  color:var(--text-faint); font-weight:600;
+}
+
+.back-link{
+  display:flex;align-items:center;gap:8px;
+  margin-top:18px; padding:10px 12px;border-radius:10px;
+  color:var(--text-dim); font-size:13px; text-decoration:none;
+  border:1px solid var(--border);
+  transition: background .15s, color .15s, border-color .15s;
+}
+.back-link:hover{ background:var(--surface); color:var(--text); border-color:var(--border-strong) }
+
+.editor-pane{
+  position:relative; padding:22px;
+  display:grid;
+  grid-template-columns: var(--col-1, 1fr) 6px var(--col-2, 1fr);
+  grid-template-rows: auto 1fr;
+  grid-template-areas:
+    "topbar  topbar  topbar"
+    "editor  split   preview";
+  gap:14px;
+  min-width:0; min-height:0; overflow:hidden;
+}
+.editor-pane > .top-bar     { grid-area: topbar }
+.editor-pane > .editor-card { grid-area: editor;  min-width: 0 }
+.editor-pane > .preview-card{ grid-area: preview; min-width: 0 }
+
+.splitter{
+  grid-area: split; cursor: col-resize; position: relative;
+  background: transparent; user-select: none; touch-action: none;
+}
+.splitter::before{
+  content: ""; position: absolute;
+  left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: 4px; height: 64px; border-radius: 2px;
+  background: var(--border-strong);
+  transition: background .18s, height .18s, box-shadow .18s;
+}
+.splitter:hover::before, .splitter.active::before{
+  background: linear-gradient(180deg, var(--cs-purple), var(--cs-purple-light));
+  height: 110px;
+  box-shadow: 0 0 16px -2px var(--cs-purple-glow);
+}
+
+@media (max-width: 980px){
+  .editor-pane{
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr 1fr;
+    grid-template-areas: "topbar" "editor" "preview";
+  }
+  .splitter{ display:none }
+}
+
+.top-bar{
+  display:flex;align-items:center;gap:14px; padding:14px 18px;
+  background: linear-gradient(135deg, rgba(20,20,40,0.7), rgba(12,12,24,0.7));
+  border:1px solid var(--border); border-radius: var(--radius);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  box-shadow: var(--shadow-lg);
+}
+.file-meta{ display:flex; align-items:center; gap:12px; min-width:0 }
+.file-icon{
+  width:36px;height:36px;border-radius:10px;
+  background:linear-gradient(135deg, var(--cs-purple), var(--cs-purple-light));
+  color:#fff; font-weight:800; font-size:13px; letter-spacing:0.5px;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow: 0 6px 18px -8px var(--cs-purple-glow), inset 0 0 0 1px rgba(255,255,255,0.25);
+  flex-shrink:0;
+  text-shadow: 0 1px 0 rgba(0,0,0,0.25);
+}
+.file-name{ font-size:15px; font-weight:600; letter-spacing:-0.01em }
+.file-name .dirty-mark{ color:var(--cs-purple-light); margin-left:6px; opacity:0; transition:opacity .15s }
+.file-name.dirty .dirty-mark{ opacity:1 }
+.file-sub{ font-size:11.5px; color:var(--text-faint); margin-top:1px; font-family:'JetBrains Mono',monospace }
+.spacer{ flex:1 }
+
+.action-btn{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:8px 14px; border-radius:10px;
+  border:1px solid var(--border); background:rgba(255,255,255,0.03);
+  color:var(--text-dim); font-size:13px; font-weight:600;
+  transition: background .15s, color .15s, border-color .15s, transform .15s;
+  text-decoration: none;
+}
+.action-btn:hover{ background:var(--surface-2); color:var(--text); border-color:var(--border-strong) }
+.action-btn:active{ transform:translateY(1px) }
+.action-btn .k{ font-family:'JetBrains Mono',monospace; font-size:10.5px; opacity:.6; padding:1px 5px; border-radius:5px; background:rgba(255,255,255,0.06) }
+.run-btn{
+  background:linear-gradient(135deg, var(--cs-purple), var(--cs-purple-light));
+  color:#fff; border-color:transparent; font-weight:700;
+  box-shadow: 0 10px 30px -12px var(--cs-purple-glow);
+}
+.run-btn:hover{ filter:brightness(1.08); transform:translateY(-1px); border-color:transparent }
+
+.editor-card{
+  position:relative; min-height:0;
+  background: linear-gradient(180deg, rgba(20,20,40,0.65), rgba(8,8,18,0.65));
+  border:1px solid var(--border); border-radius: var(--radius);
+  overflow:hidden;
+  backdrop-filter: blur(22px) saturate(150%);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  box-shadow: var(--shadow-lg);
+  transform-style: preserve-3d;
+  transition: transform .25s cubic-bezier(.2,.7,.2,1);
+}
+.editor-card::before{
+  content:""; position:absolute; inset:-1px; border-radius: calc(var(--radius) + 1px); pointer-events:none;
+  background: linear-gradient(135deg, rgba(81,43,212,0.45), rgba(155,107,255,0) 40%, rgba(53,208,255,0.30));
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  padding:1px; opacity:.55;
+}
+.editor-chrome{
+  display:flex; align-items:center; gap:10px; padding:9px 14px;
+  border-bottom:1px solid var(--border);
+  background: linear-gradient(180deg, rgba(255,255,255,0.025), transparent);
+}
+.dot{ width:11px; height:11px; border-radius:50% }
+.dot.r{ background:#ff5a7a; box-shadow:0 0 10px rgba(255,90,122,0.55) }
+.dot.y{ background:#ffb547; box-shadow:0 0 10px rgba(255,181,71,0.55) }
+.dot.g{ background:#38d39f; box-shadow:0 0 10px rgba(56,211,159,0.55) }
+
+.file-tabs{
+  display:flex; gap:4px; margin: 0 6px 0 6px;
+  flex:1; min-width:200px; overflow-x:auto; overflow-y:hidden;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(155,107,255,0.35) transparent;
+  mask-image: linear-gradient(to right, transparent 0, #000 18px, #000 calc(100% - 18px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 18px, #000 calc(100% - 18px), transparent 100%);
+  padding-bottom: 4px;
+}
+.file-tabs::-webkit-scrollbar{ height: 4px }
+.file-tabs::-webkit-scrollbar-track{ background: transparent }
+.file-tabs::-webkit-scrollbar-thumb{ background: rgba(155,107,255,0.35); border-radius: 4px }
+.file-tabs::-webkit-scrollbar-thumb:hover{ background: rgba(155,107,255,0.55) }
+.file-tab{
+  flex-shrink:0;
+  padding: 3px 11px; font-size:11.5px; border-radius:7px;
+  border:1px solid var(--border); background:rgba(255,255,255,0.025);
+  color:var(--text-dim); font-weight:500;
+  font-family:'JetBrains Mono', ui-monospace, monospace;
+  transition: background .15s, color .15s, border-color .15s;
+  white-space:nowrap;
+}
+.file-tab:hover{ background:var(--surface-2); color:var(--text); border-color:var(--border-strong) }
+.file-tab.active{
+  background:linear-gradient(135deg, rgba(81,43,212,0.40), rgba(155,107,255,0.20));
+  color:#fff; border-color:rgba(155,107,255,0.45);
+  box-shadow: 0 0 0 1px rgba(155,107,255,0.25), 0 6px 14px -8px var(--cs-purple-glow);
+}
+.file-tab.entry::before{
+  content:"▶"; font-size:9px; margin-right:5px; color: var(--cs-purple-light); opacity:.85;
+}
+.file-tab.dirty::after{
+  content:""; display:inline-block; width:5px; height:5px; border-radius:50%;
+  background:var(--cs-purple-light); margin-left:6px; vertical-align:1px;
+  box-shadow: 0 0 6px var(--cs-purple-light);
+}
+.editor-chrome .badge{
+  font-size:10.5px; letter-spacing:0.14em; text-transform:uppercase;
+  padding:3px 9px; border-radius:20px;
+  background:rgba(155,107,255,0.10); border:1px solid rgba(155,107,255,0.32);
+  color:#dccaff;
+  flex-shrink: 1; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  max-width: 90px;
+}
+.cm-host{ position:relative; height:calc(100% - 41px) }
+.CodeMirror{
+  height:100% !important; background:transparent;
+  font-size:14px; line-height:1.55; padding: 6px 0;
+}
+.CodeMirror-gutters{ background:transparent; border-right:1px solid var(--border) }
+.CodeMirror-linenumber{ color:rgba(154,154,176,0.4) }
+.CodeMirror-cursor{ border-left-color:#fff }
+.CodeMirror-activeline-background{ background:rgba(155,107,255,0.05) !important }
+.CodeMirror-selected{ background:rgba(155,107,255,0.20) !important }
+.CodeMirror-matchingbracket{ color:var(--cs-purple-light) !important; text-shadow:0 0 8px var(--cs-purple-glow) }
+
+/* ===========================================================================
+   Output panel — styled like a retro console window with a chromed title bar.
+   =========================================================================== */
+.preview-card{
+  background:
+    radial-gradient(800px 400px at 50% 100%, rgba(155,107,255,0.04), transparent 60%),
+    linear-gradient(180deg, #050510, #08081a);
+  border:1px solid var(--border); border-radius: var(--radius);
+  display:flex; flex-direction:column; min-height:0;
+  box-shadow: var(--shadow-lg);
+  overflow:hidden; position: relative;
+}
+.preview-card::before{
+  content:""; position: absolute; inset:-1px; border-radius: calc(var(--radius) + 1px); pointer-events:none;
+  background: linear-gradient(135deg, rgba(81,43,212,0.45), rgba(155,107,255,0) 40%, rgba(53,208,255,0.4));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude; padding: 1px;
+  opacity: .55;
+}
+.console-titlebar{
+  display:flex; align-items:center; gap:10px; padding:8px 12px;
+  background: linear-gradient(180deg, rgba(20,20,40,0.85), rgba(15,15,30,0.85));
+  border-bottom: 1px solid var(--border);
+  font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px;
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+.console-titlebar .traffic{ display:flex; gap: 6px; flex-shrink: 0 }
+.console-titlebar .traffic span{ width: 11px; height: 11px; border-radius: 50% }
+.console-titlebar .traffic .r{ background:#ff5a7a }
+.console-titlebar .traffic .y{ background:#ffb547 }
+.console-titlebar .traffic .g{ background:#38d39f }
+.console-titlebar .title{ flex: 1; text-align: center; opacity: .8; letter-spacing: 0.04em }
+.console-titlebar .stamp{
+  font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--cs-purple-light);
+  padding: 2px 8px; border: 1px solid rgba(155,107,255,0.32); border-radius: 12px;
+  background: rgba(155,107,255,0.08);
+}
+
+.console-out{
+  flex: 1; min-height: 0; overflow: auto;
+  padding: 14px 18px;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 13.5px; line-height: 1.55;
+  color: var(--term-green);
+  background:
+    repeating-linear-gradient(0deg, rgba(255,255,255,0.012) 0 2px, transparent 2px 4px),
+    radial-gradient(800px 400px at 50% 100%, rgba(155,107,255,0.05), transparent 60%);
+  white-space: pre-wrap; word-break: break-word;
+  scrollbar-width: thin;
+}
+.console-out::-webkit-scrollbar{ width: 6px; height: 6px }
+.console-out::-webkit-scrollbar-thumb{ background: rgba(155,107,255,0.18); border-radius: 6px }
+.console-out::-webkit-scrollbar-thumb:hover{ background: rgba(155,107,255,0.40) }
+.console-out .empty{
+  color: var(--text-faint); font-style: italic; font-family: 'Inter', sans-serif;
+  text-align: center; padding: 40px 12px;
+}
+.console-out .prompt{
+  color: var(--cs-purple-light); font-weight: 700; margin-right: 6px;
+}
+.console-out .blinker{
+  display:inline-block; width: 9px; height: 16px;
+  background: var(--term-green); vertical-align: middle;
+  animation: blink 1s steps(2, end) infinite; margin-left: 2px;
+  box-shadow: 0 0 8px var(--term-green);
+}
+@keyframes blink{ 50% { opacity: 0 } }
+.console-foot{
+  padding: 8px 14px; border-top: 1px solid var(--border);
+  display: flex; gap: 10px; align-items: center;
+  background: linear-gradient(180deg, rgba(20,20,40,0.4), rgba(15,15,30,0.4));
+  font-size: 11.5px; color: var(--text-faint);
+  flex-shrink: 0;
+}
+.console-foot .note{
+  flex: 1;
+  font-style: italic;
+}
+.console-foot .icon-btn{
+  padding: 4px 10px; border-radius: 7px;
+  border: 1px solid var(--border); background: rgba(255,255,255,0.02);
+  color: var(--text-dim); font-size: 11.5px;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.console-foot .icon-btn:hover{ background: var(--surface-2); color: var(--text); border-color: var(--border-strong) }
+
+/* === Interactive CoolCalculator (only on the final-project step) === */
+.console-out.calc-mode{
+  padding: 0;
+  display: flex; flex-direction: column;
+  background:
+    repeating-linear-gradient(0deg, rgba(255,255,255,0.012) 0 2px, transparent 2px 4px),
+    radial-gradient(800px 400px at 50% 100%, rgba(155,107,255,0.05), transparent 60%);
+}
+.calc-art{
+  margin: 0;
+  padding: 14px 18px 6px;
+  white-space: pre;
+  color: var(--cs-purple-light);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 13px; line-height: 1.4;
+  border-bottom: 1px solid rgba(155,107,255,0.18);
+  flex-shrink: 0;
+  text-shadow: 0 0 12px rgba(155,107,255,0.18);
+}
+.calc-prompt-line{
+  padding: 6px 18px;
+  color: var(--text-dim); font-size: 12px; font-style: italic;
+  flex-shrink: 0;
+}
+.calc-prompt-line:empty{ display: none }
+.calc-log{
+  flex: 1; min-height: 0; overflow: auto;
+  padding: 4px 18px 8px;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 13px; line-height: 1.55;
+  scrollbar-width: thin;
+}
+.calc-log::-webkit-scrollbar{ width: 6px }
+.calc-log::-webkit-scrollbar-thumb{ background: rgba(155,107,255,0.18); border-radius: 6px }
+.calc-line{ padding: 1px 0; white-space: pre-wrap; word-break: break-word }
+.calc-line.user   { color: #ffffff; }
+.calc-line.user::before{ content: "> "; color: var(--cs-purple-light); font-weight: 700 }
+.calc-line.answer { color: var(--term-amber); font-weight: 600 }
+.calc-line.system { color: var(--cs-purple-light) }
+.calc-line.error  { color: var(--error) }
+.calc-line.prompt { color: var(--text-dim) }
+.calc-input-row{
+  display: flex; align-items: center;
+  padding: 10px 18px;
+  border-top: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(155,107,255,0.06), rgba(155,107,255,0.02));
+  flex-shrink: 0;
+}
+.calc-prompt-sym{
+  color: var(--cs-purple-light); font-weight: 700;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  margin-right: 8px; font-size: 15px;
+}
+.calc-input{
+  flex: 1;
+  background: transparent;
+  border: none; outline: none;
+  color: var(--term-green);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 14px;
+  padding: 4px 0;
+  caret-color: var(--term-green);
+}
+.calc-input:disabled{ opacity: 0.4; }
+.calc-input::placeholder{ color: rgba(155,107,255,0.45); font-style: italic }
+
+.ambient{
+  position:absolute; border-radius:50%; pointer-events:none; z-index:0;
+  filter: blur(60px); opacity:.5;
+}
+.ambient.a{ width:340px;height:340px; background:rgba(81,43,212,0.30); top:-80px; right:-100px; animation:floatA 14s ease-in-out infinite }
+.ambient.b{ width:280px;height:280px; background:rgba(155,107,255,0.28); bottom:-60px; left:8%; animation:floatB 18s ease-in-out infinite }
+@keyframes floatA{ 0%,100%{transform:translate(0,0)} 50%{transform:translate(-30px,20px)} }
+@keyframes floatB{ 0%,100%{transform:translate(0,0)} 50%{transform:translate(40px,-20px)} }
+
+.toast{
+  position:fixed; bottom:22px; right:22px; z-index:50;
+  padding:10px 14px; border-radius:12px; font-size:13px;
+  background:linear-gradient(135deg, var(--cs-purple), var(--cs-purple-light));
+  color:#fff; font-weight:600;
+  box-shadow: 0 18px 40px -18px var(--cs-purple-glow);
+  transform: translateY(20px); opacity:0;
+  transition: transform .25s ease, opacity .25s ease;
+}
+.toast.show{ transform: translateY(0); opacity:1 }
+.toast.error{ background:linear-gradient(135deg,#ff5a7a,#ff8c5a); color:#fff }
+
+/* The ../home.js floating button overlaps Render. Sidebar already has Home. */
+.ap-home-btn{ display: none !important }
+</style>
+</head>
+<body>
+<canvas id="bg-3d"></canvas>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-cube">C#</div>
+      <div>
+        <h1>C# Lab</h1>
+        <div class="sub">CoolCalculator</div>
+      </div>
+    </div>
+
+    <div class="search-wrap">
+      <input class="search" id="search" placeholder="Filter steps…" />
+    </div>
+
+    <div class="section-label">Steps</div>
+    <ul class="file-list" id="fileList"></ul>
+
+    <a class="back-link" href="../index.html" style="margin-top:18px">⌂ Home</a>
+  </aside>
+
+  <main class="editor-pane">
+    <div class="ambient a"></div>
+    <div class="ambient b"></div>
+
+    <header class="top-bar">
+      <div class="file-meta">
+        <div class="file-icon">C#</div>
+        <div style="min-width:0">
+          <div class="file-name" id="fileName">Hello, World!<span class="dirty-mark">●</span></div>
+          <div class="file-sub" id="fileSub">CoolCalculatorCS/Hello.cs</div>
+        </div>
+      </div>
+      <div class="spacer"></div>
+      <button class="action-btn" id="resetBtn" title="Revert all files in this step">⟲ Reset</button>
+      <button class="action-btn run-btn" id="runBtn" title="Show expected output">▶ Run <span class="k">⌘↵</span></button>
+    </header>
+
+    <section class="editor-card" id="editorCard">
+      <div class="editor-chrome">
+        <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <div class="file-tabs" id="fileTabs"></div>
+        <span class="badge" id="modeBadge">CS</span>
+      </div>
+      <div class="cm-host">
+        <textarea id="editor"></textarea>
+      </div>
+    </section>
+
+    <div class="splitter" id="splitter" role="separator" aria-orientation="vertical" title="Drag to resize"></div>
+
+    <section class="preview-card" id="previewCard">
+      <div class="console-titlebar">
+        <div class="traffic"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+        <span class="title" id="consoleTitle">Console — Program.exe</span>
+        <span class="stamp">.NET 6.0</span>
+      </div>
+      <div class="console-out" id="consoleOut">
+        <div class="empty">Press ▶ Run to see the expected output for this lesson.</div>
+      </div>
+      <div class="console-foot">
+        <span class="note">Output is pre-baked for the unedited lesson — actually compile your edits in dotnetfiddle.net ↗</span>
+        <button class="icon-btn" id="copyBtn" title="Copy code to clipboard">⎘ Copy</button>
+        <button class="icon-btn" id="fiddleBtn" title="Open dotnetfiddle.net (then paste your code)">↗ Fiddle</button>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- =====================================================================
+     Embedded source files for each lesson, plus its expected console
+     output. data-csfile = source code; data-csout = expected output.
+     ===================================================================== -->
+
+<!-- ====== 0 · Hello, World! ====== -->
+<script type="text/plain" data-csfile="Hello.cs">// Every C# program needs a `Main` method. The runtime calls it once when
+// the program starts. Console.WriteLine prints a line to standard output.
+
+using System;
+
+class Program
+{
+    static void Main()
+    {
+        Console.WriteLine("Hello, World!");
+        Console.WriteLine("Welcome to C#");
+    }
+}
+</script>
+<script type="text/plain" data-csout="Hello.cs">Hello, World!
+Welcome to C#
+</script>
+
+<!-- ====== 1 · Variables & Types ====== -->
+<script type="text/plain" data-csfile="Variables.cs">// C# is statically typed — every variable has a type known at compile time.
+// `var` lets the compiler infer the type from the initializer. `$"…"` is
+// string interpolation: every `{expr}` is replaced by the value at runtime.
+
+using System;
+
+class Program
+{
+    static void Main()
+    {
+        // Primitive types
+        int    age      = 25;
+        double price    = 19.99;
+        bool   isActive = true;
+        char   grade    = 'A';
+        string name     = "Alice";
+
+        Console.WriteLine($"Name: {name}, Age: {age}");
+        Console.WriteLine($"Price: ${price}, Active: {isActive}");
+        Console.WriteLine($"Grade: {grade}");
+
+        // var — type is inferred from the right-hand side
+        var inferredString = "I'm a string";
+        var inferredNumber = 42;
+        Console.WriteLine($"{inferredString} (type: {inferredString.GetType().Name})");
+        Console.WriteLine($"{inferredNumber} (type: {inferredNumber.GetType().Name})");
+
+        // Nullable value type — int? can be null
+        int? maybe = null;
+        Console.WriteLine($"maybe has value? {maybe.HasValue}");
+
+        maybe = 7;
+        Console.WriteLine($"maybe = {maybe.Value}");
+    }
+}
+</script>
+<script type="text/plain" data-csout="Variables.cs">Name: Alice, Age: 25
+Price: $19.99, Active: True
+Grade: A
+I'm a string (type: String)
+42 (type: Int32)
+maybe has value? False
+maybe = 7
+</script>
+
+<!-- ====== 2 · Control Flow ====== -->
+<script type="text/plain" data-csfile="ControlFlow.cs">// if / else if / else, switch, and the ternary `? :` operator.
+
+using System;
+
+class Program
+{
+    static void Main()
+    {
+        int score = 78;
+
+        if      (score >= 90) Console.WriteLine("A");
+        else if (score >= 80) Console.WriteLine("B");
+        else if (score >= 70) Console.WriteLine("C");
+        else                  Console.WriteLine("F");
+
+        string day = "Mon";
+        switch (day)
+        {
+            case "Mon":
+            case "Tue":
+            case "Wed":
+            case "Thu":
+            case "Fri":
+                Console.WriteLine("Weekday");
+                break;
+            case "Sat":
+            case "Sun":
+                Console.WriteLine("Weekend");
+                break;
+            default:
+                Console.WriteLine("Unknown");
+                break;
+        }
+
+        // Ternary — picks one of two values inline
+        int n = 7;
+        string parity = n % 2 == 0 ? "even" : "odd";
+        Console.WriteLine($"{n} is {parity}");
+    }
+}
+</script>
+<script type="text/plain" data-csout="ControlFlow.cs">C
+Weekday
+7 is odd
+</script>
+
+<!-- ====== 3 · Loops ====== -->
+<script type="text/plain" data-csfile="Loops.cs">// `for`, `while`, `do/while`, and `foreach`. `break` exits a loop early;
+// `continue` jumps to the next iteration.
+
+using System;
+
+class Program
+{
+    static void Main()
+    {
+        Console.WriteLine("for:");
+        for (int i = 0; i < 3; i++)
+            Console.WriteLine($"  i = {i}");
+
+        Console.WriteLine("while:");
+        int n = 3;
+        while (n > 0)
+        {
+            Console.WriteLine($"  n = {n}");
+            n--;
+        }
+
+        Console.WriteLine("foreach:");
+        string[] colors = { "red", "green", "blue" };
+        foreach (var c in colors)
+            Console.WriteLine($"  {c}");
+
+        Console.WriteLine("break/continue:");
+        for (int i = 0; i < 5; i++)
+        {
+            if (i == 1) continue;   // skip i=1
+            if (i == 4) break;      // stop before i=4
+            Console.WriteLine($"  i = {i}");
+        }
+    }
+}
+</script>
+<script type="text/plain" data-csout="Loops.cs">for:
+  i = 0
+  i = 1
+  i = 2
+while:
+  n = 3
+  n = 2
+  n = 1
+foreach:
+  red
+  green
+  blue
+break/continue:
+  i = 0
+  i = 2
+  i = 3
+</script>
+
+<!-- ====== 4 · Methods ====== -->
+<script type="text/plain" data-csfile="Methods.cs">// A method is a named, parameterised, typed block of code.
+// Default parameter values, named arguments, and `out` parameters are all
+// part of the calling convention.
+
+using System;
+
+class Program
+{
+    // Expression-bodied method — shorthand for `{ return …; }`
+    static int Add(int a, int b) => a + b;
+
+    static string Greet(string name)
+    {
+        return $"Hello, {name}!";
+    }
+
+    // `repeat = 1` — a default value
+    static void Print(string msg, int repeat = 1)
+    {
+        for (int i = 0; i < repeat; i++)
+            Console.WriteLine(msg);
+    }
+
+    // `out` lets a method "return" extra values via parameters.
+    static bool TryDivide(int a, int b, out int result)
+    {
+        if (b == 0) { result = 0; return false; }
+        result = a / b;
+        return true;
+    }
+
+    static void Main()
+    {
+        Console.WriteLine(Add(3, 4));
+        Console.WriteLine(Greet("World"));
+        Print("ping", repeat: 2);          // named argument
+
+        if (TryDivide(10, 3, out int q))
+            Console.WriteLine($"10 / 3 = {q}");
+    }
+}
+</script>
+<script type="text/plain" data-csout="Methods.cs">7
+Hello, World!
+ping
+ping
+10 / 3 = 3
+</script>
+
+<!-- ====== 5 · Strings & StringBuilder ====== -->
+<script type="text/plain" data-csfile="Strings.cs">// strings are IMMUTABLE in C# — every "modification" creates a new string.
+// For many concatenations, use System.Text.StringBuilder (mutable buffer).
+
+using System;
+using System.Text;
+
+class Program
+{
+    static void Main()
+    {
+        string greeting = "Hello, C#!";
+
+        // Length & indexing
+        Console.WriteLine($"Length: {greeting.Length}");
+        Console.WriteLine($"First: {greeting[0]}, Last: {greeting[greeting.Length - 1]}");
+
+        // Common methods
+        Console.WriteLine(greeting.ToUpper());
+        Console.WriteLine(greeting.ToLower());
+        Console.WriteLine(greeting.Replace("Hello", "Hey"));
+        Console.WriteLine(greeting.Substring(7));     // "C#!"
+        Console.WriteLine(greeting.Contains("C#"));   // True
+
+        // Split / Join
+        string csv = "alice,bob,carol";
+        string[] names = csv.Split(',');
+        Console.WriteLine(string.Join(" | ", names));
+
+        // StringBuilder — efficient repeated append
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < 3; i++)
+            sb.AppendLine($"line {i}");
+        Console.Write(sb.ToString());
+    }
+}
+</script>
+<script type="text/plain" data-csout="Strings.cs">Length: 10
+First: H, Last: !
+HELLO, C#!
+hello, c#!
+Hey, C#!
+C#!
+True
+alice | bob | carol
+line 0
+line 1
+line 2
+</script>
+
+<!-- ====== 6 · Collections (Array, List, Dictionary) ====== -->
+<script type="text/plain" data-csfile="Collections.cs">// Fixed-size `int[]`, growable `List<T>`, and key/value `Dictionary<K,V>`
+// from System.Collections.Generic.
+
+using System;
+using System.Collections.Generic;
+
+class Program
+{
+    static void Main()
+    {
+        // Fixed-size array
+        int[] nums = { 10, 20, 30 };
+        Console.WriteLine($"nums[1] = {nums[1]}, length = {nums.Length}");
+
+        // List<T> — growable
+        List<string> shopping = new List<string> { "milk", "eggs" };
+        shopping.Add("bread");
+        shopping.Remove("milk");
+        Console.WriteLine($"List ({shopping.Count}):");
+        foreach (var item in shopping)
+            Console.WriteLine($"  - {item}");
+
+        // Dictionary<K,V>
+        var ages = new Dictionary<string, int>
+        {
+            { "Alice", 30 },
+            { "Bob",   25 }
+        };
+        ages["Carol"] = 28;
+
+        Console.WriteLine("Dictionary:");
+        foreach (var kvp in ages)
+            Console.WriteLine($"  {kvp.Key}: {kvp.Value}");
+
+        Console.WriteLine($"Bob is {ages["Bob"]}");
+        Console.WriteLine($"Has Dave? {ages.ContainsKey("Dave")}");
+    }
+}
+</script>
+<script type="text/plain" data-csout="Collections.cs">nums[1] = 20, length = 3
+List (2):
+  - eggs
+  - bread
+Dictionary:
+  Alice: 30
+  Bob: 25
+  Carol: 28
+Bob is 25
+Has Dave? False
+</script>
+
+<!-- ====== 7 · Classes & Objects ====== -->
+<script type="text/plain" data-csfile="Classes.cs">// A class bundles state (fields/properties) with behavior (methods).
+// `new ClassName(...)` calls the constructor.
+
+using System;
+
+class Program
+{
+    class Person
+    {
+        // Auto-implemented properties — backing field is created for you.
+        public string Name { get; set; }
+        public int    Age  { get; set; }
+
+        // Constructor
+        public Person(string name, int age)
+        {
+            Name = name;
+            Age  = age;
+        }
+
+        public string Introduce()
+        {
+            return $"Hi, I'm {Name}, {Age} years old.";
+        }
+    }
+
+    static void Main()
+    {
+        Person alice = new Person("Alice", 30);
+        Person bob   = new Person("Bob",   25);
+
+        Console.WriteLine(alice.Introduce());
+        Console.WriteLine(bob.Introduce());
+
+        alice.Age = 31;
+        Console.WriteLine($"Happy birthday — Alice is now {alice.Age}");
+    }
+}
+</script>
+<script type="text/plain" data-csout="Classes.cs">Hi, I'm Alice, 30 years old.
+Hi, I'm Bob, 25 years old.
+Happy birthday — Alice is now 31
+</script>
+
+<!-- ====== 8 · Inheritance & Polymorphism ====== -->
+<script type="text/plain" data-csfile="Inheritance.cs">// `class Dog : Animal` — Dog inherits everything Animal exposes.
+// `virtual` lets a method be replaced by `override` in derived classes.
+
+using System;
+
+class Program
+{
+    class Animal
+    {
+        public string Name { get; set; }
+        public Animal(string name) { Name = name; }
+
+        public virtual string Speak() => "...some sound...";
+    }
+
+    class Dog : Animal
+    {
+        public Dog(string name) : base(name) {}
+        public override string Speak() => "Woof!";
+    }
+
+    class Cat : Animal
+    {
+        public Cat(string name) : base(name) {}
+        public override string Speak() => "Meow!";
+    }
+
+    static void Main()
+    {
+        Animal[] zoo = { new Dog("Rex"), new Cat("Whiskers"), new Animal("Mystery") };
+
+        // Each `a.Speak()` dispatches to the actual runtime type.
+        foreach (Animal a in zoo)
+            Console.WriteLine($"{a.Name}: {a.Speak()}");
+    }
+}
+</script>
+<script type="text/plain" data-csout="Inheritance.cs">Rex: Woof!
+Whiskers: Meow!
+Mystery: ...some sound...
+</script>
+
+<!-- ====== 9 · Properties (auto / computed / private setter) ====== -->
+<script type="text/plain" data-csfile="Properties.cs">// Properties look like fields to the caller but can run code on get/set.
+// `=>` makes a read-only "computed" property — recalculated each access.
+// `private set` exposes the value but blocks outside writes.
+
+using System;
+
+class Program
+{
+    class Rectangle
+    {
+        public double Width  { get; set; }
+        public double Height { get; set; }
+
+        // Computed read-only properties — no backing field
+        public double Area      => Width * Height;
+        public double Perimeter => 2 * (Width + Height);
+
+        // Settable only from inside the class
+        public DateTime CreatedAt { get; private set; }
+
+        public Rectangle(double w, double h)
+        {
+            Width = w; Height = h;
+            CreatedAt = new DateTime(2026, 4, 27, 10, 0, 0);
+        }
+    }
+
+    static void Main()
+    {
+        var r = new Rectangle(3, 4);
+        Console.WriteLine($"Width  = {r.Width}");
+        Console.WriteLine($"Height = {r.Height}");
+        Console.WriteLine($"Area   = {r.Area}");
+        Console.WriteLine($"Perim  = {r.Perimeter}");
+
+        r.Width = 5;
+        Console.WriteLine($"After Width=5, Area = {r.Area}");
+
+        // r.CreatedAt = DateTime.Now;  // ❌ compile error: setter is private
+        Console.WriteLine($"Created at {r.CreatedAt:yyyy-MM-dd HH:mm}");
+    }
+}
+</script>
+<script type="text/plain" data-csout="Properties.cs">Width  = 3
+Height = 4
+Area   = 12
+Perim  = 14
+After Width=5, Area = 20
+Created at 2026-04-27 10:00
+</script>
+
+<!-- ====== 10 · Delegates & Lambdas ====== -->
+<script type="text/plain" data-csfile="Delegates.cs">// A delegate is a typed reference to a method.
+// `=> expr` is a lambda — an anonymous function literal.
+// `Func<…,R>` and `Action<…>` are built-in generic delegate types.
+// And — most importantly for events — delegates can be MULTICAST: `+`/`+=`
+// adds subscribers to a single delegate value, `-`/`-=` removes them, and
+// invoking it calls every subscriber in order.
+
+using System;
+
+class Program
+{
+    delegate int BinaryOp(int a, int b);
+
+    // For multicast we use a void-returning delegate so several subscribers
+    // can all run without fighting over a single return value.
+    delegate void Notifier(string message);
+
+    static int  Add(int a, int b) => a + b;
+    static int  Mul(int a, int b) => a * b;
+
+    static void Method1(string m) => Console.WriteLine("Method1: " + m);
+    static void Method2(string m) => Console.WriteLine("Method2: " + m);
+
+    static void Main()
+    {
+        // ─── 1. A delegate is a typed reference to a method ───
+        BinaryOp op = Add;
+        Console.WriteLine($"Add: {op(3, 4)}");
+
+        op = Mul;
+        Console.WriteLine($"Mul: {op(3, 4)}");
+
+        // ─── 2. Lambda — anonymous in-place method ───
+        BinaryOp sub = (a, b) => a - b;
+        Console.WriteLine($"Sub: {sub(10, 3)}");
+
+        // ─── 3. Built-in generic delegate types ───
+        Func<int, int, int> max = (a, b) => a > b ? a : b;
+        Action<string>      log = msg => Console.WriteLine($"[log] {msg}");
+        Console.WriteLine($"max(5, 9) = {max(5, 9)}");
+        log("hello");
+
+        // ─── 4. Multicast — '+'/'+=' add subscribers, '-'/'-=' remove ───
+        Notifier notify = Method1;          // start with one subscriber
+        notify("first call");
+
+        Console.WriteLine("---");
+
+        notify += Method2;                  // add Method2 to the chain
+        notify("second call");              // now BOTH fire, in subscription order
+
+        Console.WriteLine("---");
+
+        notify -= Method1;                  // remove Method1; Method2 stays
+        notify("third call");
+
+        Console.WriteLine("---");
+
+        // 'a + b' between two delegates is the same as 'a += b' on a fresh
+        // copy — it returns the combined invocation list without mutating
+        // either operand.
+        Notifier combined = (Notifier)Method1 + Method2;
+        combined("combined call");
+    }
+}
+</script>
+<script type="text/plain" data-csout="Delegates.cs">Add: 7
+Mul: 12
+Sub: 7
+max(5, 9) = 9
+[log] hello
+Method1: first call
+---
+Method1: second call
+Method2: second call
+---
+Method2: third call
+---
+Method1: combined call
+Method2: combined call
+</script>
+
+<!-- ====== 11 · LINQ ====== -->
+<script type="text/plain" data-csfile="Linq.cs">// LINQ — Language Integrated Query. Chainable methods on any IEnumerable<T>:
+// Where (filter), Select (map), OrderBy, GroupBy, Count, Sum, Average, …
+
+using System;
+using System.Linq;
+using System.Collections.Generic;
+
+class Program
+{
+    record Student(string Name, int Grade);
+
+    static void Main()
+    {
+        List<Student> students = new()
+        {
+            new("Alice", 92),
+            new("Bob",   78),
+            new("Carol", 88),
+            new("Dave",  65),
+            new("Erin",  95),
+            new("Frank", 72),
+        };
+
+        var topNames = students
+            .Where(s => s.Grade >= 80)
+            .OrderByDescending(s => s.Grade)
+            .Select(s => $"{s.Name} ({s.Grade})");
+
+        Console.WriteLine("Top scorers:");
+        foreach (var line in topNames)
+            Console.WriteLine($"  {line}");
+
+        Console.WriteLine($"Average: {students.Average(s => s.Grade):F1}");
+        Console.WriteLine($"Max:     {students.Max(s => s.Grade)}");
+        Console.WriteLine($"Count >= 80: {students.Count(s => s.Grade >= 80)}");
+
+        Console.WriteLine("By passing (>=70):");
+        foreach (var g in students.GroupBy(s => s.Grade >= 70))
+            Console.WriteLine($"  {(g.Key ? "passed" : "failed")}: {g.Count()}");
+    }
+}
+</script>
+<script type="text/plain" data-csout="Linq.cs">Top scorers:
+  Erin (95)
+  Alice (92)
+  Carol (88)
+Average: 81.7
+Max:     95
+Count >= 80: 3
+By passing (>=70):
+  passed: 5
+  failed: 1
+</script>
+
+<!-- ====== 12 · File I/O & Exceptions ====== -->
+<script type="text/plain" data-csfile="FileIO.cs">// System.IO.File has static helpers for reading and writing text files.
+// Wrap risky calls in try/catch — most often catch the most-specific
+// exception types first, then a fallback `Exception`.
+
+using System;
+using System.IO;
+
+class Program
+{
+    static void Main()
+    {
+        string path = "demo.txt";
+
+        File.WriteAllText(path, "Hello from a file!\nLine 2\nLine 3");
+
+        string content = File.ReadAllText(path);
+        Console.WriteLine("--- file content ---");
+        Console.WriteLine(content);
+
+        Console.WriteLine("--- by line ---");
+        foreach (string line in File.ReadAllLines(path))
+            Console.WriteLine($"> {line}");
+
+        // try/catch — handle the missing-file case explicitly.
+        try
+        {
+            File.ReadAllText("nope.txt");
+        }
+        catch (FileNotFoundException)
+        {
+            Console.WriteLine("(caught) file does not exist");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"(unexpected) {ex.GetType().Name}: {ex.Message}");
+        }
+    }
+}
+</script>
+<script type="text/plain" data-csout="FileIO.cs">--- file content ---
+Hello from a file!
+Line 2
+Line 3
+--- by line ---
+> Hello from a file!
+> Line 2
+> Line 3
+(caught) file does not exist
+</script>
+
+<!-- ====== 13 · Final Project — CoolCalculator (multi-file) ====== -->
+<script type="text/plain" data-csfile="cool/CoolCalculator.cs">using System;
+using System.IO;
+using System.Data;
+using System.Text.RegularExpressions;
+
+namespace CoolCalculator
+{
+    delegate float? CustomOperation(float firstNumber, float secondNumber);
+
+    internal class CoolCalculator
+    {
+        private static List<char> knownOperations = new List<char> { '+', '-', '*', '/' };
+        private static readonly Dictionary<string, CustomOperation> customOperations = new Dictionary<string, CustomOperation>();
+
+        static void Main(string[] args)
+        {
+            string path = Path.Combine(
+                Directory.GetCurrentDirectory(),
+                @"Resources\CalculatorArt.txt"
+            );
+            string calculatorArt = File.ReadAllText(path);
+            string getOperationMessage = "Please enter an operation or type 'add' to create a custom operation:";
+            CalculatorPrompt prompt = new CalculatorPrompt(calculatorArt, 5);
+
+            bool shouldExit = false;
+            string input;
+            float? answer;
+
+            while (!shouldExit)
+            {
+                Console.WriteLine(prompt.GetPromptText());
+
+                Console.WriteLine(getOperationMessage);
+                input = Console.ReadLine();
+
+                if (input == "quit" || input == "exit")
+                {
+                    shouldExit = true;
+                }
+                else if (input == "add")
+                {
+                    AddCustomOperation();
+                }
+                else
+                {
+                    answer = calculateAnswer(input);
+
+                    if (answer != null)
+                    {
+                        Console.WriteLine($"Answer: {answer}");
+                        prompt.AddOperation($"{input} = {answer}");
+                    }
+                    else
+                    {
+                        Console.WriteLine("Could not calculate the answer.");
+                    }
+
+                    Console.ReadKey();
+                }
+
+                Console.Clear();
+            }
+        }
+
+        // The "?" on float? makes the type nullable — calculateAnswer can
+        // return either a float OR null (e.g. when the input was invalid).
+        private static float? calculateAnswer(string operation)
+        {
+            if (!validateTheGivenOperation(operation))
+                return null;
+
+            float answer;
+            char? mathOperation = null;
+            int operationIndex;
+
+            // Find the last known operator in the string.
+            foreach (char c in knownOperations)
+            {
+                operationIndex = operation.IndexOf(c);
+                if (operationIndex >= 0)
+                    mathOperation = c;
+            }
+
+            if (mathOperation == null)
+                return null;
+
+            // Split on the operator and parse both sides.
+            string[] operationSplits = operation.Split(
+                mathOperation.ToString().ToCharArray(),
+                StringSplitOptions.RemoveEmptyEntries
+            );
+
+            try
+            {
+                float firstNumber  = float.Parse(operationSplits[0]);
+                float secondNumber = float.Parse(operationSplits[1]);
+
+                // Custom operations win over built-ins.
+                if (customOperations.TryGetValue(mathOperation.ToString(), out var customOp))
+                    return customOp(firstNumber, secondNumber);
+
+                switch (mathOperation)
+                {
+                    case '+': answer = firstNumber + secondNumber; break;
+                    case '-': answer = firstNumber - secondNumber; break;
+                    case '*': answer = firstNumber * secondNumber; break;
+                    case '/': answer = firstNumber / secondNumber; break;
+                    default:  return null;
+                }
+
+                return answer;
+            }
+            catch (FormatException)
+            {
+                return null;
+            }
+        }
+
+        private static bool validateTheGivenOperation(string operation)
+        {
+            if (operation == null || operation.Length == 0) return false;
+
+            // Build a regex like   ^-?\d*(\.\d+)?\s*[+\-*/]\s*-?\d*(\.\d+)?$
+            string[] knownOperationsForRegex = new string[knownOperations.Count];
+            for (int i = 0; i < knownOperations.Count; i++)
+                knownOperationsForRegex[i] = String.Format(@"\{0}", knownOperations[i]);
+
+            string numberRegex     = @"-?\d*(\.\d+)?";
+            string joinedOperations = String.Join("|", knownOperationsForRegex);
+            string operationsRegex  = String.Format(@"[\\{0}]", joinedOperations);
+            string fullRegex        = String.Format(@"^{0}\s*{1}\s*{2}$", numberRegex, operationsRegex, numberRegex);
+
+            Regex validOperationRegex = new Regex(fullRegex);
+            return validOperationRegex.Match(operation).Success;
+        }
+
+        private static void RegisterCustomOperation(string symbol, CustomOperation operation)
+        {
+            if (!customOperations.ContainsKey(symbol))
+            {
+                customOperations.Add(symbol, operation);
+                Console.WriteLine($"Custom operation '{symbol}' added successfully!");
+            }
+            else
+            {
+                Console.WriteLine($"Operation '{symbol}' already exists.");
+            }
+        }
+
+        private static void AddCustomOperation()
+        {
+            Console.WriteLine("Enter the symbol for the new operation (e.g. '%', '>'): ");
+            string symbol = Console.ReadLine();
+
+            if (customOperations.ContainsKey(symbol))
+            {
+                Console.WriteLine($"Operation '{symbol}' already exists.");
+                return;
+            }
+
+            Console.WriteLine("Enter the logic for the operation as a mathematical expression:");
+            Console.WriteLine("Use 'x' and 'y' for the operands (e.g., 'x * y + 10').");
+            string logic = Console.ReadLine();
+
+            try
+            {
+                // The lambda body is captured into a delegate value — it
+                // closes over `logic` so each custom op carries its own
+                // expression around with it.
+                CustomOperation newOperation = (x, y) =>
+                {
+                    string evaluatedExpression = logic
+                        .Replace("x", x.ToString())
+                        .Replace("y", y.ToString());
+
+                    System.Data.DataTable table = new System.Data.DataTable();
+                    object result = table.Compute(evaluatedExpression, string.Empty);
+                    return Convert.ToSingle(result);
+                };
+
+                RegisterCustomOperation(symbol, newOperation);
+                AddSymbolToKnownOperations(symbol);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to add the operation. Error: {ex.Message}");
+            }
+        }
+
+        private static void AddSymbolToKnownOperations(string symbol)
+        {
+            if (!string.IsNullOrEmpty(symbol) && symbol.Length == 1)
+            {
+                char operationSymbol = symbol[0];
+
+                if (!knownOperations.Contains(operationSymbol))
+                {
+                    knownOperations.Add(operationSymbol);
+                    Console.WriteLine($"Symbol '{operationSymbol}' added to known operations!");
+                }
+                else
+                {
+                    Console.WriteLine($"Symbol '{operationSymbol}' is already a known operation.");
+                }
+            }
+            else
+            {
+                Console.WriteLine("Invalid symbol. Please provide a single character.");
+            }
+        }
+    }
+}
+</script>
+
+<script type="text/plain" data-csfile="cool/CalculatorPrompt.cs">using System;
+using System.Text;
+
+namespace CoolCalculator
+{
+    internal class CalculatorPrompt
+    {
+        // Operation history (a fixed-size queue).
+        private OperationsQueue _operations = null;
+
+        // The ASCII-art template + its lines, cached at construction time.
+        private readonly string _initialPrompt;
+        private readonly string[] _initialPromptLines;
+
+        public CalculatorPrompt(string initialPrompt, int maxNumberOfOperationsInQueue)
+        {
+            this._operations    = new OperationsQueue(maxNumberOfOperationsInQueue);
+            this._initialPrompt = initialPrompt;
+
+            // Split into individual lines — newline handling is platform-friendly.
+            this._initialPromptLines = this._initialPrompt.Split(
+                Environment.NewLine.ToCharArray(),
+                StringSplitOptions.RemoveEmptyEntries
+            );
+        }
+
+        // Build the printable prompt: the calculator art on the left, plus a
+        // history column on the right with the most recent operations.
+        public string GetPromptText()
+        {
+            StringBuilder sb = new StringBuilder(capacity: 50, maxCapacity: int.MaxValue);
+
+            if (this._operations.IsEmpty)
+            {
+                sb.AppendLine(this._initialPromptLines[0]);
+                sb.AppendLine(String.Format("{0}\t{1}",
+                    this._initialPromptLines[1], "No history."));
+
+                for (int i = 1; i < this._initialPromptLines.Length; i++)
+                    sb.AppendLine(this._initialPromptLines[i]);
+            }
+            else
+            {
+                sb.AppendLine(this._initialPromptLines[0]);
+                sb.AppendLine(String.Format("{0}\t{1}",
+                    this._initialPromptLines[1], "History:"));
+
+                string line; int operationIndex;
+                for (int i = 2; i < this._initialPromptLines.Length; i++)
+                {
+                    operationIndex = i - 2;
+
+                    if (operationIndex < this._operations.Count)
+                        line = String.Format("{0}\t{1}",
+                            this._initialPromptLines[i],
+                            this._operations[operationIndex]);
+                    else
+                        line = this._initialPromptLines[i];
+
+                    sb.AppendLine(line);
+                }
+            }
+
+            return sb.ToString();
+        }
+
+        public void AddOperation(string operation)
+        {
+            this._operations.Enqueue(operation);
+        }
+    }
+}
+</script>
+
+<script type="text/plain" data-csfile="cool/OperationsQueue.cs">using System;
+using System.Collections.Generic;
+
+namespace CoolCalculator
+{
+    // A tiny capped queue for "the last N operations". When full, an
+    // Enqueue silently drops the oldest entry — perfect for a UI history.
+    internal class OperationsQueue
+    {
+        private List<string> _operations = null;
+        private readonly int _maxQueueSize;   // readonly: set once in the ctor
+
+        public OperationsQueue(int maxQueueSize)
+        {
+            this._maxQueueSize = maxQueueSize;
+            this._operations   = new List<string>();
+        }
+
+        public void Enqueue(string newOperation)
+        {
+            // Drop the oldest item to stay under the cap.
+            if (this._maxQueueSize == this._operations.Count)
+                this.Dequeue();
+
+            // Newest entries go to the front (index 0).
+            this._operations.Insert(0, newOperation);
+        }
+
+        public string Dequeue()
+        {
+            int n = this._operations.Count;
+            if (n == 0) return null;
+
+            string operation = this._operations[n - 1];
+            this._operations.RemoveAt(n - 1);
+            return operation;
+        }
+
+        // Read-only computed properties.
+        public int  Count   => this._operations.Count;
+        public bool IsEmpty => this.Count == 0;
+
+        // Indexer — lets callers write `queue[i]` like an array.
+        public string this[int index]
+        {
+            get => _operations[index];
+        }
+    }
+}
+</script>
+
+<script type="text/plain" data-csfile="cool/Resources/CalculatorArt.txt"> _____________________
+|  _________________  |
+| | CALCULATOR   0. | |
+| |_________________| |
+|  ___ ___ ___   ___  |
+| | 7 | 8 | 9 | | + | |
+| |___|___|___| |___| |
+| | 4 | 5 | 6 | | - | |
+| |___|___|___| |___| |
+| | 1 | 2 | 3 | | x | |
+| |___|___|___| |___| |
+| | . | 0 | = | | / | |
+| |___|___|___| |___| |
+|_____________________|
+</script>
+
+<script type="text/plain" data-csout="cool/CoolCalculator.cs"> _____________________
+|  _________________  |
+| | CALCULATOR   0. |     No history.
+| |_________________| |
+|  ___ ___ ___   ___  |
+| | 7 | 8 | 9 | | + | |
+| |___|___|___| |___| |
+| | 4 | 5 | 6 | | - | |
+| |___|___|___| |___| |
+| | 1 | 2 | 3 | | x | |
+| |___|___|___| |___| |
+| | . | 0 | = | | / | |
+| |___|___|___| |___| |
+|_____________________|
+
+Please enter an operation or type 'add' to create a custom operation:
+> 7 + 5
+Answer: 12
+
+ _____________________
+|  _________________  |
+| | CALCULATOR   0. |     History:
+| |_________________| |
+|  ___ ___ ___   ___  | 7 + 5 = 12
+| | 7 | 8 | 9 | | + | |
+| |___|___|___| |___| |
+| | 4 | 5 | 6 | | - | |
+| |___|___|___| |___| |
+| | 1 | 2 | 3 | | x | |
+| |___|___|___| |___| |
+| | . | 0 | = | | / | |
+| |___|___|___| |___| |
+|_____________________|
+
+Please enter an operation or type 'add' to create a custom operation:
+> add
+Enter the symbol for the new operation (e.g. '%', '>'):
+> %
+Enter the logic for the operation as a mathematical expression:
+Use 'x' and 'y' for the operands (e.g., 'x * y + 10').
+> x * y + 10
+Custom operation '%' added successfully!
+Symbol '%' added to known operations!
+
+> 3 % 4
+Answer: 22
+
+> quit
+</script>
+
+
+<script>
+/* ==========================================================
+   Step registry — one entry per sidebar item. Each entry lists:
+     - files       : files shown as tabs
+     - entry       : default file shown in the editor
+     - bundle      : files whose pre-baked output represents this step
+                     (the LAST entry's data-csout is what `Run` shows)
+     - title       : console window title
+   ========================================================== */
+const STEPS = [
+  // basics
+  { id: 'hello',      label: '0 · Hello, World!',          group: 'basics/',
+    files: ['Hello.cs'],       entry: 'Hello.cs',         outputFile: 'Hello.cs',
+    title: 'Console — Hello.exe' },
+  { id: 'variables',  label: '1 · Variables & Types',      group: 'basics/',
+    files: ['Variables.cs'],   entry: 'Variables.cs',     outputFile: 'Variables.cs',
+    title: 'Console — Variables.exe' },
+  { id: 'control',    label: '2 · Control Flow',           group: 'basics/',
+    files: ['ControlFlow.cs'], entry: 'ControlFlow.cs',   outputFile: 'ControlFlow.cs',
+    title: 'Console — ControlFlow.exe' },
+  { id: 'loops',      label: '3 · Loops',                  group: 'basics/',
+    files: ['Loops.cs'],       entry: 'Loops.cs',         outputFile: 'Loops.cs',
+    title: 'Console — Loops.exe' },
+  { id: 'methods',    label: '4 · Methods',                group: 'basics/',
+    files: ['Methods.cs'],     entry: 'Methods.cs',       outputFile: 'Methods.cs',
+    title: 'Console — Methods.exe' },
+
+  // data
+  { id: 'strings',    label: '5 · Strings & StringBuilder', group: 'data/',
+    files: ['Strings.cs'],     entry: 'Strings.cs',       outputFile: 'Strings.cs',
+    title: 'Console — Strings.exe' },
+  { id: 'collections',label: '6 · Collections',            group: 'data/',
+    files: ['Collections.cs'], entry: 'Collections.cs',   outputFile: 'Collections.cs',
+    title: 'Console — Collections.exe' },
+
+  // oop
+  { id: 'classes',    label: '7 · Classes & Objects',       group: 'oop/',
+    files: ['Classes.cs'],     entry: 'Classes.cs',       outputFile: 'Classes.cs',
+    title: 'Console — Classes.exe' },
+  { id: 'inherit',    label: '8 · Inheritance',            group: 'oop/',
+    files: ['Inheritance.cs'], entry: 'Inheritance.cs',   outputFile: 'Inheritance.cs',
+    title: 'Console — Inheritance.exe' },
+  { id: 'properties', label: '9 · Properties',             group: 'oop/',
+    files: ['Properties.cs'],  entry: 'Properties.cs',    outputFile: 'Properties.cs',
+    title: 'Console — Properties.exe' },
+
+  // advanced
+  { id: 'delegates',  label: '10 · Delegates & Lambdas',   group: 'advanced/',
+    files: ['Delegates.cs'],   entry: 'Delegates.cs',     outputFile: 'Delegates.cs',
+    title: 'Console — Delegates.exe' },
+  { id: 'linq',       label: '11 · LINQ',                  group: 'advanced/',
+    files: ['Linq.cs'],        entry: 'Linq.cs',          outputFile: 'Linq.cs',
+    title: 'Console — Linq.exe' },
+  { id: 'fileio',     label: '12 · File I/O & Exceptions', group: 'advanced/',
+    files: ['FileIO.cs'],      entry: 'FileIO.cs',        outputFile: 'FileIO.cs',
+    title: 'Console — FileIO.exe' },
+
+  // final project — multi-file
+  { id: 'cool',       label: '13 · Final Project — CoolCalculator', group: 'project/',
+    files: [
+      'cool/CoolCalculator.cs',
+      'cool/CalculatorPrompt.cs',
+      'cool/OperationsQueue.cs',
+      'cool/Resources/CalculatorArt.txt',
+    ],
+    entry:      'cool/CoolCalculator.cs',
+    outputFile: 'cool/CoolCalculator.cs',
+    title:      'Console — CoolCalculatorCS.exe' },
+];
+
+/* ==========================================================
+   3D background — Three.js wireframes
+   ========================================================== */
+(function init3D(){
+  const canvas = document.getElementById('bg-3d');
+  if(!window.THREE){ return; }
+  const renderer = new THREE.WebGLRenderer({ canvas, alpha:true, antialias:true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 100);
+  camera.position.z = 7;
+  const group = new THREE.Group();
+  scene.add(group);
+  const palette = [0x512BD4, 0x9b6bff, 0x35d0ff, 0xff6ec7];
+  function addShape(geom, color, scale, position){
+    const mat = new THREE.LineBasicMaterial({ color, transparent:true, opacity:0.55 });
+    const wire = new THREE.WireframeGeometry(geom);
+    const line = new THREE.LineSegments(wire, mat);
+    line.scale.setScalar(scale);
+    line.position.set(position.x, position.y, position.z);
+    line.userData.spinSpeed = { x:(Math.random()-0.5)*0.004, y:(Math.random()-0.5)*0.004, z:(Math.random()-0.5)*0.0025 };
+    line.userData.float = { phase: Math.random()*Math.PI*2, amp: 0.3+Math.random()*0.4 };
+    group.add(line); return line;
+  }
+  addShape(new THREE.IcosahedronGeometry(1,0),         palette[0], 1.6, { x:-4.5, y: 1.6, z:-2 });
+  addShape(new THREE.TorusKnotGeometry(0.7,0.22,80,12),palette[1], 1.4, { x: 4.5, y:-1.8, z:-1 });
+  addShape(new THREE.OctahedronGeometry(1,0),          palette[2], 1.0, { x: 3.0, y: 2.2, z:-3 });
+  addShape(new THREE.TetrahedronGeometry(1,0),         palette[3], 0.9, { x:-3.2, y:-2.0, z:-2.5 });
+  addShape(new THREE.IcosahedronGeometry(1,0),         palette[1], 0.6, { x: 0.2, y: 0.0, z:-4 });
+  addShape(new THREE.DodecahedronGeometry(1,0),        palette[0], 0.7, { x:-1.6, y: 2.6, z:-3.5 });
+  addShape(new THREE.OctahedronGeometry(1,0),          palette[3], 0.55,{ x: 1.8, y:-2.6, z:-3.5 });
+  const pCount = 220, pGeom = new THREE.BufferGeometry();
+  const pPos = new Float32Array(pCount * 3);
+  for(let i=0;i<pCount;i++){ pPos[i*3]=(Math.random()-0.5)*18; pPos[i*3+1]=(Math.random()-0.5)*12; pPos[i*3+2]=(Math.random()-0.5)*10-2; }
+  pGeom.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+  scene.add(new THREE.Points(pGeom, new THREE.PointsMaterial({ color:0xffffff, size:0.025, transparent:true, opacity:0.65 })));
+  const target={x:0,y:0}, current={x:0,y:0};
+  window.addEventListener('mousemove', e => { target.x=(e.clientX/window.innerWidth-0.5)*0.6; target.y=(e.clientY/window.innerHeight-0.5)*0.4; });
+  function resize(){ const w=window.innerWidth,h=window.innerHeight; renderer.setSize(w,h,false); camera.aspect=w/h; camera.updateProjectionMatrix(); }
+  resize(); window.addEventListener('resize', resize);
+  let t=0; (function tick(){ t+=0.01; current.x+=(target.x-current.x)*0.05; current.y+=(target.y-current.y)*0.05;
+    group.children.forEach(m => { m.rotation.x+=m.userData.spinSpeed.x; m.rotation.y+=m.userData.spinSpeed.y; m.rotation.z+=m.userData.spinSpeed.z; m.position.y += Math.sin(t+m.userData.float.phase)*0.0025*m.userData.float.amp; });
+    group.rotation.y = current.x*0.4; group.rotation.x = -current.y*0.3;
+    renderer.render(scene, camera); requestAnimationFrame(tick); })();
+})();
+
+/* ==========================================================
+   CodeMirror — C# mode (text/x-csharp from clike)
+   ========================================================== */
+const editor = CodeMirror.fromTextArea(document.getElementById('editor'), {
+  mode: 'text/x-csharp',
+  theme: 'dracula',
+  lineNumbers: true, matchBrackets: true, autoCloseBrackets: true,
+  styleActiveLine: true, indentUnit: 4, tabSize: 4,
+  smartIndent: true, lineWrapping: false,
+  extraKeys: {
+    'Cmd-Enter':  () => runStep(),
+    'Ctrl-Enter': () => runStep(),
+    'Cmd-/':  'toggleComment',
+    'Ctrl-/': 'toggleComment',
+  },
+});
+editor.setValue('// Loading…\n');
+
+/* ==========================================================
+   Embedded source loader + state
+   ========================================================== */
+const fileListEl  = document.getElementById('fileList');
+const fileNameEl  = document.getElementById('fileName');
+const fileSubEl   = document.getElementById('fileSub');
+const fileTabsEl  = document.getElementById('fileTabs');
+const modeBadgeEl = document.getElementById('modeBadge');
+const searchEl    = document.getElementById('search');
+const consoleTitle= document.getElementById('consoleTitle');
+const consoleOut  = document.getElementById('consoleOut');
+
+const state = {
+  active: null,
+  activeFile: {},
+  originals: {},
+  buffers: {},
+  loaded: {},
+};
+
+const STORAGE_PREFIX = 'cs-lab:edit:';
+// Version each lesson's saved buffer by a tiny hash of its embedded original.
+// When the embedded original changes (a lesson update ships), the hash
+// changes too — the old key is now orphaned and the new source loads
+// instead of being shadowed by a stale "snapshot" in localStorage.
+function hashShort(s){
+  let h = 5381;
+  for(let i=0; i<s.length; i++) h = ((h<<5) + h + s.charCodeAt(i)) | 0;
+  return (h >>> 0).toString(36);
+}
+function storageKeyFor(file){
+  const orig = state.originals[file] || '';
+  return STORAGE_PREFIX + file + ':v' + hashShort(orig);
+}
+function saveBuffer(file, value){ try{ localStorage.setItem(storageKeyFor(file), value); }catch{} }
+function loadBuffer(file){ try{ return localStorage.getItem(storageKeyFor(file)); }catch{ return null; } }
+function clearBuffer(file){ try{ localStorage.removeItem(storageKeyFor(file)); }catch{} }
+
+function readEmbedded(attr, key){
+  const node = document.querySelector(
+    'script[type="text/plain"][data-' + attr + '="' + CSS.escape(key) + '"]'
+  );
+  if(!node) return null;
+  return node.textContent.replace(/<\\\/script/gi, '</script');
+}
+function ensureLoaded(file){
+  if(state.loaded[file]) return state.originals[file];
+  const text = readEmbedded('csfile', file);
+  if(text == null){
+    const msg = '/* missing embedded source for ' + file + ' */\n';
+    state.originals[file] = msg; state.buffers[file] = msg;
+  } else {
+    state.originals[file] = text;
+    const saved = loadBuffer(file);
+    state.buffers[file]   = saved != null ? saved : text;
+  }
+  state.loaded[file] = true;
+  return state.originals[file];
+}
+function getFileText(file){ return state.buffers[file] ?? state.originals[file] ?? ''; }
+function getExpectedOutput(file){ return readEmbedded('csout', file) ?? '(no expected output recorded for ' + file + ')'; }
+
+/* Sidebar */
+function stepButtonNode(entry){
+  const li = document.createElement('li');
+  const btn = document.createElement('button');
+  btn.className = 'file-btn';
+  btn.dataset.step = entry.id;
+  btn.innerHTML =
+    '<span class="ico">CS</span>' +
+    '<span class="label">' + entry.label + '</span>' +
+    '<span class="lines">' + entry.files.length + 'f</span>';
+  btn.addEventListener('click', () => activate(entry.id));
+  li.appendChild(btn);
+  return li;
+}
+(function renderSteps(){
+  const groups = []; const seen = new Map();
+  STEPS.forEach(s => {
+    const g = s.group || 'Other';
+    if(!seen.has(g)){ seen.set(g, { name:g, items:[] }); groups.push(seen.get(g)); }
+    seen.get(g).items.push(s);
+  });
+  groups.forEach(g => {
+    const head = document.createElement('li');
+    head.className = 'file-group-head'; head.textContent = g.name;
+    fileListEl.appendChild(head);
+    g.items.forEach(p => fileListEl.appendChild(stepButtonNode(p)));
+  });
+})();
+searchEl.addEventListener('input', ()=>{
+  const q = searchEl.value.toLowerCase().trim();
+  document.querySelectorAll('.file-btn').forEach(b=>{
+    const id = b.dataset.step;
+    const label = b.querySelector('.label').textContent.toLowerCase();
+    const match = !q || id.toLowerCase().includes(q) || label.includes(q);
+    b.parentElement.style.display = match ? '' : 'none';
+  });
+  document.querySelectorAll('.file-group-head').forEach(head => {
+    let n = head.nextElementSibling, anyVisible = false;
+    while(n && !n.classList.contains('file-group-head')){
+      if(n.style.display !== 'none'){ anyVisible = true; break; }
+      n = n.nextElementSibling;
+    }
+    head.style.display = anyVisible ? '' : 'none';
+  });
+});
+
+function modeForFile(name){
+  if(name.endsWith('.cs')) return 'text/x-csharp';
+  if(name.endsWith('.txt')) return 'null';
+  return 'text/x-csharp';
+}
+function badgeForFile(name){
+  if(name.endsWith('.cs'))  return 'CS';
+  if(name.endsWith('.txt')) return 'TXT';
+  return 'CS';
+}
+
+function activeStep(){ return STEPS.find(s => s.id === state.active); }
+function isDirty(file){
+  return state.buffers[file] != null && state.originals[file] != null && state.buffers[file] !== state.originals[file];
+}
+function refreshDirty(){
+  const step = activeStep();
+  if(!step) return;
+  const dirty = step.files.some(f => isDirty(f));
+  const btn = document.querySelector('.file-btn[data-step="' + step.id + '"]');
+  if(btn) btn.classList.toggle('dirty', dirty);
+  fileNameEl.classList.toggle('dirty', dirty);
+  renderFileTabs();
+}
+function renderFileTabs(){
+  const step = activeStep();
+  if(!step){ fileTabsEl.innerHTML = ''; return; }
+  const cur  = state.activeFile[step.id] || step.entry;
+  const esc  = (s) => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+  fileTabsEl.innerHTML = step.files.map(f => {
+    const display = f.split('/').pop();          // tab label = basename
+    const isEntry = f === step.entry;
+    const cls = ['file-tab'];
+    if(f === cur)   cls.push('active');
+    if(isEntry)     cls.push('entry');
+    if(isDirty(f))  cls.push('dirty');
+    return '<button class="' + cls.join(' ') + '" data-file="' + esc(f) + '" title="' + esc(f) + '">' + esc(display) + '</button>';
+  }).join('');
+  fileTabsEl.querySelectorAll('.file-tab').forEach(b => {
+    b.addEventListener('click', () => switchFile(b.dataset.file));
+  });
+  const activeBtn = fileTabsEl.querySelector('.file-tab.active');
+  if(activeBtn && activeBtn.scrollIntoView){
+    try { activeBtn.scrollIntoView({ block: 'nearest', inline: 'nearest' }); } catch {}
+  }
+}
+fileTabsEl.addEventListener('wheel', (e) => {
+  if(fileTabsEl.scrollWidth <= fileTabsEl.clientWidth) return;
+  const delta = Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
+  if(delta === 0) return;
+  e.preventDefault();
+  fileTabsEl.scrollLeft += delta;
+}, { passive: false });
+
+function loadEditorFor(file){
+  const step = activeStep(); if(!step) return;
+  ensureLoaded(file);
+  editor.setOption('mode', modeForFile(file));
+  editor.setValue(getFileText(file));
+  editor.clearHistory();
+  modeBadgeEl.textContent = badgeForFile(file);
+  fileSubEl.textContent = 'CoolCalculatorCS/' + file;
+  fileNameEl.firstChild.textContent = step.label.replace(/^\d+\s*·\s*/, '');
+}
+function switchFile(file){
+  const step = activeStep(); if(!step) return;
+  const cur = state.activeFile[step.id] || step.entry;
+  state.buffers[cur] = editor.getValue();
+  state.activeFile[step.id] = file;
+  loadEditorFor(file);
+  refreshDirty();
+  editor.focus();
+}
+function activate(stepId){
+  const prior = activeStep();
+  if(prior){
+    const cur = state.activeFile[prior.id] || prior.entry;
+    state.buffers[cur] = editor.getValue();
+    refreshDirty();
+  }
+  state.active = stepId;
+  document.querySelectorAll('.file-btn').forEach(b => b.classList.toggle('active', b.dataset.step === stepId));
+  const step = activeStep();
+  step.files.forEach(f => ensureLoaded(f));
+  if(!state.activeFile[step.id]) state.activeFile[step.id] = step.entry;
+  loadEditorFor(state.activeFile[step.id]);
+  refreshDirty();
+  consoleTitle.textContent = step.title || 'Console';
+  consoleOut.classList.remove('calc-mode');
+  consoleOut.innerHTML = step.id === 'cool'
+    ? '<div class="empty">Press ▶ Run to launch the interactive CoolCalculator.</div>'
+    : '<div class="empty">Press ▶ Run to see the expected output for this lesson.</div>';
+  editor.focus();
+}
+
+editor.on('change', ()=>{
+  const step = activeStep(); if(!step) return;
+  const cur   = state.activeFile[step.id] || step.entry;
+  const value = editor.getValue();
+  state.buffers[cur] = value;
+  // Only persist when the user has actually diverged from the embedded
+  // original — `editor.setValue(original)` (run on every step open) would
+  // otherwise silently snapshot the lesson and shadow future updates.
+  if(value !== state.originals[cur]) saveBuffer(cur, value);
+  else                               clearBuffer(cur);
+  refreshDirty();
+});
+
+/* ==========================================================
+   Run / Reset / Copy / Fiddle
+   ========================================================== */
+function escapeHtml(s){
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+function runStep(){
+  const step = activeStep(); if(!step) return;
+
+  // The final-project step gets a real interactive calculator instead of a
+  // pre-baked transcript — same UX as the C# console app.
+  if(step.id === 'cool'){
+    mountCoolCalculator(consoleOut);
+    return;
+  }
+
+  consoleOut.classList.remove('calc-mode');
+  const out = getExpectedOutput(step.outputFile);
+  consoleOut.innerHTML =
+    '<span class="prompt">$</span> dotnet run\n' +
+    escapeHtml(out).replace(/\n/g, '<br>') +
+    '<span class="blinker"></span>';
+  consoleOut.scrollTop = 0;
+}
+
+/* ==========================================================
+   Interactive CoolCalculator — JS port of the C# project that
+   ships in step 13. Lives entirely inside the output panel.
+   Supports +, -, *, / out of the box, runtime-added custom
+   operators (`add` flow), and a 5-entry history rendered next
+   to the ASCII art — exactly like the real .NET console app.
+   ========================================================== */
+const CALC_ART = ' _____________________\n' +
+  '|  _________________  |\n' +
+  '| | CALCULATOR   0. | |\n' +
+  '| |_________________| |\n' +
+  '|  ___ ___ ___   ___  |\n' +
+  '| | 7 | 8 | 9 | | + | |\n' +
+  '| |___|___|___| |___| |\n' +
+  '| | 4 | 5 | 6 | | - | |\n' +
+  '| |___|___|___| |___| |\n' +
+  '| | 1 | 2 | 3 | | x | |\n' +
+  '| |___|___|___| |___| |\n' +
+  '| | . | 0 | = | | / | |\n' +
+  '| |___|___|___| |___| |\n' +
+  '|_____________________|';
+
+function mountCoolCalculator(outEl){
+  const calc = {
+    knownOps: ['+', '-', '*', '/'],
+    customOps: {},                 // symbol -> (x,y) => number
+    history: [],                   // most-recent first, capped at 5
+    maxHistory: 5,
+    mode: 'normal',                // 'normal' | 'add-symbol' | 'add-logic'
+    pendingSymbol: null,
+    log: [],
+  };
+
+  function escapeForCharClass(c){ return c.replace(/[\]\\^-]/g, '\\$&'); }
+
+  function validate(operation){
+    if(!operation || operation.length === 0) return false;
+    const opChars = calc.knownOps.map(escapeForCharClass).join('');
+    const re = new RegExp('^-?\\d*(\\.\\d+)?\\s*[' + opChars + ']\\s*-?\\d*(\\.\\d+)?$');
+    return re.test(operation.trim());
+  }
+
+  function calculate(operation){
+    if(!validate(operation)) return null;
+    // Match the C# behaviour: scan the known-ops list and keep the LAST
+    // operator that's present in the string.
+    let mathOp = null;
+    for(const c of calc.knownOps){
+      if(operation.indexOf(c) >= 0) mathOp = c;
+    }
+    if(mathOp == null) return null;
+    const parts = operation.split(mathOp).map(s => s.trim()).filter(s => s.length);
+    if(parts.length !== 2) return null;
+    const a = parseFloat(parts[0]);
+    const b = parseFloat(parts[1]);
+    if(isNaN(a) || isNaN(b)) return null;
+    const customOp = calc.customOps[mathOp];
+    if(customOp){
+      try { return customOp(a, b); } catch { return null; }
+    }
+    switch(mathOp){
+      case '+': return a + b;
+      case '-': return a - b;
+      case '*': return a * b;
+      case '/': return a / b;
+      default:  return null;
+    }
+  }
+
+  function append(text, kind){ calc.log.push({ text: text, kind: kind || 'info' }); }
+
+  function process(input){
+    const trimmed = input.trim();
+
+    if(calc.mode === 'normal'){
+      append(input, 'user');
+
+      if(trimmed === 'quit' || trimmed === 'exit'){
+        append('(calculator stopped — click ▶ Run again to restart)', 'system');
+        inputEl.disabled = true;
+        return;
+      }
+      if(trimmed === 'add'){
+        append("Enter the symbol for the new operation (e.g. '%', '>'):", 'prompt');
+        calc.mode = 'add-symbol';
+        return;
+      }
+
+      const result = calculate(trimmed);
+      if(result == null){
+        append('Could not calculate the answer.', 'error');
+      } else {
+        // Trim trailing zeros for cleaner display ("4" instead of "4")
+        const r = Number.isFinite(result)
+          ? (Math.round(result * 1e8) / 1e8).toString()
+          : String(result);
+        append('Answer: ' + r, 'answer');
+        calc.history.unshift(trimmed + ' = ' + r);
+        if(calc.history.length > calc.maxHistory) calc.history.pop();
+      }
+      return;
+    }
+
+    if(calc.mode === 'add-symbol'){
+      append(input, 'user');
+      const symbol = trimmed;
+      if(!symbol || symbol.length !== 1){
+        append('Invalid symbol. Please provide a single character.', 'error');
+        calc.mode = 'normal';
+        return;
+      }
+      if(calc.customOps[symbol] || calc.knownOps.indexOf(symbol) >= 0){
+        append("Operation '" + symbol + "' already exists.", 'error');
+        calc.mode = 'normal';
+        return;
+      }
+      calc.pendingSymbol = symbol;
+      append('Enter the logic for the operation as a mathematical expression:', 'prompt');
+      append("Use 'x' and 'y' for the operands (e.g., 'x * y + 10'):", 'prompt');
+      calc.mode = 'add-logic';
+      return;
+    }
+
+    if(calc.mode === 'add-logic'){
+      append(input, 'user');
+      const symbol = calc.pendingSymbol;
+      const logic  = input;
+      try {
+        // The C# version uses DataTable.Compute on the substituted string;
+        // here we just compile the expression to a 2-arg JS function. Same
+        // result for the simple math expressions the lab supports.
+        const fn = new Function('x', 'y', 'return (' + logic + ');');
+        const test = fn(2, 3);
+        if(typeof test !== 'number' || !isFinite(test)){
+          throw new Error('expression did not produce a finite number');
+        }
+        calc.customOps[symbol] = fn;
+        if(calc.knownOps.indexOf(symbol) < 0) calc.knownOps.push(symbol);
+        append("Custom operation '" + symbol + "' added successfully!", 'system');
+        append("Symbol '" + symbol + "' added to known operations!", 'system');
+      } catch(e) {
+        append('Failed to add the operation. Error: ' + e.message, 'error');
+      }
+      calc.pendingSymbol = null;
+      calc.mode = 'normal';
+      return;
+    }
+  }
+
+  // Build the calculator art with the history column on the right.
+  function renderArt(){
+    const lines = CALC_ART.split('\n');
+    const out = [];
+    if(calc.history.length === 0){
+      out.push(lines[0]);
+      out.push(lines[1] + '\tNo history.');
+      for(let i = 2; i < lines.length; i++) out.push(lines[i]);
+    } else {
+      out.push(lines[0]);
+      out.push(lines[1] + '\tHistory:');
+      for(let i = 2; i < lines.length; i++){
+        const opIdx = i - 2;
+        if(opIdx < calc.history.length) out.push(lines[i] + '\t' + calc.history[opIdx]);
+        else                            out.push(lines[i]);
+      }
+    }
+    return out.join('\n');
+  }
+
+  function render(){
+    artEl.textContent = renderArt();
+
+    if(calc.mode === 'normal'){
+      promptEl.textContent = "Please enter an operation or type 'add' to create a custom operation:";
+    } else if(calc.mode === 'add-symbol'){
+      promptEl.textContent = "Adding new operator — type a single-character symbol:";
+    } else if(calc.mode === 'add-logic'){
+      promptEl.textContent = "Adding new operator '" + calc.pendingSymbol + "' — type the math expression using x and y:";
+    }
+
+    logEl.innerHTML = '';
+    for(const entry of calc.log){
+      const div = document.createElement('div');
+      div.className = 'calc-line ' + entry.kind;
+      div.textContent = entry.text;
+      logEl.appendChild(div);
+    }
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+
+  // Build the DOM
+  outEl.classList.add('calc-mode');
+  outEl.innerHTML = '';
+
+  const artEl = document.createElement('pre');
+  artEl.className = 'calc-art';
+  outEl.appendChild(artEl);
+
+  const promptEl = document.createElement('div');
+  promptEl.className = 'calc-prompt-line';
+  outEl.appendChild(promptEl);
+
+  const logEl = document.createElement('div');
+  logEl.className = 'calc-log';
+  outEl.appendChild(logEl);
+
+  const row = document.createElement('div');
+  row.className = 'calc-input-row';
+  const sym = document.createElement('span');
+  sym.className = 'calc-prompt-sym';
+  sym.textContent = '>';
+  row.appendChild(sym);
+  const inputEl = document.createElement('input');
+  inputEl.type = 'text';
+  inputEl.className = 'calc-input';
+  inputEl.placeholder = "e.g. 7 + 5  ·  add  ·  exit";
+  inputEl.spellcheck = false;
+  inputEl.autocomplete = 'off';
+  row.appendChild(inputEl);
+  outEl.appendChild(row);
+
+  // Tiny up/down command history for ergonomics
+  const cmdHist = []; let cmdIdx = -1;
+  inputEl.addEventListener('keydown', (e) => {
+    if(e.key === 'Enter'){
+      const value = inputEl.value;
+      if(value.length){
+        cmdHist.push(value); cmdIdx = cmdHist.length;
+      }
+      inputEl.value = '';
+      process(value);
+      render();
+      setTimeout(() => inputEl.focus(), 0);
+    } else if(e.key === 'ArrowUp'){
+      if(cmdIdx > 0){ cmdIdx--; inputEl.value = cmdHist[cmdIdx]; }
+      e.preventDefault();
+    } else if(e.key === 'ArrowDown'){
+      if(cmdIdx < cmdHist.length - 1){ cmdIdx++; inputEl.value = cmdHist[cmdIdx]; }
+      else { cmdIdx = cmdHist.length; inputEl.value = ''; }
+      e.preventDefault();
+    }
+  });
+
+  render();
+  setTimeout(() => inputEl.focus(), 50);
+}
+document.getElementById('runBtn').addEventListener('click', runStep);
+window.addEventListener('keydown', (e)=>{
+  if((e.metaKey || e.ctrlKey) && e.key === 'Enter'){ e.preventDefault(); runStep(); }
+});
+
+document.getElementById('resetBtn').addEventListener('click', ()=>{
+  const step = activeStep(); if(!step) return;
+  step.files.forEach(f => {
+    if(state.originals[f] != null) state.buffers[f] = state.originals[f];
+    clearBuffer(f);
+  });
+  loadEditorFor(state.activeFile[step.id] || step.entry);
+  refreshDirty();
+  toast('Reset ' + step.id);
+});
+
+document.getElementById('copyBtn').addEventListener('click', async ()=>{
+  const code = editor.getValue();
+  try {
+    await navigator.clipboard.writeText(code);
+    toast('Copied ' + code.split('\n').length + ' lines to clipboard');
+  } catch {
+    // Fallback for browsers that block clipboard without explicit gesture
+    const ta = document.createElement('textarea');
+    ta.value = code; document.body.appendChild(ta);
+    ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+    toast('Copied to clipboard');
+  }
+});
+document.getElementById('fiddleBtn').addEventListener('click', ()=>{
+  // dotnetfiddle.net's URL doesn't accept code via params reliably, so we
+  // just open the site — the user pastes from the clipboard. Hint at that
+  // by showing the toast.
+  toast('Opening dotnetfiddle.net — paste your copied code');
+  window.open('https://dotnetfiddle.net/', '_blank', 'noopener');
+});
+
+/* ==========================================================
+   Toast
+   ========================================================== */
+const toastEl = document.getElementById('toast');
+let toastTimer;
+function toast(msg, kind){
+  toastEl.textContent = msg;
+  toastEl.classList.toggle('error', kind === 'error');
+  toastEl.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=> toastEl.classList.remove('show'), 1800);
+}
+
+/* ==========================================================
+   Drag-to-resize splitter
+   ========================================================== */
+(function initSplitter(){
+  const pane     = document.querySelector('.editor-pane');
+  const splitter = document.getElementById('splitter');
+  if(!pane || !splitter) return;
+  const HANDLE_W = 6, MIN_PANE = 160;
+  const STORAGE  = 'cs-lab-split-ratio';
+  let savedRatio = null;
+  try { const v = parseFloat(localStorage.getItem(STORAGE)); if(v > 0 && v < 1) savedRatio = v; } catch {}
+  function applyRatio(ratio){
+    const total = pane.clientWidth - parseFloat(getComputedStyle(pane).paddingLeft) * 2 - HANDLE_W - 14 * 2;
+    if(total <= 0) return;
+    const left = Math.max(MIN_PANE, Math.min(total - MIN_PANE, total * ratio));
+    pane.style.setProperty('--col-1', left + 'px');
+    pane.style.setProperty('--col-2', (total - left) + 'px');
+    if(typeof editor !== 'undefined' && editor.refresh){
+      clearTimeout(applyRatio._t);
+      applyRatio._t = setTimeout(() => editor.refresh(), 30);
+    }
+  }
+  if(savedRatio != null) applyRatio(savedRatio);
+  let drag = null;
+  splitter.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    const padL = parseFloat(getComputedStyle(pane).paddingLeft) || 0;
+    drag = { paneLeft: pane.getBoundingClientRect().left + padL,
+             total: pane.clientWidth - padL * 2 - HANDLE_W - 14 * 2 };
+    splitter.classList.add('active');
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  });
+  window.addEventListener('pointermove', (e) => {
+    if(!drag) return;
+    let editorPx = e.clientX - drag.paneLeft;
+    editorPx = Math.max(MIN_PANE, Math.min(drag.total - MIN_PANE, editorPx));
+    applyRatio(editorPx / drag.total);
+  });
+  window.addEventListener('pointerup', () => {
+    if(!drag) return; drag = null;
+    splitter.classList.remove('active');
+    document.body.style.cursor = ''; document.body.style.userSelect = '';
+    const total = pane.clientWidth - parseFloat(getComputedStyle(pane).paddingLeft) * 2 - HANDLE_W - 14 * 2;
+    const colL = parseFloat(pane.style.getPropertyValue('--col-1')) || total / 2;
+    try { localStorage.setItem(STORAGE, (colL / total).toFixed(4)); } catch {}
+  });
+  splitter.addEventListener('dblclick', () => {
+    pane.style.removeProperty('--col-1'); pane.style.removeProperty('--col-2');
+    try { localStorage.removeItem(STORAGE); } catch {}
+    if(typeof editor !== 'undefined' && editor.refresh) setTimeout(() => editor.refresh(), 30);
+  });
+})();
+
+/* ==========================================================
+   Boot
+   ========================================================== */
+(function boot(){
+  STEPS.forEach(s => s.files.forEach(f => ensureLoaded(f)));
+  activate(STEPS[0].id);
+})();
+</script>
+<script src="../home.js"></script>
+</body>
+</html>

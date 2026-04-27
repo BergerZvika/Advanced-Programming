@@ -1,0 +1,8 @@
+# Visual Studio / .NET build artifacts — should never be committed.
+bin/
+obj/
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates

@@ -460,6 +460,35 @@ section.lab-section{ margin-top: 56px }
   filter: drop-shadow(0 16px 36px rgba(169,120,255,0.45));
 }
 
+/* C#-themed featured card variant */
+.featured-card.cs-theme::before{
+  background: linear-gradient(135deg, rgba(81,43,212,0.55), rgba(124,92,255,0) 40%, rgba(155,107,255,0.40));
+}
+.featured-card.cs-theme:hover{ border-color: rgba(155,107,255,0.45); box-shadow: 0 36px 90px -30px rgba(81,43,212,0.30), 0 10px 30px -15px rgba(0,0,0,0.7) }
+.featured-card.cs-theme .featured-art{
+  background:
+    radial-gradient(420px 220px at 30% 30%, rgba(81,43,212,0.30), transparent 60%),
+    radial-gradient(380px 220px at 80% 70%, rgba(155,107,255,0.18), transparent 60%),
+    linear-gradient(135deg, rgba(32,28,80,0.30), rgba(155,107,255,0.06));
+}
+.featured-card.cs-theme .tag{
+  color: #d8c8ff; background: rgba(155,107,255,0.14); border-color: rgba(155,107,255,0.32);
+}
+.cs-cube{
+  width: 130px; height: 130px; border-radius: 22px;
+  background: linear-gradient(135deg, #512BD4, #9b6bff);
+  color: #ffffff; font-weight: 900; font-size: 50px;
+  display: flex; align-items: center; justify-content: center;
+  letter-spacing: 1px;
+  box-shadow:
+    0 30px 70px -22px rgba(81,43,212,0.55),
+    inset 0 0 0 1px rgba(255,255,255,0.20),
+    inset 0 -16px 28px -10px rgba(0,0,0,0.30);
+  transform: rotate(-6deg);
+  animation: floatY 5s ease-in-out infinite;
+  text-shadow: 0 2px 0 rgba(0,0,0,0.18);
+}
+
 /* HTML-themed featured card variant */
 .featured-card.html-theme::before{
   background: linear-gradient(135deg, rgba(227,79,38,0.55), rgba(124,92,255,0) 45%, rgba(53,208,255,0.4));
@@ -702,6 +731,7 @@ footer a:hover{ color: var(--text) }
     <a class="nav-link" href="#neo4j">Neo4j</a>
     <a class="nav-link" href="#react">React</a>
     <a class="nav-link" href="#react-native">React Native</a>
+    <a class="nav-link" href="#csharp">C#</a>
     <a class="nav-link primary" href="tools.html">BergerOverflow ↗</a>
   </div>
 </nav>
@@ -982,6 +1012,35 @@ footer a:hover{ color: var(--text) }
           <span>react-native-web</span>
           <span>FlatList · Modal · tabs · notes app</span>
           <span>phone-frame preview</span>
+        </div>
+        <span class="open">Open the lab <span aria-hidden="true">→</span></span>
+      </div>
+    </a>
+  </section>
+
+  <!-- C# — featured -->
+  <section class="lab-section" id="csharp">
+    <div class="section-head">
+      <h2>C#</h2>
+      <span class="count">read · edit · run</span>
+      <p>Edit C# in a CodeMirror editor with full syntax highlighting, hit ▶ Run to see the expected console output rendered in a retro-terminal panel, and finish with the four-file CoolCalculator console app — the actual source from <code>CoolCalculatorCS/</code>.</p>
+    </div>
+
+    <a class="featured-card cs-theme" href="CoolCalculatorCS/index.html">
+      <div class="featured-art">
+        <span class="ring r1"></span>
+        <span class="ring r2"></span>
+        <div class="cs-cube">C#</div>
+      </div>
+      <div class="featured-body">
+        <span class="tag">Featured</span>
+        <h3>C# Lab — CoolCalculator</h3>
+        <p>14 steps that walk from <code>Hello, World!</code> through variables, control flow, loops, methods, strings, collections, classes, inheritance, properties, delegates, LINQ, and File I/O — every concept the final project uses. Step 13 is the real four-file CoolCalculator: a console calculator with operation history, ASCII-art prompt, and a runtime-extensible "add custom operation" feature backed by delegates and <code>DataTable.Compute</code>. Output is pre-baked per lesson; copy your edits into dotnetfiddle.net to actually compile them.</p>
+        <div class="meta">
+          <span>14 steps</span>
+          <span>retro-terminal output</span>
+          <span>multi-file final project</span>
+          <span>edits persist to localStorage</span>
         </div>
         <span class="open">Open the lab <span aria-hidden="true">→</span></span>
       </div>
