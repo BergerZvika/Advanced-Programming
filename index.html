@@ -207,6 +207,51 @@ section.lab-section{ margin-top: 56px }
 }
 .subgroup-title::after{ flex: 1 }
 
+/* Neo4j-themed featured card variant */
+.featured-card.neo-theme::before{
+  background: linear-gradient(135deg, rgba(1,139,255,0.55), rgba(0,183,194,0) 40%, rgba(255,110,199,0.40));
+}
+.featured-card.neo-theme:hover{ border-color: rgba(79,195,247,0.4); box-shadow: 0 36px 90px -30px rgba(1,139,255,0.30), 0 10px 30px -15px rgba(0,0,0,0.7) }
+.featured-card.neo-theme .featured-art{
+  background:
+    radial-gradient(420px 220px at 30% 30%, rgba(1,139,255,0.26), transparent 60%),
+    radial-gradient(380px 220px at 80% 70%, rgba(0,183,194,0.18), transparent 60%),
+    linear-gradient(135deg, rgba(1,139,255,0.06), rgba(124,92,255,0.06));
+}
+.featured-card.neo-theme .tag{
+  color: #b6e2ff; background: rgba(1,139,255,0.12); border-color: rgba(1,139,255,0.32);
+}
+.neo-graph{
+  width: 160px; height: 160px; position: relative;
+  filter: drop-shadow(0 16px 36px rgba(1,139,255,0.45));
+  animation: floatY 5s ease-in-out infinite;
+}
+.neo-graph::before, .neo-graph::after{
+  content: ""; position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%);
+  border-radius: 50%; animation: orbit 12s linear infinite;
+}
+.neo-graph::before{
+  width: 130px; height: 130px;
+  border: 1px dashed rgba(255,255,255,0.18);
+}
+.neo-graph::after{
+  width: 90px; height: 90px;
+  border: 1px dashed rgba(0,183,194,0.4);
+  animation-direction: reverse; animation-duration: 8s;
+}
+.neo-graph .node{
+  position: absolute; width: 28px; height: 28px; border-radius: 50%;
+  background: linear-gradient(135deg, #4FC3F7, #018BFF);
+  box-shadow: 0 0 16px -2px rgba(79,195,247,0.7);
+  border: 2px solid rgba(255,255,255,0.6);
+}
+.neo-graph .node.center{ left: 50%; top: 50%; transform: translate(-50%,-50%); width: 36px; height: 36px; background: linear-gradient(135deg, #FF8A65, #FF5722) }
+.neo-graph .node.n1{ left: 8%;  top: 50%;  transform: translateY(-50%) }
+.neo-graph .node.n2{ left: 50%; top: 8%;   transform: translateX(-50%); background: linear-gradient(135deg, #BA68C8, #9C27B0) }
+.neo-graph .node.n3{ right: 8%; top: 50%;  transform: translateY(-50%) }
+.neo-graph .node.n4{ left: 50%; bottom: 8%; transform: translateX(-50%); background: linear-gradient(135deg, #81C784, #4CAF50) }
+@keyframes orbit{ to { transform: translate(-50%,-50%) rotate(360deg) } }
+
 /* MongoDB-themed featured card variant */
 .featured-card.mongo-theme::before{
   background: linear-gradient(135deg, rgba(19,170,82,0.55), rgba(124,92,255,0) 40%, rgba(53,208,255,0.40));
@@ -562,6 +607,7 @@ footer a:hover{ color: var(--text) }
     <a class="nav-link" href="#css">CSS</a>
     <a class="nav-link" href="#bootstrap">Bootstrap</a>
     <a class="nav-link" href="#mongodb">MongoDB</a>
+    <a class="nav-link" href="#neo4j">Neo4j</a>
     <a class="nav-link primary" href="tools.html">BergerOverflow ↗</a>
   </div>
 </nav>
@@ -693,6 +739,40 @@ footer a:hover{ color: var(--text) }
     </a>
   </section>
 
+  <!-- Neo4j — featured -->
+  <section class="lab-section" id="neo4j">
+    <div class="section-head">
+      <h2>Neo4j</h2>
+      <span class="count">3D graph</span>
+      <p>Write Cypher, watch the graph build itself in 3D — drag, zoom, hover over a node for its properties. Browser-only, no server needed.</p>
+    </div>
+
+    <a class="featured-card neo-theme" href="neo4j/index.html">
+      <div class="featured-art">
+        <span class="ring r1"></span>
+        <span class="ring r2"></span>
+        <div class="neo-graph">
+          <span class="node center"></span>
+          <span class="node n1"></span>
+          <span class="node n2"></span>
+          <span class="node n3"></span>
+          <span class="node n4"></span>
+        </div>
+      </div>
+      <div class="featured-body">
+        <span class="tag">Featured</span>
+        <h3>Neo4j Lab</h3>
+        <p>Type <code>CREATE (alice:Person {name:"Alice"})-[:KNOWS]->(bob:Person {name:"Bob"})</code> and the nodes spring into a 3D force-directed graph on the right. Subset of Cypher: CREATE / MATCH / WHERE / RETURN with projections, AS aliases, DISTINCT, ORDER BY / LIMIT / SKIP, count/sum/avg/min/max, multi-hop patterns, IN, comparison operators, DELETE.</p>
+        <div class="meta">
+          <span>6 lessons</span>
+          <span>cypher emulator</span>
+          <span>3d-force-graph</span>
+        </div>
+        <span class="open">Open the lab <span aria-hidden="true">→</span></span>
+      </div>
+    </a>
+  </section>
+
   <!-- MongoDB — featured -->
   <section class="lab-section" id="mongodb">
     <div class="section-head">
@@ -752,7 +832,7 @@ footer a:hover{ color: var(--text) }
 </main>
 
 <footer>
-  <p>Advanced Programming · <a href="tools.html">BergerOverflow Tools</a> · <a href="javascript/index.html">JS Lab</a> · <a href="typescript/index.html">TS Lab</a> · <a href="html/lab.html">HTML Lab</a> · <a href="css/index.html">CSS Lab</a> · <a href="bootstrap/index.html">Bootstrap Lab</a> · <a href="mongodb/index.html">MongoDB Lab</a></p>
+  <p>Advanced Programming · <a href="tools.html">BergerOverflow Tools</a> · <a href="javascript/index.html">JS Lab</a> · <a href="typescript/index.html">TS Lab</a> · <a href="html/lab.html">HTML Lab</a> · <a href="css/index.html">CSS Lab</a> · <a href="bootstrap/index.html">Bootstrap Lab</a> · <a href="mongodb/index.html">MongoDB Lab</a> · <a href="neo4j/index.html">Neo4j Lab</a></p>
 </footer>
 
 <script>

@@ -1,0 +1,2867 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Neo4j Lab — Advanced Programming</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/theme/dracula.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/dialog/dialog.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/hint/show-hint.min.css">
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/cypher/cypher.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/edit/closebrackets.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/edit/matchbrackets.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/selection/active-line.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/comment/comment.min.js"></script>
+<!-- 3D force-directed graph + on-node text labels for the visualisation pane -->
+<script src="https://unpkg.com/three-spritetext@1.10.0/dist/three-spritetext.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/3d-force-graph@1.73.4/dist/3d-force-graph.min.js"></script>
+
+<style>
+:root{
+  --bg-0:#06060c;
+  --bg-1:#0c0c18;
+  --bg-2:#15152a;
+  --surface:rgba(255,255,255,0.04);
+  --surface-2:rgba(255,255,255,0.07);
+  --border:rgba(255,255,255,0.09);
+  --border-strong:rgba(255,255,255,0.18);
+  --text:#e8e8f3;
+  --text-dim:#9a9ab0;
+  --text-faint:#666680;
+  --accent:#7c5cff;
+  --accent-2:#35d0ff;
+  --accent-3:#ff6ec7;
+  --neo-blue:#018BFF;
+  --neo-blue-2:#4FC3F7;
+  --neo-teal:#00B7C2;
+  --success:#38d39f;
+  --warn:#ffb547;
+  --error:#ff5a7a;
+  --radius:18px;
+  --radius-sm:12px;
+  --shadow-lg: 0 30px 80px -30px rgba(124,92,255,0.35), 0 10px 30px -15px rgba(0,0,0,0.6);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg-0);color:var(--text);font-family:'Inter',system-ui,sans-serif;height:100%;overflow:hidden}
+code,pre,textarea,.mono,.CodeMirror{font-family:'JetBrains Mono',ui-monospace,monospace}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+
+/* 3D Three.js canvas — background layer */
+#bg-3d{
+  position:fixed; inset:0; z-index:-2;
+  display:block;
+  background:
+    radial-gradient(1200px 700px at 8% -10%, rgba(124,92,255,0.30), transparent 60%),
+    radial-gradient(1000px 600px at 110% 0%,  rgba(53,208,255,0.22), transparent 60%),
+    radial-gradient(900px 600px at 50% 130%,  rgba(255,110,199,0.18), transparent 60%),
+    linear-gradient(180deg, #050510 0%, #08081a 50%, #050510 100%);
+}
+/* tiny stars overlay */
+body::after{
+  content:""; position:fixed; inset:0; z-index:-1; pointer-events:none; opacity:.32;
+  background-image:
+    radial-gradient(1px 1px at 20% 30%, #ffffff 100%, transparent),
+    radial-gradient(1px 1px at 70% 60%, #ffffff 100%, transparent),
+    radial-gradient(1.5px 1.5px at 40% 80%, #ffffff 100%, transparent),
+    radial-gradient(1px 1px at 85% 20%, #ffffff 100%, transparent),
+    radial-gradient(1px 1px at 15% 65%, #ffffff 100%, transparent);
+  background-size: 1200px 800px;
+  mask-image:linear-gradient(180deg,transparent,#000 20%,#000 80%,transparent);
+}
+
+/* Layout */
+.app{
+  display:grid; grid-template-columns: 300px 1fr; height:100vh;
+}
+@media (max-width: 980px){
+  .app{ grid-template-columns: 1fr; height:auto; min-height:100vh; overflow:auto }
+  html,body{ overflow:auto; height:auto }
+}
+
+/* Sidebar */
+.sidebar{
+  padding:22px 16px; position:relative; z-index:5;
+  background:linear-gradient(180deg, rgba(12,12,24,0.85), rgba(8,8,18,0.85));
+  backdrop-filter: blur(22px) saturate(140%);
+  -webkit-backdrop-filter: blur(22px) saturate(140%);
+  border-right:1px solid var(--border);
+  overflow-y:auto;
+  scrollbar-width:thin;
+}
+.sidebar::-webkit-scrollbar{width:6px}
+.sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.08);border-radius:6px}
+
+.brand{
+  display:flex;align-items:center;gap:12px;margin-bottom:18px;
+  padding:6px 4px;border-radius:14px;user-select:none;
+}
+.brand-cube{
+  width:46px;height:46px;border-radius:12px;position:relative;
+  background:linear-gradient(135deg,#4FC3F7,#018BFF);
+  box-shadow:
+    0 12px 30px -10px rgba(247,223,30,0.45),
+    inset 0 0 0 1px rgba(255,255,255,0.25),
+    inset 0 -10px 20px -8px rgba(0,0,0,0.35);
+  transform: rotate(-6deg);
+  display:flex;align-items:center;justify-content:center;
+  font-weight:800;font-size:13px;color:#1a1a2a;letter-spacing:0.5px;
+  animation: floatY 5s ease-in-out infinite;
+}
+.brand-cube::after{
+  content:""; position:absolute; inset:auto -6px -6px auto;
+  width:100%;height:100%; border-radius:12px;
+  background:linear-gradient(135deg, rgba(124,92,255,0.5), rgba(53,208,255,0.5));
+  filter:blur(14px); z-index:-1;
+}
+@keyframes floatY{
+  0%,100%{ transform: rotate(-6deg) translateY(0) }
+  50%   { transform: rotate(-2deg) translateY(-4px) }
+}
+.brand h1{margin:0;font-size:17px;font-weight:700;letter-spacing:-0.02em}
+.brand .sub{font-size:11px;color:var(--text-faint);letter-spacing:0.14em;text-transform:uppercase}
+
+.search-wrap{ position:relative; margin-bottom:14px }
+.search{
+  width:100%;padding:10px 14px 10px 34px;border-radius:12px;border:1px solid var(--border);
+  background:rgba(255,255,255,0.03);color:var(--text);font-size:13.5px;outline:none;
+  transition:border-color .2s, box-shadow .2s;
+}
+.search:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(124,92,255,0.2)}
+.search-wrap::before{
+  content:"⌕"; position:absolute; left:11px; top:50%; transform:translateY(-50%);
+  color:var(--text-faint); font-size:14px; pointer-events:none;
+}
+
+.section-label{
+  font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:var(--text-faint);
+  padding:14px 8px 6px;
+}
+
+.file-list{ list-style:none; padding:0; margin:0 }
+.file-list li{ margin:2px 0 }
+.file-btn{
+  width:100%;display:flex;align-items:center;gap:10px;
+  background:transparent;color:var(--text-dim);
+  padding:10px 12px;border-radius:10px;font-size:13.5px;font-weight:500;text-align:left;
+  transition: background .15s, color .15s, transform .15s, box-shadow .2s;
+  border:1px solid transparent;
+}
+.file-btn:hover{ background:var(--surface); color:var(--text); transform:translateX(2px) }
+.file-btn.active{
+  background:linear-gradient(135deg,rgba(124,92,255,0.22),rgba(53,208,255,0.12));
+  color:#fff; border-color:rgba(124,92,255,0.32);
+  box-shadow: inset 0 0 0 1px rgba(124,92,255,0.18), 0 8px 24px -16px rgba(124,92,255,0.55);
+}
+.file-btn .ico{
+  width:24px; height:24px; flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  border-radius:6px;
+  background:linear-gradient(135deg,#4FC3F7,#018BFF);
+  color:#1a1a2a; font-weight:800; font-size:9.5px; letter-spacing:0.5px;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.2);
+}
+.file-btn .label{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+.file-btn .lines{
+  font-size:10.5px; color:var(--text-faint); padding:1px 6px; border-radius:20px;
+  background:rgba(255,255,255,0.04); flex-shrink:0;
+}
+.file-btn.active .lines{ background:rgba(124,92,255,0.22); color:#dcd5ff }
+.file-btn.dirty::before{
+  content:""; width:6px; height:6px; border-radius:50%;
+  background:var(--accent-2); flex-shrink:0;
+  box-shadow: 0 0 8px var(--accent-2);
+}
+
+.back-link{
+  display:flex;align-items:center;gap:8px;
+  margin-top:18px; padding:10px 12px;border-radius:10px;
+  color:var(--text-dim); font-size:13px; text-decoration:none;
+  border:1px solid var(--border);
+  transition: background .15s, color .15s, border-color .15s;
+}
+.back-link:hover{ background:var(--surface); color:var(--text); border-color:var(--border-strong) }
+
+/* Main pane — editor + console stacked on the left, full-height 3D graph on the right */
+.editor-pane{
+  position:relative; padding:22px 22px 22px 22px;
+  display:grid;
+  grid-template-columns: var(--col-1, 1fr) 6px var(--col-2, 1fr);
+  grid-template-rows: auto 1fr 200px;
+  grid-template-areas:
+    "topbar  topbar  topbar"
+    "editor  split   viz"
+    "console split   viz";
+  gap:14px;
+  min-width:0; min-height:0; overflow:hidden;
+}
+.editor-pane > .top-bar     { grid-area: topbar }
+.editor-pane > .editor-card { grid-area: editor;  min-width: 0 }
+.editor-pane > .console-card{ grid-area: console; min-width: 0; height: auto }
+.editor-pane > .viz-card    { grid-area: viz;     min-width: 0 }
+.splitter{
+  grid-area: split; cursor: col-resize; position: relative;
+  background: transparent; user-select: none; touch-action: none;
+}
+.splitter::before{
+  content: ""; position: absolute;
+  left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: 4px; height: 64px; border-radius: 2px;
+  background: var(--border-strong);
+  transition: background .18s, height .18s, box-shadow .18s;
+}
+.splitter:hover::before, .splitter.active::before{
+  background: linear-gradient(180deg, var(--accent), var(--accent-2));
+  height: 110px;
+  box-shadow: 0 0 16px -2px rgba(124,92,255,0.55);
+}
+
+/* 3D viz panel */
+.viz-card{
+  position: relative;
+  background: linear-gradient(180deg, rgba(8,12,28,0.85), rgba(4,6,18,0.92));
+  border: 1px solid var(--border); border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+}
+.viz-card::before{
+  content:""; position: absolute; inset:-1px; border-radius: calc(var(--radius) + 1px); pointer-events:none;
+  background: linear-gradient(135deg, rgba(1,139,255,0.55), rgba(0,183,194,0) 40%, rgba(124,92,255,0.4));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude; padding: 1px; opacity: .55;
+}
+.viz-head{
+  display:flex; align-items:center; gap:10px; padding:9px 14px;
+  border-bottom:1px solid var(--border);
+  background: linear-gradient(180deg, rgba(255,255,255,0.025), transparent);
+  position: relative; z-index: 1;
+}
+.viz-head .label{
+  font-size:11.5px; letter-spacing:0.18em; text-transform:uppercase; color:var(--text-dim);
+  display:flex; align-items:center; gap:8px;
+}
+.viz-head .label::before{
+  content:""; width:8px; height:8px; border-radius:50%;
+  background: var(--neo-blue-2); box-shadow: 0 0 10px rgba(79,195,247,0.7);
+}
+.viz-head .stats{ font-size:11px; color:var(--text-faint); font-family:'JetBrains Mono', monospace }
+.viz-head .right{ margin-left:auto; display:flex; gap:6px }
+.viz-head .icon-btn{
+  padding:5px 10px; border-radius:8px; border:1px solid var(--border);
+  background:rgba(255,255,255,0.02); color:var(--text-dim); font-size:11.5px;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.viz-head .icon-btn:hover{ background:var(--surface-2); color:var(--text); border-color:var(--border-strong) }
+.viz-host{
+  flex: 1; min-height: 0; position: relative;
+  width: 100%; height: calc(100% - 40px);
+  background: radial-gradient(800px 600px at 50% 40%, rgba(1,139,255,0.10), transparent 70%);
+}
+.viz-host canvas{ display: block }
+.viz-empty{
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-faint); font-size: 13px; font-style: italic;
+  pointer-events: none;
+}
+
+@media (max-width: 980px){
+  .editor-pane{
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr 200px 1fr;
+    grid-template-areas:
+      "topbar"
+      "editor"
+      "console"
+      "viz";
+  }
+  .splitter{ display: none }
+}
+
+/* Top header bar with file info & actions */
+.top-bar{
+  display:flex;align-items:center;gap:14px;
+  padding:14px 18px;
+  background: linear-gradient(135deg, rgba(20,20,40,0.7), rgba(12,12,24,0.7));
+  border:1px solid var(--border); border-radius: var(--radius);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  box-shadow: var(--shadow-lg);
+}
+.file-meta{ display:flex; align-items:center; gap:12px; min-width:0 }
+.file-icon{
+  width:36px;height:36px;border-radius:10px;
+  background:linear-gradient(135deg,#4FC3F7,#018BFF);
+  color:#1a1a2a; font-weight:800; font-size:13px; letter-spacing:0.5px;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow: 0 6px 18px -8px rgba(247,223,30,0.55), inset 0 0 0 1px rgba(255,255,255,0.25);
+  flex-shrink:0;
+}
+.file-name{ font-size:15px; font-weight:600; letter-spacing:-0.01em }
+.file-name .dirty-mark{ color:var(--accent-2); margin-left:6px; opacity:0; transition:opacity .15s }
+.file-name.dirty .dirty-mark{ opacity:1 }
+.file-sub{ font-size:11.5px; color:var(--text-faint); margin-top:1px; font-family:'JetBrains Mono',monospace }
+.spacer{ flex:1 }
+
+.action-btn{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:8px 14px; border-radius:10px;
+  border:1px solid var(--border); background:rgba(255,255,255,0.03);
+  color:var(--text-dim); font-size:13px; font-weight:600;
+  transition: background .15s, color .15s, border-color .15s, transform .15s;
+}
+.action-btn:hover{ background:var(--surface-2); color:var(--text); border-color:var(--border-strong) }
+.action-btn:active{ transform:translateY(1px) }
+.action-btn .k{ font-family:'JetBrains Mono',monospace; font-size:10.5px; opacity:.6; padding:1px 5px; border-radius:5px; background:rgba(255,255,255,0.06) }
+.run-btn{
+  background:linear-gradient(135deg,#7c5cff,#35d0ff);
+  color:#fff; border-color:transparent;
+  box-shadow: 0 10px 30px -12px rgba(124,92,255,0.7);
+}
+.run-btn:hover{ filter:brightness(1.08); transform:translateY(-1px); border-color:transparent }
+.stop-btn{
+  background:linear-gradient(135deg,#ff5a7a,#ff8c5a);
+  color:#fff; border-color:transparent;
+  box-shadow: 0 10px 30px -12px rgba(255,90,122,0.65);
+}
+.stop-btn:hover{ filter:brightness(1.08); transform:translateY(-1px); border-color:transparent }
+.stop-btn .k{ background:rgba(255,255,255,0.16) }
+
+/* Editor card with 3D float */
+.editor-card{
+  position:relative; min-height:0;
+  background: linear-gradient(180deg, rgba(20,20,40,0.65), rgba(8,8,18,0.65));
+  border:1px solid var(--border); border-radius: var(--radius);
+  overflow:hidden;
+  backdrop-filter: blur(22px) saturate(150%);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  box-shadow: var(--shadow-lg);
+  transform-style: preserve-3d;
+  transition: transform .25s cubic-bezier(.2,.7,.2,1);
+}
+.editor-card::before{
+  content:""; position:absolute; inset:-1px; border-radius: calc(var(--radius) + 1px); pointer-events:none;
+  background: linear-gradient(135deg, rgba(124,92,255,0.45), rgba(53,208,255,0.0) 40%, rgba(255,110,199,0.35));
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  padding:1px;
+  opacity:.55;
+}
+.editor-chrome{
+  display:flex; align-items:center; gap:10px; padding:9px 14px;
+  border-bottom:1px solid var(--border);
+  background: linear-gradient(180deg, rgba(255,255,255,0.025), transparent);
+}
+.dot{ width:11px; height:11px; border-radius:50% }
+.dot.r{ background:#ff5a7a; box-shadow:0 0 10px rgba(255,90,122,0.55) }
+.dot.y{ background:#ffb547; box-shadow:0 0 10px rgba(255,181,71,0.55) }
+.dot.g{ background:#38d39f; box-shadow:0 0 10px rgba(56,211,159,0.55) }
+.editor-chrome .filename{
+  margin-left:8px; font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--text-dim);
+}
+.editor-chrome .badge{
+  margin-left:auto; font-size:10.5px; letter-spacing:0.14em; text-transform:uppercase;
+  color:var(--text-faint); padding:3px 9px; border-radius:20px;
+  background:rgba(1,139,255,0.12); border:1px solid rgba(1,139,255,0.35);
+  color:#9bd3ff;
+}
+
+/* Step tabs (per-file numbered runners) */
+.step-tabs{
+  display:flex; gap:5px; margin: 0 6px 0 12px;
+  flex:1; min-width:0; overflow-x:auto;
+  scrollbar-width:none;
+}
+.step-tabs::-webkit-scrollbar{ display:none }
+.step-tabs:empty{ display:none }
+.step-tab{
+  flex-shrink:0;
+  padding: 3px 11px; font-size:11px; border-radius:7px;
+  border:1px solid var(--border); background:rgba(255,255,255,0.025);
+  color:var(--text-dim); font-weight:600;
+  font-family:'JetBrains Mono',ui-monospace,monospace;
+  transition: background .15s, color .15s, border-color .15s, transform .15s;
+}
+.step-tab:hover{ background:var(--surface-2); color:var(--text); border-color:var(--border-strong) }
+.step-tab.active{
+  background:linear-gradient(135deg, rgba(124,92,255,0.32), rgba(53,208,255,0.20));
+  color:#fff; border-color:rgba(124,92,255,0.45);
+  box-shadow: 0 0 0 1px rgba(124,92,255,0.28), 0 6px 14px -8px rgba(124,92,255,0.55);
+}
+.step-tab .lbl{ opacity:.85; margin-left:2px; font-weight:500 }
+
+/* Per-file external links (e.g. wikipedia / MDN) */
+.file-links{
+  display:flex; gap:6px; margin-top:6px; flex-wrap:wrap;
+}
+.file-links:empty{ display:none }
+.file-link{
+  display:inline-flex; align-items:center; gap:6px;
+  padding: 4px 9px; border-radius: 8px;
+  font-size: 11.5px; line-height:1.2;
+  border:1px solid rgba(53,208,255,0.28);
+  background:linear-gradient(135deg, rgba(53,208,255,0.10), rgba(124,92,255,0.08));
+  color:#cfeaff; text-decoration:none;
+  transition: background .15s, color .15s, border-color .15s, transform .15s;
+}
+.file-link:hover{
+  background:linear-gradient(135deg, rgba(53,208,255,0.20), rgba(124,92,255,0.16));
+  border-color:rgba(53,208,255,0.55);
+  color:#fff; transform: translateY(-1px);
+}
+.file-link .ico{ font-size:12px; opacity:.85 }
+.file-link .arrow{ font-size:10px; opacity:.65 }
+.file-link .host{ font-size:10px; color:var(--text-faint); font-family:'JetBrains Mono',monospace }
+.cm-host{ position:relative; height:calc(100% - 41px) }
+.CodeMirror{
+  height:100% !important; background:transparent;
+  font-size:14px; line-height:1.55;
+  padding: 6px 0;
+}
+.CodeMirror-gutters{ background:transparent; border-right:1px solid var(--border) }
+.CodeMirror-linenumber{ color:rgba(154,154,176,0.4) }
+.CodeMirror-cursor{ border-left-color:#fff }
+.CodeMirror-activeline-background{ background:rgba(124,92,255,0.05) !important }
+.CodeMirror-selected{ background:rgba(124,92,255,0.22) !important }
+.CodeMirror-matchingbracket{ color:#35d0ff !important; text-shadow:0 0 8px rgba(53,208,255,0.6) }
+
+/* Console card */
+.console-card{
+  height: 220px;
+  background: linear-gradient(180deg, rgba(8,8,18,0.78), rgba(6,6,14,0.78));
+  border:1px solid var(--border); border-radius: var(--radius);
+  display:flex; flex-direction:column; min-height:0;
+  backdrop-filter: blur(22px) saturate(150%);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  box-shadow: var(--shadow-lg);
+  overflow:hidden;
+}
+.console-head{
+  display:flex; align-items:center; gap:10px; padding:10px 14px;
+  border-bottom:1px solid var(--border);
+}
+.console-head .label{
+  font-size:11.5px; letter-spacing:0.18em; text-transform:uppercase; color:var(--text-dim);
+  display:flex; align-items:center; gap:8px;
+}
+.console-head .label::before{
+  content:""; width:8px; height:8px; border-radius:50%;
+  background: var(--success); box-shadow: 0 0 10px rgba(56,211,159,0.7);
+}
+.console-head .label.running::before{ background: var(--accent-2); box-shadow: 0 0 10px rgba(53,208,255,0.7); animation: pulse 1s ease infinite }
+.console-head .label.error::before{ background: var(--error); box-shadow: 0 0 10px rgba(255,90,122,0.7) }
+@keyframes pulse{
+  0%,100%{ transform: scale(1); opacity:1 }
+  50%   { transform: scale(1.4); opacity:.55 }
+}
+.console-head .stats{
+  font-size:11px; color:var(--text-faint); font-family:'JetBrains Mono',monospace;
+}
+.console-head .right{ margin-left:auto; display:flex; gap:6px }
+.console-head .icon-btn{
+  padding:5px 10px; border-radius:8px; border:1px solid var(--border);
+  background:rgba(255,255,255,0.02); color:var(--text-dim); font-size:11.5px;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.console-head .icon-btn:hover{ background:var(--surface-2); color:var(--text); border-color:var(--border-strong) }
+.console-out{
+  flex:1; overflow:auto; padding:10px 14px;
+  font-family:'JetBrains Mono',monospace; font-size:12.5px; line-height:1.55;
+  scrollbar-width:thin;
+}
+.console-out::-webkit-scrollbar{ width:8px; height:8px }
+.console-out::-webkit-scrollbar-thumb{ background:rgba(255,255,255,0.08); border-radius:8px }
+.console-out .empty{
+  color:var(--text-faint); text-align:center; padding:34px 0; font-style:italic; font-family:'Inter',sans-serif;
+}
+.line{
+  padding:3px 8px; margin:1px 0; border-radius:6px;
+  display:flex; gap:10px; align-items:flex-start;
+  border-left:2px solid transparent;
+  white-space:pre-wrap; word-break:break-word;
+}
+.line .t{ flex-shrink:0; color:var(--text-faint); font-size:10.5px; padding-top:2px; min-width:62px }
+.line .c{ flex:1; min-width:0 }
+.line.log{ color:#dcd5ff; border-left-color:rgba(124,92,255,0.4) }
+.line.info{ color:#9bd9ff; border-left-color:rgba(53,208,255,0.5) }
+.line.warn{ color:#ffe0a3; border-left-color:rgba(255,181,71,0.6); background:rgba(255,181,71,0.04) }
+.line.error{ color:#ffb1bf; border-left-color:rgba(255,90,122,0.7); background:rgba(255,90,122,0.06) }
+.line.system{ color:var(--text-faint); border-left-color:rgba(255,255,255,0.15); font-style:italic }
+.line.result{ color:#a8f5d2; border-left-color:rgba(56,211,159,0.55) }
+.console-out table{
+  border-collapse:collapse; margin:4px 0; font-size:12px;
+}
+.console-out th, .console-out td{
+  border:1px solid rgba(255,255,255,0.1); padding:3px 8px; text-align:left;
+}
+.console-out th{ background:rgba(124,92,255,0.12); color:#fff }
+
+/* Floating ambient glow shape */
+.ambient{
+  position:absolute; border-radius:50%; pointer-events:none; z-index:0;
+  filter: blur(60px); opacity:.5;
+}
+.ambient.a{ width:340px;height:340px; background:rgba(124,92,255,0.35); top:-80px; right:-100px; animation:floatA 14s ease-in-out infinite }
+.ambient.b{ width:280px;height:280px; background:rgba(53,208,255,0.28); bottom:-60px; left:8%; animation:floatB 18s ease-in-out infinite }
+@keyframes floatA{ 0%,100%{transform:translate(0,0)} 50%{transform:translate(-30px,20px)} }
+@keyframes floatB{ 0%,100%{transform:translate(0,0)} 50%{transform:translate(40px,-20px)} }
+
+/* Media modal — embeds external videos in-page */
+.media-modal{
+  position: fixed; inset: 0; z-index: 200; display: none;
+  align-items: center; justify-content: center;
+  padding: 24px;
+  background: rgba(4,4,12,0.78);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  animation: mmFade .18s ease both;
+}
+.media-modal.open{ display: flex }
+@keyframes mmFade{ from{opacity:0} to{opacity:1} }
+.media-panel{
+  width: min(960px, 100%);
+  max-height: 92vh;
+  display: flex; flex-direction: column;
+  background: linear-gradient(180deg, rgba(20,20,40,0.9), rgba(8,8,18,0.9));
+  border: 1px solid var(--border-strong);
+  border-radius: 18px;
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  position: relative;
+}
+.media-panel::before{
+  content:""; position: absolute; inset: -1px; border-radius: 19px; pointer-events: none;
+  background: linear-gradient(135deg, rgba(124,92,255,0.45), rgba(53,208,255,0) 40%, rgba(255,110,199,0.4));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude; padding: 1px;
+  opacity: .55;
+}
+.media-head{
+  display: flex; align-items: center; gap: 12px; padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+}
+.media-head h3{ margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -0.01em; flex: 1; min-width: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.media-host{ font-size: 11px; color: var(--text-faint); font-family: 'JetBrains Mono', monospace }
+.media-close{
+  width: 30px; height: 30px; flex-shrink: 0;
+  border-radius: 50%; border: 1px solid var(--border);
+  background: rgba(255,255,255,0.04); color: var(--text-dim);
+  font-size: 17px; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.media-close:hover{ background: rgba(255,90,122,0.14); color: #fff; border-color: rgba(255,90,122,0.4) }
+.media-body{
+  flex: 1; min-height: 0; padding: 14px 18px;
+  display: flex; align-items: center; justify-content: center;
+  background: #000;
+}
+.media-body video{
+  max-width: 100%; max-height: 70vh;
+  display: block; border-radius: 10px;
+  background: #000;
+}
+.media-foot{
+  padding: 10px 18px; border-top: 1px solid var(--border);
+  font-size: 12px; color: var(--text-faint);
+  display: flex; align-items: center; gap: 10px;
+}
+.media-foot a{ color: var(--accent-2); text-decoration: none }
+.media-foot a:hover{ text-decoration: underline }
+.media-loading{ color: var(--text-dim); font-size: 13px; padding: 60px 0 }
+
+/* HTML-content mode for the modal — used for install guides etc. */
+.media-body.html-mode{
+  background: linear-gradient(180deg, rgba(20,20,35,0.95), rgba(10,10,22,0.95));
+  display: block; align-items: stretch; justify-content: stretch;
+  padding: 20px 26px 24px;
+  overflow: auto;
+  font-family: 'Inter', system-ui, sans-serif;
+  color: var(--text); line-height: 1.65; text-align: left;
+}
+.media-body.html-mode h4{
+  margin: 18px 0 8px; font-size: 14px; font-weight: 700; color: #fff; letter-spacing: -0.005em;
+}
+.media-body.html-mode h4:first-child{ margin-top: 0 }
+.media-body.html-mode p{ margin: 8px 0; font-size: 14px; color: var(--text) }
+.media-body.html-mode ul{ margin: 8px 0; padding-left: 22px }
+.media-body.html-mode li{ margin: 4px 0; font-size: 14px }
+.media-body.html-mode a{
+  color: var(--accent-2); text-decoration: none;
+  border-bottom: 1px dashed rgba(53,208,255,0.4);
+  transition: color .15s, border-color .15s;
+}
+.media-body.html-mode a:hover{ color: #fff; border-bottom-color: rgba(53,208,255,0.85) }
+.media-body.html-mode code{
+  background: rgba(124,92,255,0.14);
+  border: 1px solid rgba(124,92,255,0.28);
+  color: #d4cbff; padding: 1px 6px; border-radius: 5px;
+  font-size: 12.5px; font-family: 'JetBrains Mono', monospace;
+}
+.media-body.html-mode pre{
+  background: rgba(6,6,14,0.85);
+  border: 1px solid var(--border); border-radius: 10px;
+  padding: 14px 16px; overflow-x: auto; margin: 12px 0;
+}
+.media-body.html-mode pre code{
+  background: none; border: 0; padding: 0;
+  color: #cfeaff; font-size: 12.5px; line-height: 1.55;
+}
+.media-body.html-mode kbd{
+  display: inline-block; padding: 2px 8px; margin: 0 2px;
+  font-family: 'JetBrains Mono', monospace; font-size: 11px; line-height: 1.35;
+  color: #f0e8ff;
+  background: rgba(124,92,255,0.18);
+  border: 1px solid rgba(124,92,255,0.42);
+  border-bottom-width: 2px; border-radius: 5px;
+}
+.media-body.html-mode small,
+.media-body.html-mode .note{ color: var(--text-faint); font-size: 12px; font-style: italic }
+.media-body.html-mode .arrow-note{ color: var(--text-dim); font-size: 12px; margin-top: 6px }
+.media-body.html-mode .step-pill{
+  display: inline-block; min-width: 20px; height: 20px; padding: 0 6px;
+  border-radius: 999px; background: rgba(53,208,255,0.16);
+  border: 1px solid rgba(53,208,255,0.4); color: #a4e2ff;
+  font-size: 11px; font-weight: 700; text-align: center; line-height: 18px;
+  margin-right: 8px; font-family: 'JetBrains Mono', monospace;
+}
+
+/* Toast / status */
+.toast{
+  position:fixed; bottom:22px; right:22px; z-index:50;
+  padding:10px 14px; border-radius:12px; font-size:13px;
+  background:linear-gradient(135deg,#7c5cff,#35d0ff); color:#fff;
+  box-shadow: 0 18px 40px -18px rgba(124,92,255,0.7);
+  transform: translateY(20px); opacity:0;
+  transition: transform .25s ease, opacity .25s ease;
+}
+.toast.show{ transform: translateY(0); opacity:1 }
+.toast.error{ background:linear-gradient(135deg,#ff5a7a,#ff8c5a) }
+</style>
+</head>
+<body>
+<canvas id="bg-3d"></canvas>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-cube">N</div>
+      <div>
+        <h1>Neo4j Lab</h1>
+        <div class="sub">Cypher · 3D Graph</div>
+      </div>
+    </div>
+
+    <div class="search-wrap">
+      <input class="search" id="search" placeholder="Filter files…" />
+    </div>
+
+    <div class="section-label">Files</div>
+    <ul class="file-list" id="fileList"></ul>
+
+    <a class="back-link" href="../index.html" style="margin-top:18px">⌂ Home</a>
+  </aside>
+
+  <main class="editor-pane">
+    <div class="ambient a"></div>
+    <div class="ambient b"></div>
+
+    <header class="top-bar">
+      <div class="file-meta">
+        <div class="file-icon">N</div>
+        <div style="min-width:0">
+          <div class="file-name" id="fileName">hello_neo4j.cypher<span class="dirty-mark">●</span></div>
+          <div class="file-sub" id="fileSub">neo4j/hello_neo4j.cypher</div>
+          <div class="file-links" id="fileLinks"></div>
+        </div>
+      </div>
+      <div class="spacer"></div>
+      <button class="action-btn" id="resetBtn" title="Revert to file on disk">⟲ Reset</button>
+      <button class="action-btn" id="clearBtn" title="Clear console">✕ Clear</button>
+      <button class="action-btn run-btn" id="runBtn" title="Run code">▶ Run <span class="k">⌘↵</span></button>
+    </header>
+
+    <section class="editor-card" id="editorCard">
+      <div class="editor-chrome">
+        <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="filename" id="chromeName">hello_neo4j.cypher</span>
+        <div class="step-tabs" id="stepTabs"></div>
+        <span class="badge">Cypher</span>
+      </div>
+      <div class="cm-host">
+        <textarea id="editor"></textarea>
+      </div>
+    </section>
+
+    <div class="splitter" id="splitter" role="separator" aria-orientation="vertical" title="Drag to resize"></div>
+
+    <section class="console-card">
+      <div class="console-head">
+        <span class="label" id="consoleStatus">Idle</span>
+        <span class="stats" id="consoleStats"></span>
+        <div class="right">
+          <button class="icon-btn" id="copyOutBtn">Copy</button>
+          <button class="icon-btn" id="clearOutBtn">Clear</button>
+        </div>
+      </div>
+      <div class="console-out" id="consoleOut">
+        <div class="empty">Press ▶ Run (or ⌘/Ctrl+Enter) to execute the editor's Cypher.</div>
+      </div>
+    </section>
+
+    <section class="viz-card" id="vizCard">
+      <div class="viz-head">
+        <span class="label">3D Graph</span>
+        <span class="stats" id="vizStats">0 nodes · 0 rels</span>
+        <div class="right">
+          <button class="icon-btn" id="vizFitBtn" title="Reset camera to fit all nodes">⤢ Fit</button>
+        </div>
+      </div>
+      <div class="viz-host" id="vizHost">
+        <div class="viz-empty" id="vizEmpty">Run a CREATE statement to see the graph</div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="media-modal" id="mediaModal" role="dialog" aria-modal="true" aria-labelledby="mediaTitle">
+  <div class="media-panel">
+    <div class="media-head">
+      <h3 id="mediaTitle">Loading…</h3>
+      <span class="media-host" id="mediaHost"></span>
+      <button class="media-close" id="mediaClose" type="button" title="Close (Esc)" aria-label="Close">×</button>
+    </div>
+    <div class="media-body" id="mediaBody"></div>
+    <div class="media-foot" id="mediaFoot">
+      <span>Embedded from <a id="mediaSource" href="#" target="_blank" rel="noopener">source ↗</a></span>
+    </div>
+  </div>
+</div>
+
+<!-- Embedded source — kept in sync with sibling .cypher files -->
+<script type="text/plain" data-cypherfile="intro.cypher">// ============================================================
+//  WHAT IS NEO4J?
+// ============================================================
+// Neo4j is a NATIVE graph database — data is stored as nodes
+// and relationships, not as rows in tables. Queries traverse
+// edges in O(degree) time instead of doing JOIN after JOIN.
+//
+// The query language is Cypher, which reads like ASCII art
+// of the pattern you want to match:
+//
+//     (alice:Person)-[:KNOWS {since: 2018}]->(bob:Person)
+//
+// Each node carries one or more labels (Person, Movie…) and a
+// JSON-like map of properties. Relationships are first-class
+// objects — they have a type, a direction, and their own
+// properties.
+
+// ============================================================
+//  ADVANTAGES vs. relational / document DBs
+// ============================================================
+// 1. Connected-data queries (friend-of-friend, shortest path,
+//    impact analysis, fraud rings) are extremely fast — there
+//    are no JOINs, just pointer chases through index-free
+//    adjacency
+// 2. Schema-flexible — new labels / properties drop in at
+//    runtime, no DDL migration required
+// 3. Cypher is declarative and visual — easy to read, easy to
+//    map onto a whiteboard sketch of your domain
+// 4. Strong ACID transactions on a single instance, with
+//    causal consistency in clusters (3.x+)
+// 5. Rich ecosystem: APOC procedures, Bloom for ad-hoc viz,
+//    Graph Data Science library for algorithms (PageRank,
+//    Louvain, etc.)
+
+// ============================================================
+//  DISADVANTAGES
+// ============================================================
+// 1. Not the right tool for huge aggregate scans across flat,
+//    tabular data — column stores (BigQuery, ClickHouse) or
+//    classic OLAP engines win there
+// 2. Horizontal sharding is harder than in document DBs.
+//    Neo4j 4.x added "Fabric" for sharded reads, but a single
+//    write leader is still the norm
+// 3. Property indexes only out of the box — no built-in
+//    full-text search at the level of Elasticsearch (you can
+//    integrate one or use Neo4j's bundled Lucene index)
+// 4. Cypher is a new language — there's a learning curve if
+//    your team only knows SQL
+// 5. Memory-hungry for very large graphs; tuning the page
+//    cache is an ops task
+
+// ============================================================
+//  WHEN TO USE NEO4J
+// ============================================================
+//   - Social networks, recommendation engines
+//   - Fraud detection, money-laundering rings
+//   - Knowledge graphs, ontologies, semantic data
+//   - Network / IT-asset topology, dependency analysis
+//   - Bill-of-materials, supply chain, master-data management
+//   - Identity & access management (role/permission graphs)
+//   - Causal reasoning over events (incident analysis, etc.)
+
+// ============================================================
+//  THE CAP THEOREM — Consistency · Availability · Partition tolerance
+// ============================================================
+// CAP says that when a distributed database is split by a
+// network partition, it can only promise 2 of the 3:
+//
+//   C — every read sees the latest committed write
+//   A — every request gets a (non-error) response
+//   P — the system keeps working when nodes can't reach
+//       each other
+//
+// Network partitions are a fact of life on real networks, so
+// in practice every distributed DB picks between CP and AP.
+//
+// ┌──────────────────────────┬──────────────────────────────┐
+// │ Database                 │ CAP choice (default config)  │
+// ├──────────────────────────┼──────────────────────────────┤
+// │ Neo4j Causal Cluster     │ CP — consistent + partition- │
+// │                          │      tolerant; writes block  │
+// │                          │      while a leader election │
+// │                          │      finishes                │
+// │ MongoDB (majority writes)│ CP                           │
+// │ PostgreSQL single node   │ CA (no partition by design)  │
+// │ Cassandra / DynamoDB     │ AP — eventually consistent   │
+// │ Redis Cluster            │ AP                           │
+// └──────────────────────────┴──────────────────────────────┘
+//
+// Neo4j chooses CP: writes go to a single LEADER replica and
+// are quorum-replicated to FOLLOWER replicas. If the leader is
+// partitioned away, the remaining members elect a new leader
+// — during that window writes are paused, but no client ever
+// sees stale data. Pick Neo4j when the GRAPH SHAPE matters and
+// you can't tolerate divergent reads.
+
+// ============================================================
+//  Try it out — every Run resets the in-memory graph
+// ============================================================
+CREATE
+  (alice:Person {name: "Alice"}),
+  (bob:Person   {name: "Bob"}),
+  (carol:Person {name: "Carol"}),
+  (alice)-[:KNOWS]->(bob),
+  (bob)-[:KNOWS]->(carol)
+
+MATCH (n) RETURN n
+</script>
+<script type="text/plain" data-cypherfile="hello_neo4j.cypher">// Welcome to Cypher!
+// Variable bindings (alice, bob…) are scoped to one statement. Reuse them
+// inside the same statement by separating patterns with commas.
+
+CREATE
+  (alice:Person {name: "Alice", age: 30}),
+  (bob:Person   {name: "Bob",   age: 25}),
+  (carol:Person {name: "Carol", age: 35}),
+  (alice)-[:KNOWS {since: 2018}]->(bob),
+  (bob)-[:KNOWS   {since: 2019}]->(carol),
+  (alice)-[:KNOWS {since: 2020}]->(carol)
+
+// Show every node in the graph
+MATCH (n) RETURN n
+</script>
+<script type="text/plain" data-cypherfile="create_nodes.cypher">// Create some nodes with different labels and properties
+CREATE
+  (alice:Person {name: "Alice", age: 30, city: "TLV"}),
+  (bob:Person   {name: "Bob",   age: 25, city: "Haifa"}),
+  (carol:Person {name: "Carol", age: 35, city: "TLV"}),
+  (apple:Company  {name: "Apple",  founded: 1976}),
+  (google:Company {name: "Google", founded: 1998})
+
+// View all of them
+MATCH (n) RETURN n
+
+// Return only people, only their names
+MATCH (p:Person) RETURN p.name AS name, p.age AS age
+</script>
+<script type="text/plain" data-cypherfile="relationships.cypher">// Build a small employer + friendship graph
+CREATE
+  (alice:Person {name:"Alice"}),
+  (bob:Person   {name:"Bob"}),
+  (carol:Person {name:"Carol"}),
+  (dave:Person  {name:"Dave"}),
+  (apple:Company  {name:"Apple"}),
+  (google:Company {name:"Google"}),
+
+  (alice)-[:KNOWS {since:2018}]->(bob),
+  (bob)-[:KNOWS   {since:2019}]->(carol),
+  (carol)-[:KNOWS {since:2021}]->(dave),
+  (alice)-[:KNOWS {since:2020}]->(carol),
+
+  (alice)-[:WORKS_AT {role:"Engineer"}]->(apple),
+  (bob)-[:WORKS_AT   {role:"Designer"}]->(apple),
+  (carol)-[:WORKS_AT {role:"Manager"}]->(google),
+  (dave)-[:WORKS_AT  {role:"Engineer"}]->(google)
+
+MATCH (n) RETURN n
+</script>
+<script type="text/plain" data-cypherfile="match_where.cypher">// Set up a tiny dataset
+CREATE
+  (alice:Person {name:"Alice", age:30, city:"TLV"}),
+  (bob:Person   {name:"Bob",   age:25, city:"Haifa"}),
+  (carol:Person {name:"Carol", age:35, city:"TLV"}),
+  (dave:Person  {name:"Dave",  age:42, city:"Jerusalem"})
+
+// All people
+MATCH (n:Person) RETURN n
+
+// Filter with WHERE — comparisons
+MATCH (p:Person) WHERE p.age >= 30 RETURN p.name AS name, p.age AS age
+
+// Equality
+MATCH (p:Person) WHERE p.city = "TLV" RETURN p.name
+
+// Inline equality (in the pattern itself)
+MATCH (p:Person {city: "TLV"}) RETURN p.name
+
+// IN list
+MATCH (p:Person) WHERE p.name IN ["Alice", "Dave"] RETURN p
+
+// ORDER BY + LIMIT
+MATCH (p:Person) RETURN p.name, p.age ORDER BY p.age DESC LIMIT 2
+</script>
+<script type="text/plain" data-cypherfile="patterns.cypher">// A small social graph
+CREATE
+  (a:Person {name:"Alice"}),
+  (b:Person {name:"Bob"}),
+  (c:Person {name:"Carol"}),
+  (d:Person {name:"Dave"}),
+  (e:Person {name:"Eve"}),
+  (a)-[:KNOWS]->(b),
+  (b)-[:KNOWS]->(c),
+  (c)-[:KNOWS]->(d),
+  (a)-[:KNOWS]->(d),
+  (d)-[:KNOWS]->(e)
+
+// All the graph
+MATCH (n) RETURN n
+
+// Direct friends of Alice
+MATCH (:Person {name:"Alice"})-[:KNOWS]->(friend) RETURN friend.name
+
+// Friends-of-friends of Alice (excluding Alice and her direct friends)
+MATCH (:Person {name:"Alice"})-[:KNOWS]->()-[:KNOWS]->(fof)
+RETURN DISTINCT fof.name
+
+// Directed pair (A knows B)
+MATCH (a:Person)-[:KNOWS]->(b:Person) RETURN a.name AS from, b.name AS to
+</script>
+<script type="text/plain" data-cypherfile="aggregations.cypher">CREATE
+  (alice:Person {name:"Alice", age:30}),
+  (bob:Person   {name:"Bob",   age:25}),
+  (carol:Person {name:"Carol", age:35}),
+  (dave:Person  {name:"Dave",  age:42}),
+  (apple:Company  {name:"Apple"}),
+  (google:Company {name:"Google"}),
+  (alice)-[:WORKS_AT]->(apple),
+  (bob)-[:WORKS_AT]->(apple),
+  (carol)-[:WORKS_AT]->(google),
+  (dave)-[:WORKS_AT]->(google)
+
+// How many people?
+MATCH (p:Person) RETURN count(p) AS people
+
+// Average / min / max age
+MATCH (p:Person) RETURN avg(p.age) AS avgAge, min(p.age) AS youngest, max(p.age) AS oldest
+
+// Group by company → headcount
+MATCH (p:Person)-[:WORKS_AT]->(c:Company)
+RETURN c.name AS company, count(p) AS headcount
+ORDER BY headcount DESC
+</script>
+<script type="text/plain" data-cypherfile="merge.cypher">// MERGE = "find a matching pattern, or create it if it doesn't exist".
+// Re-running the same MERGE never creates duplicates.
+
+// Creates Alice — no node matches yet
+MERGE (:Person {name: "Alice"})
+
+// Same MERGE — finds the existing Alice, no duplicate
+MERGE (:Person {name: "Alice"})
+
+// Different props → creates a new node
+MERGE (:Person {name: "Bob", age: 25})
+
+// MERGE on a path — creates Alice…KNOWS…Carol if missing,
+// or reuses each piece that already exists.
+MERGE (alice:Person {name: "Alice"})-[:KNOWS]->(carol:Person {name: "Carol"})
+
+// Run the same path MERGE again — Alice and Carol are reused,
+// the KNOWS edge is reused too. Counts: 3 matched / 0 created.
+MERGE (alice:Person {name: "Alice"})-[:KNOWS]->(carol:Person {name: "Carol"})
+
+// View the final graph
+MATCH (n) RETURN n
+</script>
+<script type="text/plain" data-cypherfile="set_remove.cypher">// Seed some data first (the in-memory graph resets every Run)
+CREATE
+  (:Person {name: "Alice", age: 30, city: "Haifa"}),
+  (:Person {name: "Bob",   age: 25, city: "TLV"}),
+  (:Person {name: "Carol", age: 35, city: "TLV"})
+
+// SET — overwrite a single property on a single node
+MATCH (alice:Person {name: "Alice"}) SET alice.age = 31
+
+// SET multiple properties at once
+MATCH (alice:Person {name: "Alice"}) SET alice.role = "Engineer", alice.city = "TLV"
+
+// SET on every matching node — works on whole rows
+MATCH (p:Person) SET p.year = 2025
+
+// SET also adds a label (a node can carry several)
+MATCH (alice:Person {name: "Alice"}) SET alice:Admin
+
+// REMOVE a property
+MATCH (alice:Person {name: "Alice"}) REMOVE alice.role
+
+// REMOVE a label
+MATCH (alice:Person {name: "Alice"}) REMOVE alice:Admin
+
+// View the final state
+MATCH (n) RETURN n
+</script>
+<script type="text/plain" data-cypherfile="dataset_movies.cypher">// Movies dataset — actors, directors, and films from "The Matrix" series.
+// Run, then explore with your own MATCH queries.
+
+CREATE
+  (keanu:Person   {name:"Keanu Reeves",       born:1964}),
+  (carrie:Person  {name:"Carrie-Anne Moss",   born:1967}),
+  (laurence:Person {name:"Laurence Fishburne", born:1961}),
+  (hugo:Person    {name:"Hugo Weaving",       born:1960}),
+  (lana:Person    {name:"Lana Wachowski",     born:1965}),
+  (lilly:Person   {name:"Lilly Wachowski",    born:1967}),
+  (matrix:Movie    {title:"The Matrix",          released:1999}),
+  (matrix2:Movie   {title:"The Matrix Reloaded", released:2003}),
+  (matrix3:Movie   {title:"The Matrix Revolutions", released:2003}),
+
+  (keanu)-[:ACTED_IN {role:"Neo"}]->(matrix),
+  (carrie)-[:ACTED_IN {role:"Trinity"}]->(matrix),
+  (laurence)-[:ACTED_IN {role:"Morpheus"}]->(matrix),
+  (hugo)-[:ACTED_IN {role:"Agent Smith"}]->(matrix),
+  (lana)-[:DIRECTED]->(matrix),
+  (lilly)-[:DIRECTED]->(matrix),
+
+  (keanu)-[:ACTED_IN {role:"Neo"}]->(matrix2),
+  (carrie)-[:ACTED_IN {role:"Trinity"}]->(matrix2),
+  (laurence)-[:ACTED_IN {role:"Morpheus"}]->(matrix2),
+  (lana)-[:DIRECTED]->(matrix2),
+  (lilly)-[:DIRECTED]->(matrix2),
+
+  (keanu)-[:ACTED_IN {role:"Neo"}]->(matrix3),
+  (carrie)-[:ACTED_IN {role:"Trinity"}]->(matrix3),
+  (lana)-[:DIRECTED]->(matrix3)
+
+// Who directed which movie?
+MATCH (p:Person)-[:DIRECTED]->(m:Movie) RETURN p.name AS director, m.title AS movie
+
+// Who played Neo, and in how many films?
+MATCH (p:Person)-[r:ACTED_IN {role:"Neo"}]->(m:Movie) RETURN p.name, count(m) AS films
+
+// Cast of the original Matrix
+MATCH (p:Person)-[r:ACTED_IN]->(:Movie {title:"The Matrix"})
+RETURN p.name AS actor, r.role AS role
+</script>
+<script type="text/plain" data-cypherfile="dataset_social.cypher">// A small social graph with KNOWS and LIKES relationships,
+// nice for trying friend-of-friend and recommendation queries.
+
+CREATE
+  (alice:Person  {name:"Alice",  age:30}),
+  (bob:Person    {name:"Bob",    age:25}),
+  (carol:Person  {name:"Carol",  age:35}),
+  (dave:Person   {name:"Dave",   age:42}),
+  (eve:Person    {name:"Eve",    age:28}),
+  (frank:Person  {name:"Frank",  age:33}),
+  (grace:Person  {name:"Grace",  age:29}),
+  (heidi:Person  {name:"Heidi",  age:31}),
+  (jazz:Hobby    {name:"Jazz"}),
+  (chess:Hobby   {name:"Chess"}),
+  (cooking:Hobby {name:"Cooking"}),
+
+  (alice)-[:KNOWS {since:2018}]->(bob),
+  (alice)-[:KNOWS {since:2020}]->(carol),
+  (bob)-[:KNOWS   {since:2019}]->(dave),
+  (carol)-[:KNOWS {since:2021}]->(eve),
+  (dave)-[:KNOWS  {since:2017}]->(frank),
+  (eve)-[:KNOWS   {since:2022}]->(frank),
+  (frank)-[:KNOWS {since:2023}]->(grace),
+  (grace)-[:KNOWS {since:2024}]->(heidi),
+  (alice)-[:KNOWS {since:2024}]->(heidi),
+
+  (alice)-[:LIKES]->(jazz),
+  (carol)-[:LIKES]->(jazz),
+  (dave)-[:LIKES]->(chess),
+  (eve)-[:LIKES]->(chess),
+  (grace)-[:LIKES]->(cooking),
+  (heidi)-[:LIKES]->(cooking)
+
+// Friends of Alice
+MATCH (:Person {name:"Alice"})-[:KNOWS]->(friend) RETURN friend.name AS friend
+
+// People who like the same hobby as Alice (but aren't Alice)
+MATCH (:Person {name:"Alice"})-[:LIKES]->(h:Hobby)<-[:LIKES]-(other)
+RETURN h.name AS hobby, other.name AS person
+</script>
+<script type="text/plain" data-cypherfile="dataset_org.cypher">// A small org-chart graph — Company, Departments, People with HEADS,
+// WORKS_IN, and REPORTS_TO relationships. Good for testing path
+// queries and hierarchical aggregations.
+
+CREATE
+  (acme:Company    {name:"ACME Corp",        founded:2010}),
+  (eng:Department  {name:"Engineering"}),
+  (sales:Department{name:"Sales"}),
+  (alice:Person    {name:"Alice",  role:"CEO"}),
+  (bob:Person      {name:"Bob",    role:"VP Engineering"}),
+  (carol:Person    {name:"Carol",  role:"VP Sales"}),
+  (dave:Person     {name:"Dave",   role:"Senior Engineer"}),
+  (eve:Person      {name:"Eve",    role:"Engineer"}),
+  (frank:Person    {name:"Frank",  role:"Engineer"}),
+  (grace:Person    {name:"Grace",  role:"Sales Lead"}),
+  (heidi:Person    {name:"Heidi",  role:"Account Exec"}),
+
+  (eng)-[:PART_OF]->(acme),
+  (sales)-[:PART_OF]->(acme),
+  (bob)-[:HEADS]->(eng),
+  (carol)-[:HEADS]->(sales),
+  (dave)-[:WORKS_IN]->(eng),
+  (eve)-[:WORKS_IN]->(eng),
+  (frank)-[:WORKS_IN]->(eng),
+  (grace)-[:WORKS_IN]->(sales),
+  (heidi)-[:WORKS_IN]->(sales),
+
+  (bob)-[:REPORTS_TO]->(alice),
+  (carol)-[:REPORTS_TO]->(alice),
+  (dave)-[:REPORTS_TO]->(bob),
+  (eve)-[:REPORTS_TO]->(bob),
+  (frank)-[:REPORTS_TO]->(bob),
+  (grace)-[:REPORTS_TO]->(carol),
+  (heidi)-[:REPORTS_TO]->(carol)
+
+// Headcount per department
+MATCH (p:Person)-[:WORKS_IN]->(d:Department)
+RETURN d.name AS department, count(p) AS headcount
+
+// Direct reports of each VP
+MATCH (vp:Person)<-[:REPORTS_TO]-(report:Person)
+WHERE vp.role <> "CEO"
+RETURN vp.name AS manager, collect(report.name) AS reports
+</script>
+
+<script>
+/* ==========================================================
+   File registry — every .js file in this directory
+   ========================================================== */
+const FILES = [
+  { file: 'intro.cypher',         label: 'What is Neo4j?' },
+  { file: 'hello_neo4j.cypher',  label: 'Hello Neo4j',
+    links: [
+      {
+        title: 'Neo4j — Install',
+        icon: '⚙',
+        embed: {
+          type: 'html',
+          html: `
+            <h4>What to install</h4>
+            <ul>
+              <li><a href="https://neo4j.com/download/" target="_blank" rel="noopener">Neo4j Desktop</a> — local IDE that bundles a database, browser, and admin tools.</li>
+              <li><a href="https://neo4j.com/cloud/platform/aura-graph-database/" target="_blank" rel="noopener">Neo4j AuraDB Free</a> — managed cloud instance, no install needed.</li>
+              <li><a href="https://neo4j.com/docs/operations-manual/current/installation/" target="_blank" rel="noopener">Server install</a> — run <code>neo4j-server</code> standalone.</li>
+            </ul>
+
+            <h4>Connect via cypher-shell</h4>
+<pre><code>cypher-shell -u neo4j -p &lt;password&gt;</code></pre>
+            <p>or, after starting the server, browse to <a href="http://localhost:7474" target="_blank" rel="noopener">http://localhost:7474</a> for Neo4j Browser.</p>
+
+            <p class="note">This lab ships a <b>Cypher subset emulator</b> in your browser — every query runs against an in-memory graph that's visualised on the right in 3D. The store resets on each Run.</p>
+          `,
+        },
+      },
+      { title: 'Cypher Manual',  url: 'https://neo4j.com/docs/cypher-manual/current/introduction/' },
+      { title: 'Cypher Cheat Sheet', url: 'https://neo4j.com/docs/cypher-cheat-sheet/current/' },
+    ],
+  },
+  { file: 'create_nodes.cypher',  label: 'Create Nodes' },
+  { file: 'relationships.cypher', label: 'Relationships' },
+  { file: 'match_where.cypher',   label: 'MATCH + WHERE' },
+  { file: 'patterns.cypher',      label: 'Patterns' },
+  { file: 'merge.cypher',         label: 'MERGE' },
+  { file: 'set_remove.cypher',    label: 'SET / REMOVE' },
+  { file: 'aggregations.cypher',  label: 'Aggregations',
+    links: [
+      {
+        title: 'Node.js + Neo4j driver',
+        icon: '⚙',
+        embed: {
+          type: 'html',
+          html: `
+            <h4>Install the official driver</h4>
+<pre><code>npm install neo4j-driver</code></pre>
+
+            <h4>Connect from JavaScript</h4>
+<pre><code>const neo4j = require('neo4j-driver');
+const driver = neo4j.driver(
+  'neo4j://localhost:7687',
+  neo4j.auth.basic('neo4j', 'password')
+);
+const session = driver.session();
+const result = await session.run(
+  'MATCH (p:Person) RETURN p.name AS name'
+);
+result.records.forEach(r =&gt; console.log(r.get('name')));
+await session.close();
+await driver.close();</code></pre>
+          `,
+        },
+      },
+    ],
+  },
+  // ── Sample datasets — pre-canned graphs you can load and explore ──
+  { file: 'dataset_movies.cypher', label: '◇ Dataset · Movies' },
+  { file: 'dataset_social.cypher', label: '◇ Dataset · Social Network' },
+  { file: 'dataset_org.cypher',    label: '◇ Dataset · Org Chart' },
+];
+
+/* ==========================================================
+   3D background — Three.js scene with floating wireframes
+   ========================================================== */
+(function init3D(){
+  const canvas = document.getElementById('bg-3d');
+  if(!window.THREE){ return; }
+  const renderer = new THREE.WebGLRenderer({ canvas, alpha:true, antialias:true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 100);
+  camera.position.z = 7;
+
+  // Group of floating wireframe shapes
+  const group = new THREE.Group();
+  scene.add(group);
+
+  const palette = [0x7c5cff, 0x35d0ff, 0xff6ec7, 0xf7df1e];
+
+  function addShape(geom, color, scale, position){
+    const mat = new THREE.LineBasicMaterial({ color, transparent:true, opacity:0.55 });
+    const wire = new THREE.WireframeGeometry(geom);
+    const line = new THREE.LineSegments(wire, mat);
+    line.scale.setScalar(scale);
+    line.position.set(position.x, position.y, position.z);
+    line.userData.spinSpeed = {
+      x: (Math.random() - 0.5) * 0.004,
+      y: (Math.random() - 0.5) * 0.004,
+      z: (Math.random() - 0.5) * 0.0025
+    };
+    line.userData.float = { phase: Math.random()*Math.PI*2, amp: 0.3 + Math.random()*0.4 };
+    group.add(line);
+    return line;
+  }
+
+  addShape(new THREE.IcosahedronGeometry(1, 0), palette[0], 1.6,  { x:-4.5, y:1.6, z:-2 });
+  addShape(new THREE.TorusKnotGeometry(0.7, 0.22, 80, 12), palette[1], 1.4, { x: 4.5, y:-1.8, z:-1 });
+  addShape(new THREE.OctahedronGeometry(1, 0), palette[2], 1.0,  { x: 3.0, y: 2.2, z:-3 });
+  addShape(new THREE.TetrahedronGeometry(1, 0), palette[3], 0.9, { x:-3.2, y:-2.0, z:-2.5 });
+  addShape(new THREE.IcosahedronGeometry(1, 0), palette[1], 0.6, { x: 0.2, y: 0.0, z:-4 });
+  addShape(new THREE.DodecahedronGeometry(1, 0), palette[0], 0.7,{ x:-1.6, y: 2.6, z:-3.5 });
+  addShape(new THREE.OctahedronGeometry(1, 0), palette[3], 0.55, { x: 1.8, y:-2.6, z:-3.5 });
+
+  // Particle field
+  const pCount = 220;
+  const pGeom = new THREE.BufferGeometry();
+  const pPos = new Float32Array(pCount * 3);
+  for(let i=0; i<pCount; i++){
+    pPos[i*3+0] = (Math.random() - 0.5) * 18;
+    pPos[i*3+1] = (Math.random() - 0.5) * 12;
+    pPos[i*3+2] = (Math.random() - 0.5) * 10 - 2;
+  }
+  pGeom.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+  const pMat = new THREE.PointsMaterial({ color:0xffffff, size:0.025, transparent:true, opacity:0.65 });
+  const points = new THREE.Points(pGeom, pMat);
+  scene.add(points);
+
+  // Mouse parallax
+  const target = { x:0, y:0 };
+  const current = { x:0, y:0 };
+  window.addEventListener('mousemove', (e)=>{
+    target.x = (e.clientX / window.innerWidth - 0.5) * 0.6;
+    target.y = (e.clientY / window.innerHeight - 0.5) * 0.4;
+  });
+
+  function resize(){
+    const w = window.innerWidth, h = window.innerHeight;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  let t = 0;
+  function tick(){
+    t += 0.01;
+    current.x += (target.x - current.x) * 0.05;
+    current.y += (target.y - current.y) * 0.05;
+
+    group.children.forEach((m)=>{
+      m.rotation.x += m.userData.spinSpeed.x;
+      m.rotation.y += m.userData.spinSpeed.y;
+      m.rotation.z += m.userData.spinSpeed.z;
+      m.position.y += Math.sin(t + m.userData.float.phase) * 0.0025 * m.userData.float.amp;
+    });
+    group.rotation.y = current.x * 0.4;
+    group.rotation.x = -current.y * 0.3;
+    points.rotation.y += 0.0006;
+    points.rotation.x = -current.y * 0.05;
+
+    renderer.render(scene, camera);
+    requestAnimationFrame(tick);
+  }
+  tick();
+})();
+
+/* ==========================================================
+   CodeMirror setup
+   ========================================================== */
+const editor = CodeMirror.fromTextArea(document.getElementById('editor'), {
+  mode: 'application/x-cypher-query',
+  theme: 'dracula',
+  lineNumbers: true,
+  matchBrackets: true,
+  autoCloseBrackets: true,
+  styleActiveLine: true,
+  indentUnit: 2,
+  tabSize: 2,
+  smartIndent: true,
+  lineWrapping: true,
+  extraKeys: {
+    'Cmd-Enter': runCode,
+    'Ctrl-Enter': runCode,
+    'Cmd-/': 'toggleComment',
+    'Ctrl-/': 'toggleComment',
+  },
+});
+editor.setValue('// Loading…\n');
+
+/* ==========================================================
+   File loading & state
+   ========================================================== */
+const fileListEl = document.getElementById('fileList');
+const fileNameEl = document.getElementById('fileName');
+const fileSubEl  = document.getElementById('fileSub');
+const chromeNameEl = document.getElementById('chromeName');
+const searchEl = document.getElementById('search');
+
+const state = {
+  active: null,           // current file name
+  originals: {},          // file -> original text from disk
+  buffers: {},            // file -> "All" buffer text (preserved per file)
+  loaded: {},             // file -> bool
+  lineCounts: {},         // file -> line count
+  steps: {},              // file -> [{n, title, code}] | null  (parsed step list)
+  activeStep: {},         // file -> 0 (All) | step number
+  stepEdits: {},          // file -> { stepN: editedCode }       (per-step scratch buffer)
+};
+
+/* Parse "// N) title" headings into step snippets. A step is included only if
+   its extracted code contains at least one console.* call (otherwise running
+   it would produce no visible output). The file gets step tabs only if 2+
+   steps qualify. Bodies that are mostly commented-out get their leading "// "
+   stripped; bodies that already contain live code are left as-is. */
+function parseSteps(source){
+  if(!source) return null;
+  const lines = source.split('\n');
+  const headingRe = /^(\s*)\/\/\s*(\d+)\)\s*(.*)$/;
+  const headings = [];
+  for(let i=0; i<lines.length; i++){
+    const m = lines[i].match(headingRe);
+    if(m) headings.push({ n: parseInt(m[2],10), title: m[3].trim(), line: i });
+  }
+  if(headings.length < 2) return null;
+
+  const result = [];
+  for(let h=0; h<headings.length; h++){
+    const start = headings[h].line;
+    const end = (h+1 < headings.length) ? headings[h+1].line : lines.length;
+    const block = lines.slice(start, end);
+
+    // Decide commented-mode vs live-mode by counting body lines (skip heading)
+    let commented = 0, live = 0;
+    for(let j=1; j<block.length; j++){
+      const t = block[j].trim();
+      if(!t) continue;
+      if(t.startsWith('//')) commented++;
+      else live++;
+    }
+    let code;
+    if(commented > live){
+      // Strip a single "// " (or "//") from each non-heading line
+      code = [block[0]].concat(
+        block.slice(1).map(line => line.replace(/^(\s*)\/\/ ?/, '$1'))
+      ).join('\n');
+    }else{
+      code = block.join('\n');
+    }
+
+    if(/\bconsole\.(log|info|warn|error|table|dir|trace)\b/.test(code)){
+      result.push({ n: headings[h].n, title: headings[h].title, code });
+    }
+  }
+  return result.length >= 2 ? result : null;
+}
+
+/* Save whatever's in the editor into the right slot for the active file/step. */
+function saveCurrentEditor(){
+  const file = state.active;
+  if(!file) return;
+  const step = state.activeStep[file] || 0;
+  const v = editor.getValue();
+  if(step === 0){
+    state.buffers[file] = v;
+    // Editing the canonical "All" view invalidates per-step caches —
+    // they should be regenerated from the new buffer next time.
+    if(state.stepEdits[file]) delete state.stepEdits[file];
+    state.steps[file] = parseSteps(v);
+  }else{
+    if(!state.stepEdits[file]) state.stepEdits[file] = {};
+    state.stepEdits[file][step] = v;
+  }
+}
+
+/* Set the editor content + chrome labels for the currently-active step. */
+function loadEditorForCurrentStep(){
+  const file = state.active;
+  if(!file) return;
+  const step = state.activeStep[file] || 0;
+  let content;
+  if(step === 0){
+    content = state.buffers[file] ?? state.originals[file] ?? '';
+    chromeNameEl.textContent = file;
+    fileSubEl.textContent = 'neo4j/' + file;
+  }else{
+    const cached = state.stepEdits[file] && state.stepEdits[file][step];
+    if(cached != null){
+      content = cached;
+    }else{
+      const steps = parseSteps(state.buffers[file] ?? state.originals[file] ?? '');
+      const s = (steps || []).find(x => x.n === step);
+      content = s ? s.code : '// step ' + step + ' not found';
+    }
+    const s = (state.steps[file] || []).find(x => x.n === step);
+    chromeNameEl.textContent = file + '  ·  step ' + step;
+    fileSubEl.textContent = s ? `step ${step} — ${s.title}` : `step ${step}`;
+  }
+  editor.setValue(content);
+  editor.clearHistory();
+}
+
+function switchStep(stepN){
+  const file = state.active;
+  if(!file) return;
+  saveCurrentEditor();
+  state.activeStep[file] = stepN;
+  loadEditorForCurrentStep();
+  renderStepTabs();
+  refreshDirty(file);
+  editor.focus();
+}
+
+function renderStepTabs(){
+  const tabsEl = document.getElementById('stepTabs');
+  const file = state.active;
+  const steps = state.steps[file];
+  if(!steps || steps.length < 2){
+    tabsEl.innerHTML = '';
+    return;
+  }
+  const cur = state.activeStep[file] || 0;
+  const esc = (s) => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+  let html = '';
+  steps.forEach(s => {
+    const tip = `${s.n}) ${s.title || 'Step '+s.n}`;
+    html += `<button class="step-tab ${cur===s.n?'active':''}" data-step="${s.n}" title="${esc(tip)}">${s.n}</button>`;
+  });
+  html += `<button class="step-tab ${cur===0?'active':''}" data-step="0" title="Run the full file">All</button>`;
+  tabsEl.innerHTML = html;
+  tabsEl.querySelectorAll('.step-tab').forEach(b => {
+    b.addEventListener('click', () => switchStep(parseInt(b.dataset.step, 10)));
+  });
+}
+
+function renderFileLinks(){
+  const linksEl = document.getElementById('fileLinks');
+  const entry = FILES.find(f => f.file === state.active);
+  const links = (entry && entry.links) || [];
+  if(!links.length){ linksEl.innerHTML = ''; return; }
+  const esc = (s) => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+  linksEl.innerHTML = links.map((l, i) => {
+    let host = '';
+    try { host = new URL(l.url).hostname.replace(/^www\./,''); } catch {}
+    const isEmbed = !!l.embed;
+    const defaultIco = isEmbed
+      ? (l.embed.type === 'video' ? '▶' : (l.embed.type === 'html' ? '📥' : '⤢'))
+      : '📚';
+    const ico = l.icon || defaultIco;
+    const arrow = isEmbed ? '⤢' : '↗';
+    const tag = isEmbed ? 'button type="button"' : `a href="${esc(l.url || '#')}" target="_blank" rel="noopener noreferrer"`;
+    const close = isEmbed ? 'button' : 'a';
+    const tip = l.url ? esc(l.url) : esc(l.title);
+    return `<${tag} class="file-link" data-link-index="${i}" title="${tip}">`
+         + `<span class="ico">${esc(ico)}</span><span>${esc(l.title)}</span>`
+         + (host ? `<span class="host">${esc(host)}</span>` : '')
+         + `<span class="arrow">${arrow}</span></${close}>`;
+  }).join('');
+  // Attach click handlers for embed-style links
+  linksEl.querySelectorAll('button.file-link').forEach(btn => {
+    const idx = parseInt(btn.dataset.linkIndex, 10);
+    const link = links[idx];
+    if(!link) return;
+    btn.addEventListener('click', () => openMediaModal(link));
+  });
+}
+
+/* ==========================================================
+   Media modal — plays cross-origin video (and optional separate
+   audio track, e.g. Reddit DASH) inside the lab.
+   ========================================================== */
+const mediaModalEl = document.getElementById('mediaModal');
+const mediaTitleEl = document.getElementById('mediaTitle');
+const mediaHostEl  = document.getElementById('mediaHost');
+const mediaBodyEl  = document.getElementById('mediaBody');
+const mediaSrcLink = document.getElementById('mediaSource');
+
+function openMediaModal(link){
+  if(!link || !link.embed) return;
+  const e = link.embed;
+  const foot = document.getElementById('mediaFoot');
+  mediaTitleEl.textContent = link.title || 'Embedded media';
+  let host = '';
+  try { if(link.url) host = new URL(link.url).hostname.replace(/^www\./,''); } catch {}
+  mediaHostEl.textContent = host;
+  // Footer is only meaningful when there's an external source URL
+  if(link.url){
+    foot.style.display = '';
+    mediaSrcLink.href = link.url;
+    mediaSrcLink.textContent = host || 'source';
+    mediaSrcLink.title = link.url;
+  }else{
+    foot.style.display = 'none';
+  }
+
+  mediaBodyEl.classList.remove('html-mode');
+  mediaBodyEl.innerHTML = '<div class="media-loading">Loading…</div>';
+  mediaModalEl.classList.add('open');
+
+  if(e.type === 'html'){
+    mediaBodyEl.classList.add('html-mode');
+    mediaBodyEl.innerHTML = e.html || '';
+    return;
+  }
+  if(e.type === 'video'){
+    const video = document.createElement('video');
+    video.src = e.videoSrc;
+    video.controls = true;
+    video.playsInline = true;
+    video.preload = 'metadata';
+    if(e.poster) video.poster = e.poster;
+    if(e.width) video.width = e.width;
+    if(e.height) video.height = e.height;
+
+    let audio = null;
+    if(e.audioSrc){
+      // Reddit DASH videos have audio in a separate file; play in sync
+      audio = document.createElement('audio');
+      audio.src = e.audioSrc;
+      audio.preload = 'metadata';
+      const sync = () => { try { audio.currentTime = video.currentTime; } catch {} };
+      video.addEventListener('play',   () => { sync(); audio.play().catch(()=>{}); });
+      video.addEventListener('pause',  () => audio.pause());
+      video.addEventListener('seeking',() => sync());
+      video.addEventListener('seeked', () => sync());
+      video.addEventListener('ratechange', () => { audio.playbackRate = video.playbackRate; });
+      video.addEventListener('volumechange', () => { audio.volume = video.volume; audio.muted = video.muted; });
+      // Periodically nudge if drift > 0.25s
+      setInterval(() => {
+        if(audio.paused || video.paused) return;
+        const drift = audio.currentTime - video.currentTime;
+        if(Math.abs(drift) > 0.25) sync();
+      }, 1000);
+    }
+
+    mediaBodyEl.innerHTML = '';
+    mediaBodyEl.appendChild(video);
+    if(audio) mediaBodyEl.appendChild(audio);
+  } else if(e.type === 'iframe'){
+    mediaBodyEl.innerHTML = '';
+    const ifr = document.createElement('iframe');
+    ifr.src = e.src;
+    ifr.style.cssText = 'border:0;width:100%;height:60vh;border-radius:10px;background:#000';
+    if(e.allow) ifr.allow = e.allow;
+    mediaBodyEl.appendChild(ifr);
+  } else {
+    mediaBodyEl.innerHTML = '<div class="media-loading">Unsupported embed type.</div>';
+  }
+}
+
+function closeMediaModal(){
+  mediaModalEl.classList.remove('open');
+  // Tear down media to stop playback and free the network stream
+  mediaBodyEl.querySelectorAll('video, audio, iframe').forEach(n => {
+    if(n.tagName === 'IFRAME'){ n.src = 'about:blank'; }
+    else { try { n.pause(); } catch {} n.removeAttribute('src'); n.load && n.load(); }
+  });
+  mediaBodyEl.classList.remove('html-mode');
+  mediaBodyEl.innerHTML = '';
+}
+
+document.getElementById('mediaClose').addEventListener('click', closeMediaModal);
+mediaModalEl.addEventListener('click', (e) => {
+  if(e.target === mediaModalEl) closeMediaModal();
+});
+window.addEventListener('keydown', (e) => {
+  if(e.key === 'Escape' && mediaModalEl.classList.contains('open')) closeMediaModal();
+});
+
+function fileButtonNode(entry){
+  const li = document.createElement('li');
+  const btn = document.createElement('button');
+  btn.className = 'file-btn';
+  btn.dataset.file = entry.file;
+  btn.innerHTML = `
+    <span class="ico">M</span>
+    <span class="label">${entry.label}</span>
+    <span class="lines" data-lines>—</span>
+  `;
+  btn.addEventListener('click', ()=> activate(entry.file));
+  li.appendChild(btn);
+  return li;
+}
+
+FILES.forEach(f => fileListEl.appendChild(fileButtonNode(f)));
+
+searchEl.addEventListener('input', ()=>{
+  const q = searchEl.value.toLowerCase().trim();
+  document.querySelectorAll('.file-btn').forEach(b=>{
+    const f = b.dataset.file;
+    const label = b.querySelector('.label').textContent.toLowerCase();
+    const match = !q || f.toLowerCase().includes(q) || label.includes(q);
+    b.parentElement.style.display = match ? '' : 'none';
+  });
+});
+
+function readEmbedded(name){
+  const node = document.querySelector(`script[type="text/plain"][data-cypherfile="${CSS.escape(name)}"]`);
+  if(!node) return null;
+  // Restore "<\/script" → "</script" in case anything was neutralized at embed time
+  return node.textContent.replace(/<\\\/script/gi, '</script');
+}
+
+async function loadFile(name){
+  if(state.loaded[name]) return state.originals[name];
+  let text = readEmbedded(name);
+  if(text == null){
+    // Fall back to fetch when served over http(s) and a file isn't embedded
+    try{
+      const r = await fetch(name + '?t=' + Date.now());
+      if(!r.ok) throw new Error('HTTP ' + r.status);
+      text = await r.text();
+    }catch(err){
+      text = `// Source for ${name} is not embedded in this page and could not be fetched.\n// ${err.message}\n`;
+    }
+  }
+  state.originals[name] = text;
+  state.buffers[name] = text;
+  state.loaded[name] = true;
+  state.lineCounts[name] = text.split('\n').length;
+  const btn = document.querySelector(`.file-btn[data-file="${name}"]`);
+  if(btn){
+    const lines = btn.querySelector('[data-lines]');
+    if(lines) lines.textContent = state.lineCounts[name] + 'L';
+  }
+  return text;
+}
+
+async function activate(name){
+  // Save current view (file + step) into its slot
+  if(state.active){
+    saveCurrentEditor();
+    refreshDirty(state.active);
+  }
+  state.active = name;
+  document.querySelectorAll('.file-btn').forEach(b=>{
+    b.classList.toggle('active', b.dataset.file === name);
+  });
+  fileNameEl.firstChild.textContent = name;
+  if(!state.loaded[name]){
+    editor.setValue('// Loading ' + name + '…');
+    await loadFile(name);
+  }
+  // (Re)compute steps from the current "All" buffer
+  state.steps[name] = parseSteps(state.buffers[name] ?? state.originals[name] ?? '');
+  // First time this file is opened: default to the LAST step when there are
+  // multiple steps; otherwise fall back to All (0).
+  if(state.activeStep[name] == null){
+    const ss = state.steps[name];
+    state.activeStep[name] = (ss && ss.length >= 2) ? ss[ss.length - 1].n : 0;
+  }
+  // If a previously-active step no longer exists (e.g. headings removed), fall back to the last available step or All
+  if(state.activeStep[name] !== 0 && !(state.steps[name] || []).some(s => s.n === state.activeStep[name])){
+    const ss = state.steps[name];
+    state.activeStep[name] = (ss && ss.length) ? ss[ss.length - 1].n : 0;
+  }
+  loadEditorForCurrentStep();
+  renderStepTabs();
+  renderFileLinks();
+  refreshDirty(name);
+  editor.focus();
+}
+
+function refreshDirty(name){
+  // "Dirty" = the file's canonical (All) buffer differs from the original.
+  // The editor view may be a step extraction — that derivation is not
+  // a real edit, so don't read editor.getValue() here.
+  const buf = state.buffers[name];
+  const dirty = state.loaded[name] && buf != null && buf !== state.originals[name];
+  const btn = document.querySelector(`.file-btn[data-file="${name}"]`);
+  if(btn) btn.classList.toggle('dirty', dirty);
+  if(name === state.active){
+    fileNameEl.classList.toggle('dirty', dirty);
+  }
+}
+
+editor.on('change', ()=>{
+  if(!state.active) return;
+  const file = state.active;
+  const step = state.activeStep[file] || 0;
+  const v = editor.getValue();
+  if(step === 0){
+    state.buffers[file] = v;
+    if(state.stepEdits[file]) delete state.stepEdits[file];
+    const newSteps = parseSteps(v);
+    state.steps[file] = newSteps;
+    renderStepTabs();
+  }else{
+    if(!state.stepEdits[file]) state.stepEdits[file] = {};
+    state.stepEdits[file][step] = v;
+  }
+  refreshDirty(file);
+});
+
+/* ==========================================================
+   Reset / Clear / Run
+   ========================================================== */
+document.getElementById('resetBtn').addEventListener('click', ()=>{
+  const file = state.active;
+  if(!file || state.originals[file] == null) return;
+  const step = state.activeStep[file] || 0;
+  if(step === 0){
+    state.buffers[file] = state.originals[file];
+    if(state.stepEdits[file]) delete state.stepEdits[file];
+    state.steps[file] = parseSteps(state.originals[file]);
+    loadEditorForCurrentStep();
+    renderStepTabs();
+    toast('Reset ' + file);
+  }else{
+    // Forget any in-flight edits for this step, then regenerate from current All buffer
+    if(state.stepEdits[file]) delete state.stepEdits[file][step];
+    loadEditorForCurrentStep();
+    toast(`Reset step ${step}`);
+  }
+  refreshDirty(file);
+});
+document.getElementById('clearBtn').addEventListener('click', clearConsole);
+document.getElementById('clearOutBtn').addEventListener('click', clearConsole);
+document.getElementById('runBtn').addEventListener('click', () => {
+  if(isRunning) stopRun('user');
+  else runCode();
+});
+document.getElementById('copyOutBtn').addEventListener('click', ()=>{
+  const out = document.getElementById('consoleOut');
+  const text = Array.from(out.querySelectorAll('.line .c')).map(n=>n.textContent).join('\n');
+  if(!text){ toast('Nothing to copy'); return; }
+  navigator.clipboard?.writeText(text).then(()=> toast('Output copied'));
+});
+
+window.addEventListener('keydown', (e)=>{
+  if((e.metaKey || e.ctrlKey) && e.key === 'Enter'){
+    e.preventDefault();
+    runCode();
+  }
+});
+
+/* ==========================================================
+   Console output
+   ========================================================== */
+const consoleOut = document.getElementById('consoleOut');
+const consoleStatus = document.getElementById('consoleStatus');
+const consoleStats = document.getElementById('consoleStats');
+let runStartTime = 0;
+let logCount = 0;
+let warnCount = 0;
+let errorCount = 0;
+
+function clearConsole(){
+  consoleOut.innerHTML = '<div class="empty">Console cleared.</div>';
+  logCount = warnCount = errorCount = 0;
+  consoleStats.textContent = '';
+  consoleStatus.classList.remove('error','running');
+  consoleStatus.textContent = 'Idle';
+}
+function ensureConsoleEmptyCleared(){
+  const empty = consoleOut.querySelector('.empty');
+  if(empty) empty.remove();
+}
+function ts(){
+  const now = (performance.now() - runStartTime) / 1000;
+  return (now >= 0 && runStartTime > 0) ? '+' + now.toFixed(3) + 's' : '';
+}
+function appendLine(kind, parts){
+  ensureConsoleEmptyCleared();
+  const line = document.createElement('div');
+  line.className = 'line ' + kind;
+  const t = document.createElement('span'); t.className = 't'; t.textContent = ts();
+  const c = document.createElement('span'); c.className = 'c';
+  c.textContent = parts.map(formatVal).join(' ');
+  line.append(t, c);
+  consoleOut.appendChild(line);
+  consoleOut.scrollTop = consoleOut.scrollHeight;
+}
+function appendTable(parts){
+  ensureConsoleEmptyCleared();
+  const data = parts[0];
+  if(data == null || typeof data !== 'object'){ appendLine('log', parts); return; }
+  const rows = Array.isArray(data) ? data : Object.entries(data).map(([k,v])=>({ '(key)':k, value:v }));
+  const cols = new Set();
+  rows.forEach(r => {
+    if(r && typeof r === 'object') Object.keys(r).forEach(k=>cols.add(k));
+    else cols.add('value');
+  });
+  const colArr = ['(index)', ...cols];
+  const tbl = document.createElement('table');
+  const thead = document.createElement('thead'); const trH = document.createElement('tr');
+  colArr.forEach(c=>{ const th = document.createElement('th'); th.textContent = c; trH.appendChild(th); });
+  thead.appendChild(trH); tbl.appendChild(thead);
+  const tbody = document.createElement('tbody');
+  rows.forEach((r, i)=>{
+    const tr = document.createElement('tr');
+    colArr.forEach(col=>{
+      const td = document.createElement('td');
+      let val;
+      if(col === '(index)') val = i;
+      else if(r && typeof r === 'object') val = r[col];
+      else if(col === 'value') val = r;
+      td.textContent = val === undefined ? '' : formatVal(val);
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+  tbl.appendChild(tbody);
+  const wrap = document.createElement('div'); wrap.className = 'line log';
+  const t = document.createElement('span'); t.className = 't'; t.textContent = ts();
+  const c = document.createElement('span'); c.className = 'c'; c.appendChild(tbl);
+  wrap.append(t, c);
+  consoleOut.appendChild(wrap);
+  consoleOut.scrollTop = consoleOut.scrollHeight;
+}
+function formatVal(v){
+  if(v === null) return 'null';
+  if(v === undefined) return 'undefined';
+  if(typeof v === 'string') return v;
+  if(typeof v === 'number' || typeof v === 'boolean') return String(v);
+  if(typeof v === 'bigint') return v.toString() + 'n';
+  if(typeof v === 'function') return v.toString();
+  if(typeof v === 'symbol') return v.toString();
+  try { return JSON.stringify(v, replacer, 2); }
+  catch { return String(v); }
+}
+function replacer(_, value){
+  if(typeof value === 'bigint') return value.toString() + 'n';
+  if(typeof value === 'function') return '[Function ' + (value.name || 'anonymous') + ']';
+  if(typeof value === 'symbol') return value.toString();
+  return value;
+}
+
+/* Cypher-specific tabular renderer: takes an array of plain objects and
+   renders them as a real <table> with one column per key. Used for any
+   RETURN result that isn't a single bare node. */
+function appendCypherTable(rows){
+  ensureConsoleEmptyCleared();
+  // Collect column names — first row's keys first, then any extras (rare)
+  const cols = [];
+  rows.forEach(r => {
+    if(r && typeof r === 'object'){
+      Object.keys(r).forEach(k => { if(!cols.includes(k)) cols.push(k); });
+    }
+  });
+  if(!cols.length){
+    rows.forEach(r => appendLine('log', [r]));
+    return;
+  }
+  const tbl = document.createElement('table');
+  const thead = document.createElement('thead'); const trH = document.createElement('tr');
+  cols.forEach(c => { const th = document.createElement('th'); th.textContent = c; trH.appendChild(th); });
+  thead.appendChild(trH); tbl.appendChild(thead);
+  const tbody = document.createElement('tbody');
+  rows.forEach(r => {
+    const tr = document.createElement('tr');
+    cols.forEach(col => {
+      const td = document.createElement('td');
+      const v = r ? r[col] : undefined;
+      td.textContent = v === undefined ? '' : formatVal(v);
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+  tbl.appendChild(tbody);
+  const wrap = document.createElement('div'); wrap.className = 'line log';
+  const t = document.createElement('span'); t.className = 't'; t.textContent = ts();
+  const c = document.createElement('span'); c.className = 'c'; c.appendChild(tbl);
+  wrap.append(t, c);
+  consoleOut.appendChild(wrap);
+  consoleOut.scrollTop = consoleOut.scrollHeight;
+}
+
+function bumpStats(kind){
+  if(kind === 'log' || kind === 'info') logCount++;
+  else if(kind === 'warn') warnCount++;
+  else if(kind === 'error') errorCount++;
+  consoleStats.textContent = `${logCount} log · ${warnCount} warn · ${errorCount} err`;
+}
+
+/* ==========================================================
+   Sandbox runner — uses srcdoc iframe so timers + async work,
+   and so the runner cannot pollute or break this page.
+   ========================================================== */
+let sandbox = null;
+let sandboxId = 0;
+
+function killSandbox(){
+  if(sandbox){ sandbox.remove(); sandbox = null; }
+}
+
+/* Run/Stop button state — keeps Stop visible while the iframe is alive
+   (so async setTimeout/Promise output can still arrive). Auto-reverts to
+   Run after a brief idle window with no incoming messages, or immediately
+   if the user clicks Stop. */
+let isRunning = false;
+let idleTimer = null;
+const IDLE_WINDOW_MS = 800;
+
+function setRunButton(running){
+  const btn = document.getElementById('runBtn');
+  if(!btn) return;
+  if(running){
+    btn.classList.remove('run-btn');
+    btn.classList.add('stop-btn');
+    btn.title = 'Stop running code';
+    btn.innerHTML = '■ Stop <span class="k">⌘↵</span>';
+  }else{
+    btn.classList.remove('stop-btn');
+    btn.classList.add('run-btn');
+    btn.title = 'Run code';
+    btn.innerHTML = '▶ Run <span class="k">⌘↵</span>';
+  }
+}
+
+function scheduleIdle(){
+  if(idleTimer) clearTimeout(idleTimer);
+  idleTimer = setTimeout(()=>{
+    idleTimer = null;
+    if(!isRunning) return;
+    killSandbox();
+    isRunning = false;
+    setRunButton(false);
+  }, IDLE_WINDOW_MS);
+}
+
+function stopRun(reason){
+  if(idleTimer){ clearTimeout(idleTimer); idleTimer = null; }
+  const wasRunning = isRunning;
+  killSandbox();
+  isRunning = false;
+  setRunButton(false);
+  if(wasRunning){
+    consoleStatus.classList.remove('running');
+    if(errorCount > 0){ consoleStatus.classList.add('error'); consoleStatus.textContent = 'Failed'; }
+    else { consoleStatus.textContent = reason === 'user' ? 'Stopped' : 'Done'; }
+    if(reason === 'user') appendLine('system', ['■ Stopped by user']);
+  }
+}
+
+/* ==========================================================
+   Cypher emulator — parses a useful subset of Cypher and runs
+   it against an in-memory graph held on the parent. The graph
+   state is then handed to 3d-force-graph for visualisation.
+   ========================================================== */
+const CypherDB = (() => {
+  let nodes = new Map();
+  let edges = new Map();
+  let nextId = 1;
+  function reset(){ nodes = new Map(); edges = new Map(); nextId = 1; }
+  function newId(){ return nextId++; }
+  function snapshot(){
+    return {
+      nodes: Array.from(nodes.values()).map(n => ({ id:n.id, labels:n.labels.slice(), props:{...n.props} })),
+      edges: Array.from(edges.values()).map(e => ({ id:e.id, source:e.source, target:e.target, type:e.type, props:{...e.props} })),
+    };
+  }
+  function addNode(labels, props){
+    const id = newId();
+    nodes.set(id, { id, labels: labels.slice(), props: {...props} });
+    return nodes.get(id);
+  }
+  function addEdge(source, target, type, props){
+    const id = newId();
+    edges.set(id, { id, source, target, type, props: {...props} });
+    return edges.get(id);
+  }
+
+  function parseProps(s){
+    if(!s) return {};
+    const t = s.trim();
+    if(!t || t === '{}') return {};
+    let json = t;
+    json = json.replace(/'((?:[^'\\]|\\.)*)'/g, (m, inner) => '"' + inner.replace(/"/g, '\\"') + '"');
+    json = json.replace(/([{,]\s*)(\w+)\s*:/g, '$1"$2":');
+    try { return JSON.parse(json); }
+    catch(e){ throw new Error('Could not parse property map: ' + t); }
+  }
+
+  function tokenizePattern(text){
+    const out = []; let i = 0;
+    while(i < text.length){
+      while(i < text.length && /\s/.test(text[i])) i++;
+      if(i >= text.length) break;
+      const ch = text[i];
+      if(ch === '('){
+        const start = i; let depth = 0;
+        while(i < text.length){
+          if(text[i] === '{'){
+            let bd = 0;
+            do { if(text[i]==='{') bd++; else if(text[i]==='}') bd--; i++; }
+            while(i < text.length && bd > 0);
+            continue;
+          }
+          if(text[i] === '(') depth++;
+          else if(text[i] === ')'){ depth--; if(depth===0){ i++; break; } }
+          i++;
+        }
+        out.push({ kind:'node', text: text.slice(start+1, i-1) });
+      } else if(ch === '<' || ch === '-'){
+        const start = i;
+        let leftArrow = false, rightArrow = false;
+        if(text[i] === '<'){ leftArrow = true; i++; if(text[i] === '-') i++; }
+        else if(text[i] === '-') i++;
+        if(text[i] === '['){
+          let bd = 0;
+          while(i < text.length){
+            if(text[i] === '{'){
+              let cb = 0;
+              do { if(text[i]==='{') cb++; else if(text[i]==='}') cb--; i++; }
+              while(i < text.length && cb > 0);
+              continue;
+            }
+            if(text[i] === '[') bd++;
+            else if(text[i] === ']'){ bd--; if(bd===0){ i++; break; } }
+            i++;
+          }
+        }
+        if(text[i] === '-') i++;
+        if(text[i] === '>'){ rightArrow = true; i++; }
+        out.push({ kind:'rel', text: text.slice(start, i), leftArrow, rightArrow });
+      } else if(ch === ','){
+        out.push({ kind:'sep' }); i++;
+      } else { i++; }
+    }
+    return out;
+  }
+
+  function parseNodeInner(text){
+    const t = (text || '').trim();
+    let varName = '', label = '', props = {};
+    const m = t.match(/^(\w*)(?::(\w+))?\s*(\{[\s\S]*\})?$/);
+    if(m){
+      varName = m[1] || '';
+      label = m[2] || '';
+      if(m[3]) props = parseProps(m[3]);
+    }
+    return { varName, label, props };
+  }
+  function parseRelInner(text){
+    const m = text.match(/\[([^\]]*)\]/);
+    if(!m) return { varName:'', type:'', props:{} };
+    const tm = m[1].trim().match(/^(\w*)(?::(\w+))?\s*(\{[\s\S]*\})?$/);
+    if(!tm) return { varName:'', type:'', props:{} };
+    return {
+      varName: tm[1] || '',
+      type: tm[2] || '',
+      props: tm[3] ? parseProps(tm[3]) : {},
+    };
+  }
+
+  function execCreate(body){
+    const segs = tokenizePattern(body);
+    const scope = {};
+    let prevNode = null;
+    let pendingRel = null;
+    for(const s of segs){
+      if(s.kind === 'sep'){ prevNode = null; pendingRel = null; continue; }
+      if(s.kind === 'rel'){ pendingRel = s; continue; }
+      if(s.kind === 'node'){
+        const ni = parseNodeInner(s.text);
+        let node;
+        if(ni.varName && scope[ni.varName]){
+          node = scope[ni.varName];
+        } else {
+          node = addNode(ni.label ? [ni.label] : [], ni.props);
+          if(ni.varName) scope[ni.varName] = node;
+        }
+        if(prevNode && pendingRel){
+          const r = parseRelInner(pendingRel.text);
+          const source = pendingRel.rightArrow ? prevNode.id : node.id;
+          const target = pendingRel.rightArrow ? node.id : prevNode.id;
+          addEdge(source, target, r.type || '', r.props);
+        }
+        prevNode = node;
+        pendingRel = null;
+      }
+    }
+    return { type: 'create', summary: 'created' };
+  }
+
+  /* MERGE = find-or-create. For each node in the pattern, look for an
+     existing node that matches the label + every literal property; if
+     none, create a new one. Same for relationships: if no edge already
+     connects the two endpoints with the same type, create one. */
+  function findMatchingNode(label, props){
+    for(const n of nodes.values()){
+      if(label && !n.labels.includes(label)) continue;
+      let ok = true;
+      for(const k in props){ if(n.props[k] !== props[k]){ ok = false; break; } }
+      if(ok) return n;
+    }
+    return null;
+  }
+  function findMatchingEdge(source, target, type, props){
+    for(const e of edges.values()){
+      if(e.source !== source || e.target !== target) continue;
+      if(type && e.type !== type) continue;
+      let ok = true;
+      for(const k in props){ if(e.props[k] !== props[k]){ ok = false; break; } }
+      if(ok) return e;
+    }
+    return null;
+  }
+  function execMerge(body){
+    const segs = tokenizePattern(body);
+    const scope = {};
+    let created = 0, matched = 0;
+    let prevNode = null;
+    let pendingRel = null;
+    for(const s of segs){
+      if(s.kind === 'sep'){ prevNode = null; pendingRel = null; continue; }
+      if(s.kind === 'rel'){ pendingRel = s; continue; }
+      if(s.kind === 'node'){
+        const ni = parseNodeInner(s.text);
+        let node;
+        if(ni.varName && scope[ni.varName]){
+          node = scope[ni.varName];
+        } else {
+          const found = findMatchingNode(ni.label, ni.props);
+          if(found){ node = found; matched++; }
+          else { node = addNode(ni.label ? [ni.label] : [], ni.props); created++; }
+          if(ni.varName) scope[ni.varName] = node;
+        }
+        if(prevNode && pendingRel){
+          const r = parseRelInner(pendingRel.text);
+          const source = pendingRel.rightArrow ? prevNode.id : node.id;
+          const target = pendingRel.rightArrow ? node.id : prevNode.id;
+          const foundEdge = findMatchingEdge(source, target, r.type, r.props);
+          if(foundEdge) matched++;
+          else { addEdge(source, target, r.type || '', r.props); created++; }
+        }
+        prevNode = node;
+        pendingRel = null;
+      }
+    }
+    return { type: 'merge', created, matched };
+  }
+
+  function execMatchPattern(pattern){
+    const segs = tokenizePattern(pattern);
+    if(segs.length === 0) return [];
+    const pathNodes = [];
+    const pathRels = [];
+    for(const s of segs){
+      if(s.kind === 'sep') break;
+      if(s.kind === 'node') pathNodes.push(parseNodeInner(s.text));
+      else if(s.kind === 'rel'){
+        const r = parseRelInner(s.text);
+        pathRels.push({ ...r, leftArrow: s.leftArrow, rightArrow: s.rightArrow });
+      }
+    }
+    if(pathNodes.length === 0) return [];
+
+    const allNodes = Array.from(nodes.values());
+    const allEdges = Array.from(edges.values());
+    const out = [];
+    function bind(idx, binding, prev){
+      const np = pathNodes[idx];
+      const candidates = allNodes.filter(n => {
+        if(np.label && !n.labels.includes(np.label)) return false;
+        for(const k in np.props){
+          if(n.props[k] !== np.props[k]) return false;
+        }
+        if(np.varName && binding[np.varName] && binding[np.varName].id !== n.id) return false;
+        return true;
+      });
+      for(const n of candidates){
+        let edgeUsed = null;
+        if(idx > 0){
+          const rel = pathRels[idx - 1];
+          const matchEdge = allEdges.find(e => {
+            if(rel.type && e.type !== rel.type) return false;
+            if(rel.rightArrow) return e.source === prev.id && e.target === n.id;
+            if(rel.leftArrow)  return e.source === n.id && e.target === prev.id;
+            return (e.source === prev.id && e.target === n.id) ||
+                   (e.source === n.id && e.target === prev.id);
+          });
+          if(!matchEdge) continue;
+          edgeUsed = matchEdge;
+        }
+        const next = { ...binding };
+        if(np.varName) next[np.varName] = n;
+        if(edgeUsed && pathRels[idx-1].varName) next[pathRels[idx-1].varName] = edgeUsed;
+        if(idx === pathNodes.length - 1) out.push(next);
+        else bind(idx + 1, next, n);
+      }
+    }
+    bind(0, {}, null);
+    return out;
+  }
+
+  function parseLiteral(s){
+    const t = s.trim();
+    if(t.startsWith('"') || t.startsWith("'")) return t.slice(1, -1).replace(/\\(.)/g, '$1');
+    if(t.startsWith('[') && t.endsWith(']')){
+      const inner = t.slice(1,-1).trim();
+      if(!inner) return [];
+      const items = []; let depth = 0, cur = '';
+      for(const ch of inner){
+        if(ch === ',' && depth === 0){ items.push(cur); cur = ''; }
+        else { if('[{('.includes(ch)) depth++; else if(']}'.includes(ch) || ch===')') depth--; cur += ch; }
+      }
+      if(cur.trim()) items.push(cur);
+      return items.map(x => parseLiteral(x.trim()));
+    }
+    if(/^-?\d+(\.\d+)?$/.test(t)) return Number(t);
+    if(t.toLowerCase() === 'true') return true;
+    if(t.toLowerCase() === 'false') return false;
+    if(t.toLowerCase() === 'null') return null;
+    return t;
+  }
+
+  function evalWhere(expr, binding){
+    if(!expr) return true;
+    const orParts = expr.split(/\s+OR\s+/i);
+    if(orParts.length > 1) return orParts.some(p => evalWhere(p, binding));
+    const andParts = expr.split(/\s+AND\s+/i);
+    if(andParts.length > 1) return andParts.every(p => evalWhere(p, binding));
+    const m = expr.trim().match(/^(\w+)(?:\.(\w+))?\s*(=|<>|!=|>=|<=|>|<|IN)\s*(.+)$/i);
+    if(!m) return true;
+    const [, varName, propName, op, valueText] = m;
+    const node = binding[varName];
+    if(!node) return false;
+    const lhs = propName ? (node.props ? node.props[propName] : undefined) : node;
+    const rhs = parseLiteral(valueText);
+    switch(op.toUpperCase()){
+      case '=':  return lhs == rhs;
+      case '<>': case '!=': return lhs != rhs;
+      case '>':  return lhs > rhs;
+      case '>=': return lhs >= rhs;
+      case '<':  return lhs < rhs;
+      case '<=': return lhs <= rhs;
+      case 'IN': return Array.isArray(rhs) && rhs.includes(lhs);
+    }
+    return false;
+  }
+
+  function evalReturn(returnText, rows){
+    let work = returnText.trim();
+    let distinct = false;
+    if(/^DISTINCT\s+/i.test(work)){ distinct = true; work = work.replace(/^DISTINCT\s+/i, ''); }
+    const items = []; let depth = 0, cur = '';
+    for(const ch of work){
+      if(ch === ',' && depth === 0){ items.push(cur); cur = ''; }
+      else { if('[{('.includes(ch)) depth++; else if(']}'.includes(ch) || ch===')') depth--; cur += ch; }
+    }
+    if(cur.trim()) items.push(cur);
+    const projItems = items.map(it => {
+      const t = it.trim();
+      const am = t.match(/^(.*?)\s+AS\s+(\w+)\s*$/i);
+      const expr = am ? am[1].trim() : t;
+      const alias = am ? am[2].trim() : t;
+      const aggM = expr.match(/^(count|sum|avg|min|max|collect)\(\s*(\*|\w+(?:\.\w+)?)\s*\)$/i);
+      return { expr, alias, agg: aggM ? aggM[1].toLowerCase() : null, aggArg: aggM ? aggM[2] : null };
+    });
+    const evalOne = (expr, row) => {
+      if(!expr) return undefined;
+      const parts = expr.split('.');
+      const v = row[parts[0]];
+      if(parts.length === 2) return v && v.props ? v.props[parts[1]] : undefined;
+      return v;
+    };
+    const aggregate = (p, vals) => {
+      const nums = vals.filter(v => typeof v === 'number');
+      switch(p.agg){
+        case 'count':   return vals.length;
+        case 'sum':     return nums.reduce((a,b)=>a+b, 0);
+        case 'avg':     return nums.length ? nums.reduce((a,b)=>a+b,0)/nums.length : null;
+        case 'min':     return nums.length ? Math.min.apply(null, nums) : null;
+        case 'max':     return nums.length ? Math.max.apply(null, nums) : null;
+        case 'collect': return vals;
+      }
+      return null;
+    };
+    const hasAgg  = projItems.some(p => p.agg);
+    const groupBy = projItems.filter(p => !p.agg);
+    if(hasAgg && groupBy.length === 0){
+      const out = {};
+      projItems.forEach(p => {
+        const vals = rows.map(r => p.aggArg === '*' ? 1 : evalOne(p.aggArg, r)).filter(v => v !== undefined);
+        out[p.alias] = aggregate(p, vals);
+      });
+      return [out];
+    }
+    if(hasAgg){
+      const groups = new Map();
+      rows.forEach(r => {
+        const key = JSON.stringify(groupBy.map(p => evalOne(p.expr, r)));
+        if(!groups.has(key)) groups.set(key, []);
+        groups.get(key).push(r);
+      });
+      const out = [];
+      groups.forEach(grpRows => {
+        const row = {};
+        groupBy.forEach(p => { row[p.alias] = evalOne(p.expr, grpRows[0]); });
+        projItems.filter(p => p.agg).forEach(p => {
+          const vals = grpRows.map(r => p.aggArg === '*' ? 1 : evalOne(p.aggArg, r)).filter(v => v !== undefined);
+          row[p.alias] = aggregate(p, vals);
+        });
+        out.push(row);
+      });
+      return out;
+    }
+    const projected = rows.map(r => {
+      const row = {};
+      projItems.forEach(p => { row[p.alias] = evalOne(p.expr, r); });
+      if(projItems.length === 1 && !projItems[0].expr.includes('.') && projItems[0].expr === projItems[0].alias){
+        return r[projItems[0].expr] ?? row;
+      }
+      return row;
+    });
+    if(distinct){
+      const seen = new Set();
+      return projected.filter(p => {
+        const k = JSON.stringify(p);
+        if(seen.has(k)) return false;
+        seen.add(k); return true;
+      });
+    }
+    return projected;
+  }
+
+  function applyOrder(rows, orderText){
+    const items = orderText.split(',').map(s => {
+      const m = s.trim().match(/^(.+?)\s*(ASC|DESC)?$/i);
+      return { expr: m[1].trim(), dir: (m[2] || 'ASC').toUpperCase() === 'DESC' ? -1 : 1 };
+    });
+    const resolve = (expr, row) => {
+      if(row && expr in row) return row[expr];
+      const parts = expr.split('.');
+      const v = row && row[parts[0]];
+      if(parts.length === 2 && v && v.props) return v.props[parts[1]];
+      return undefined;
+    };
+    return rows.slice().sort((a,b) => {
+      for(const { expr, dir } of items){
+        const av = resolve(expr, a), bv = resolve(expr, b);
+        if(av === bv) continue;
+        return (av > bv ? 1 : -1) * dir;
+      }
+      return 0;
+    });
+  }
+
+  function parseMatchStmt(stmt){
+    const re = /\b(MATCH|WHERE|RETURN|ORDER\s+BY|LIMIT|SKIP|DELETE|SET|REMOVE)\b/gi;
+    const matches = [...stmt.matchAll(re)];
+    const parts = {};
+    for(let i = 0; i < matches.length; i++){
+      const kw = matches[i][1].toUpperCase().replace(/\s+/g,' ');
+      const start = matches[i].index + matches[i][0].length;
+      const end = i+1 < matches.length ? matches[i+1].index : stmt.length;
+      const body = stmt.slice(start, end).trim();
+      if(kw === 'MATCH') parts.match = body;
+      else if(kw === 'WHERE') parts.where = body;
+      else if(kw === 'RETURN') parts.return_ = body;
+      else if(kw === 'ORDER BY') parts.orderBy = body;
+      else if(kw === 'LIMIT') parts.limit = parseInt(body, 10);
+      else if(kw === 'SKIP') parts.skip = parseInt(body, 10);
+      else if(kw === 'DELETE') parts.delete_ = body;
+      else if(kw === 'SET') parts.set = body;
+      else if(kw === 'REMOVE') parts.remove = body;
+    }
+    return parts;
+  }
+
+  /* SET/REMOVE — apply property updates / label changes to bound rows.
+     Supported syntax:
+       SET    var.prop = value    (assign or overwrite a property)
+       SET    var:Label           (add a label to a node)
+       REMOVE var.prop            (delete a property)
+       REMOVE var:Label           (remove a label from a node)
+     Multiple assignments comma-separated. */
+  function splitTopLevel(text, sep){
+    const out = []; let depth = 0, cur = '';
+    for(const ch of text){
+      if(ch === sep && depth === 0){ out.push(cur); cur = ''; }
+      else { if('[{('.includes(ch)) depth++; else if(']}'.includes(ch) || ch===')') depth--; cur += ch; }
+    }
+    if(cur.trim()) out.push(cur);
+    return out;
+  }
+  function execSet(setText, rows){
+    const items = splitTopLevel(setText, ',');
+    let updated = 0;
+    const seen = new Set();
+    for(const r of rows){
+      for(const itemRaw of items){
+        const item = itemRaw.trim();
+        const propM = item.match(/^(\w+)\.(\w+)\s*=\s*(.+)$/);
+        if(propM){
+          const [, varName, propName, valueText] = propM;
+          const target = r[varName];
+          if(target && target.props){
+            target.props[propName] = parseLiteral(valueText);
+            const key = (target.id || '') + ':' + propName;
+            if(!seen.has(key)){ seen.add(key); updated++; }
+          }
+          continue;
+        }
+        const labelM = item.match(/^(\w+):(\w+)$/);
+        if(labelM){
+          const [, varName, label] = labelM;
+          const target = r[varName];
+          if(target && Array.isArray(target.labels) && !target.labels.includes(label)){
+            target.labels.push(label);
+            const key = (target.id || '') + ':L:' + label;
+            if(!seen.has(key)){ seen.add(key); updated++; }
+          }
+          continue;
+        }
+      }
+    }
+    return updated;
+  }
+  function execRemove(removeText, rows){
+    const items = splitTopLevel(removeText, ',');
+    let removed = 0;
+    const seen = new Set();
+    for(const r of rows){
+      for(const itemRaw of items){
+        const item = itemRaw.trim();
+        const propM = item.match(/^(\w+)\.(\w+)$/);
+        if(propM){
+          const [, varName, propName] = propM;
+          const target = r[varName];
+          if(target && target.props && propName in target.props){
+            delete target.props[propName];
+            const key = (target.id || '') + ':' + propName;
+            if(!seen.has(key)){ seen.add(key); removed++; }
+          }
+          continue;
+        }
+        const labelM = item.match(/^(\w+):(\w+)$/);
+        if(labelM){
+          const [, varName, label] = labelM;
+          const target = r[varName];
+          if(target && Array.isArray(target.labels)){
+            const idx = target.labels.indexOf(label);
+            if(idx !== -1){
+              target.labels.splice(idx, 1);
+              const key = (target.id || '') + ':L:' + label;
+              if(!seen.has(key)){ seen.add(key); removed++; }
+            }
+          }
+          continue;
+        }
+      }
+    }
+    return removed;
+  }
+
+  function execStatement(stmt){
+    const trimmed = stmt.trim();
+    if(!trimmed) return null;
+    const upper = trimmed.toUpperCase();
+    if(upper.startsWith('CREATE')) return execCreate(trimmed.slice('CREATE'.length).trim());
+    if(upper.startsWith('MERGE'))  return execMerge(trimmed.slice('MERGE'.length).trim());
+    if(upper.startsWith('MATCH')){
+      const parts = parseMatchStmt(trimmed);
+      let rows = execMatchPattern(parts.match || '');
+      if(parts.where) rows = rows.filter(r => evalWhere(parts.where, r));
+      if(parts.set){
+        const updated = execSet(parts.set, rows);
+        return { type: 'update', updated, matched: rows.length };
+      }
+      if(parts.remove){
+        const removed = execRemove(parts.remove, rows);
+        return { type: 'update', updated: removed, matched: rows.length, removed: true };
+      }
+      if(parts.return_){
+        let out = evalReturn(parts.return_, rows);
+        if(parts.orderBy) out = applyOrder(out, parts.orderBy);
+        if(parts.skip != null) out = out.slice(parts.skip);
+        if(parts.limit != null) out = out.slice(0, parts.limit);
+        return { type: 'return', rows: out };
+      }
+      if(parts.delete_){
+        const toDelete = parts.delete_.trim().split(/\s*,\s*/);
+        const seenIds = new Set();
+        rows.forEach(r => {
+          toDelete.forEach(v => {
+            const node = r[v];
+            if(node && !seenIds.has(node.id)){
+              seenIds.add(node.id);
+              for(const [eid, e] of edges){
+                if(e.source === node.id || e.target === node.id) edges.delete(eid);
+              }
+              nodes.delete(node.id);
+            }
+          });
+        });
+        return { type: 'delete', count: seenIds.size };
+      }
+      return { type: 'match', count: rows.length };
+    }
+    throw new Error('Unsupported clause: ' + trimmed.slice(0, 50));
+  }
+
+  function splitStatements(text){
+    let s = text.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
+    const lines = s.split('\n');
+    const stmts = []; let cur = [];
+    // Only top-level statement keywords break the boundary; sub-clauses
+    // like WHERE/RETURN/ORDER BY/LIMIT/SKIP belong to the previous MATCH.
+    const startKW = /^\s*(CREATE|MATCH|MERGE|UNWIND|CALL)\b/i;
+    for(const line of lines){
+      if(startKW.test(line) && cur.some(l => l.trim())){
+        stmts.push(cur.join('\n'));
+        cur = [];
+      }
+      cur.push(line);
+    }
+    if(cur.some(l => l.trim())) stmts.push(cur.join('\n'));
+    return stmts.map(s => s.replace(/;\s*$/, '')).filter(s => s.trim());
+  }
+
+  function exec(text){
+    const stmts = splitStatements(text);
+    const results = [];
+    for(const stmt of stmts){
+      const r = execStatement(stmt);
+      if(r) results.push(r);
+    }
+    return results;
+  }
+
+  return { reset, exec, snapshot, getNodes: () => Array.from(nodes.values()), getEdges: () => Array.from(edges.values()) };
+})();
+
+/* ==========================================================
+   3D graph visualisation — 3d-force-graph from CDN
+   ========================================================== */
+const vizHostEl  = document.getElementById('vizHost');
+const vizEmptyEl = document.getElementById('vizEmpty');
+const vizStatsEl = document.getElementById('vizStats');
+const vizFitBtn  = document.getElementById('vizFitBtn');
+let vizGraph = null;
+
+const LABEL_COLORS = {
+  Person:  '#4FC3F7',
+  Company: '#FF8A65',
+  Movie:   '#BA68C8',
+  Place:   '#81C784',
+};
+function colorForLabels(labels){
+  for(const l of labels) if(LABEL_COLORS[l]) return LABEL_COLORS[l];
+  if(labels.length) return '#9bd3ff';
+  return '#7c5cff';
+}
+
+function initViz(){
+  if(typeof ForceGraph3D === 'undefined'){ vizEmptyEl.textContent = 'Could not load 3d-force-graph'; return; }
+  vizGraph = ForceGraph3D()(vizHostEl)
+    .backgroundColor('rgba(0,0,0,0)')
+    .nodeLabel(n => {
+      const props = Object.entries(n.props).map(([k,v]) => '<b>'+k+'</b>: '+v).join('<br>');
+      return '<div style="background:rgba(8,12,28,0.95);padding:8px 12px;border-radius:8px;border:1px solid rgba(1,139,255,0.5);color:#cfeaff;font-size:12px"><b>'+(n.labels.join(':') || '(no label)')+'</b><br>'+props+'</div>';
+    })
+    .nodeColor(n => colorForLabels(n.labels))
+    .nodeOpacity(0.95)
+    .nodeRelSize(6)
+    /* Render the first property's value as a billboard text sprite floating
+       above each sphere. nodeThreeObjectExtend(true) means we keep the
+       default sphere AND add this sprite — best of both worlds. */
+    .nodeThreeObjectExtend(true)
+    .nodeThreeObject(n => {
+      if(typeof SpriteText !== 'function') return null;
+      const keys = Object.keys(n.props || {});
+      let text;
+      if(keys.length){
+        const v = n.props[keys[0]];
+        text = String(v == null ? '' : v);
+      } else {
+        text = (n.labels[0] || 'node') + '#' + n.id;
+      }
+      // Truncate very long values
+      if(text.length > 24) text = text.slice(0, 22) + '…';
+      const sprite = new SpriteText(text);
+      sprite.color = '#ffffff';
+      sprite.backgroundColor = 'rgba(8,12,28,0.85)';
+      sprite.borderColor = colorForLabels(n.labels);
+      sprite.borderWidth = 0.5;
+      sprite.borderRadius = 3;
+      sprite.padding = [3, 5];
+      sprite.fontFace = 'Inter, system-ui, sans-serif';
+      sprite.fontWeight = '600';
+      sprite.textHeight = 4;
+      // Lift the label slightly above the sphere so it doesn't sit dead-center
+      sprite.position.y = 9;
+      return sprite;
+    })
+    .linkLabel(l => l.type ? ':'+l.type : '')
+    .linkColor(() => 'rgba(255,255,255,0.5)')
+    .linkOpacity(0.7)
+    .linkDirectionalArrowLength(4)
+    .linkDirectionalArrowRelPos(1)
+    .linkDirectionalParticles(2)
+    .linkDirectionalParticleWidth(1.5)
+    .linkDirectionalParticleColor(() => '#4FC3F7')
+    .graphData({ nodes: [], links: [] });
+
+  function fit(){
+    const r = vizHostEl.getBoundingClientRect();
+    if(vizGraph && r.width > 0 && r.height > 0) vizGraph.width(r.width).height(r.height);
+  }
+  fit();
+  window.addEventListener('resize', fit);
+  setTimeout(fit, 100);
+  if(vizFitBtn){
+    vizFitBtn.addEventListener('click', () => { if(vizGraph) vizGraph.zoomToFit(600, 60); });
+  }
+  const ro = new ResizeObserver(() => fit());
+  ro.observe(vizHostEl);
+}
+
+function updateViz(){
+  if(!vizGraph) return;
+  const snap = CypherDB.snapshot();
+  const data = {
+    nodes: snap.nodes.map(n => ({
+      id: n.id,
+      name: n.props.name || ((n.labels[0] || 'node') + '#' + n.id),
+      labels: n.labels,
+      props: n.props,
+    })),
+    links: snap.edges.map(e => ({
+      source: e.source, target: e.target,
+      type: e.type, props: e.props,
+    })),
+  };
+  vizGraph.graphData(data);
+  vizStatsEl.textContent = data.nodes.length + ' node' + (data.nodes.length===1?'':'s') + ' · ' + data.links.length + ' rel' + (data.links.length===1?'':'s');
+  vizEmptyEl.style.display = data.nodes.length ? 'none' : '';
+  if(data.nodes.length) setTimeout(() => vizGraph.zoomToFit(700, 60), 250);
+}
+
+/* ==========================================================
+   Run — synchronous Cypher execution
+   ========================================================== */
+function runCode(){
+  if(!state.active){ toast('No file selected'); return; }
+  const text = editor.getValue();
+  consoleOut.innerHTML = '';
+  logCount = warnCount = errorCount = 0;
+  consoleStats.textContent = '';
+  consoleStatus.classList.remove('error');
+  consoleStatus.classList.add('running');
+  consoleStatus.textContent = 'Running…';
+  appendLine('system', ['▶ Running ' + state.active + ' — graph reset']);
+
+  CypherDB.reset();
+  runStartTime = performance.now();
+  let hadError = false;
+  try{
+    const results = CypherDB.exec(text);
+    for(const r of results){
+      if(r.type === 'return'){
+        if(!r.rows.length){ appendLine('system', ['(no rows)']); }
+        else {
+          // Detect tabular shape: all rows are plain objects (not raw nodes)
+          const isNode = (v) => v && typeof v === 'object' && 'id' in v && Array.isArray(v.labels) && v.props;
+          const tabular = r.rows.every(row => row && typeof row === 'object' && !isNode(row));
+          if(tabular){
+            appendCypherTable(r.rows);
+            bumpStats('log');
+          } else {
+            r.rows.forEach(row => { appendLine('log', [row]); bumpStats('log'); });
+          }
+        }
+      } else if(r.type === 'create'){
+        appendLine('system', ['+ pattern created']);
+      } else if(r.type === 'merge'){
+        appendLine('system', ['~ merged: ' + r.matched + ' matched, ' + r.created + ' created']);
+      } else if(r.type === 'update'){
+        const verb = r.removed ? 'removed' : 'set';
+        appendLine('system', ['~ ' + verb + ' ' + r.updated + ' propert' + (r.updated===1?'y':'ies') + ' across ' + r.matched + ' match' + (r.matched===1?'':'es')]);
+      } else if(r.type === 'delete'){
+        appendLine('system', ['- deleted ' + r.count + ' node' + (r.count===1?'':'s') + ' (and connected rels)']);
+      }
+    }
+    if(results.length === 0){
+      appendLine('system', ['(empty query)']);
+    }
+  } catch(err){
+    hadError = true;
+    appendLine('error', [{ __t:'error', name: 'CypherError', message: err.message || String(err), stack: '' }]);
+    bumpStats('error');
+  }
+
+  consoleStatus.classList.remove('running');
+  if(hadError){ consoleStatus.classList.add('error'); consoleStatus.textContent = 'Failed'; }
+  else { consoleStatus.textContent = 'Done'; }
+
+  updateViz();
+}
+
+/* ==========================================================
+   Toast helper
+   ========================================================== */
+const toastEl = document.getElementById('toast');
+let toastTimer;
+function toast(msg, kind){
+  toastEl.textContent = msg;
+  toastEl.classList.toggle('error', kind === 'error');
+  toastEl.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=> toastEl.classList.remove('show'), 1800);
+}
+
+/* ==========================================================
+   Drag-to-resize splitter between editor and console
+   ========================================================== */
+(function initSplitter(){
+  const pane     = document.querySelector('.editor-pane');
+  const splitter = document.getElementById('splitter');
+  const editorCardEl_  = document.querySelector('.editor-pane > .editor-card');
+  const consoleCardEl_ = document.querySelector('.editor-pane > .console-card');
+  if(!pane || !splitter || !editorCardEl_ || !consoleCardEl_) return;
+  const HANDLE_W = 6, MIN_PANE = 160;
+  const STORAGE = 'mongo-lab-split-ratio';
+  let savedRatio = null;
+  try { const v = parseFloat(localStorage.getItem(STORAGE)); if(v > 0 && v < 1) savedRatio = v; } catch {}
+  function applyRatio(ratio){
+    const total = pane.clientWidth - parseFloat(getComputedStyle(pane).paddingLeft) * 2 - HANDLE_W - 14 * 2;
+    if(total <= 0) return;
+    const left  = Math.max(MIN_PANE, Math.min(total - MIN_PANE, total * ratio));
+    const right = total - left;
+    pane.style.setProperty('--col-1', left + 'px');
+    pane.style.setProperty('--col-2', right + 'px');
+    if(typeof editor !== 'undefined' && editor.refresh){
+      clearTimeout(applyRatio._t);
+      applyRatio._t = setTimeout(() => editor.refresh(), 30);
+    }
+  }
+  if(savedRatio != null) applyRatio(savedRatio);
+
+  let drag = null;
+  function start(e){
+    e.preventDefault();
+    const rect = pane.getBoundingClientRect();
+    const padL = parseFloat(getComputedStyle(pane).paddingLeft) || 0;
+    drag = {
+      paneLeft: rect.left + padL,
+      total: pane.clientWidth - padL * 2 - HANDLE_W - 14 * 2,
+    };
+    splitter.classList.add('active');
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  }
+  function move(e){
+    if(!drag) return;
+    let editorPx = e.clientX - drag.paneLeft;
+    editorPx = Math.max(MIN_PANE, Math.min(drag.total - MIN_PANE, editorPx));
+    applyRatio(editorPx / drag.total);
+  }
+  function end(){
+    if(!drag) return;
+    drag = null;
+    splitter.classList.remove('active');
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+    const total = pane.clientWidth - parseFloat(getComputedStyle(pane).paddingLeft) * 2 - HANDLE_W - 14 * 2;
+    const colL = parseFloat(pane.style.getPropertyValue('--col-1')) || total / 2;
+    try { localStorage.setItem(STORAGE, (colL / total).toFixed(4)); } catch {}
+  }
+  splitter.addEventListener('pointerdown', start);
+  window.addEventListener('pointermove', move);
+  window.addEventListener('pointerup',   end);
+  window.addEventListener('pointercancel', end);
+  splitter.addEventListener('dblclick', () => {
+    pane.style.removeProperty('--col-1');
+    pane.style.removeProperty('--col-2');
+    try { localStorage.removeItem(STORAGE); } catch {}
+    if(typeof editor !== 'undefined' && editor.refresh) setTimeout(() => editor.refresh(), 30);
+  });
+  window.addEventListener('resize', () => {
+    if(savedRatio != null){
+      const v = parseFloat(localStorage.getItem(STORAGE));
+      if(v > 0 && v < 1) applyRatio(v);
+    }
+    if(typeof editor !== 'undefined' && editor.refresh){
+      clearTimeout(applyRatio._t);
+      applyRatio._t = setTimeout(() => editor.refresh(), 60);
+    }
+  });
+})();
+
+/* ==========================================================
+   Boot
+   ========================================================== */
+(async function boot(){
+  // 3D graph viz init (must happen after DOM is ready and the host node is sized)
+  initViz();
+  // Pre-fetch line counts for sidebar in the background
+  FILES.forEach(f => loadFile(f.file));
+  // Activate first file (loads the editor; does NOT auto-run)
+  await activate(FILES[0].file);
+})();
+</script>
+</body>
+</html>
