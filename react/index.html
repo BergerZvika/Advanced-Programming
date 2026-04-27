@@ -1,0 +1,3036 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>React Lab — Advanced Programming</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/theme/dracula.min.css">
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/xml/xml.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/javascript/javascript.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/jsx/jsx.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/css/css.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/htmlmixed/htmlmixed.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/edit/closebrackets.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/edit/matchbrackets.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/selection/active-line.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/comment/comment.min.js"></script>
+
+<style>
+:root{
+  --bg-0:#06060c;
+  --bg-1:#0c0c18;
+  --surface:rgba(255,255,255,0.04);
+  --surface-2:rgba(255,255,255,0.07);
+  --border:rgba(255,255,255,0.09);
+  --border-strong:rgba(255,255,255,0.18);
+  --text:#e8e8f3;
+  --text-dim:#9a9ab0;
+  --text-faint:#666680;
+  --accent:#7c5cff;
+  --accent-2:#35d0ff;
+  --accent-3:#ff6ec7;
+  --react-cyan:#61dafb;
+  --react-dark:#20232a;
+  --success:#38d39f;
+  --warn:#ffb547;
+  --error:#ff5a7a;
+  --radius:18px;
+  --radius-sm:12px;
+  --shadow-lg: 0 30px 80px -30px rgba(97,218,251,0.32), 0 10px 30px -15px rgba(0,0,0,0.6);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg-0);color:var(--text);font-family:'Inter',system-ui,sans-serif;height:100%;overflow:hidden}
+code,pre,textarea,.mono,.CodeMirror{font-family:'JetBrains Mono',ui-monospace,monospace}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+
+#bg-3d{
+  position:fixed; inset:0; z-index:-2; display:block;
+  background:
+    radial-gradient(1200px 700px at 8% -10%, rgba(97,218,251,0.28), transparent 60%),
+    radial-gradient(1000px 600px at 110% 0%,  rgba(124,92,255,0.20), transparent 60%),
+    radial-gradient(900px 600px at 50% 130%,  rgba(53,208,255,0.16), transparent 60%),
+    linear-gradient(180deg, #050510 0%, #08081a 50%, #050510 100%);
+}
+body::after{
+  content:""; position:fixed; inset:0; z-index:-1; pointer-events:none; opacity:.32;
+  background-image:
+    radial-gradient(1px 1px at 20% 30%, #ffffff 100%, transparent),
+    radial-gradient(1px 1px at 70% 60%, #ffffff 100%, transparent),
+    radial-gradient(1.5px 1.5px at 40% 80%, #ffffff 100%, transparent),
+    radial-gradient(1px 1px at 85% 20%, #ffffff 100%, transparent),
+    radial-gradient(1px 1px at 15% 65%, #ffffff 100%, transparent);
+  background-size: 1200px 800px;
+  mask-image:linear-gradient(180deg,transparent,#000 20%,#000 80%,transparent);
+}
+
+.app{ display:grid; grid-template-columns: 320px 1fr; height:100vh }
+@media (max-width: 980px){
+  .app{ grid-template-columns: 1fr; height:auto; min-height:100vh; overflow:auto }
+  html,body{ overflow:auto; height:auto }
+}
+
+.sidebar{
+  padding:22px 16px; position:relative; z-index:5;
+  background:linear-gradient(180deg, rgba(12,12,24,0.85), rgba(8,8,18,0.85));
+  backdrop-filter: blur(22px) saturate(140%);
+  -webkit-backdrop-filter: blur(22px) saturate(140%);
+  border-right:1px solid var(--border);
+  overflow-y:auto; scrollbar-width:thin;
+}
+.sidebar::-webkit-scrollbar{width:6px}
+.sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.08);border-radius:6px}
+
+.brand{ display:flex;align-items:center;gap:12px;margin-bottom:18px;padding:6px 4px;border-radius:14px;user-select:none }
+.brand-cube{
+  width:46px;height:46px;border-radius:12px;position:relative;
+  background:linear-gradient(135deg, var(--react-cyan), #4dc4e8);
+  box-shadow:
+    0 12px 30px -10px rgba(97,218,251,0.55),
+    inset 0 0 0 1px rgba(255,255,255,0.25),
+    inset 0 -10px 20px -8px rgba(0,0,0,0.35);
+  transform: rotate(-6deg);
+  display:flex;align-items:center;justify-content:center;
+  font-weight:800;font-size:18px;color:var(--react-dark);letter-spacing:0.5px;
+  animation: floatY 5s ease-in-out infinite;
+}
+.brand-cube::after{
+  content:""; position:absolute; inset:auto -6px -6px auto;
+  width:100%;height:100%; border-radius:12px;
+  background:linear-gradient(135deg, rgba(97,218,251,0.5), rgba(124,92,255,0.4));
+  filter:blur(14px); z-index:-1;
+}
+@keyframes floatY{
+  0%,100%{ transform: rotate(-6deg) translateY(0) }
+  50%   { transform: rotate(-2deg) translateY(-4px) }
+}
+.brand h1{margin:0;font-size:17px;font-weight:700;letter-spacing:-0.02em}
+.brand .sub{font-size:11px;color:var(--text-faint);letter-spacing:0.14em;text-transform:uppercase}
+
+.search-wrap{ position:relative; margin-bottom:14px }
+.search{
+  width:100%;padding:10px 14px 10px 34px;border-radius:12px;border:1px solid var(--border);
+  background:rgba(255,255,255,0.03);color:var(--text);font-size:13.5px;outline:none;
+  transition:border-color .2s, box-shadow .2s;
+}
+.search:focus{border-color:var(--react-cyan);box-shadow:0 0 0 3px rgba(97,218,251,0.22)}
+.search-wrap::before{
+  content:"⌕"; position:absolute; left:11px; top:50%; transform:translateY(-50%);
+  color:var(--text-faint); font-size:14px; pointer-events:none;
+}
+
+.section-label{
+  font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:var(--text-faint);
+  padding:14px 8px 6px;
+}
+
+.file-list{ list-style:none; padding:0; margin:0 }
+.file-list li{ margin:2px 0 }
+.file-btn{
+  width:100%;display:flex;align-items:center;gap:10px;
+  background:transparent;color:var(--text-dim);
+  padding:10px 12px;border-radius:10px;font-size:13.5px;font-weight:500;text-align:left;
+  transition: background .15s, color .15s, transform .15s, box-shadow .2s;
+  border:1px solid transparent;
+}
+.file-btn:hover{ background:var(--surface); color:var(--text); transform:translateX(2px) }
+.file-btn.active{
+  background:linear-gradient(135deg,rgba(97,218,251,0.20),rgba(124,92,255,0.10));
+  color:#fff; border-color:rgba(97,218,251,0.32);
+  box-shadow: inset 0 0 0 1px rgba(97,218,251,0.18), 0 8px 24px -16px rgba(97,218,251,0.55);
+}
+.file-btn .ico{
+  width:24px; height:24px; flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  border-radius:6px;
+  background:linear-gradient(135deg, var(--react-cyan), #4dc4e8);
+  color:var(--react-dark); font-weight:800; font-size:9.5px; letter-spacing:0.5px;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.2);
+}
+.file-btn .label{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+.file-btn .lines{
+  font-size:10.5px; color:var(--text-faint); padding:1px 6px; border-radius:20px;
+  background:rgba(255,255,255,0.04); flex-shrink:0;
+}
+.file-btn.active .lines{ background:rgba(97,218,251,0.20); color:#cdf3ff }
+.file-btn.dirty::before{
+  content:""; width:6px; height:6px; border-radius:50%;
+  background:var(--react-cyan); flex-shrink:0;
+  box-shadow: 0 0 8px var(--react-cyan);
+}
+.file-group-head{
+  list-style:none; padding:14px 12px 4px;
+  font-size:10.5px; letter-spacing:0.18em; text-transform:uppercase;
+  color:var(--text-faint); font-weight:600;
+}
+
+.back-link{
+  display:flex;align-items:center;gap:8px;
+  margin-top:18px; padding:10px 12px;border-radius:10px;
+  color:var(--text-dim); font-size:13px; text-decoration:none;
+  border:1px solid var(--border);
+  transition: background .15s, color .15s, border-color .15s;
+}
+.back-link:hover{ background:var(--surface); color:var(--text); border-color:var(--border-strong) }
+
+.editor-pane{
+  position:relative; padding:22px;
+  display:grid;
+  grid-template-columns: var(--col-1, 1fr) 6px var(--col-2, 1fr);
+  grid-template-rows: auto 1fr;
+  grid-template-areas:
+    "topbar  topbar  topbar"
+    "editor  split   preview";
+  gap:14px;
+  min-width:0; min-height:0; overflow:hidden;
+}
+.editor-pane > .top-bar     { grid-area: topbar }
+.editor-pane > .editor-card { grid-area: editor;  min-width: 0 }
+.editor-pane > .preview-card{ grid-area: preview; min-width: 0 }
+
+.splitter{
+  grid-area: split; cursor: col-resize; position: relative;
+  background: transparent; user-select: none; touch-action: none;
+}
+.splitter::before{
+  content: ""; position: absolute;
+  left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: 4px; height: 64px; border-radius: 2px;
+  background: var(--border-strong);
+  transition: background .18s, height .18s, box-shadow .18s;
+}
+.splitter:hover::before, .splitter.active::before{
+  background: linear-gradient(180deg, var(--react-cyan), var(--accent));
+  height: 110px;
+  box-shadow: 0 0 16px -2px rgba(97,218,251,0.55);
+}
+
+@media (max-width: 980px){
+  .editor-pane{
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr 1fr;
+    grid-template-areas: "topbar" "editor" "preview";
+  }
+  .splitter{ display:none }
+}
+
+.top-bar{
+  display:flex;align-items:center;gap:14px; padding:14px 18px;
+  background: linear-gradient(135deg, rgba(20,20,40,0.7), rgba(12,12,24,0.7));
+  border:1px solid var(--border); border-radius: var(--radius);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  box-shadow: var(--shadow-lg);
+}
+.file-meta{ display:flex; align-items:center; gap:12px; min-width:0 }
+.file-icon{
+  width:36px;height:36px;border-radius:10px;
+  background:linear-gradient(135deg, var(--react-cyan), #4dc4e8);
+  color:var(--react-dark); font-weight:800; font-size:13px; letter-spacing:0.5px;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow: 0 6px 18px -8px rgba(97,218,251,0.55), inset 0 0 0 1px rgba(255,255,255,0.25);
+  flex-shrink:0;
+}
+.file-name{ font-size:15px; font-weight:600; letter-spacing:-0.01em }
+.file-name .dirty-mark{ color:var(--react-cyan); margin-left:6px; opacity:0; transition:opacity .15s }
+.file-name.dirty .dirty-mark{ opacity:1 }
+.file-sub{ font-size:11.5px; color:var(--text-faint); margin-top:1px; font-family:'JetBrains Mono',monospace }
+.spacer{ flex:1 }
+
+.action-btn{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:8px 14px; border-radius:10px;
+  border:1px solid var(--border); background:rgba(255,255,255,0.03);
+  color:var(--text-dim); font-size:13px; font-weight:600;
+  transition: background .15s, color .15s, border-color .15s, transform .15s;
+}
+.action-btn:hover{ background:var(--surface-2); color:var(--text); border-color:var(--border-strong) }
+.action-btn:active{ transform:translateY(1px) }
+.action-btn .k{ font-family:'JetBrains Mono',monospace; font-size:10.5px; opacity:.6; padding:1px 5px; border-radius:5px; background:rgba(255,255,255,0.06) }
+.run-btn{
+  background:linear-gradient(135deg, var(--react-cyan), #4dc4e8);
+  color:var(--react-dark); border-color:transparent; font-weight:700;
+  box-shadow: 0 10px 30px -12px rgba(97,218,251,0.7);
+}
+.run-btn:hover{ filter:brightness(1.08); transform:translateY(-1px); border-color:transparent }
+
+.editor-card{
+  position:relative; min-height:0;
+  background: linear-gradient(180deg, rgba(20,20,40,0.65), rgba(8,8,18,0.65));
+  border:1px solid var(--border); border-radius: var(--radius);
+  overflow:hidden;
+  backdrop-filter: blur(22px) saturate(150%);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  box-shadow: var(--shadow-lg);
+  transform-style: preserve-3d;
+  transition: transform .25s cubic-bezier(.2,.7,.2,1);
+}
+.editor-card::before{
+  content:""; position:absolute; inset:-1px; border-radius: calc(var(--radius) + 1px); pointer-events:none;
+  background: linear-gradient(135deg, rgba(97,218,251,0.45), rgba(124,92,255,0.0) 40%, rgba(255,110,199,0.25));
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  padding:1px; opacity:.55;
+}
+.editor-chrome{
+  display:flex; align-items:center; gap:10px; padding:9px 14px;
+  border-bottom:1px solid var(--border);
+  background: linear-gradient(180deg, rgba(255,255,255,0.025), transparent);
+}
+.dot{ width:11px; height:11px; border-radius:50% }
+.dot.r{ background:#ff5a7a; box-shadow:0 0 10px rgba(255,90,122,0.55) }
+.dot.y{ background:#ffb547; box-shadow:0 0 10px rgba(255,181,71,0.55) }
+.dot.g{ background:#38d39f; box-shadow:0 0 10px rgba(56,211,159,0.55) }
+
+/* Per-project sub-file tabs (.jsx, .css, .html within one project) */
+.file-tabs{
+  display:flex; gap:4px; margin: 0 6px 0 6px;
+  flex:1; min-width:0; overflow-x:auto;
+  scrollbar-width:none;
+}
+.file-tabs::-webkit-scrollbar{ display:none }
+.file-tab{
+  flex-shrink:0;
+  padding: 3px 11px; font-size:11.5px; border-radius:7px;
+  border:1px solid var(--border); background:rgba(255,255,255,0.025);
+  color:var(--text-dim); font-weight:500;
+  font-family:'JetBrains Mono', ui-monospace, monospace;
+  transition: background .15s, color .15s, border-color .15s;
+  white-space:nowrap;
+}
+.file-tab:hover{ background:var(--surface-2); color:var(--text); border-color:var(--border-strong) }
+.file-tab.active{
+  background:linear-gradient(135deg, rgba(97,218,251,0.30), rgba(124,92,255,0.18));
+  color:#fff; border-color:rgba(97,218,251,0.45);
+  box-shadow: 0 0 0 1px rgba(97,218,251,0.25), 0 6px 14px -8px rgba(97,218,251,0.45);
+}
+.file-tab.entry::before{
+  content:"▶"; font-size:9px; margin-right:5px; color: var(--react-cyan); opacity:.85;
+}
+.file-tab.dirty::after{
+  content:""; display:inline-block; width:5px; height:5px; border-radius:50%;
+  background:var(--react-cyan); margin-left:6px; vertical-align:1px;
+  box-shadow: 0 0 6px var(--react-cyan);
+}
+.editor-chrome .badge{
+  font-size:10.5px; letter-spacing:0.14em; text-transform:uppercase;
+  padding:3px 9px; border-radius:20px;
+  background:rgba(97,218,251,0.10); border:1px solid rgba(97,218,251,0.32);
+  color:#9be8ff; flex-shrink:0;
+}
+.cm-host{ position:relative; height:calc(100% - 41px) }
+.CodeMirror{
+  height:100% !important; background:transparent;
+  font-size:14px; line-height:1.55; padding: 6px 0;
+}
+.CodeMirror-gutters{ background:transparent; border-right:1px solid var(--border) }
+.CodeMirror-linenumber{ color:rgba(154,154,176,0.4) }
+.CodeMirror-cursor{ border-left-color:#fff }
+.CodeMirror-activeline-background{ background:rgba(97,218,251,0.05) !important }
+.CodeMirror-selected{ background:rgba(97,218,251,0.20) !important }
+.CodeMirror-matchingbracket{ color:var(--react-cyan) !important; text-shadow:0 0 8px rgba(97,218,251,0.6) }
+
+.preview-card{
+  background: linear-gradient(180deg, rgba(20,20,40,0.7), rgba(8,8,18,0.7));
+  border:1px solid var(--border); border-radius: var(--radius);
+  display:flex; flex-direction:column; min-height:0;
+  backdrop-filter: blur(22px) saturate(150%);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  box-shadow: var(--shadow-lg);
+  overflow:hidden; position: relative;
+}
+.preview-card::before{
+  content:""; position: absolute; inset:-1px; border-radius: calc(var(--radius) + 1px); pointer-events:none;
+  background: linear-gradient(135deg, rgba(97,218,251,0.45), rgba(124,92,255,0) 40%, rgba(53,208,255,0.4));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude; padding: 1px;
+  opacity: .55;
+}
+.preview-head{
+  display:flex; align-items:center; gap:10px; padding:9px 14px;
+  border-bottom:1px solid var(--border);
+  background: linear-gradient(180deg, rgba(255,255,255,0.025), transparent);
+  position: relative; z-index: 1;
+}
+.preview-head .label{
+  font-size:11.5px; letter-spacing:0.18em; text-transform:uppercase; color:var(--text-dim);
+  display:flex; align-items:center; gap:8px;
+}
+.preview-head .label::before{
+  content:""; width:8px; height:8px; border-radius:50%;
+  background: var(--success); box-shadow: 0 0 10px rgba(56,211,159,0.7);
+}
+.preview-head .label.rendering::before{ background: var(--react-cyan); box-shadow: 0 0 10px rgba(97,218,251,0.7); animation: pulse 1s ease infinite }
+.preview-head .label.error::before{ background: var(--error); box-shadow: 0 0 10px rgba(255,90,122,0.7) }
+@keyframes pulse{
+  0%,100%{ transform: scale(1); opacity:1 }
+  50%   { transform: scale(1.4); opacity:.55 }
+}
+.preview-head .stats{ font-size:11px; color:var(--text-faint); font-family:'JetBrains Mono',monospace }
+.preview-head .right{ margin-left:auto; display:flex; gap:6px; align-items:center }
+.preview-head .icon-btn{
+  padding:5px 10px; border-radius:8px; border:1px solid var(--border);
+  background:rgba(255,255,255,0.02); color:var(--text-dim); font-size:11.5px;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.preview-head .icon-btn:hover{ background:var(--surface-2); color:var(--text); border-color:var(--border-strong) }
+.preview-head .icon-btn.active{
+  background: linear-gradient(135deg, rgba(97,218,251,0.30), rgba(124,92,255,0.20));
+  color: #fff; border-color: rgba(97,218,251,0.45);
+}
+.preview-frame{
+  flex: 1; min-height: 0;
+  background: #fff; border: 0; width: 100%;
+}
+.preview-card.dark-bg .preview-frame{ background: #1a1a2a }
+
+/* Console panel — captures console.* from inside the iframe via postMessage */
+.console-panel{
+  border-top: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(8,8,18,0.92), rgba(6,6,14,0.92));
+  display: flex; flex-direction: column;
+  flex-shrink: 0;
+  height: 170px;
+  transition: height .2s ease;
+  position: relative; z-index: 2;
+}
+.console-panel.collapsed{ height: 34px; }
+.console-head{
+  display: flex; align-items: center; gap: 10px;
+  padding: 6px 12px; border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(20,20,40,0.6), rgba(8,8,18,0.0));
+  cursor: pointer; user-select: none;
+  flex-shrink: 0;
+}
+.console-head .label{
+  font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-dim);
+  display: flex; align-items: center; gap: 8px;
+}
+.console-head .label::before{
+  content:""; width:7px; height:7px; border-radius:50%;
+  background: var(--text-faint);
+}
+.console-panel.has-output .console-head .label::before{
+  background: var(--react-cyan); box-shadow: 0 0 8px rgba(97,218,251,0.7);
+}
+.console-panel.has-error .console-head .label::before{
+  background: var(--error); box-shadow: 0 0 8px rgba(255,90,122,0.7);
+}
+.console-head .count{
+  font-size: 10.5px; color: var(--text-faint); padding: 1px 7px; border-radius: 20px;
+  background: rgba(255,255,255,0.06); font-family: 'JetBrains Mono', ui-monospace, monospace;
+}
+.console-panel.has-output .console-head .count{ background: rgba(97,218,251,0.18); color: #c8f0ff; }
+.console-panel.has-error  .console-head .count{ background: rgba(255,90,122,0.20); color: #ffd1d8; }
+.console-head .right{ margin-left: auto; display: flex; gap: 6px; }
+.console-head .icon-btn{
+  padding: 3px 9px; border-radius: 6px;
+  border: 1px solid var(--border); background: rgba(255,255,255,0.02);
+  color: var(--text-dim); font-size: 11px; font-family: 'Inter', sans-serif;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.console-head .icon-btn:hover{ background: var(--surface-2); color: var(--text); border-color: var(--border-strong); }
+.console-out{
+  flex: 1; min-height: 0; overflow: auto;
+  padding: 4px 0;
+  scrollbar-width: thin;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 12px; line-height: 1.55;
+}
+.console-panel.collapsed .console-out{ display: none; }
+.console-out::-webkit-scrollbar{ width: 6px; height: 6px; }
+.console-out::-webkit-scrollbar-thumb{ background: rgba(255,255,255,0.08); border-radius: 6px; }
+.console-out .empty{
+  color: var(--text-faint); text-align: center; padding: 24px 12px;
+  font-style: italic; font-family: 'Inter', sans-serif; font-size: 12px;
+}
+.console-line{
+  display: flex; gap: 8px; padding: 2px 12px;
+  border-left: 2px solid transparent;
+  white-space: pre-wrap; word-break: break-word;
+}
+.console-line .lvl{
+  flex-shrink: 0; min-width: 38px; font-size: 10px; text-transform: uppercase;
+  letter-spacing: 0.08em; padding-top: 2px; opacity: 0.7;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+}
+.console-line .body{ flex: 1; min-width: 0; }
+.console-line.log  { color: #dcd5ff; border-left-color: rgba(124,92,255,0.30); }
+.console-line.info { color: #9bd9ff; border-left-color: rgba(53,208,255,0.50); }
+.console-line.warn { color: #ffe0a3; border-left-color: rgba(255,181,71,0.55); background: rgba(255,181,71,0.04); }
+.console-line.error{ color: #ffb1bf; border-left-color: rgba(255,90,122,0.65); background: rgba(255,90,122,0.06); }
+.console-line.debug{ color: #a8b9d3; border-left-color: rgba(154,154,176,0.30); }
+
+.ambient{
+  position:absolute; border-radius:50%; pointer-events:none; z-index:0;
+  filter: blur(60px); opacity:.5;
+}
+.ambient.a{ width:340px;height:340px; background:rgba(97,218,251,0.30); top:-80px; right:-100px; animation:floatA 14s ease-in-out infinite }
+.ambient.b{ width:280px;height:280px; background:rgba(124,92,255,0.28); bottom:-60px; left:8%; animation:floatB 18s ease-in-out infinite }
+@keyframes floatA{ 0%,100%{transform:translate(0,0)} 50%{transform:translate(-30px,20px)} }
+@keyframes floatB{ 0%,100%{transform:translate(0,0)} 50%{transform:translate(40px,-20px)} }
+
+.toast{
+  position:fixed; bottom:22px; right:22px; z-index:50;
+  padding:10px 14px; border-radius:12px; font-size:13px;
+  background:linear-gradient(135deg, var(--react-cyan), var(--accent));
+  color:#08151c; font-weight:600;
+  box-shadow: 0 18px 40px -18px rgba(97,218,251,0.7);
+  transform: translateY(20px); opacity:0;
+  transition: transform .25s ease, opacity .25s ease;
+}
+.toast.show{ transform: translateY(0); opacity:1 }
+.toast.error{ background:linear-gradient(135deg,#ff5a7a,#ff8c5a); color:#fff }
+
+/* The floating "Home" button injected by ../home.js overlaps the Render
+   button at top:14px right:14px. We already have a "⌂ Home" link at the
+   bottom of the sidebar, so hide the floating one in the React lab. */
+.ap-home-btn{ display: none !important }
+</style>
+</head>
+<body>
+<canvas id="bg-3d"></canvas>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-cube">⚛</div>
+      <div>
+        <h1>React Lab</h1>
+        <div class="sub">Live Preview</div>
+      </div>
+    </div>
+
+    <div class="search-wrap">
+      <input class="search" id="search" placeholder="Filter projects…" />
+    </div>
+
+    <div class="section-label">Projects</div>
+    <ul class="file-list" id="fileList"></ul>
+
+    <a class="back-link" href="../index.html" style="margin-top:18px">⌂ Home</a>
+  </aside>
+
+  <main class="editor-pane">
+    <div class="ambient a"></div>
+    <div class="ambient b"></div>
+
+    <header class="top-bar">
+      <div class="file-meta">
+        <div class="file-icon">RX</div>
+        <div style="min-width:0">
+          <div class="file-name" id="fileName">hello<span class="dirty-mark">●</span></div>
+          <div class="file-sub" id="fileSub">react/hello/main.jsx</div>
+        </div>
+      </div>
+      <div class="spacer"></div>
+      <label class="action-btn" id="autoLbl" style="cursor:pointer" title="Auto-render preview as you type">
+        <input type="checkbox" id="autoChk" checked style="margin-right:6px;vertical-align:middle"> Auto
+      </label>
+      <button class="action-btn" id="resetBtn" title="Revert all files in this project">⟲ Reset</button>
+      <button class="action-btn run-btn" id="runBtn" title="Bundle &amp; render">▶ Render <span class="k">⌘↵</span></button>
+    </header>
+
+    <section class="editor-card" id="editorCard">
+      <div class="editor-chrome">
+        <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <div class="file-tabs" id="fileTabs"></div>
+        <button class="action-btn" id="bundledToggleBtn"
+                style="padding:3px 10px;font-size:11px;font-family:'JetBrains Mono',monospace;letter-spacing:0.06em"
+                title="Show the bundled JS that actually runs in the iframe (read-only)">🔨 Bundled</button>
+        <span class="badge" id="modeBadge">JSX</span>
+      </div>
+      <div class="cm-host">
+        <textarea id="editor"></textarea>
+      </div>
+    </section>
+
+    <div class="splitter" id="splitter" role="separator" aria-orientation="vertical" title="Drag to resize"></div>
+
+    <section class="preview-card" id="previewCard">
+      <div class="preview-head">
+        <span class="label" id="previewStatus">Preview</span>
+        <span class="stats" id="previewStats"></span>
+        <div class="right">
+          <button class="icon-btn" id="bgToggleBtn" title="Toggle preview background (light / dark)">◐ BG</button>
+          <button class="icon-btn" id="popoutBtn" title="Open the rendered preview in a new tab">↗ Pop out</button>
+        </div>
+      </div>
+      <iframe class="preview-frame" id="preview" sandbox="allow-scripts allow-same-origin" title="Live preview"></iframe>
+      <div class="console-panel" id="consolePanel">
+        <div class="console-head" id="consoleHead">
+          <span class="label">Console</span>
+          <span class="count" id="consoleCount">0</span>
+          <div class="right">
+            <button class="icon-btn" id="consoleClearBtn" title="Clear console">⌫ Clear</button>
+            <button class="icon-btn" id="consoleCollapseBtn" title="Collapse / expand">▾</button>
+          </div>
+        </div>
+        <div class="console-out" id="consoleOut">
+          <div class="empty">No console output yet — anything the React code logs will appear here.</div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- =====================================================================
+     Embedded project sources. Each <script type="text/plain"
+     data-rxfile="<project>/<path>"> block is the verbatim file from
+     /home/zvbe/ap/Advanced-Programming/react/<project>/<path>.
+     Any literal "</script>" inside has been escaped as "<\/script>" — the
+     readEmbedded() loader puts it back when reading.
+     ===================================================================== -->
+
+<!-- ============== hello/ ============== -->
+<script type="text/plain" data-rxfile="hello/main.jsx">import React from "react";
+import ReactDOM from "react-dom/client";
+import App from "./App"; // Importing the main App component
+
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(<App />);
+</script>
+
+<script type="text/plain" data-rxfile="hello/App.jsx">import React, { Component, memo } from "react";
+
+// Regular Child Component (always re-renders)
+const RegularChild = ({ value }) => {
+  console.log("RegularChild Rendered");
+  return <h3>Regular Child: {value}</h3>;
+};
+
+// Optimized Child Component (wrapped with React.memo)
+const MemoizedChild = memo(({ value }) => {
+  console.log("MemoizedChild Rendered");
+  return <h3>Memoized Child: {value}</h3>;
+});
+
+// Parent Class Component
+class App extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      count: 0,
+      otherValue: 0,
+    };
+  }
+
+  incrementCount = () => {
+    this.setState((prevState) => ({ count: prevState.count + 1 }));
+  };
+
+  incrementOtherValue = () => {
+    this.setState((prevState) => ({ otherValue: prevState.otherValue + 1 }));
+  };
+
+  render() {
+    console.log("Parent Rendered");
+
+    return (
+      <div style={{ textAlign: "center", marginTop: "50px" }}>
+        <h1>React.memo Example Without Hooks</h1>
+        <button onClick={this.incrementCount} style={{ padding: "10px", margin: "10px" }}>
+          Increment Count
+        </button>
+        <button onClick={this.incrementOtherValue} style={{ padding: "10px", margin: "10px" }}>
+          Increment Other Value
+        </button>
+
+        <p>Parent Count: {this.state.count}</p>
+
+        {/* Regular Child */}
+        <RegularChild value={this.state.count} />
+
+        {/* Memoized Child */}
+        <MemoizedChild value={this.state.otherValue} />
+      </div>
+    );
+  }
+}
+
+export default App;
+</script>
+
+<script type="text/plain" data-rxfile="hello/hello.jsx">/*
+Creating a React App
+Use the create-react-app command to set up a new React project:
+
+  npx create-react-app my-app
+  cd my-app
+  npm start
+
+This starts the development server, and you can view your app at http://localhost:3000.
+React in wsl: https://learn.microsoft.com/en-us/windows/dev-environment/javascript/react-on-wsl
+*/
+
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+
+// Functional Component:
+function Hello(props) {
+  return <h1>Hello React!</h1>;
+}
+
+// Class Component:
+// class Hello extends React.Component {
+//   render() {
+//     return <h1>Welcome to React!</h1>;
+//   }
+// }
+
+const container = document.getElementById("root");
+const root = ReactDOM.createRoot(container);
+root.render(<Hello />);
+</script>
+
+<script type="text/plain" data-rxfile="hello/counter.jsx">import React from 'react';
+import ReactDOM from 'react-dom/client';
+
+class Counter extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { count: 0 };
+  }
+
+  increment = () => {
+    this.setState({ count: this.state.count + 1 });
+  };
+
+  render() {
+    return (
+      <div>
+        <p>Count: {this.state.count}</p>
+        <button onClick={this.increment}>Increment</button>
+      </div>
+    );
+  }
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<Counter />);
+</script>
+
+<script type="text/plain" data-rxfile="hello/condition.jsx">
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+
+function HelloReact2(props) {
+    return <h1>Hello React again { props.val}!</h1>;
+  }
+
+  function HelloReact(props) {
+    return <h1>Hello React { props.val}!</h1>;
+  }
+
+function Hello(props) {
+    const flag = props.flag;
+    if (flag) {
+      return <HelloReact val={props.val} />;
+    }
+    return <HelloReact2 val={props.val}/>;
+  }
+
+  const root = ReactDOM.createRoot(document.getElementById('root'));
+  root.render(<Hello flag={true}  val={5} />);
+</script>
+
+<script type="text/plain" data-rxfile="hello/hello.html"><!DOCTYPE html>
+<html>
+<head>
+  <title>Simple Button Click</title>
+</head>
+<body>
+  <button onclick="createHeading()">Click me</button>
+  <div id="result"></div>
+  <script>
+    function createHeading() {
+      const heading = '<h1>Hello Not React!</h1>';
+      document.getElementById('result').innerHTML = heading;
+    }
+  <\/script>
+</body>
+</html>
+</script>
+
+<!-- ============== defalut/ (Vite default scaffold) ============== -->
+<script type="text/plain" data-rxfile="defalut/main.jsx">import { StrictMode } from 'react'
+import { createRoot } from 'react-dom/client'
+import './index.css'
+import App from './App.jsx'
+
+createRoot(document.getElementById('root')).render(
+  <StrictMode>
+    <App />
+  </StrictMode>,
+)
+</script>
+
+<script type="text/plain" data-rxfile="defalut/App.jsx">import { useState } from 'react'
+import reactLogo from './assets/react.svg'
+import viteLogo from '/vite.svg'
+import './App.css'
+
+function App() {
+  const [count, setCount] = useState(0)
+
+  return (
+    <>
+      <div>
+        <a href="https://vite.dev" target="_blank">
+          <img src={viteLogo} className="logo" alt="Vite logo" />
+        </a>
+        <a href="https://react.dev" target="_blank">
+          <img src={reactLogo} className="logo react" alt="React logo" />
+        </a>
+      </div>
+      <h1>Vite + React</h1>
+      <div className="card">
+        <button onClick={() => setCount((count) => count + 1)}>
+          count is {count}
+        </button>
+        <p>
+          Edit <code>src/App.jsx</code> and save to test HMR
+        </p>
+      </div>
+      <p className="read-the-docs">
+        Click on the Vite and React logos to learn more
+      </p>
+    </>
+  )
+}
+
+export default App
+</script>
+
+<script type="text/plain" data-rxfile="defalut/App.css">#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+.card {
+  padding: 2em;
+}
+
+.read-the-docs {
+  color: #888;
+}
+</script>
+
+<script type="text/plain" data-rxfile="defalut/index.css">:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: light dark;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: #242424;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  font-weight: 500;
+  color: #646cff;
+  text-decoration: inherit;
+}
+a:hover {
+  color: #535bf2;
+}
+
+body {
+  margin: 0;
+  display: flex;
+  place-items: center;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+h1 {
+  font-size: 3.2em;
+  line-height: 1.1;
+}
+
+button {
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: #1a1a1a;
+  cursor: pointer;
+  transition: border-color 0.25s;
+}
+button:hover {
+  border-color: #646cff;
+}
+button:focus,
+button:focus-visible {
+  outline: 4px auto -webkit-focus-ring-color;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color: #213547;
+    background-color: #ffffff;
+  }
+  a:hover {
+    color: #747bff;
+  }
+  button {
+    background-color: #f9f9f9;
+  }
+}
+</script>
+
+<script type="text/plain" data-rxfile="defalut/assets/react.svg"><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" role="img" class="iconify iconify--logos" width="35.93" height="32" preserveAspectRatio="xMidYMid meet" viewBox="0 0 256 228"><path fill="#00D8FF" d="M210.483 73.824a171.49 171.49 0 0 0-8.24-2.597c.465-1.9.893-3.777 1.273-5.621c6.238-30.281 2.16-54.676-11.769-62.708c-13.355-7.7-35.196.329-57.254 19.526a171.23 171.23 0 0 0-6.375 5.848a155.866 155.866 0 0 0-4.241-3.917C100.759 3.829 77.587-4.822 63.673 3.233C50.33 10.957 46.379 33.89 51.995 62.588a170.974 170.974 0 0 0 1.892 8.48c-3.28.932-6.445 1.924-9.474 2.98C17.309 83.498 0 98.307 0 113.668c0 15.865 18.582 31.778 46.812 41.427a145.52 145.52 0 0 0 6.921 2.165a167.467 167.467 0 0 0-2.01 9.138c-5.354 28.2-1.173 50.591 12.134 58.266c13.744 7.926 36.812-.22 59.273-19.855a145.567 145.567 0 0 0 5.342-4.923a168.064 168.064 0 0 0 6.92 6.314c21.758 18.722 43.246 26.282 56.54 18.586c13.731-7.949 18.194-32.003 12.4-61.268a145.016 145.016 0 0 0-1.535-6.842c1.62-.48 3.21-.974 4.76-1.488c29.348-9.723 48.443-25.443 48.443-41.52c0-15.417-17.868-30.326-45.517-39.844Zm-6.365 70.984c-1.4.463-2.836.91-4.3 1.345c-3.24-10.257-7.612-21.163-12.963-32.432c5.106-11 9.31-21.767 12.459-31.957c2.619.758 5.16 1.557 7.61 2.4c23.69 8.156 38.14 20.213 38.14 29.504c0 9.896-15.606 22.743-40.946 31.14Zm-10.514 20.834c2.562 12.94 2.927 24.64 1.23 33.787c-1.524 8.219-4.59 13.698-8.382 15.893c-8.067 4.67-25.32-1.4-43.927-17.412a156.726 156.726 0 0 1-6.437-5.87c7.214-7.889 14.423-17.06 21.459-27.246c12.376-1.098 24.068-2.894 34.671-5.345a134.17 134.17 0 0 1 1.386 6.193ZM87.276 214.515c-7.882 2.783-14.16 2.863-17.955.675c-8.075-4.657-11.432-22.636-6.853-46.752a156.923 156.923 0 0 1 1.869-8.499c10.486 2.32 22.093 3.988 34.498 4.994c7.084 9.967 14.501 19.128 21.976 27.15a134.668 134.668 0 0 1-4.877 4.492c-9.933 8.682-19.886 14.842-28.658 17.94ZM50.35 144.747c-12.483-4.267-22.792-9.812-29.858-15.863c-6.35-5.437-9.555-10.836-9.555-15.216c0-9.322 13.897-21.212 37.076-29.293c2.813-.98 5.757-1.905 8.812-2.773c3.204 10.42 7.406 21.315 12.477 32.332c-5.137 11.18-9.399 22.249-12.634 32.792a134.718 134.718 0 0 1-6.318-1.979Zm12.378-84.26c-4.811-24.587-1.616-43.134 6.425-47.789c8.564-4.958 27.502 2.111 47.463 19.835a144.318 144.318 0 0 1 3.841 3.545c-7.438 7.987-14.787 17.08-21.808 26.988c-12.04 1.116-23.565 2.908-34.161 5.309a160.342 160.342 0 0 1-1.76-7.887Zm110.427 27.268a347.8 347.8 0 0 0-7.785-12.803c8.168 1.033 15.994 2.404 23.343 4.08c-2.206 7.072-4.956 14.465-8.193 22.045a381.151 381.151 0 0 0-7.365-13.322Zm-45.032-43.861c5.044 5.465 10.096 11.566 15.065 18.186a322.04 322.04 0 0 0-30.257-.006c4.974-6.559 10.069-12.652 15.192-18.18ZM82.802 87.83a323.167 323.167 0 0 0-7.227 13.238c-3.184-7.553-5.909-14.98-8.134-22.152c7.304-1.634 15.093-2.97 23.209-3.984a321.524 321.524 0 0 0-7.848 12.897Zm8.081 65.352c-8.385-.936-16.291-2.203-23.593-3.793c2.26-7.3 5.045-14.885 8.298-22.6a321.187 321.187 0 0 0 7.257 13.246c2.594 4.48 5.28 8.868 8.038 13.147Zm37.542 31.03c-5.184-5.592-10.354-11.779-15.403-18.433c4.902.192 9.899.29 14.978.29c5.218 0 10.376-.117 15.453-.343c-4.985 6.774-10.018 12.97-15.028 18.486Zm52.198-57.817c3.422 7.8 6.306 15.345 8.596 22.52c-7.422 1.694-15.436 3.058-23.88 4.071a382.417 382.417 0 0 0 7.859-13.026a347.403 347.403 0 0 0 7.425-13.565Zm-16.898 8.101a358.557 358.557 0 0 1-12.281 19.815a329.4 329.4 0 0 1-23.444.823c-7.967 0-15.716-.248-23.178-.732a310.202 310.202 0 0 1-12.513-19.846h.001a307.41 307.41 0 0 1-10.923-20.627a310.278 310.278 0 0 1 10.89-20.637l-.001.001a307.318 307.318 0 0 1 12.413-19.761c7.613-.576 15.42-.876 23.31-.876H128c7.926 0 15.743.303 23.354.883a329.357 329.357 0 0 1 12.335 19.695a358.489 358.489 0 0 1 11.036 20.54a329.472 329.472 0 0 1-11 20.722Zm22.56-122.124c8.572 4.944 11.906 24.881 6.52 51.026c-.344 1.668-.73 3.367-1.15 5.09c-10.622-2.452-22.155-4.275-34.23-5.408c-7.034-10.017-14.323-19.124-21.64-27.008a160.789 160.789 0 0 1 5.888-5.4c18.9-16.447 36.564-22.941 44.612-18.3ZM128 90.808c12.625 0 22.86 10.235 22.86 22.86s-10.235 22.86-22.86 22.86s-22.86-10.235-22.86-22.86s10.235-22.86 22.86-22.86Z"></path></svg>
+</script>
+
+<!-- ============== router/ (react-router-dom v6 BrowserRouter) ============== -->
+<script type="text/plain" data-rxfile="router/main.jsx">import React from "react";
+import ReactDOM from "react-dom/client";
+import { BrowserRouter, Routes, Route } from "react-router-dom"; // npm i -D react-router-dom@latest
+import Home from "./pages/Home";
+import Navbar from "./pages/Navbar";
+import Contact from "./pages/Contact";
+import User from "./pages/User";
+import About from "./pages/About";
+import NotFound from "./pages/NotFound";
+
+
+export default function App() {
+  return (
+    <BrowserRouter>
+    <Navbar />
+    <Routes>
+          <Route index element={<Home />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/user/:username" element={<User />} />
+          <Route path="*" element={<NotFound />} /> {/* 404 Page */}
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(<App />);
+</script>
+
+<script type="text/plain" data-rxfile="router/index.css">body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+  }
+
+  nav {
+    display: flex;
+    justify-content: center;
+    background-color: #4CAF50;
+    padding: 10px;
+  }
+
+  nav a {
+    color: white;
+    text-decoration: none;
+    margin: 0 15px;
+    font-size: 18px;
+  }
+
+  nav a:hover {
+    text-decoration: underline;
+  }
+
+  div {
+    padding: 20px;
+    text-align: center;
+  }
+</script>
+
+<script type="text/plain" data-rxfile="router/pages/Home.jsx">const Home = () => {
+  return (
+    <div>
+      <h1>Welcome to the Home Page</h1>
+      <p>This is the home page of our React application.</p>
+    </div>
+  );
+};
+
+export default Home;
+</script>
+
+<script type="text/plain" data-rxfile="router/pages/About.jsx">const About = () => {
+  return (
+    <div>
+      <h1>About Us</h1>
+      <p>This page describes our application.</p>
+    </div>
+  );
+};
+
+export default About;
+</script>
+
+<script type="text/plain" data-rxfile="router/pages/Contact.jsx">const Contact = () => {
+  return (
+    <div>
+      <h1>Contact Us</h1>
+      <p>Feel free to contact us for more information!</p>
+    </div>
+  );
+};
+
+export default Contact;
+</script>
+
+<script type="text/plain" data-rxfile="router/pages/Navbar.jsx">import { Link } from "react-router-dom";
+
+const Navbar = () => {
+  return (
+    <nav style={{ backgroundColor: "#4CAF50", padding: "10px", color: "white" }}>
+      <Link to="/" style={{ margin: "0 15px", color: "white", textDecoration: "none" }}>Home</Link>
+      <Link to="/about" style={{ margin: "0 15px", color: "white", textDecoration: "none" }}>About</Link>
+      <Link to="/contact" style={{ margin: "0 15px", color: "white", textDecoration: "none" }}>Contact</Link>
+      <Link to="/user/john" style={{ margin: "0 15px", color: "white", textDecoration: "none" }}>User (Dynamic)</Link>
+    </nav>
+  );
+};
+
+export default Navbar;
+</script>
+
+<script type="text/plain" data-rxfile="router/pages/User.jsx">import { useParams } from "react-router-dom";
+
+const User = () => {
+  const { username } = useParams();
+
+  return (
+    <div>
+      <h1>User Profile</h1>
+      <p>Welcome, {username}!</p>
+    </div>
+  );
+};
+
+export default User;
+</script>
+
+<script type="text/plain" data-rxfile="router/pages/NotFound.jsx">const NotFound = () => {
+  return (
+    <div>
+      <h1>404 Not Found</h1>
+      <p>The page you are looking for does not exist.</p>
+    </div>
+  );
+};
+
+export default NotFound;
+</script>
+
+<!-- ============== w3school router/ (Layout + Outlet) ============== -->
+<script type="text/plain" data-rxfile="w3school router/main.jsx">import React from "react";
+import ReactDOM from "react-dom/client";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Layout from "./pages/Layout";
+import Home from "./pages/Home";
+import Blogs from "./pages/Blogs";
+import Contact from "./pages/Contact";
+import NoPage from "./pages/NoPage";
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Layout />}>
+          <Route index element={<Home />} />
+          <Route path="blogs" element={<Blogs />} />
+          <Route path="contact" element={<Contact />} />
+          <Route path="*" element={<NoPage />} /> {/* Fallback 404 route */}
+        </Route>
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(<App />);
+</script>
+
+<script type="text/plain" data-rxfile="w3school router/pages/Layout.jsx">import { Outlet, Link } from "react-router-dom";
+
+const Layout = () => {
+  return (
+    <>
+      <nav>
+        <ul>
+          <li>
+            <Link to="/">Home</Link>
+          </li>
+          <li>
+            <Link to="/blogs">Blogs</Link>
+          </li>
+          <li>
+            <Link to="/contact">Contact</Link>
+          </li>
+        </ul>
+      </nav>
+
+      <Outlet />
+    </>
+  )
+};
+
+export default Layout;
+</script>
+
+<script type="text/plain" data-rxfile="w3school router/pages/Home.jsx">const Home = () => {
+  return <h1>Home</h1>;
+};
+
+export default Home;
+</script>
+
+<script type="text/plain" data-rxfile="w3school router/pages/Blogs.jsx">const Blogs = () => {
+  return <h1>Blog Articles</h1>;
+};
+
+export default Blogs;
+</script>
+
+<script type="text/plain" data-rxfile="w3school router/pages/Contact.jsx">const Contact = () => {
+  return <h1>Contact Me</h1>;
+};
+
+export default Contact;
+</script>
+
+<script type="text/plain" data-rxfile="w3school router/pages/NoPage.jsx">const NoPage = () => {
+  return <h1>404</h1>;
+};
+
+export default NoPage;
+</script>
+
+<!-- ============== xo/ (TicTacToe — React 17 era class API) ============== -->
+<script type="text/plain" data-rxfile="xo/main.jsx">import React from 'react';
+import ReactDOM from 'react-dom';
+import './index.css';
+
+
+function Square(props) {
+    return (
+      <button className="square" onClick={props.onClick}>
+        {props.value}
+      </button>
+    );
+}
+
+class Board extends React.Component {
+    constructor(props) {
+        super(props);
+
+        this.state = {
+            squares: Array(9).fill(null),
+            xIsNext: true,
+        };
+    }
+
+
+    handleClick(i) {
+        const squares = this.state.squares.slice();
+
+        if (calculateWinner(squares) || squares[i]) {
+            return;
+        }
+
+        squares[i] = this.state.xIsNext ? 'X' : 'O';
+
+        this.setState({
+            squares: squares,
+            xIsNext: !this.state.xIsNext,
+        });
+    }
+
+    renderSquare(i) {
+      return (
+          <Square
+          value={this.state.squares[i]}
+          onClick={() => this.handleClick(i)}
+          />
+      );
+    }
+
+  render() {
+    const winner = calculateWinner(this.state.squares);
+    let status;
+
+    if (winner) {
+      status = 'Winner: ' + winner;
+    }
+
+    else {
+      status = 'Next player: ' + (this.state.xIsNext ? 'X' : 'O');
+    }
+
+    return (
+      <div>
+        <div className="status">{status}</div>
+        <div className="board-row">
+          {this.renderSquare(0)}
+          {this.renderSquare(1)}
+          {this.renderSquare(2)}
+        </div>
+        <div className="board-row">
+          {this.renderSquare(3)}
+          {this.renderSquare(4)}
+          {this.renderSquare(5)}
+        </div>
+        <div className="board-row">
+          {this.renderSquare(6)}
+          {this.renderSquare(7)}
+          {this.renderSquare(8)}
+        </div>
+      </div>
+    );
+  }
+}
+
+class Game extends React.Component {
+  render() {
+    return (
+      <div className="game">
+        <div className="game-board">
+          <Board />
+        </div>
+        <div className="game-info">
+          <div>{/* status */}</div>
+          <ol>{/* TODO */}</ol>
+        </div>
+      </div>
+    );
+  }
+}
+
+
+function calculateWinner(squares) {
+    const lines = [
+      [0, 1, 2],
+      [3, 4, 5],
+      [6, 7, 8],
+      [0, 3, 6],
+      [1, 4, 7],
+      [2, 5, 8],
+      [0, 4, 8],
+      [2, 4, 6],
+    ];
+
+    for (let i = 0; i < lines.length; i++) {
+        const [a, b, c] = lines[i];
+        if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
+            return squares[a];
+        }
+    }
+
+    return null;
+}
+
+ReactDOM.render(
+  <Game />,
+  document.getElementById('root')
+);
+</script>
+
+<script type="text/plain" data-rxfile="xo/index.css">body {
+    font: 14px "Century Gothic", Futura, sans-serif;
+    margin: 20px;
+}
+
+ol, ul {
+    padding-left: 30px;
+}
+
+.board-row:after {
+    clear: both;
+    content: "";
+    display: table;
+}
+
+.status {
+    margin-bottom: 10px;
+}
+
+.square {
+    background: #fff;
+    border: 1px solid #999;
+    float: left;
+    font-size: 24px;
+    font-weight: bold;
+    line-height: 34px;
+    height: 34px;
+    margin-right: -1px;
+    margin-top: -1px;
+    padding: 0;
+    text-align: center;
+    width: 34px;
+}
+
+.square:focus {
+    outline: none;
+}
+
+.kbd-navigation .square:focus {
+    background: #ddd;
+}
+
+.game {
+    display: flex;
+    flex-direction: row;
+}
+
+.game-info {
+    margin-left: 20px;
+}
+</script>
+
+<!-- ============== hooks/ — useState, useEffect, custom hooks ============== -->
+<script type="text/plain" data-rxfile="hooks/useState.jsx">// useState — the most fundamental hook.
+// It gives a function component a piece of state that survives re-renders.
+// Each call returns:    [currentValue, setterFunction]
+// Calling the setter triggers a re-render with the new value.
+
+import { useState } from 'react';
+
+function Counter() {
+  const [count, setCount] = useState(0);
+  const [step,  setStep]  = useState(1);
+
+  // Derived state — recomputed on every render, no useState needed.
+  const doubled = count * 2;
+  const isEven  = count % 2 === 0;
+
+  return (
+    <div style={{ fontFamily: 'system-ui', padding: 24, maxWidth: 360 }}>
+      <h2>useState counter</h2>
+
+      <p style={{ fontSize: 48, margin: '8px 0', textAlign: 'center' }}>{count}</p>
+
+      <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+        {/* Pass the next value directly */}
+        <button onClick={() => setCount(count - step)}>−{step}</button>
+
+        {/* OR pass a function: setCount(prev => prev + step).
+            Use this form when the new value depends on the previous one
+            (especially across batched / async updates). */}
+        <button onClick={() => setCount(c => c + step)}>+{step}</button>
+
+        <button onClick={() => setCount(0)}>reset</button>
+      </div>
+
+      <p style={{ marginTop: 16, color: '#555' }}>
+        doubled = {doubled} · {isEven ? 'even' : 'odd'}
+      </p>
+
+      <hr/>
+
+      <label>Step size:{' '}
+        <input
+          type="number" min="1"
+          value={step}
+          onChange={e => setStep(Number(e.target.value) || 1)}
+          style={{ width: 60 }}
+        />
+      </label>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<Counter />);
+</script>
+
+<script type="text/plain" data-rxfile="hooks/useEffect.jsx">// useEffect — run side-effects (fetches, subscriptions, timers, DOM access)
+// AFTER the component renders.
+//
+//   useEffect(fn)            — run after every render (rare)
+//   useEffect(fn, [])        — run once after mount
+//   useEffect(fn, [a, b])    — run when a or b changes
+//
+// Return a cleanup function from fn — it runs before the next effect or
+// before the component unmounts. Use it to cancel timers, abort fetches,
+// detach listeners, and so on.
+
+import { useState, useEffect } from 'react';
+
+function UserCard() {
+  const [userId,  setUserId]  = useState(1);
+  const [user,    setUser]    = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error,   setError]   = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;        // guard against stale responses
+    setLoading(true);
+    setError(null);
+    setUser(null);
+
+    fetch('https://jsonplaceholder.typicode.com/users/' + userId)
+      .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(data => { if (!cancelled) setUser(data); })
+      .catch(err  => { if (!cancelled) setError(err.message); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+
+    // Cleanup runs before the NEXT effect (or on unmount) — flips the
+    // flag so any late response is dropped instead of overwriting state.
+    return () => { cancelled = true; };
+  }, [userId]);
+
+  return (
+    <div style={{ fontFamily: 'system-ui', padding: 24, maxWidth: 420 }}>
+      <h2>useEffect — fetch + cleanup</h2>
+
+      <label>
+        User id:{' '}
+        <input
+          type="number" min="1" max="10"
+          value={userId}
+          onChange={e => setUserId(Number(e.target.value) || 1)}
+          style={{ width: 60 }}
+        />
+      </label>
+
+      <div style={{
+        marginTop: 16, padding: 16, borderRadius: 8,
+        background: '#fafafa', border: '1px solid #eee', minHeight: 130,
+      }}>
+        {loading && <p>Loading…</p>}
+        {error   && <p style={{ color: 'crimson' }}>Error: {error}</p>}
+        {user && (
+          <>
+            <h3 style={{ margin: '0 0 6px' }}>{user.name}</h3>
+            <p style={{ margin: 2 }}>📧 {user.email}</p>
+            <p style={{ margin: 2 }}>🏢 {user.company.name}</p>
+            <p style={{ margin: 2 }}>🌐 {user.website}</p>
+          </>
+        )}
+      </div>
+
+      <p style={{ color: '#888', fontSize: 13, marginTop: 12 }}>
+        Change the id quickly — the cancellation flag drops in-flight
+        responses so the displayed user is always the one you asked for last.
+      </p>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<UserCard />);
+</script>
+
+<script type="text/plain" data-rxfile="hooks/useLocalStorage.jsx">// A custom hook is just a function whose name starts with "use" and that
+// composes other hooks. It lets you reuse stateful logic across components
+// without copy-pasting useState/useEffect calls.
+
+import { useState, useEffect } from 'react';
+
+function useLocalStorage(key, initial) {
+  // Lazy initializer — read storage only on the first render.
+  const [value, setValue] = useState(() => {
+    try {
+      const raw = localStorage.getItem(key);
+      return raw != null ? JSON.parse(raw) : initial;
+    } catch {
+      return initial;
+    }
+  });
+
+  // Write through to storage on every change.
+  useEffect(() => {
+    try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
+  }, [key, value]);
+
+  return [value, setValue];
+}
+
+export default useLocalStorage;
+</script>
+
+<script type="text/plain" data-rxfile="hooks/App.jsx">// Now use the custom hook just like the built-in useState — the storage
+// details are hidden inside useLocalStorage.
+
+import useLocalStorage from './useLocalStorage';
+
+function App() {
+  const [name,  setName]  = useLocalStorage('react-lab:name',  '');
+  const [theme, setTheme] = useLocalStorage('react-lab:theme', 'light');
+
+  const dark = theme === 'dark';
+
+  return (
+    <div style={{
+      fontFamily: 'system-ui', padding: 24, minHeight: '100vh',
+      background: dark ? '#1a1a2a' : '#fafafa',
+      color:      dark ? '#eee'    : '#111',
+      transition: 'background .2s, color .2s',
+    }}>
+      <h2>Custom hook — useLocalStorage</h2>
+
+      <p>Type a name, switch the theme, then reload the iframe — both survive.</p>
+
+      <label>
+        Name:{' '}
+        <input
+          value={name}
+          onChange={e => setName(e.target.value)}
+          style={{ padding: 6, fontSize: 14 }}
+        />
+      </label>
+
+      <p style={{ marginTop: 12 }}>Hello, <strong>{name || '(stranger)'}</strong>!</p>
+
+      <button
+        onClick={() => setTheme(dark ? 'light' : 'dark')}
+        style={{
+          marginTop: 12, padding: '8px 14px', borderRadius: 6,
+          background: dark ? '#fafafa' : '#1a1a2a',
+          color:      dark ? '#111'    : '#fafafa',
+          border: '1px solid #888', cursor: 'pointer',
+        }}
+      >
+        Switch to {dark ? 'light' : 'dark'} theme
+      </button>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+
+<!-- ============== lift/ — lift state up pattern ============== -->
+<script type="text/plain" data-rxfile="lift/Input.jsx">// "Dumb" controlled component — owns no state. The value AND the change
+// handler both come in via props. The parent decides what happens when
+// the user types.
+
+function Input({ value, onChange }) {
+  return (
+    <input
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      placeholder="type something…"
+      style={{ padding: 8, fontSize: 16, width: 240, border: '1px solid #ccc', borderRadius: 4 }}
+    />
+  );
+}
+
+export default Input;
+</script>
+
+<script type="text/plain" data-rxfile="lift/Display.jsx">// Another "dumb" component — also owns no state. It just shows whatever
+// the parent hands it.
+
+function Display({ text }) {
+  return (
+    <div style={{
+      marginTop: 12, padding: 12,
+      background: '#fafafa', border: '1px solid #eee', borderRadius: 8,
+      minHeight: 40, fontSize: 18,
+    }}>
+      You typed: <strong>{text || '(nothing yet)'}</strong>{' '}
+      <span style={{ color: '#888', fontSize: 13 }}>({text.length} chars)</span>
+    </div>
+  );
+}
+
+export default Display;
+</script>
+
+<script type="text/plain" data-rxfile="lift/App.jsx">// State lives in the closest common parent. Both children share it without
+// knowing about each other:
+//   - Input reads `text` and calls `setText` (down + up).
+//   - Display only reads `text` (down).
+// This is the "lift state up" rule — when two components need the same
+// data, move it to their nearest shared parent.
+
+import { useState } from 'react';
+import Input   from './Input';
+import Display from './Display';
+
+function App() {
+  const [text, setText] = useState('');
+
+  return (
+    <div style={{ fontFamily: 'system-ui', padding: 24 }}>
+      <h2>Lift state up</h2>
+      <p style={{ color: '#555' }}>
+        The state lives in <code>App</code>.{' '}
+        <code>Input</code> writes to it; <code>Display</code> reads from it.{' '}
+        Neither child knows the other exists.
+      </p>
+
+      <Input value={text} onChange={setText} />
+      <Display text={text} />
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+
+<!-- ============== errboundary/ — class error boundary ============== -->
+<script type="text/plain" data-rxfile="errboundary/ErrorBoundary.jsx">// Error boundaries are class components (no hook equivalent — yet) that
+// catch render-time errors anywhere in their child tree and show a
+// fallback UI instead of letting the whole app crash.
+//
+// Two lifecycle methods:
+//   static getDerivedStateFromError(error)  — return new state
+//   componentDidCatch(error, info)          — side effect (log, report)
+
+import React from 'react';
+
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    // Update state so the next render shows the fallback UI.
+    return { error };
+  }
+
+  componentDidCatch(error, info) {
+    // Hook into your real telemetry here (Sentry, console, etc).
+    console.error('ErrorBoundary caught:', error.message);
+  }
+
+  reset = () => {
+    if (this.props.onReset) this.props.onReset();
+    this.setState({ error: null });
+  };
+
+  render() {
+    if (this.state.error) {
+      return (
+        <div style={{
+          padding: 16, margin: 16, borderRadius: 8,
+          background: '#fff5f5', border: '1px solid #ffb1bf', color: '#7d1f2c',
+        }}>
+          <h3 style={{ margin: '0 0 6px' }}>💥 Something went wrong.</h3>
+          <p style={{ margin: '0 0 8px', fontFamily: 'monospace', fontSize: 13 }}>
+            {this.state.error.message}
+          </p>
+          <button onClick={this.reset}>Try again</button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+export default ErrorBoundary;
+</script>
+
+<script type="text/plain" data-rxfile="errboundary/App.jsx">import { useState } from 'react';
+import ErrorBoundary from './ErrorBoundary';
+
+// A child component that intentionally crashes when triggered.
+function Bomb({ exploded }) {
+  if (exploded) {
+    // Throwing during render is exactly what error boundaries are designed for.
+    throw new Error('💥 Boom! The Bomb component blew up.');
+  }
+  return <p>The bomb is intact. ✓</p>;
+}
+
+function App() {
+  const [exploded, setExploded] = useState(false);
+
+  return (
+    <div style={{ fontFamily: 'system-ui', padding: 24 }}>
+      <h2>Error boundary</h2>
+
+      <p>Click the button to make the child throw during render — the error
+        boundary catches it instead of crashing the whole app.</p>
+
+      <button onClick={() => setExploded(true)} style={{ marginBottom: 12 }}>
+        Detonate the bomb
+      </button>
+
+      <ErrorBoundary onReset={() => setExploded(false)}>
+        <Bomb exploded={exploded} />
+      </ErrorBoundary>
+
+      <p style={{ marginTop: 16, color: '#555', fontSize: 14 }}>
+        ↑ Everything outside the boundary keeps working — even after the bomb
+        explodes, this paragraph still renders.
+      </p>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+
+<!-- ============== todo/ — mini multi-file project ============== -->
+<script type="text/plain" data-rxfile="todo/style.css">:root {
+  --bg: #f4f4f9;
+  --card: #ffffff;
+  --accent: #61dafb;
+  --accent-hover: #4dc4e8;
+  --muted: #888;
+  --border: #e2e2e8;
+  --text: #1a1a2a;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+}
+.app {
+  max-width: 480px;
+  margin: 32px auto;
+  padding: 24px;
+  background: var(--card);
+  border-radius: 12px;
+  box-shadow: 0 4px 18px -8px rgba(0, 0, 0, 0.18);
+}
+.app h1 { margin: 0 0 16px; font-size: 24px; text-align: center; }
+
+.add { display: flex; gap: 6px; margin-bottom: 16px; }
+.add input {
+  flex: 1; padding: 10px;
+  border: 1px solid var(--border); border-radius: 6px;
+  font: inherit; font-size: 15px;
+}
+.add input:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
+.add button {
+  padding: 10px 16px;
+  background: var(--accent); color: var(--text);
+  border: none; border-radius: 6px;
+  font: inherit; font-weight: 600; cursor: pointer;
+}
+.add button:hover { background: var(--accent-hover); }
+
+.list { list-style: none; padding: 0; margin: 0; }
+.item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 4px;
+  border-bottom: 1px solid var(--border);
+}
+.item:last-child { border-bottom: 0; }
+.item.done .text { text-decoration: line-through; color: var(--muted); }
+.item .text { flex: 1; }
+.item button.x {
+  background: none; border: none; color: #c33;
+  cursor: pointer; font-size: 18px; padding: 0 6px;
+}
+.item button.x:hover { color: #900; }
+
+.bar {
+  display: flex; gap: 8px; align-items: center;
+  margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border);
+  font-size: 13px; color: var(--muted);
+}
+.bar .filters { display: flex; gap: 6px; margin-left: auto; }
+.bar button {
+  background: none; border: 1px solid var(--border);
+  padding: 4px 10px; border-radius: 4px; cursor: pointer;
+  color: inherit; font: inherit; font-size: 12px;
+}
+.bar button.active {
+  background: var(--accent); color: var(--text);
+  border-color: var(--accent); font-weight: 600;
+}
+.bar button:hover:not(.active) { background: #f0f0f5; }
+
+.empty {
+  color: var(--muted); text-align: center;
+  padding: 16px; font-style: italic;
+}
+</script>
+
+<script type="text/plain" data-rxfile="todo/useTodos.jsx">// All the todo state logic — extracted into a custom hook so the UI
+// components stay declarative.
+
+import { useState, useEffect } from 'react';
+
+const STORAGE_KEY = 'react-lab:todos';
+
+function useTodos() {
+  const [todos, setTodos] = useState(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch { return []; }
+  });
+
+  useEffect(() => {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(todos)); } catch {}
+  }, [todos]);
+
+  function add(text) {
+    const t = text.trim();
+    if (!t) return;
+    setTodos(prev => [...prev, { id: Date.now(), text: t, done: false }]);
+  }
+  function toggle(id) {
+    setTodos(prev => prev.map(x => x.id === id ? { ...x, done: !x.done } : x));
+  }
+  function remove(id) {
+    setTodos(prev => prev.filter(x => x.id !== id));
+  }
+  function clearDone() {
+    setTodos(prev => prev.filter(x => !x.done));
+  }
+
+  return { todos, add, toggle, remove, clearDone };
+}
+
+export default useTodos;
+</script>
+
+<script type="text/plain" data-rxfile="todo/AddTodo.jsx">// Controlled-input form. Owns its own draft text so the parent only hears
+// about a finished todo, not every keystroke.
+
+import { useState } from 'react';
+
+function AddTodo({ onAdd }) {
+  const [text, setText] = useState('');
+
+  function handleSubmit(e) {
+    e.preventDefault();
+    if (!text.trim()) return;
+    onAdd(text);
+    setText('');
+  }
+
+  return (
+    <form className="add" onSubmit={handleSubmit}>
+      <input
+        value={text}
+        onChange={e => setText(e.target.value)}
+        placeholder="What needs doing?"
+        autoFocus
+      />
+      <button type="submit">Add</button>
+    </form>
+  );
+}
+
+export default AddTodo;
+</script>
+
+<script type="text/plain" data-rxfile="todo/TodoItem.jsx">// One row. Receives the todo + callbacks; owns nothing.
+
+function TodoItem({ todo, onToggle, onRemove }) {
+  return (
+    <li className={'item' + (todo.done ? ' done' : '')}>
+      <input
+        type="checkbox"
+        checked={todo.done}
+        onChange={() => onToggle(todo.id)}
+      />
+      <span className="text">{todo.text}</span>
+      <button className="x" onClick={() => onRemove(todo.id)} title="Remove">×</button>
+    </li>
+  );
+}
+
+export default TodoItem;
+</script>
+
+<script type="text/plain" data-rxfile="todo/TodoList.jsx">// Renders the visible list, picks the empty state.
+
+import TodoItem from './TodoItem';
+
+function TodoList({ todos, onToggle, onRemove }) {
+  if (todos.length === 0) {
+    return <div className="empty">nothing here</div>;
+  }
+  return (
+    <ul className="list">
+      {todos.map(t => (
+        <TodoItem
+          key={t.id}
+          todo={t}
+          onToggle={onToggle}
+          onRemove={onRemove}
+        />
+      ))}
+    </ul>
+  );
+}
+
+export default TodoList;
+</script>
+
+<script type="text/plain" data-rxfile="todo/App.jsx">// The composition root. Pulls state from the custom hook, derives the
+// visible list from the active filter, and wires children together.
+
+import { useState } from 'react';
+import useTodos  from './useTodos';
+import AddTodo   from './AddTodo';
+import TodoList  from './TodoList';
+
+function App() {
+  const { todos, add, toggle, remove, clearDone } = useTodos();
+  const [filter, setFilter] = useState('all'); // 'all' | 'active' | 'done'
+
+  const visible = todos.filter(t =>
+    filter === 'all'    ? true :
+    filter === 'active' ? !t.done :
+                          t.done
+  );
+  const remaining = todos.filter(t => !t.done).length;
+
+  return (
+    <div className="app">
+      <h1>todos</h1>
+
+      <AddTodo onAdd={add} />
+
+      <TodoList
+        todos={visible}
+        onToggle={toggle}
+        onRemove={remove}
+      />
+
+      <div className="bar">
+        <span>{remaining} left</span>
+        <div className="filters">
+          {['all','active','done'].map(f => (
+            <button
+              key={f}
+              className={filter === f ? 'active' : ''}
+              onClick={() => setFilter(f)}
+            >{f}</button>
+          ))}
+          <button onClick={clearDone}>clear done</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+
+
+<script>
+/* ==========================================================
+   Project registry — one entry per "step". Each step lists:
+     - files       : the files to display (paths relative to project/)
+     - entry       : which file is shown by default in the editor
+     - bundle      : .jsx files to concatenate (in dep order: leaves → main)
+     - css         : .css files to inject as <style> blocks
+     - needsRouter : load react-router-dom UMDs in the iframe
+     - isHtml      : the entry IS a full HTML page; render it raw, no React stack
+   ========================================================== */
+const PROJECTS = [
+  // ===== defalut/ — full Vite scaffold (the starting point) =====
+  {
+    id: 'defalut',
+    label: '0 · defalut — Vite + React scaffold',
+    group: 'defalut/',
+    project: 'defalut',
+    files: ['main.jsx','App.jsx','index.css','App.css','assets/react.svg'],
+    entry: 'main.jsx',
+    bundle: ['App.jsx','main.jsx'],
+    css: ['index.css','App.css'],
+  },
+
+  // ===== hello/ — five separate runnable variants =====
+  {
+    id: 'hello-vanilla',
+    label: '1 · hello — vanilla HTML (no React)',
+    group: 'hello/',
+    project: 'hello',
+    files: ['hello.html'],
+    entry: 'hello.html',
+    isHtml: true,
+  },
+  {
+    id: 'hello-fn',
+    label: '2 · hello — functional Hello',
+    group: 'hello/',
+    project: 'hello',
+    files: ['hello.jsx'],
+    entry: 'hello.jsx',
+    bundle: ['hello.jsx'],
+  },
+  {
+    id: 'hello-condition',
+    label: '3 · hello — conditional render',
+    group: 'hello/',
+    project: 'hello',
+    files: ['condition.jsx'],
+    entry: 'condition.jsx',
+    bundle: ['condition.jsx'],
+  },
+  {
+    id: 'hello-counter',
+    label: '4 · hello — Counter (class)',
+    group: 'hello/',
+    project: 'hello',
+    files: ['counter.jsx'],
+    entry: 'counter.jsx',
+    bundle: ['counter.jsx'],
+  },
+  {
+    id: 'hello-memo',
+    label: '5 · hello — App + React.memo',
+    group: 'hello/',
+    project: 'hello',
+    files: ['App.jsx','main.jsx'],
+    entry: 'main.jsx',
+    bundle: ['App.jsx','main.jsx'],
+  },
+
+  // ===== hooks/ — useState, useEffect, custom hook =====
+  {
+    id: 'hooks-useState',
+    label: '6 · hooks — useState',
+    group: 'hooks/',
+    project: 'hooks',
+    files: ['useState.jsx'],
+    entry: 'useState.jsx',
+    bundle: ['useState.jsx'],
+  },
+  {
+    id: 'hooks-useEffect',
+    label: '7 · hooks — useEffect (fetch)',
+    group: 'hooks/',
+    project: 'hooks',
+    files: ['useEffect.jsx'],
+    entry: 'useEffect.jsx',
+    bundle: ['useEffect.jsx'],
+  },
+  {
+    id: 'hooks-custom',
+    label: '8 · hooks — custom useLocalStorage',
+    group: 'hooks/',
+    project: 'hooks',
+    files: ['useLocalStorage.jsx','App.jsx'],
+    entry: 'App.jsx',
+    bundle: ['useLocalStorage.jsx','App.jsx'],
+  },
+
+  // ===== lift/ — lift state up =====
+  {
+    id: 'lift',
+    label: '9 · lift — lift state up',
+    group: 'lift/',
+    project: 'lift',
+    files: ['Input.jsx','Display.jsx','App.jsx'],
+    entry: 'App.jsx',
+    bundle: ['Input.jsx','Display.jsx','App.jsx'],
+  },
+
+  // ===== errboundary/ — class error boundary =====
+  {
+    id: 'errboundary',
+    label: '10 · errboundary — catch render errors',
+    group: 'errboundary/',
+    project: 'errboundary',
+    files: ['ErrorBoundary.jsx','App.jsx'],
+    entry: 'App.jsx',
+    bundle: ['ErrorBoundary.jsx','App.jsx'],
+  },
+
+  // ===== todo/ — multi-file mini app =====
+  {
+    id: 'todo',
+    label: '11 · todo — mini app (everything together)',
+    group: 'todo/',
+    project: 'todo',
+    files: ['App.jsx','useTodos.jsx','AddTodo.jsx','TodoList.jsx','TodoItem.jsx','style.css'],
+    entry: 'App.jsx',
+    bundle: ['useTodos.jsx','AddTodo.jsx','TodoItem.jsx','TodoList.jsx','App.jsx'],
+    css: ['style.css'],
+  },
+
+  // ===== router/ — react-router-dom v6 BrowserRouter =====
+  {
+    id: 'router',
+    label: '12 · router — react-router-dom',
+    group: 'router/',
+    project: 'router',
+    files: [
+      'main.jsx','index.css',
+      'pages/Navbar.jsx','pages/Home.jsx','pages/About.jsx',
+      'pages/Contact.jsx','pages/User.jsx','pages/NotFound.jsx',
+    ],
+    entry: 'main.jsx',
+    bundle: [
+      'pages/Home.jsx','pages/About.jsx','pages/Contact.jsx',
+      'pages/User.jsx','pages/NotFound.jsx','pages/Navbar.jsx',
+      'main.jsx',
+    ],
+    css: ['index.css'],
+    needsRouter: true,
+  },
+
+  // ===== w3school router/ — Layout + Outlet =====
+  {
+    id: 'w3router',
+    label: '13 · w3school router — Layout / Outlet',
+    group: 'w3school router/',
+    project: 'w3school router',
+    files: [
+      'main.jsx',
+      'pages/Layout.jsx','pages/Home.jsx','pages/Blogs.jsx',
+      'pages/Contact.jsx','pages/NoPage.jsx',
+    ],
+    entry: 'main.jsx',
+    bundle: [
+      'pages/Home.jsx','pages/Blogs.jsx','pages/Contact.jsx',
+      'pages/NoPage.jsx','pages/Layout.jsx','main.jsx',
+    ],
+    needsRouter: true,
+  },
+
+  // ===== xo/ — TicTacToe (React 17 ReactDOM.render API) =====
+  {
+    id: 'xo',
+    label: '14 · xo — TicTacToe (legacy API)',
+    group: 'xo/',
+    project: 'xo',
+    files: ['main.jsx','index.css'],
+    entry: 'main.jsx',
+    bundle: ['main.jsx'],
+    css: ['index.css'],
+  },
+];
+
+/* ==========================================================
+   3D background — Three.js floating wireframes
+   ========================================================== */
+(function init3D(){
+  const canvas = document.getElementById('bg-3d');
+  if(!window.THREE){ return; }
+  const renderer = new THREE.WebGLRenderer({ canvas, alpha:true, antialias:true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 100);
+  camera.position.z = 7;
+
+  const group = new THREE.Group();
+  scene.add(group);
+  const palette = [0x61dafb, 0x7c5cff, 0x35d0ff, 0xff6ec7];
+
+  function addShape(geom, color, scale, position){
+    const mat = new THREE.LineBasicMaterial({ color, transparent:true, opacity:0.55 });
+    const wire = new THREE.WireframeGeometry(geom);
+    const line = new THREE.LineSegments(wire, mat);
+    line.scale.setScalar(scale);
+    line.position.set(position.x, position.y, position.z);
+    line.userData.spinSpeed = {
+      x: (Math.random() - 0.5) * 0.004,
+      y: (Math.random() - 0.5) * 0.004,
+      z: (Math.random() - 0.5) * 0.0025,
+    };
+    line.userData.float = { phase: Math.random()*Math.PI*2, amp: 0.3 + Math.random()*0.4 };
+    group.add(line);
+    return line;
+  }
+
+  addShape(new THREE.IcosahedronGeometry(1, 0),               palette[0], 1.6, { x:-4.5, y: 1.6, z:-2 });
+  addShape(new THREE.TorusKnotGeometry(0.7, 0.22, 80, 12),    palette[1], 1.4, { x: 4.5, y:-1.8, z:-1 });
+  addShape(new THREE.OctahedronGeometry(1, 0),                palette[2], 1.0, { x: 3.0, y: 2.2, z:-3 });
+  addShape(new THREE.TetrahedronGeometry(1, 0),               palette[3], 0.9, { x:-3.2, y:-2.0, z:-2.5 });
+  addShape(new THREE.IcosahedronGeometry(1, 0),               palette[1], 0.6, { x: 0.2, y: 0.0, z:-4 });
+  addShape(new THREE.DodecahedronGeometry(1, 0),              palette[0], 0.7, { x:-1.6, y: 2.6, z:-3.5 });
+  addShape(new THREE.OctahedronGeometry(1, 0),                palette[3], 0.55,{ x: 1.8, y:-2.6, z:-3.5 });
+
+  const pCount = 220;
+  const pGeom = new THREE.BufferGeometry();
+  const pPos = new Float32Array(pCount * 3);
+  for(let i=0; i<pCount; i++){
+    pPos[i*3+0] = (Math.random() - 0.5) * 18;
+    pPos[i*3+1] = (Math.random() - 0.5) * 12;
+    pPos[i*3+2] = (Math.random() - 0.5) * 10 - 2;
+  }
+  pGeom.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+  const pMat = new THREE.PointsMaterial({ color:0xffffff, size:0.025, transparent:true, opacity:0.65 });
+  const points = new THREE.Points(pGeom, pMat);
+  scene.add(points);
+
+  const target  = { x:0, y:0 };
+  const current = { x:0, y:0 };
+  window.addEventListener('mousemove', (e)=>{
+    target.x = (e.clientX / window.innerWidth - 0.5) * 0.6;
+    target.y = (e.clientY / window.innerHeight - 0.5) * 0.4;
+  });
+
+  function resize(){
+    const w = window.innerWidth, h = window.innerHeight;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  let t = 0;
+  function tick(){
+    t += 0.01;
+    current.x += (target.x - current.x) * 0.05;
+    current.y += (target.y - current.y) * 0.05;
+    group.children.forEach((m)=>{
+      m.rotation.x += m.userData.spinSpeed.x;
+      m.rotation.y += m.userData.spinSpeed.y;
+      m.rotation.z += m.userData.spinSpeed.z;
+      m.position.y += Math.sin(t + m.userData.float.phase) * 0.0025 * m.userData.float.amp;
+    });
+    group.rotation.y =  current.x * 0.4;
+    group.rotation.x = -current.y * 0.3;
+    points.rotation.y += 0.0006;
+    points.rotation.x = -current.y * 0.05;
+    renderer.render(scene, camera);
+    requestAnimationFrame(tick);
+  }
+  tick();
+})();
+
+/* ==========================================================
+   CodeMirror setup
+   ========================================================== */
+const editor = CodeMirror.fromTextArea(document.getElementById('editor'), {
+  mode: 'jsx',
+  theme: 'dracula',
+  lineNumbers: true,
+  matchBrackets: true,
+  autoCloseBrackets: true,
+  styleActiveLine: true,
+  indentUnit: 2,
+  tabSize: 2,
+  smartIndent: true,
+  lineWrapping: true,
+  extraKeys: {
+    'Cmd-Enter':  () => renderPreview(),
+    'Ctrl-Enter': () => renderPreview(),
+    'Cmd-/':  'toggleComment',
+    'Ctrl-/': 'toggleComment',
+  },
+});
+editor.setValue('// Loading…\n');
+
+function modeForFile(name){
+  if(name.endsWith('.jsx') || name.endsWith('.js'))  return 'jsx';
+  if(name.endsWith('.css'))                          return 'css';
+  if(name.endsWith('.html') || name.endsWith('.htm'))return 'htmlmixed';
+  if(name.endsWith('.svg') || name.endsWith('.xml')) return 'xml';
+  return 'jsx';
+}
+function badgeForFile(name){
+  if(name.endsWith('.jsx') || name.endsWith('.js'))  return 'JSX · React';
+  if(name.endsWith('.css'))                          return 'CSS';
+  if(name.endsWith('.html'))                         return 'HTML';
+  if(name.endsWith('.svg'))                          return 'SVG';
+  return 'TXT';
+}
+
+/* ==========================================================
+   Embedded source loader + per-project state
+   ========================================================== */
+const fileListEl = document.getElementById('fileList');
+const fileNameEl = document.getElementById('fileName');
+const fileSubEl  = document.getElementById('fileSub');
+const fileTabsEl = document.getElementById('fileTabs');
+const modeBadgeEl = document.getElementById('modeBadge');
+const searchEl   = document.getElementById('search');
+
+const state = {
+  active: null,         // current PROJECTS[i].id
+  activeFile: {},       // proj.id -> file path currently shown in editor
+  originals: {},        // "<project>/<path>" -> original on-disk text
+  buffers: {},          // "<project>/<path>" -> editable buffer text
+  loaded: {},           // "<project>/<path>" -> bool
+};
+
+function readEmbedded(key){
+  const node = document.querySelector(
+    'script[type="text/plain"][data-rxfile="' + CSS.escape(key) + '"]'
+  );
+  if(!node) return null;
+  // Restore "<\/script" → "</script" (escaped to survive embedding)
+  return node.textContent.replace(/<\\\/script/gi, '</script');
+}
+
+/* ----------------------------------------------------------
+   Per-file edit persistence — keep the user's tweaks across
+   reloads. Keyed by project/file so different lessons don't
+   collide. The Reset button purges this for the active project.
+   ---------------------------------------------------------- */
+const STORAGE_PREFIX = 'react-lab:edit:';
+function saveBufferToStorage(projectName, file, value){
+  try { localStorage.setItem(STORAGE_PREFIX + projectName + '/' + file, value); } catch {}
+}
+function loadBufferFromStorage(projectName, file){
+  try { return localStorage.getItem(STORAGE_PREFIX + projectName + '/' + file); }
+  catch { return null; }
+}
+function clearBufferFromStorage(projectName, file){
+  try { localStorage.removeItem(STORAGE_PREFIX + projectName + '/' + file); } catch {}
+}
+
+function ensureLoaded(projectName, file){
+  const key = projectName + '/' + file;
+  if(state.loaded[key]) return state.originals[key];
+  const text = readEmbedded(key);
+  if(text == null){
+    const msg = '/* missing embedded source for ' + key + ' */\n';
+    state.originals[key] = msg;
+    state.buffers[key]   = msg;
+  } else {
+    state.originals[key] = text;
+    // Prefer any locally-saved edit over the embedded original.
+    const saved = loadBufferFromStorage(projectName, file);
+    state.buffers[key]   = saved != null ? saved : text;
+  }
+  state.loaded[key] = true;
+  return state.originals[key];
+}
+
+/* Sidebar — one button per project entry */
+function projectButtonNode(entry){
+  const li = document.createElement('li');
+  const btn = document.createElement('button');
+  btn.className = 'file-btn';
+  btn.dataset.proj = entry.id;
+  const fileCount = entry.files.length;
+  btn.innerHTML =
+    '<span class="ico">RX</span>' +
+    '<span class="label">' + entry.label + '</span>' +
+    '<span class="lines">' + fileCount + 'f</span>';
+  btn.addEventListener('click', () => activate(entry.id));
+  li.appendChild(btn);
+  return li;
+}
+(function renderProjectList(){
+  const groups = [];
+  const seen = new Map();
+  PROJECTS.forEach(p => {
+    const g = p.group || 'Other';
+    if(!seen.has(g)){
+      seen.set(g, { name: g, items: [] });
+      groups.push(seen.get(g));
+    }
+    seen.get(g).items.push(p);
+  });
+  groups.forEach(g => {
+    const head = document.createElement('li');
+    head.className = 'file-group-head';
+    head.textContent = g.name;
+    fileListEl.appendChild(head);
+    g.items.forEach(p => fileListEl.appendChild(projectButtonNode(p)));
+  });
+})();
+
+searchEl.addEventListener('input', ()=>{
+  const q = searchEl.value.toLowerCase().trim();
+  document.querySelectorAll('.file-btn').forEach(b=>{
+    const id = b.dataset.proj;
+    const label = b.querySelector('.label').textContent.toLowerCase();
+    const match = !q || id.toLowerCase().includes(q) || label.includes(q);
+    b.parentElement.style.display = match ? '' : 'none';
+  });
+  document.querySelectorAll('.file-group-head').forEach(head => {
+    let n = head.nextElementSibling;
+    let anyVisible = false;
+    while(n && !n.classList.contains('file-group-head')){
+      if(n.style.display !== 'none'){ anyVisible = true; break; }
+      n = n.nextElementSibling;
+    }
+    head.style.display = anyVisible ? '' : 'none';
+  });
+});
+
+/* Render the per-project file tabs above the editor */
+function renderFileTabs(){
+  const proj = activeProject();
+  if(!proj){ fileTabsEl.innerHTML = ''; return; }
+  const cur  = state.activeFile[proj.id] || proj.entry;
+  const esc  = (s) => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+  fileTabsEl.innerHTML = proj.files.map(f => {
+    const isEntry = (proj.bundle && proj.bundle[proj.bundle.length-1] === f) || f === proj.entry;
+    const cls = ['file-tab'];
+    if(f === cur) cls.push('active');
+    if(isEntry)   cls.push('entry');
+    if(isDirty(proj.project, f)) cls.push('dirty');
+    return `<button class="${cls.join(' ')}" data-file="${esc(f)}" title="${esc(f)}">${esc(f)}</button>`;
+  }).join('');
+  fileTabsEl.querySelectorAll('.file-tab').forEach(b => {
+    b.addEventListener('click', () => switchFile(b.dataset.file));
+  });
+}
+
+function activeProject(){
+  return PROJECTS.find(p => p.id === state.active);
+}
+function isDirty(projectName, file){
+  const k = projectName + '/' + file;
+  return state.buffers[k] != null && state.originals[k] != null && state.buffers[k] !== state.originals[k];
+}
+function refreshDirty(){
+  const proj = activeProject();
+  if(!proj) return;
+  const dirty = proj.files.some(f => isDirty(proj.project, f));
+  const btn = document.querySelector('.file-btn[data-proj="' + proj.id + '"]');
+  if(btn) btn.classList.toggle('dirty', dirty);
+  fileNameEl.classList.toggle('dirty', dirty);
+  renderFileTabs();
+}
+
+function loadEditorFor(file){
+  const proj = activeProject();
+  if(!proj) return;
+  const key = proj.project + '/' + file;
+  ensureLoaded(proj.project, file);
+  editor.setOption('mode', modeForFile(file));
+  editor.setValue(state.buffers[key] ?? state.originals[key] ?? '');
+  editor.clearHistory();
+  modeBadgeEl.textContent = badgeForFile(file);
+  fileSubEl.textContent = 'react/' + proj.project + '/' + file;
+  fileNameEl.firstChild.textContent = proj.label.replace(/^\d+\s*·\s*/, '');
+}
+
+function switchFile(file){
+  if(state.bundledMode) exitBundledMode();
+  const proj = activeProject();
+  if(!proj) return;
+  // Save the editor's current contents back to its slot before switching
+  const cur = state.activeFile[proj.id] || proj.entry;
+  state.buffers[proj.project + '/' + cur] = editor.getValue();
+  state.activeFile[proj.id] = file;
+  loadEditorFor(file);
+  refreshDirty();
+  editor.focus();
+}
+
+function activate(projId){
+  if(state.bundledMode) exitBundledMode();
+  // Save the prior editor view
+  const prior = activeProject();
+  if(prior){
+    const cur = state.activeFile[prior.id] || prior.entry;
+    state.buffers[prior.project + '/' + cur] = editor.getValue();
+    refreshDirty();
+  }
+  state.active = projId;
+  document.querySelectorAll('.file-btn').forEach(b => b.classList.toggle('active', b.dataset.proj === projId));
+  const proj = activeProject();
+  // Pre-load all of the project's files (so dirty markers are accurate)
+  proj.files.forEach(f => ensureLoaded(proj.project, f));
+  if(!state.activeFile[proj.id]) state.activeFile[proj.id] = proj.entry;
+  loadEditorFor(state.activeFile[proj.id]);
+  refreshDirty();
+  editor.focus();
+  renderPreview();
+}
+
+editor.on('change', ()=>{
+  if(state.bundledMode) return;        // read-only view; ignore changes
+  const proj = activeProject();
+  if(!proj) return;
+  const cur = state.activeFile[proj.id] || proj.entry;
+  const key = proj.project + '/' + cur;
+  state.buffers[key] = editor.getValue();
+  saveBufferToStorage(proj.project, cur, editor.getValue());
+  refreshDirty();
+});
+
+/* ==========================================================
+   "Show bundled output" toggle — flip the editor between the
+   actual source file and the read-only bundled JS that ends up
+   running inside the iframe.
+   ========================================================== */
+const bundledBtn = document.getElementById('bundledToggleBtn');
+state.bundledMode = false;
+state.bundledRestore = null;            // { file, value, mode } for restoring
+
+function enterBundledMode(){
+  const proj = activeProject();
+  if(!proj){ return; }
+  if(proj.isHtml){
+    toast('Vanilla-HTML step has no bundle — the file IS what runs', 'error');
+    return;
+  }
+  // Save the current edit before swapping the buffer
+  const cur = state.activeFile[proj.id] || proj.entry;
+  state.buffers[proj.project + '/' + cur] = editor.getValue();
+  state.bundledRestore = { file: cur };
+  state.bundledMode = true;
+
+  const bundle = bundleProjectJs(proj);
+  editor.setOption('mode', 'jsx');
+  editor.setOption('readOnly', 'nocursor');
+  editor.setValue('// 🔨  Read-only — this is the JS that actually runs in the iframe\n' +
+                  '//     after import-rewrite + concatenation. Toggle off to edit again.\n\n' +
+                  bundle);
+  editor.clearHistory();
+  modeBadgeEl.textContent = 'BUNDLED · READ-ONLY';
+  bundledBtn.classList.add('run-btn');
+  bundledBtn.textContent = '✎ Source';
+  bundledBtn.title = 'Switch back to editing the source file';
+  fileTabsEl.style.opacity = '0.45';
+  fileTabsEl.style.pointerEvents = 'none';
+}
+function exitBundledMode(){
+  state.bundledMode = false;
+  editor.setOption('readOnly', false);
+  bundledBtn.classList.remove('run-btn');
+  bundledBtn.textContent = '🔨 Bundled';
+  bundledBtn.title = 'Show the bundled JS that actually runs in the iframe (read-only)';
+  fileTabsEl.style.opacity = '';
+  fileTabsEl.style.pointerEvents = '';
+  // Reload the file the user was editing
+  const proj = activeProject();
+  if(proj){
+    const target = (state.bundledRestore && state.bundledRestore.file) || state.activeFile[proj.id] || proj.entry;
+    state.activeFile[proj.id] = target;
+    loadEditorFor(target);
+  }
+  state.bundledRestore = null;
+}
+bundledBtn.addEventListener('click', () => {
+  if(state.bundledMode) exitBundledMode(); else enterBundledMode();
+});
+
+/* ==========================================================
+   Reset / Render / Pop out
+   ========================================================== */
+document.getElementById('resetBtn').addEventListener('click', ()=>{
+  const proj = activeProject();
+  if(!proj) return;
+  if(state.bundledMode) exitBundledMode();
+  proj.files.forEach(f => {
+    const k = proj.project + '/' + f;
+    if(state.originals[k] != null) state.buffers[k] = state.originals[k];
+    clearBufferFromStorage(proj.project, f);
+  });
+  loadEditorFor(state.activeFile[proj.id] || proj.entry);
+  refreshDirty();
+  renderPreview();
+  toast('Reset ' + proj.project);
+});
+document.getElementById('runBtn').addEventListener('click', () => renderPreview());
+window.addEventListener('keydown', (e)=>{
+  if((e.metaKey || e.ctrlKey) && e.key === 'Enter'){
+    e.preventDefault();
+    renderPreview();
+  }
+});
+
+/* ==========================================================
+   Naive JSX bundler
+   ----------------------------------------------------------
+   For each project we concatenate the .jsx files in a hand-
+   declared dependency order. Then we rewrite ES module syntax
+   into globals (since the iframe loads React / ReactDOM /
+   ReactRouterDOM as UMD globals):
+     import React from 'react'                  → (drop)
+     import { useState } from 'react'           → const { useState } = React;
+     import ReactDOM from 'react-dom/client'    → (drop)
+     import { createRoot } from 'react-dom/...' → const { createRoot } = ReactDOM;
+     import { X } from 'react-router-dom'       → const { X } = ReactRouterDOM;
+                                                  (BrowserRouter -> MemoryRouter, see below)
+     import './App.css'                         → (drop, CSS injected separately)
+     import App from './App'                    → (drop, App is a global from concat)
+     import logo from './assets/x.svg'          → const logo = window.__ASSET__('assets/x.svg');
+     export default function X / class X        → keep declaration
+     export default X;                          → (drop)
+     export const/let/var/function/class X      → strip "export"
+     export { X };                              → (drop)
+   We also rewrite BrowserRouter -> MemoryRouter everywhere, so the
+   sandboxed about:srcdoc iframe (which has no real URL — `new URL(p,
+   "about:srcdoc")` throws "Invalid URL", which crashes HashRouter too)
+   can still route. MemoryRouter keeps history in memory, no window.location
+   touched.
+   ========================================================== */
+function transformImports(src){
+  // Turn "A, B as C, D" into "A = SOURCE.A, C = SOURCE.B, D = SOURCE.D"
+  // — used to expand named imports against a UMD global. We use `var` (not
+  // const) so two files in the same bundle can both import the same name
+  // without the second declaration crashing.
+  function destructure(names, source){
+    return names.split(',').map(n => {
+      n = n.trim();
+      const aliased = /^(\w+)\s+as\s+(\w+)$/.exec(n);
+      if(aliased) return aliased[2] + ' = ' + source + '.' + aliased[1];
+      return n + ' = ' + source + '.' + n;
+    }).join(', ');
+  }
+
+  return src
+    // import './foo.css' or './foo'  (no name binding) — drop
+    .replace(/^\s*import\s+['"](?:\.{1,2}\/)[^'"]+['"][^\n]*$/gm, '')
+
+    // import logo from './assets/x.svg' OR '/x.svg'
+    .replace(/^\s*import\s+(\w+)\s+from\s+['"](?:\.{0,2}\/)([^'"]+\.svg)['"][^\n]*$/gm,
+             "var $1 = window.__ASSET__('$2');")
+
+    // import React, { A, B } from 'react'  (default + named)
+    .replace(/^\s*import\s+React\s*,\s*\{\s*([^}]+)\}\s+from\s+['"]react['"][^\n]*$/gm,
+             (_, names) => 'var ' + destructure(names, 'React') + ';')
+
+    // import React from 'react'  (React already a global UMD)
+    .replace(/^\s*import\s+React\s+from\s+['"]react['"][^\n]*$/gm, '')
+
+    // import { useState, useEffect, … } from 'react'
+    .replace(/^\s*import\s+\{\s*([^}]+)\}\s+from\s+['"]react['"][^\n]*$/gm,
+             (_, names) => 'var ' + destructure(names, 'React') + ';')
+
+    // import ReactDOM from 'react-dom' / 'react-dom/client'
+    .replace(/^\s*import\s+ReactDOM\s+from\s+['"]react-dom(?:\/[A-Za-z][\w-]*)?['"][^\n]*$/gm, '')
+
+    // import { createRoot, … } from 'react-dom/…'
+    .replace(/^\s*import\s+\{\s*([^}]+)\}\s+from\s+['"]react-dom(?:\/[A-Za-z][\w-]*)?['"][^\n]*$/gm,
+             (_, names) => 'var ' + destructure(names, 'ReactDOM') + ';')
+
+    // import { … } from 'react-router-dom'  → ReactRouterDOM global,
+    // BrowserRouter renamed to MemoryRouter (about:srcdoc has no real URL).
+    .replace(/^\s*import\s+\{\s*([^}]+)\}\s+from\s+['"]react-router-dom['"][^\n]*$/gm,
+             (_, names) => 'var ' + destructure(names.replace(/BrowserRouter/g, 'MemoryRouter'), 'ReactRouterDOM') + ';')
+
+    // import X from './path' / './path.jsx' — local default import; drop
+    .replace(/^\s*import\s+\w+\s+from\s+['"]\.{1,2}\/[^'"]+['"][^\n]*$/gm, '')
+
+    // import { A, B } from './path' — local named import; drop
+    .replace(/^\s*import\s+\{[^}]+\}\s+from\s+['"]\.{1,2}\/[^'"]+['"][^\n]*$/gm, '')
+
+    // export default function NAME(…)  →  function NAME(…)
+    .replace(/^\s*export\s+default\s+function\s+(\w+)/gm, 'function $1')
+
+    // export default class NAME  →  class NAME
+    .replace(/^\s*export\s+default\s+class\s+(\w+)/gm, 'class $1')
+
+    // export default NAME;  →  drop  (NAME is already a global)
+    .replace(/^\s*export\s+default\s+\w+\s*;?\s*$/gm, '')
+
+    // export const/let/var/function/class  →  strip "export"
+    .replace(/^\s*export\s+(const|let|var|function|class)\s+/gm, '$1 ')
+
+    // export { … };  →  drop
+    .replace(/^\s*export\s+\{[^}]+\}\s*;?\s*$/gm, '')
+
+    // BrowserRouter (in JSX usage too, not just imports) -> MemoryRouter
+    .replace(/\bBrowserRouter\b/g, 'MemoryRouter');
+}
+
+/* ==========================================================
+   Live preview
+   ========================================================== */
+const previewEl       = document.getElementById('preview');
+const previewCardEl   = document.getElementById('previewCard');
+const previewStatusEl = document.getElementById('previewStatus');
+const previewStatsEl  = document.getElementById('previewStats');
+const autoChk         = document.getElementById('autoChk');
+
+function getFileText(projectName, file){
+  const k = projectName + '/' + file;
+  return state.buffers[k] ?? state.originals[k] ?? '';
+}
+
+function buildAssetMap(projectName, fileList){
+  // Expose any embedded SVG/asset file so `import logo from './assets/foo.svg'`
+  // (rewritten to window.__ASSET__('assets/foo.svg')) returns a usable URL.
+  const map = {};
+  for(const f of fileList){
+    if(f.endsWith('.svg')){
+      const txt = getFileText(projectName, f);
+      map[f] = 'data:image/svg+xml;utf8,' + encodeURIComponent(txt);
+    }
+  }
+  // Stand-in for Vite's "/vite.svg" public asset
+  if(!map['vite.svg']){
+    map['vite.svg'] = 'data:image/svg+xml;utf8,' + encodeURIComponent(
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 410 404">' +
+      '<defs><linearGradient id="a" x1="6" y1="33" x2="235" y2="344" gradientUnits="userSpaceOnUse">' +
+      '<stop stop-color="#41D1FF"/><stop offset="1" stop-color="#BD34FE"/></linearGradient>' +
+      '<linearGradient id="b" x1="194.65" y1="8.81" x2="236.07" y2="292.98" gradientUnits="userSpaceOnUse">' +
+      '<stop stop-color="#FFEA83"/><stop offset=".083" stop-color="#FFDD35"/><stop offset="1" stop-color="#FFA800"/>' +
+      '</linearGradient></defs>' +
+      '<path fill="url(#a)" d="M399.6 59.5L215.6 388.5c-3.8 6.8-13.6 6.8-17.4 0L10.6 59.5c-4.2-7.4 2.1-16.3 10.5-14.8l184.2 32.9c1.2.2 2.4.2 3.6 0L389.1 44.8c8.3-1.5 14.6 7.3 10.5 14.7z"/>' +
+      '<path fill="url(#b)" d="M293 1.6L156.8 28.3c-2.2.4-3.9 2.3-4 4.6L144.4 174.3c-.2 3.3 2.9 5.9 6.1 5.1l37.9-8.7c3.5-.8 6.7 2.3 6 5.9l-11.3 55.2c-.8 3.7 2.7 6.9 6.3 5.8l23.4-7.1c3.6-1.1 7.1 2.1 6.3 5.8l-17.9 86.6c-1.1 5.4 6.1 8.4 9.1 3.7l1.3-2 110.9-221.5c1.9-3.7-1.3-7.9-5.4-7.1l-39 7.5c-3.7.7-6.8-2.7-5.8-6.3l25.5-87.9c1-3.6-2.1-7-5.8-6.6z"/></svg>'
+    );
+  }
+  return map;
+}
+
+function defaultRuntimeCss(){
+  return [
+    '/* Lab default — gets overridden by any project CSS that sets the same things */',
+    'html, body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background: #fafafa; color: #111; }',
+    '* { box-sizing: border-box; }',
+    'button { font-family: inherit; }',
+  ].join('\n');
+}
+
+// Concatenate the project's .jsx files (in declared dep order), running
+// each through transformImports. Exposed so the "Show bundled output"
+// toggle can render exactly what gets injected into the iframe.
+function bundleProjectJs(proj){
+  if(!proj || proj.isHtml) return '';
+  return (proj.bundle || [proj.entry])
+    .map(f => '/* ============== ' + f + ' ============== */\n' +
+              transformImports(getFileText(proj.project, f)))
+    .join('\n\n');
+}
+function bundleProjectCss(proj){
+  if(!proj) return '';
+  return (proj.css || [])
+    .map(f => '/* ----- ' + f + ' ----- */\n' + getFileText(proj.project, f))
+    .join('\n\n');
+}
+
+function buildPreviewHtml(){
+  const proj = activeProject();
+  if(!proj) return '';
+
+  // Capture the editor's current text into the buffer first
+  const cur = state.activeFile[proj.id] || proj.entry;
+  state.buffers[proj.project + '/' + cur] = editor.getValue();
+
+  // Vanilla-HTML projects: just inject the file content as the iframe body
+  if(proj.isHtml){
+    return getFileText(proj.project, proj.entry);
+  }
+
+  const jsx = bundleProjectJs(proj);
+  const css = bundleProjectCss(proj);
+
+  // Mask any literal closing-script tag inside user code so it doesn't
+  // prematurely terminate the wrapping <script> tag in the iframe.
+  const safeJsx = jsx.replace(/<\/script/gi, '<\\/script');
+  const safeCss = css.replace(/<\/style/gi, '<\\/style');
+
+  // CDN scripts. Order matters: react → react-dom → @remix-run/router →
+  // react-router → react-router-dom → babel-standalone (transpiles last)
+  const scripts = [
+    'https://unpkg.com/react@18.3.1/umd/react.development.js',
+    'https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js',
+  ];
+  if(proj.needsRouter){
+    scripts.push('https://unpkg.com/@remix-run/router@1.19.2/dist/router.umd.js');
+    scripts.push('https://unpkg.com/react-router@6.26.2/dist/umd/react-router.development.js');
+    scripts.push('https://unpkg.com/react-router-dom@6.26.2/dist/umd/react-router-dom.development.js');
+  }
+  scripts.push('https://unpkg.com/@babel/standalone/babel.min.js');
+
+  const assets = buildAssetMap(proj.project, proj.files);
+
+  return [
+    '<!DOCTYPE html>',
+    '<html lang="en">',
+    '<head>',
+    '<meta charset="UTF-8">',
+    '<title>React Lab — ' + proj.project + '</title>',
+    scripts.map(s => '<script crossorigin src="' + s + '"><\/script>').join('\n'),
+    '<style>',
+    defaultRuntimeCss(),
+    safeCss,
+    '#__react-lab-error{display:none;color:#fff;background:#b00020;padding:12px 14px;font-family:ui-monospace,monospace;white-space:pre-wrap;border-radius:8px;margin:12px;font-size:13px;line-height:1.5}',
+    '<\/style>',
+    '</head>',
+    '<body>',
+    '<div id="root"></div>',
+    '<pre id="__react-lab-error"></pre>',
+    '<script>',
+    '  window.__ASSETS = ' + JSON.stringify(assets) + ';',
+    '  window.__ASSET__ = function(p){ return window.__ASSETS[p] || "data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22><rect width=%2216%22 height=%2216%22 fill=%22%23ddd%22/></svg>"; };',
+    '  window.__showError = function(err){',
+    '    var box = document.getElementById("__react-lab-error");',
+    '    if(!box) return;',
+    '    box.style.display = "block";',
+    '    var msg = err && err.message ? err.message : String(err);',
+    '    var stack = err && err.stack ? "\\n\\n" + err.stack : "";',
+    '    box.textContent = msg + stack;',
+    '  };',
+    '  window.addEventListener("error", function(e){ window.__showError(e.error || e.message); });',
+    '  window.addEventListener("unhandledrejection", function(e){ window.__showError(e.reason); });',
+    /* ---- console shim: forward console.* to the parent's panel ---- */
+    '  (function(){',
+    '    var levels = ["log","info","warn","error","debug"];',
+    '    function fmt(v){',
+    '      if(v === undefined) return "undefined";',
+    '      if(v === null) return "null";',
+    '      if(typeof v === "function") return v.toString().slice(0,200);',
+    '      if(typeof v === "string") return v;',
+    '      if(typeof v === "object"){',
+    '        try { return JSON.stringify(v, function(_,x){',
+    '          if(typeof x === "function") return "[Function " + (x.name || "anonymous") + "]";',
+    '          if(x && typeof x === "object" && x.$$typeof) return "[ReactElement]";',
+    '          return x;',
+    '        }, 2); } catch(e){ return Object.prototype.toString.call(v); }',
+    '      }',
+    '      return String(v);',
+    '    }',
+    '    levels.forEach(function(lv){',
+    '      var orig = window.console[lv] ? window.console[lv].bind(window.console) : function(){};',
+    '      window.console[lv] = function(){',
+    '        var args = Array.prototype.slice.call(arguments);',
+    '        try { window.parent.postMessage({ __reactLab:true, kind:"console", level:lv, args:args.map(fmt) }, "*"); } catch(e){}',
+    '        try { orig.apply(null, args); } catch(e){}',
+    '      };',
+    '    });',
+    '  })();',
+    '<\/script>',
+    '<script type="text/babel" data-presets="env,react">',
+    safeJsx,
+    '<\/script>',
+    '</body>',
+    '</html>'
+  ].join('\n');
+}
+
+function renderPreview(){
+  const proj = activeProject();
+  if(!proj){ return; }
+  const html = buildPreviewHtml();
+  previewStatusEl.classList.add('rendering');
+  previewStatusEl.classList.remove('error');
+  previewStatusEl.textContent = 'Rendering';
+  previewStatsEl.textContent = proj.isHtml
+    ? '1 file (raw HTML)'
+    : (proj.bundle ? proj.bundle.length : 1) + ' js · ' + ((proj.css||[]).length) + ' css' + (proj.needsRouter ? ' · router' : '');
+  clearConsole();              // wipe the panel; new iframe = new console session
+  previewEl.srcdoc = html;
+}
+
+/* ==========================================================
+   Console panel — receives forwarded console.* calls from the
+   iframe via postMessage and renders them as colored lines.
+   ========================================================== */
+const consolePanelEl    = document.getElementById('consolePanel');
+const consoleOutEl      = document.getElementById('consoleOut');
+const consoleCountEl    = document.getElementById('consoleCount');
+const consoleHeadEl     = document.getElementById('consoleHead');
+const consoleClearBtn   = document.getElementById('consoleClearBtn');
+const consoleCollapseBtn= document.getElementById('consoleCollapseBtn');
+let consoleN = 0, consoleErrN = 0;
+
+function clearConsole(){
+  consoleN = 0; consoleErrN = 0;
+  consoleCountEl.textContent = '0';
+  consolePanelEl.classList.remove('has-output','has-error');
+  consoleOutEl.innerHTML =
+    '<div class="empty">No console output yet — anything the React code logs will appear here.</div>';
+}
+function appendConsoleLine(level, args){
+  if(consoleN === 0) consoleOutEl.innerHTML = '';
+  consoleN++;
+  if(level === 'error') consoleErrN++;
+  consoleCountEl.textContent = String(consoleN);
+  consolePanelEl.classList.add('has-output');
+  if(consoleErrN) consolePanelEl.classList.add('has-error');
+  const line = document.createElement('div');
+  line.className = 'console-line ' + level;
+  const lvl = document.createElement('span'); lvl.className = 'lvl'; lvl.textContent = level;
+  const body = document.createElement('span'); body.className = 'body'; body.textContent = (args||[]).join(' ');
+  line.appendChild(lvl); line.appendChild(body);
+  consoleOutEl.appendChild(line);
+  consoleOutEl.scrollTop = consoleOutEl.scrollHeight;
+}
+window.addEventListener('message', (e)=>{
+  if(!e.data || !e.data.__reactLab) return;
+  if(e.data.kind === 'console') appendConsoleLine(e.data.level, e.data.args);
+});
+consoleClearBtn.addEventListener('click', (e)=>{ e.stopPropagation(); clearConsole(); });
+consoleCollapseBtn.addEventListener('click', (e)=>{
+  e.stopPropagation();
+  consolePanelEl.classList.toggle('collapsed');
+  consoleCollapseBtn.textContent = consolePanelEl.classList.contains('collapsed') ? '▴' : '▾';
+});
+consoleHeadEl.addEventListener('click', (e)=>{
+  if(e.target.closest('button')) return;     // header buttons handle themselves
+  consolePanelEl.classList.toggle('collapsed');
+  consoleCollapseBtn.textContent = consolePanelEl.classList.contains('collapsed') ? '▴' : '▾';
+});
+function schedulePreview(){
+  if(!autoChk.checked) return;
+  clearTimeout(schedulePreview._t);
+  schedulePreview._t = setTimeout(renderPreview, 450);
+}
+
+previewEl.addEventListener('load', ()=>{
+  previewStatusEl.classList.remove('rendering');
+  previewStatusEl.textContent = 'Preview';
+  try {
+    const doc = previewEl.contentDocument;
+    const errBox = doc && doc.getElementById('__react-lab-error');
+    if(errBox && errBox.style.display !== 'none' && errBox.textContent){
+      previewStatusEl.classList.add('error');
+      previewStatusEl.textContent = 'Error';
+    }
+  } catch {}
+});
+
+document.getElementById('bgToggleBtn').addEventListener('click', (e)=>{
+  previewCardEl.classList.toggle('dark-bg');
+  e.currentTarget.classList.toggle('active', previewCardEl.classList.contains('dark-bg'));
+});
+document.getElementById('popoutBtn').addEventListener('click', ()=>{
+  const html = buildPreviewHtml();
+  if(!html){ toast('Nothing to pop out yet'); return; }
+  const w = window.open('', '_blank', 'noopener,noreferrer');
+  if(!w){ toast('Pop-up blocked — allow popups for this page', 'error'); return; }
+  w.document.open(); w.document.write(html); w.document.close();
+});
+
+editor.on('change', schedulePreview);
+
+/* ==========================================================
+   Toast helper
+   ========================================================== */
+const toastEl = document.getElementById('toast');
+let toastTimer;
+function toast(msg, kind){
+  toastEl.textContent = msg;
+  toastEl.classList.toggle('error', kind === 'error');
+  toastEl.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=> toastEl.classList.remove('show'), 1800);
+}
+
+/* ==========================================================
+   Drag-to-resize splitter between editor and preview
+   ========================================================== */
+(function initSplitter(){
+  const pane     = document.querySelector('.editor-pane');
+  const splitter = document.getElementById('splitter');
+  const editorCardEl   = document.querySelector('.editor-pane > .editor-card');
+  const previewCardEl_ = document.querySelector('.editor-pane > .preview-card');
+  if(!pane || !splitter || !editorCardEl || !previewCardEl_) return;
+  const HANDLE_W = 6;
+  const MIN_PANE = 160;
+  const STORAGE  = 'react-lab-split-ratio';
+
+  let savedRatio = null;
+  try { const v = parseFloat(localStorage.getItem(STORAGE)); if(v > 0 && v < 1) savedRatio = v; } catch {}
+
+  function applyRatio(ratio){
+    const total = pane.clientWidth - parseFloat(getComputedStyle(pane).paddingLeft) * 2 - HANDLE_W - 14 * 2;
+    if(total <= 0) return;
+    const left  = Math.max(MIN_PANE, Math.min(total - MIN_PANE, total * ratio));
+    const right = total - left;
+    pane.style.setProperty('--col-1', left  + 'px');
+    pane.style.setProperty('--col-2', right + 'px');
+    if(typeof editor !== 'undefined' && editor.refresh){
+      clearTimeout(applyRatio._t);
+      applyRatio._t = setTimeout(() => editor.refresh(), 30);
+    }
+  }
+  if(savedRatio != null) applyRatio(savedRatio);
+
+  let drag = null;
+  function start(e){
+    e.preventDefault();
+    const rect = pane.getBoundingClientRect();
+    const padL = parseFloat(getComputedStyle(pane).paddingLeft) || 0;
+    drag = {
+      paneLeft: rect.left + padL,
+      total: pane.clientWidth - padL * 2 - HANDLE_W - 14 * 2,
+      pointerId: e.pointerId ?? null,
+    };
+    splitter.classList.add('active');
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  }
+  function move(e){
+    if(!drag) return;
+    let editorPx = e.clientX - drag.paneLeft;
+    editorPx = Math.max(MIN_PANE, Math.min(drag.total - MIN_PANE, editorPx));
+    const ratio = editorPx / drag.total;
+    applyRatio(ratio);
+  }
+  function end(){
+    if(!drag) return;
+    drag = null;
+    splitter.classList.remove('active');
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+    const total = pane.clientWidth - parseFloat(getComputedStyle(pane).paddingLeft) * 2 - HANDLE_W - 14 * 2;
+    const colL = parseFloat(pane.style.getPropertyValue('--col-1')) || total / 2;
+    try { localStorage.setItem(STORAGE, (colL / total).toFixed(4)); } catch {}
+  }
+  splitter.addEventListener('pointerdown', start);
+  window.addEventListener('pointermove', move);
+  window.addEventListener('pointerup',   end);
+  window.addEventListener('pointercancel', end);
+
+  splitter.addEventListener('dblclick', () => {
+    pane.style.removeProperty('--col-1');
+    pane.style.removeProperty('--col-2');
+    try { localStorage.removeItem(STORAGE); } catch {}
+    if(typeof editor !== 'undefined' && editor.refresh) setTimeout(() => editor.refresh(), 30);
+  });
+
+  window.addEventListener('resize', () => {
+    if(savedRatio != null) applyRatio(parseFloat(localStorage.getItem(STORAGE)) || 0.5);
+    if(typeof editor !== 'undefined' && editor.refresh){
+      clearTimeout(applyRatio._t);
+      applyRatio._t = setTimeout(() => editor.refresh(), 60);
+    }
+  });
+})();
+
+/* ==========================================================
+   Boot
+   ========================================================== */
+(function boot(){
+  // Pre-load every embedded source so dirty markers and tabs are accurate
+  PROJECTS.forEach(p => p.files.forEach(f => ensureLoaded(p.project, f)));
+  activate(PROJECTS[0].id);
+})();
+</script>
+<script src="../home.js"></script>
+</body>
+</html>

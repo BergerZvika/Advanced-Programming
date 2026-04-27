@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Simple Button Click</title>
+</head>
+<body>
+  <button onclick="createHeading()">Click me</button>
+  <div id="result"></div>
+  <script>
+    function createHeading() {
+      const heading = '<h1>Hello Not React!</h1>';
+      document.getElementById('result').innerHTML = heading;
+    }
+  </script>
+</body>
+</html>

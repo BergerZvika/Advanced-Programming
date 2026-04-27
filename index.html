@@ -368,6 +368,49 @@ section.lab-section{ margin-top: 56px }
   text-shadow: 0 2px 0 rgba(0,0,0,0.18);
 }
 
+/* React-themed featured card variant */
+.featured-card.react-theme::before{
+  background: linear-gradient(135deg, rgba(97,218,251,0.55), rgba(124,92,255,0) 40%, rgba(53,208,255,0.40));
+}
+.featured-card.react-theme:hover{ border-color: rgba(97,218,251,0.45); box-shadow: 0 36px 90px -30px rgba(97,218,251,0.30), 0 10px 30px -15px rgba(0,0,0,0.7) }
+.featured-card.react-theme .featured-art{
+  background:
+    radial-gradient(420px 220px at 30% 30%, rgba(97,218,251,0.26), transparent 60%),
+    radial-gradient(380px 220px at 80% 70%, rgba(124,92,255,0.18), transparent 60%),
+    linear-gradient(135deg, rgba(32,35,42,0.30), rgba(97,218,251,0.06));
+}
+.featured-card.react-theme .tag{
+  color: #b6ecff; background: rgba(97,218,251,0.12); border-color: rgba(97,218,251,0.32);
+}
+.react-atom{
+  width: 170px; height: 170px; position: relative;
+  filter: drop-shadow(0 16px 36px rgba(97,218,251,0.45));
+  animation: floatY 5s ease-in-out infinite;
+}
+.react-atom .core{
+  position: absolute; left: 50%; top: 50%;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ffffff 0%, #61dafb 55%, #1bb1d8 100%);
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 18px rgba(97,218,251,0.85);
+}
+.react-atom .orb{
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  border: 0; background: transparent;            /* override .featured-art .ring */
+  width: auto; height: auto;
+}
+.react-atom .orb .e{
+  width: 100%; height: 60px; border: 2px solid rgba(97,218,251,0.85); border-radius: 50%;
+  background: transparent;
+}
+.react-atom .orb.o1{ animation: atomSpinA 14s linear infinite }
+.react-atom .orb.o2{ transform: rotate(60deg);  animation: atomSpinB 14s linear infinite }
+.react-atom .orb.o3{ transform: rotate(-60deg); animation: atomSpinC 14s linear infinite }
+@keyframes atomSpinA{ to { transform: rotate(360deg) } }
+@keyframes atomSpinB{ to { transform: rotate(420deg) } }
+@keyframes atomSpinC{ to { transform: rotate(300deg) } }
+
 /* HTML-themed featured card variant */
 .featured-card.html-theme::before{
   background: linear-gradient(135deg, rgba(227,79,38,0.55), rgba(124,92,255,0) 45%, rgba(53,208,255,0.4));
@@ -608,6 +651,7 @@ footer a:hover{ color: var(--text) }
     <a class="nav-link" href="#bootstrap">Bootstrap</a>
     <a class="nav-link" href="#mongodb">MongoDB</a>
     <a class="nav-link" href="#neo4j">Neo4j</a>
+    <a class="nav-link" href="#react">React</a>
     <a class="nav-link primary" href="tools.html">BergerOverflow ↗</a>
   </div>
 </nav>
@@ -829,10 +873,44 @@ footer a:hover{ color: var(--text) }
     </a>
   </section>
 
+  <!-- React — featured -->
+  <section class="lab-section" id="react">
+    <div class="section-head">
+      <h2>React</h2>
+      <span class="count">live JSX</span>
+      <p>Write JSX on the left, watch React 18 mount it into a sandboxed iframe on the right — Babel-standalone transpiles in your browser, so it all runs without a build step.</p>
+    </div>
+
+    <a class="featured-card react-theme" href="react/index.html">
+      <div class="featured-art">
+        <span class="ring r1"></span>
+        <span class="ring r2"></span>
+        <div class="react-atom">
+          <div class="orb o1"><div class="e"></div></div>
+          <div class="orb o2"><div class="e"></div></div>
+          <div class="orb o3"><div class="e"></div></div>
+          <div class="core"></div>
+        </div>
+      </div>
+      <div class="featured-body">
+        <span class="tag">Featured</span>
+        <h3>React Lab</h3>
+        <p>15 multi-file React steps with a live preview. Walk from the Vite scaffold and the five hello variants (vanilla HTML → functional → class → conditional → memo) through two <code>react-router-dom</code> setups, TicTacToe, the four core hooks (<code>useState</code>, <code>useEffect</code>, custom hooks, lift-state-up), an error boundary, and a six-file todo app that ties it all together. Babel transpiles JSX in the browser, console output is captured into a panel, and a "Show bundled output" toggle reveals the JS that actually runs.</p>
+        <div class="meta">
+          <span>15 steps</span>
+          <span>hooks · routing · todo app</span>
+          <span>console panel</span>
+          <span>edits persist to localStorage</span>
+        </div>
+        <span class="open">Open the lab <span aria-hidden="true">→</span></span>
+      </div>
+    </a>
+  </section>
+
 </main>
 
 <footer>
-  <p>Advanced Programming · <a href="tools.html">BergerOverflow Tools</a> · <a href="javascript/index.html">JS Lab</a> · <a href="typescript/index.html">TS Lab</a> · <a href="html/lab.html">HTML Lab</a> · <a href="css/index.html">CSS Lab</a> · <a href="bootstrap/index.html">Bootstrap Lab</a> · <a href="mongodb/index.html">MongoDB Lab</a> · <a href="neo4j/index.html">Neo4j Lab</a></p>
+  <p>Advanced Programming · <a href="tools.html">BergerOverflow Tools</a> · <a href="javascript/index.html">JS Lab</a> · <a href="typescript/index.html">TS Lab</a> · <a href="html/lab.html">HTML Lab</a> · <a href="css/index.html">CSS Lab</a> · <a href="bootstrap/index.html">Bootstrap Lab</a> · <a href="mongodb/index.html">MongoDB Lab</a> · <a href="neo4j/index.html">Neo4j Lab</a> · <a href="react/index.html">React Lab</a></p>
 </footer>
 
 <script>
