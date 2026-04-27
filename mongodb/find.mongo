@@ -1,0 +1,39 @@
+use myapp
+db.users.insertMany([
+  { name: "zvi",    grade: 59,  year: 2024 },
+  { name: "berger", grade: 80,  year: 2025 },
+  { name: "zvika",  grade: 70,  year: 2025 },
+  { name: "db",     grade: 100, year: 2025 }
+])
+
+// Empty + first-only
+db.users.find()
+db.users.findOne()
+
+// Filter
+db.users.findOne({ grade: 80 })
+db.users.find({ grade: 80 })
+
+// Projections
+db.users.find({ grade: 80 }, { name: true })
+db.users.find({ grade: 80 }, { name: 1 })
+db.users.find({ grade: 80 }, { _id: 0, name: 1 })
+db.users.find({},            { _id: 0, name: 1 })
+db.users.find({ grade: 80 }, { name: 0 })
+
+// Comparison operators
+db.users.find({ grade: { $gt:  70 } }, { _id: 0 })
+db.users.find({ grade: { $gte: 70 } }, { _id: 0 })
+
+// $in / $and / $eq / $ne
+db.users.find({ name: { $in: ["zvika", "berger", "hello"] } }, { _id: 0 })
+db.users.find({ $and: [ { grade: { $gte: 70 } }, { year: { $ne: 2024 } } ] }, { _id: 0 })
+db.users.find({ $and: [ { grade: { $gte: 70 } }, { year: { $eq: 2025 } } ] }, { _id: 0 })
+
+// Sorting
+db.users.find({}, { _id: 0 }).sort({ name:  1 })
+db.users.find({}, { _id: 0 }).sort({ name: -1 })
+db.users.find({}, { _id: 0 }).sort({ grade: 1 })
+
+// Sort + limit
+db.users.find({}, { _id: 0 }).sort({ grade: -1 }).limit(2)

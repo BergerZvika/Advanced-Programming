@@ -1,0 +1,15 @@
+// MongoDB lab — type mongosh commands and hit Run.
+// The in-memory database resets on each Run, so put the full
+// sequence (use → insert → find) in a single editor session.
+
+// What databases exist?
+show dbs
+
+// Switch to (or implicitly create) a database
+use myapp
+
+// Add a collection
+db.createCollection("users")
+
+// Confirm
+show collections

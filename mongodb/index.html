@@ -1,0 +1,2216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MongoDB Lab — Advanced Programming</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/theme/dracula.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/dialog/dialog.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/hint/show-hint.min.css">
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/javascript/javascript.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/edit/closebrackets.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/edit/matchbrackets.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/selection/active-line.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/comment/comment.min.js"></script>
+
+<style>
+:root{
+  --bg-0:#06060c;
+  --bg-1:#0c0c18;
+  --bg-2:#15152a;
+  --surface:rgba(255,255,255,0.04);
+  --surface-2:rgba(255,255,255,0.07);
+  --border:rgba(255,255,255,0.09);
+  --border-strong:rgba(255,255,255,0.18);
+  --text:#e8e8f3;
+  --text-dim:#9a9ab0;
+  --text-faint:#666680;
+  --accent:#7c5cff;
+  --accent-2:#35d0ff;
+  --accent-3:#ff6ec7;
+  --mongo-green:#00684a;
+  --mongo-green-2:#13aa52;
+  --success:#38d39f;
+  --warn:#ffb547;
+  --error:#ff5a7a;
+  --radius:18px;
+  --radius-sm:12px;
+  --shadow-lg: 0 30px 80px -30px rgba(124,92,255,0.35), 0 10px 30px -15px rgba(0,0,0,0.6);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg-0);color:var(--text);font-family:'Inter',system-ui,sans-serif;height:100%;overflow:hidden}
+code,pre,textarea,.mono,.CodeMirror{font-family:'JetBrains Mono',ui-monospace,monospace}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+
+/* 3D Three.js canvas — background layer */
+#bg-3d{
+  position:fixed; inset:0; z-index:-2;
+  display:block;
+  background:
+    radial-gradient(1200px 700px at 8% -10%, rgba(124,92,255,0.30), transparent 60%),
+    radial-gradient(1000px 600px at 110% 0%,  rgba(53,208,255,0.22), transparent 60%),
+    radial-gradient(900px 600px at 50% 130%,  rgba(255,110,199,0.18), transparent 60%),
+    linear-gradient(180deg, #050510 0%, #08081a 50%, #050510 100%);
+}
+/* tiny stars overlay */
+body::after{
+  content:""; position:fixed; inset:0; z-index:-1; pointer-events:none; opacity:.32;
+  background-image:
+    radial-gradient(1px 1px at 20% 30%, #ffffff 100%, transparent),
+    radial-gradient(1px 1px at 70% 60%, #ffffff 100%, transparent),
+    radial-gradient(1.5px 1.5px at 40% 80%, #ffffff 100%, transparent),
+    radial-gradient(1px 1px at 85% 20%, #ffffff 100%, transparent),
+    radial-gradient(1px 1px at 15% 65%, #ffffff 100%, transparent);
+  background-size: 1200px 800px;
+  mask-image:linear-gradient(180deg,transparent,#000 20%,#000 80%,transparent);
+}
+
+/* Layout */
+.app{
+  display:grid; grid-template-columns: 300px 1fr; height:100vh;
+}
+@media (max-width: 980px){
+  .app{ grid-template-columns: 1fr; height:auto; min-height:100vh; overflow:auto }
+  html,body{ overflow:auto; height:auto }
+}
+
+/* Sidebar */
+.sidebar{
+  padding:22px 16px; position:relative; z-index:5;
+  background:linear-gradient(180deg, rgba(12,12,24,0.85), rgba(8,8,18,0.85));
+  backdrop-filter: blur(22px) saturate(140%);
+  -webkit-backdrop-filter: blur(22px) saturate(140%);
+  border-right:1px solid var(--border);
+  overflow-y:auto;
+  scrollbar-width:thin;
+}
+.sidebar::-webkit-scrollbar{width:6px}
+.sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.08);border-radius:6px}
+
+.brand{
+  display:flex;align-items:center;gap:12px;margin-bottom:18px;
+  padding:6px 4px;border-radius:14px;user-select:none;
+}
+.brand-cube{
+  width:46px;height:46px;border-radius:12px;position:relative;
+  background:linear-gradient(135deg,#13aa52,#00684a);
+  box-shadow:
+    0 12px 30px -10px rgba(247,223,30,0.45),
+    inset 0 0 0 1px rgba(255,255,255,0.25),
+    inset 0 -10px 20px -8px rgba(0,0,0,0.35);
+  transform: rotate(-6deg);
+  display:flex;align-items:center;justify-content:center;
+  font-weight:800;font-size:13px;color:#1a1a2a;letter-spacing:0.5px;
+  animation: floatY 5s ease-in-out infinite;
+}
+.brand-cube::after{
+  content:""; position:absolute; inset:auto -6px -6px auto;
+  width:100%;height:100%; border-radius:12px;
+  background:linear-gradient(135deg, rgba(124,92,255,0.5), rgba(53,208,255,0.5));
+  filter:blur(14px); z-index:-1;
+}
+@keyframes floatY{
+  0%,100%{ transform: rotate(-6deg) translateY(0) }
+  50%   { transform: rotate(-2deg) translateY(-4px) }
+}
+.brand h1{margin:0;font-size:17px;font-weight:700;letter-spacing:-0.02em}
+.brand .sub{font-size:11px;color:var(--text-faint);letter-spacing:0.14em;text-transform:uppercase}
+
+.search-wrap{ position:relative; margin-bottom:14px }
+.search{
+  width:100%;padding:10px 14px 10px 34px;border-radius:12px;border:1px solid var(--border);
+  background:rgba(255,255,255,0.03);color:var(--text);font-size:13.5px;outline:none;
+  transition:border-color .2s, box-shadow .2s;
+}
+.search:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(124,92,255,0.2)}
+.search-wrap::before{
+  content:"⌕"; position:absolute; left:11px; top:50%; transform:translateY(-50%);
+  color:var(--text-faint); font-size:14px; pointer-events:none;
+}
+
+.section-label{
+  font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:var(--text-faint);
+  padding:14px 8px 6px;
+}
+
+.file-list{ list-style:none; padding:0; margin:0 }
+.file-list li{ margin:2px 0 }
+.file-btn{
+  width:100%;display:flex;align-items:center;gap:10px;
+  background:transparent;color:var(--text-dim);
+  padding:10px 12px;border-radius:10px;font-size:13.5px;font-weight:500;text-align:left;
+  transition: background .15s, color .15s, transform .15s, box-shadow .2s;
+  border:1px solid transparent;
+}
+.file-btn:hover{ background:var(--surface); color:var(--text); transform:translateX(2px) }
+.file-btn.active{
+  background:linear-gradient(135deg,rgba(124,92,255,0.22),rgba(53,208,255,0.12));
+  color:#fff; border-color:rgba(124,92,255,0.32);
+  box-shadow: inset 0 0 0 1px rgba(124,92,255,0.18), 0 8px 24px -16px rgba(124,92,255,0.55);
+}
+.file-btn .ico{
+  width:24px; height:24px; flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  border-radius:6px;
+  background:linear-gradient(135deg,#13aa52,#00684a);
+  color:#1a1a2a; font-weight:800; font-size:9.5px; letter-spacing:0.5px;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.2);
+}
+.file-btn .label{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+.file-btn .lines{
+  font-size:10.5px; color:var(--text-faint); padding:1px 6px; border-radius:20px;
+  background:rgba(255,255,255,0.04); flex-shrink:0;
+}
+.file-btn.active .lines{ background:rgba(124,92,255,0.22); color:#dcd5ff }
+.file-btn.dirty::before{
+  content:""; width:6px; height:6px; border-radius:50%;
+  background:var(--accent-2); flex-shrink:0;
+  box-shadow: 0 0 8px var(--accent-2);
+}
+
+.back-link{
+  display:flex;align-items:center;gap:8px;
+  margin-top:18px; padding:10px 12px;border-radius:10px;
+  color:var(--text-dim); font-size:13px; text-decoration:none;
+  border:1px solid var(--border);
+  transition: background .15s, color .15s, border-color .15s;
+}
+.back-link:hover{ background:var(--surface); color:var(--text); border-color:var(--border-strong) }
+
+/* Main pane */
+.editor-pane{
+  position:relative; padding:22px 22px 22px 22px;
+  display:grid;
+  /* both columns default to 1fr; the splitter overrides --col-1/--col-2 in px */
+  grid-template-columns: var(--col-1, 1fr) 6px var(--col-2, 1fr);
+  grid-template-rows: auto 1fr;
+  grid-template-areas:
+    "topbar  topbar  topbar"
+    "editor  split   preview";
+  gap:14px;
+  min-width:0; min-height:0; overflow:hidden;
+}
+.editor-pane > .top-bar     { grid-area: topbar }
+.editor-pane > .editor-card { grid-area: editor;  min-width: 0 }
+.editor-pane > .console-card{ grid-area: preview; min-width: 0; height: auto }
+.splitter{
+  grid-area: split; cursor: col-resize; position: relative;
+  background: transparent; user-select: none; touch-action: none;
+}
+.splitter::before{
+  content: ""; position: absolute;
+  left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: 4px; height: 64px; border-radius: 2px;
+  background: var(--border-strong);
+  transition: background .18s, height .18s, box-shadow .18s;
+}
+.splitter:hover::before, .splitter.active::before{
+  background: linear-gradient(180deg, var(--accent), var(--accent-2));
+  height: 110px;
+  box-shadow: 0 0 16px -2px rgba(124,92,255,0.55);
+}
+@media (max-width: 980px){
+  .editor-pane{
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr 1fr;
+    grid-template-areas:
+      "topbar"
+      "editor"
+      "preview";
+  }
+  .splitter{ display: none }
+  .editor-pane > .console-card{ height: auto }
+}
+
+/* Top header bar with file info & actions */
+.top-bar{
+  display:flex;align-items:center;gap:14px;
+  padding:14px 18px;
+  background: linear-gradient(135deg, rgba(20,20,40,0.7), rgba(12,12,24,0.7));
+  border:1px solid var(--border); border-radius: var(--radius);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  box-shadow: var(--shadow-lg);
+}
+.file-meta{ display:flex; align-items:center; gap:12px; min-width:0 }
+.file-icon{
+  width:36px;height:36px;border-radius:10px;
+  background:linear-gradient(135deg,#13aa52,#00684a);
+  color:#1a1a2a; font-weight:800; font-size:13px; letter-spacing:0.5px;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow: 0 6px 18px -8px rgba(247,223,30,0.55), inset 0 0 0 1px rgba(255,255,255,0.25);
+  flex-shrink:0;
+}
+.file-name{ font-size:15px; font-weight:600; letter-spacing:-0.01em }
+.file-name .dirty-mark{ color:var(--accent-2); margin-left:6px; opacity:0; transition:opacity .15s }
+.file-name.dirty .dirty-mark{ opacity:1 }
+.file-sub{ font-size:11.5px; color:var(--text-faint); margin-top:1px; font-family:'JetBrains Mono',monospace }
+.spacer{ flex:1 }
+
+.action-btn{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:8px 14px; border-radius:10px;
+  border:1px solid var(--border); background:rgba(255,255,255,0.03);
+  color:var(--text-dim); font-size:13px; font-weight:600;
+  transition: background .15s, color .15s, border-color .15s, transform .15s;
+}
+.action-btn:hover{ background:var(--surface-2); color:var(--text); border-color:var(--border-strong) }
+.action-btn:active{ transform:translateY(1px) }
+.action-btn .k{ font-family:'JetBrains Mono',monospace; font-size:10.5px; opacity:.6; padding:1px 5px; border-radius:5px; background:rgba(255,255,255,0.06) }
+.run-btn{
+  background:linear-gradient(135deg,#7c5cff,#35d0ff);
+  color:#fff; border-color:transparent;
+  box-shadow: 0 10px 30px -12px rgba(124,92,255,0.7);
+}
+.run-btn:hover{ filter:brightness(1.08); transform:translateY(-1px); border-color:transparent }
+.stop-btn{
+  background:linear-gradient(135deg,#ff5a7a,#ff8c5a);
+  color:#fff; border-color:transparent;
+  box-shadow: 0 10px 30px -12px rgba(255,90,122,0.65);
+}
+.stop-btn:hover{ filter:brightness(1.08); transform:translateY(-1px); border-color:transparent }
+.stop-btn .k{ background:rgba(255,255,255,0.16) }
+
+/* Editor card with 3D float */
+.editor-card{
+  position:relative; min-height:0;
+  background: linear-gradient(180deg, rgba(20,20,40,0.65), rgba(8,8,18,0.65));
+  border:1px solid var(--border); border-radius: var(--radius);
+  overflow:hidden;
+  backdrop-filter: blur(22px) saturate(150%);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  box-shadow: var(--shadow-lg);
+  transform-style: preserve-3d;
+  transition: transform .25s cubic-bezier(.2,.7,.2,1);
+}
+.editor-card::before{
+  content:""; position:absolute; inset:-1px; border-radius: calc(var(--radius) + 1px); pointer-events:none;
+  background: linear-gradient(135deg, rgba(124,92,255,0.45), rgba(53,208,255,0.0) 40%, rgba(255,110,199,0.35));
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  padding:1px;
+  opacity:.55;
+}
+.editor-chrome{
+  display:flex; align-items:center; gap:10px; padding:9px 14px;
+  border-bottom:1px solid var(--border);
+  background: linear-gradient(180deg, rgba(255,255,255,0.025), transparent);
+}
+.dot{ width:11px; height:11px; border-radius:50% }
+.dot.r{ background:#ff5a7a; box-shadow:0 0 10px rgba(255,90,122,0.55) }
+.dot.y{ background:#ffb547; box-shadow:0 0 10px rgba(255,181,71,0.55) }
+.dot.g{ background:#38d39f; box-shadow:0 0 10px rgba(56,211,159,0.55) }
+.editor-chrome .filename{
+  margin-left:8px; font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--text-dim);
+}
+.editor-chrome .badge{
+  margin-left:auto; font-size:10.5px; letter-spacing:0.14em; text-transform:uppercase;
+  color:var(--text-faint); padding:3px 9px; border-radius:20px;
+  background:rgba(19,170,82,0.10); border:1px solid rgba(19,170,82,0.32);
+  color:#79d8a4;
+}
+
+/* Step tabs (per-file numbered runners) */
+.step-tabs{
+  display:flex; gap:5px; margin: 0 6px 0 12px;
+  flex:1; min-width:0; overflow-x:auto;
+  scrollbar-width:none;
+}
+.step-tabs::-webkit-scrollbar{ display:none }
+.step-tabs:empty{ display:none }
+.step-tab{
+  flex-shrink:0;
+  padding: 3px 11px; font-size:11px; border-radius:7px;
+  border:1px solid var(--border); background:rgba(255,255,255,0.025);
+  color:var(--text-dim); font-weight:600;
+  font-family:'JetBrains Mono',ui-monospace,monospace;
+  transition: background .15s, color .15s, border-color .15s, transform .15s;
+}
+.step-tab:hover{ background:var(--surface-2); color:var(--text); border-color:var(--border-strong) }
+.step-tab.active{
+  background:linear-gradient(135deg, rgba(124,92,255,0.32), rgba(53,208,255,0.20));
+  color:#fff; border-color:rgba(124,92,255,0.45);
+  box-shadow: 0 0 0 1px rgba(124,92,255,0.28), 0 6px 14px -8px rgba(124,92,255,0.55);
+}
+.step-tab .lbl{ opacity:.85; margin-left:2px; font-weight:500 }
+
+/* Per-file external links (e.g. wikipedia / MDN) */
+.file-links{
+  display:flex; gap:6px; margin-top:6px; flex-wrap:wrap;
+}
+.file-links:empty{ display:none }
+.file-link{
+  display:inline-flex; align-items:center; gap:6px;
+  padding: 4px 9px; border-radius: 8px;
+  font-size: 11.5px; line-height:1.2;
+  border:1px solid rgba(53,208,255,0.28);
+  background:linear-gradient(135deg, rgba(53,208,255,0.10), rgba(124,92,255,0.08));
+  color:#cfeaff; text-decoration:none;
+  transition: background .15s, color .15s, border-color .15s, transform .15s;
+}
+.file-link:hover{
+  background:linear-gradient(135deg, rgba(53,208,255,0.20), rgba(124,92,255,0.16));
+  border-color:rgba(53,208,255,0.55);
+  color:#fff; transform: translateY(-1px);
+}
+.file-link .ico{ font-size:12px; opacity:.85 }
+.file-link .arrow{ font-size:10px; opacity:.65 }
+.file-link .host{ font-size:10px; color:var(--text-faint); font-family:'JetBrains Mono',monospace }
+.cm-host{ position:relative; height:calc(100% - 41px) }
+.CodeMirror{
+  height:100% !important; background:transparent;
+  font-size:14px; line-height:1.55;
+  padding: 6px 0;
+}
+.CodeMirror-gutters{ background:transparent; border-right:1px solid var(--border) }
+.CodeMirror-linenumber{ color:rgba(154,154,176,0.4) }
+.CodeMirror-cursor{ border-left-color:#fff }
+.CodeMirror-activeline-background{ background:rgba(124,92,255,0.05) !important }
+.CodeMirror-selected{ background:rgba(124,92,255,0.22) !important }
+.CodeMirror-matchingbracket{ color:#35d0ff !important; text-shadow:0 0 8px rgba(53,208,255,0.6) }
+
+/* Console card */
+.console-card{
+  height: 220px;
+  background: linear-gradient(180deg, rgba(8,8,18,0.78), rgba(6,6,14,0.78));
+  border:1px solid var(--border); border-radius: var(--radius);
+  display:flex; flex-direction:column; min-height:0;
+  backdrop-filter: blur(22px) saturate(150%);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  box-shadow: var(--shadow-lg);
+  overflow:hidden;
+}
+.console-head{
+  display:flex; align-items:center; gap:10px; padding:10px 14px;
+  border-bottom:1px solid var(--border);
+}
+.console-head .label{
+  font-size:11.5px; letter-spacing:0.18em; text-transform:uppercase; color:var(--text-dim);
+  display:flex; align-items:center; gap:8px;
+}
+.console-head .label::before{
+  content:""; width:8px; height:8px; border-radius:50%;
+  background: var(--success); box-shadow: 0 0 10px rgba(56,211,159,0.7);
+}
+.console-head .label.running::before{ background: var(--accent-2); box-shadow: 0 0 10px rgba(53,208,255,0.7); animation: pulse 1s ease infinite }
+.console-head .label.error::before{ background: var(--error); box-shadow: 0 0 10px rgba(255,90,122,0.7) }
+@keyframes pulse{
+  0%,100%{ transform: scale(1); opacity:1 }
+  50%   { transform: scale(1.4); opacity:.55 }
+}
+.console-head .stats{
+  font-size:11px; color:var(--text-faint); font-family:'JetBrains Mono',monospace;
+}
+.console-head .right{ margin-left:auto; display:flex; gap:6px }
+.console-head .icon-btn{
+  padding:5px 10px; border-radius:8px; border:1px solid var(--border);
+  background:rgba(255,255,255,0.02); color:var(--text-dim); font-size:11.5px;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.console-head .icon-btn:hover{ background:var(--surface-2); color:var(--text); border-color:var(--border-strong) }
+.console-out{
+  flex:1; overflow:auto; padding:10px 14px;
+  font-family:'JetBrains Mono',monospace; font-size:12.5px; line-height:1.55;
+  scrollbar-width:thin;
+}
+.console-out::-webkit-scrollbar{ width:8px; height:8px }
+.console-out::-webkit-scrollbar-thumb{ background:rgba(255,255,255,0.08); border-radius:8px }
+.console-out .empty{
+  color:var(--text-faint); text-align:center; padding:34px 0; font-style:italic; font-family:'Inter',sans-serif;
+}
+.line{
+  padding:3px 8px; margin:1px 0; border-radius:6px;
+  display:flex; gap:10px; align-items:flex-start;
+  border-left:2px solid transparent;
+  white-space:pre-wrap; word-break:break-word;
+}
+.line .t{ flex-shrink:0; color:var(--text-faint); font-size:10.5px; padding-top:2px; min-width:62px }
+.line .c{ flex:1; min-width:0 }
+.line.log{ color:#dcd5ff; border-left-color:rgba(124,92,255,0.4) }
+.line.info{ color:#9bd9ff; border-left-color:rgba(53,208,255,0.5) }
+.line.warn{ color:#ffe0a3; border-left-color:rgba(255,181,71,0.6); background:rgba(255,181,71,0.04) }
+.line.error{ color:#ffb1bf; border-left-color:rgba(255,90,122,0.7); background:rgba(255,90,122,0.06) }
+.line.system{ color:var(--text-faint); border-left-color:rgba(255,255,255,0.15); font-style:italic }
+.line.result{ color:#a8f5d2; border-left-color:rgba(56,211,159,0.55) }
+.console-out table{
+  border-collapse:collapse; margin:4px 0; font-size:12px;
+}
+.console-out th, .console-out td{
+  border:1px solid rgba(255,255,255,0.1); padding:3px 8px; text-align:left;
+}
+.console-out th{ background:rgba(124,92,255,0.12); color:#fff }
+
+/* Floating ambient glow shape */
+.ambient{
+  position:absolute; border-radius:50%; pointer-events:none; z-index:0;
+  filter: blur(60px); opacity:.5;
+}
+.ambient.a{ width:340px;height:340px; background:rgba(124,92,255,0.35); top:-80px; right:-100px; animation:floatA 14s ease-in-out infinite }
+.ambient.b{ width:280px;height:280px; background:rgba(53,208,255,0.28); bottom:-60px; left:8%; animation:floatB 18s ease-in-out infinite }
+@keyframes floatA{ 0%,100%{transform:translate(0,0)} 50%{transform:translate(-30px,20px)} }
+@keyframes floatB{ 0%,100%{transform:translate(0,0)} 50%{transform:translate(40px,-20px)} }
+
+/* Media modal — embeds external videos in-page */
+.media-modal{
+  position: fixed; inset: 0; z-index: 200; display: none;
+  align-items: center; justify-content: center;
+  padding: 24px;
+  background: rgba(4,4,12,0.78);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  animation: mmFade .18s ease both;
+}
+.media-modal.open{ display: flex }
+@keyframes mmFade{ from{opacity:0} to{opacity:1} }
+.media-panel{
+  width: min(960px, 100%);
+  max-height: 92vh;
+  display: flex; flex-direction: column;
+  background: linear-gradient(180deg, rgba(20,20,40,0.9), rgba(8,8,18,0.9));
+  border: 1px solid var(--border-strong);
+  border-radius: 18px;
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  position: relative;
+}
+.media-panel::before{
+  content:""; position: absolute; inset: -1px; border-radius: 19px; pointer-events: none;
+  background: linear-gradient(135deg, rgba(124,92,255,0.45), rgba(53,208,255,0) 40%, rgba(255,110,199,0.4));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude; padding: 1px;
+  opacity: .55;
+}
+.media-head{
+  display: flex; align-items: center; gap: 12px; padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+}
+.media-head h3{ margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -0.01em; flex: 1; min-width: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.media-host{ font-size: 11px; color: var(--text-faint); font-family: 'JetBrains Mono', monospace }
+.media-close{
+  width: 30px; height: 30px; flex-shrink: 0;
+  border-radius: 50%; border: 1px solid var(--border);
+  background: rgba(255,255,255,0.04); color: var(--text-dim);
+  font-size: 17px; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.media-close:hover{ background: rgba(255,90,122,0.14); color: #fff; border-color: rgba(255,90,122,0.4) }
+.media-body{
+  flex: 1; min-height: 0; padding: 14px 18px;
+  display: flex; align-items: center; justify-content: center;
+  background: #000;
+}
+.media-body video{
+  max-width: 100%; max-height: 70vh;
+  display: block; border-radius: 10px;
+  background: #000;
+}
+.media-foot{
+  padding: 10px 18px; border-top: 1px solid var(--border);
+  font-size: 12px; color: var(--text-faint);
+  display: flex; align-items: center; gap: 10px;
+}
+.media-foot a{ color: var(--accent-2); text-decoration: none }
+.media-foot a:hover{ text-decoration: underline }
+.media-loading{ color: var(--text-dim); font-size: 13px; padding: 60px 0 }
+
+/* HTML-content mode for the modal — used for install guides etc. */
+.media-body.html-mode{
+  background: linear-gradient(180deg, rgba(20,20,35,0.95), rgba(10,10,22,0.95));
+  display: block; align-items: stretch; justify-content: stretch;
+  padding: 20px 26px 24px;
+  overflow: auto;
+  font-family: 'Inter', system-ui, sans-serif;
+  color: var(--text); line-height: 1.65; text-align: left;
+}
+.media-body.html-mode h4{
+  margin: 18px 0 8px; font-size: 14px; font-weight: 700; color: #fff; letter-spacing: -0.005em;
+}
+.media-body.html-mode h4:first-child{ margin-top: 0 }
+.media-body.html-mode p{ margin: 8px 0; font-size: 14px; color: var(--text) }
+.media-body.html-mode ul{ margin: 8px 0; padding-left: 22px }
+.media-body.html-mode li{ margin: 4px 0; font-size: 14px }
+.media-body.html-mode a{
+  color: var(--accent-2); text-decoration: none;
+  border-bottom: 1px dashed rgba(53,208,255,0.4);
+  transition: color .15s, border-color .15s;
+}
+.media-body.html-mode a:hover{ color: #fff; border-bottom-color: rgba(53,208,255,0.85) }
+.media-body.html-mode code{
+  background: rgba(124,92,255,0.14);
+  border: 1px solid rgba(124,92,255,0.28);
+  color: #d4cbff; padding: 1px 6px; border-radius: 5px;
+  font-size: 12.5px; font-family: 'JetBrains Mono', monospace;
+}
+.media-body.html-mode pre{
+  background: rgba(6,6,14,0.85);
+  border: 1px solid var(--border); border-radius: 10px;
+  padding: 14px 16px; overflow-x: auto; margin: 12px 0;
+}
+.media-body.html-mode pre code{
+  background: none; border: 0; padding: 0;
+  color: #cfeaff; font-size: 12.5px; line-height: 1.55;
+}
+.media-body.html-mode kbd{
+  display: inline-block; padding: 2px 8px; margin: 0 2px;
+  font-family: 'JetBrains Mono', monospace; font-size: 11px; line-height: 1.35;
+  color: #f0e8ff;
+  background: rgba(124,92,255,0.18);
+  border: 1px solid rgba(124,92,255,0.42);
+  border-bottom-width: 2px; border-radius: 5px;
+}
+.media-body.html-mode small,
+.media-body.html-mode .note{ color: var(--text-faint); font-size: 12px; font-style: italic }
+.media-body.html-mode .arrow-note{ color: var(--text-dim); font-size: 12px; margin-top: 6px }
+.media-body.html-mode .step-pill{
+  display: inline-block; min-width: 20px; height: 20px; padding: 0 6px;
+  border-radius: 999px; background: rgba(53,208,255,0.16);
+  border: 1px solid rgba(53,208,255,0.4); color: #a4e2ff;
+  font-size: 11px; font-weight: 700; text-align: center; line-height: 18px;
+  margin-right: 8px; font-family: 'JetBrains Mono', monospace;
+}
+
+/* Toast / status */
+.toast{
+  position:fixed; bottom:22px; right:22px; z-index:50;
+  padding:10px 14px; border-radius:12px; font-size:13px;
+  background:linear-gradient(135deg,#7c5cff,#35d0ff); color:#fff;
+  box-shadow: 0 18px 40px -18px rgba(124,92,255,0.7);
+  transform: translateY(20px); opacity:0;
+  transition: transform .25s ease, opacity .25s ease;
+}
+.toast.show{ transform: translateY(0); opacity:1 }
+.toast.error{ background:linear-gradient(135deg,#ff5a7a,#ff8c5a) }
+</style>
+</head>
+<body>
+<canvas id="bg-3d"></canvas>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-cube">M</div>
+      <div>
+        <h1>MongoDB Lab</h1>
+        <div class="sub">In-Browser mongosh</div>
+      </div>
+    </div>
+
+    <div class="search-wrap">
+      <input class="search" id="search" placeholder="Filter files…" />
+    </div>
+
+    <div class="section-label">Files</div>
+    <ul class="file-list" id="fileList"></ul>
+
+    <a class="back-link" href="../index.html" style="margin-top:18px">⌂ Home</a>
+  </aside>
+
+  <main class="editor-pane">
+    <div class="ambient a"></div>
+    <div class="ambient b"></div>
+
+    <header class="top-bar">
+      <div class="file-meta">
+        <div class="file-icon">M</div>
+        <div style="min-width:0">
+          <div class="file-name" id="fileName">hello_mongodb.mongo<span class="dirty-mark">●</span></div>
+          <div class="file-sub" id="fileSub">mongodb/hello_mongodb.mongo</div>
+          <div class="file-links" id="fileLinks"></div>
+        </div>
+      </div>
+      <div class="spacer"></div>
+      <button class="action-btn" id="resetBtn" title="Revert to file on disk">⟲ Reset</button>
+      <button class="action-btn" id="clearBtn" title="Clear console">✕ Clear</button>
+      <button class="action-btn run-btn" id="runBtn" title="Run code">▶ Run <span class="k">⌘↵</span></button>
+    </header>
+
+    <section class="editor-card" id="editorCard">
+      <div class="editor-chrome">
+        <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="filename" id="chromeName">hello_mongodb.mongo</span>
+        <div class="step-tabs" id="stepTabs"></div>
+        <span class="badge">mongosh</span>
+      </div>
+      <div class="cm-host">
+        <textarea id="editor"></textarea>
+      </div>
+    </section>
+
+    <div class="splitter" id="splitter" role="separator" aria-orientation="vertical" title="Drag to resize"></div>
+
+    <section class="console-card">
+      <div class="console-head">
+        <span class="label" id="consoleStatus">Idle</span>
+        <span class="stats" id="consoleStats"></span>
+        <div class="right">
+          <button class="icon-btn" id="copyOutBtn">Copy</button>
+          <button class="icon-btn" id="clearOutBtn">Clear</button>
+        </div>
+      </div>
+      <div class="console-out" id="consoleOut">
+        <div class="empty">Press ▶ Run (or ⌘/Ctrl+Enter) to execute the editor's code.</div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="media-modal" id="mediaModal" role="dialog" aria-modal="true" aria-labelledby="mediaTitle">
+  <div class="media-panel">
+    <div class="media-head">
+      <h3 id="mediaTitle">Loading…</h3>
+      <span class="media-host" id="mediaHost"></span>
+      <button class="media-close" id="mediaClose" type="button" title="Close (Esc)" aria-label="Close">×</button>
+    </div>
+    <div class="media-body" id="mediaBody"></div>
+    <div class="media-foot" id="mediaFoot">
+      <span>Embedded from <a id="mediaSource" href="#" target="_blank" rel="noopener">source ↗</a></span>
+    </div>
+  </div>
+</div>
+
+<!-- Embedded source — kept in sync with sibling .mongo files -->
+<script type="text/plain" data-mongofile="hello_mongodb.mongo">// MongoDB lab — type mongosh commands and hit Run.
+// The in-memory database resets on each Run, so put the full
+// sequence (use → insert → find) in a single editor session.
+
+// What databases exist?
+show dbs
+
+// Switch to (or implicitly create) a database
+use myapp
+
+// Add a collection
+db.createCollection("users")
+
+// Confirm
+show collections
+</script>
+<script type="text/plain" data-mongofile="create_db.mongo">// 1) See available databases
+show dbs
+
+// 2) Switch to (or create) a database
+use myapp
+
+// 3) Create an empty collection
+db.createCollection("users")
+
+// 4) List collections in the current db
+show collections
+
+// 5) Capped collection — max 100 documents OR 10 MB, whichever first
+db.createCollection("games", { capped: true, size: 10000000, max: 100 })
+
+// 6) Drop a collection
+db.games.drop()
+
+// 7) Empty find — no documents yet
+db.users.find()
+</script>
+<script type="text/plain" data-mongofile="insert_data.mongo">use myapp
+db.createCollection("users")
+
+// One document at a time
+db.users.insertOne({ name: "zvi", grade: 59 })
+
+// Many at once
+db.users.insertMany([
+  { name: "berger", grade: 80 },
+  { name: "zvika",  grade: 70 },
+  { name: "db",     grade: 100 }
+])
+
+// Rich document with nested fields, dates, and arrays
+db.users.insertOne({
+  name: "Israel Unisraeli",
+  age: 14,
+  grade: 59.3,
+  student: true,
+  registerDate: new Date(),
+  friends: null,
+  courses: ["Advanced Programming", "Data Base", "Algorithm"],
+  Adress: {
+    street: "Israelia",
+    city: "Mini Israel",
+    zip: 123456
+  }
+})
+
+// Update operators
+db.users.updateOne ({ name: "db"  }, { $set:    { grade: 80 } })
+db.users.updateMany({},               { $set:    { year: 2025 } })
+db.users.updateOne ({ name: "db"  }, { $unset:  { year: "" } })
+db.users.updateOne ({ name: "zvi" }, { $rename: { year: "date" } })
+
+// Delete a document
+db.users.deleteOne({ name: "zvi" })
+
+// View the collection
+db.users.find()
+</script>
+<script type="text/plain" data-mongofile="find.mongo">use myapp
+db.users.insertMany([
+  { name: "zvi",    grade: 59,  year: 2024 },
+  { name: "berger", grade: 80,  year: 2025 },
+  { name: "zvika",  grade: 70,  year: 2025 },
+  { name: "db",     grade: 100, year: 2025 }
+])
+
+// Empty + first-only
+db.users.find()
+db.users.findOne()
+
+// Filter
+db.users.findOne({ grade: 80 })
+db.users.find({ grade: 80 })
+
+// Projections
+db.users.find({ grade: 80 }, { name: true })
+db.users.find({ grade: 80 }, { name: 1 })
+db.users.find({ grade: 80 }, { _id: 0, name: 1 })
+db.users.find({},            { _id: 0, name: 1 })
+db.users.find({ grade: 80 }, { name: 0 })
+
+// Comparison operators
+db.users.find({ grade: { $gt:  70 } }, { _id: 0 })
+db.users.find({ grade: { $gte: 70 } }, { _id: 0 })
+
+// $in / $and / $eq / $ne
+db.users.find({ name: { $in: ["zvika", "berger", "hello"] } }, { _id: 0 })
+db.users.find({ $and: [ { grade: { $gte: 70 } }, { year: { $ne: 2024 } } ] }, { _id: 0 })
+db.users.find({ $and: [ { grade: { $gte: 70 } }, { year: { $eq: 2025 } } ] }, { _id: 0 })
+
+// Sorting
+db.users.find({}, { _id: 0 }).sort({ name:  1 })
+db.users.find({}, { _id: 0 }).sort({ name: -1 })
+db.users.find({}, { _id: 0 }).sort({ grade: 1 })
+
+// Sort + limit
+db.users.find({}, { _id: 0 }).sort({ grade: -1 }).limit(2)
+</script>
+<script type="text/plain" data-mongofile="aggregate.mongo">use myapp
+db.users.insertMany([
+  { name: "zvi",    grade: 59,  year: 2024 },
+  { name: "berger", grade: 80,  year: 2025 },
+  { name: "zvika",  grade: 70,  year: 2025 },
+  { name: "db",     grade: 100, year: 2025 }
+])
+
+// $group with aggregation operators
+db.users.aggregate([{ $group: { _id: "$year", averageGrade: { $avg: "$grade" } } }])
+db.users.aggregate([{ $group: { _id: "$year", SumGrade:     { $sum: "$grade" } } }])
+db.users.aggregate([{ $group: { _id: "$year", MinGrade:     { $min: "$grade" } } }])
+db.users.aggregate([{ $group: { _id: "$year", MaxGrade:     { $max: "$grade" } } }])
+</script>
+<script type="text/plain" data-mongofile="indexing.mongo">use myapp
+db.users.insertMany([
+  { name: "zvi",    grade: 59 },
+  { name: "berger", grade: 80 },
+  { name: "zvika",  grade: 70 }
+])
+
+// Without an index — full collection scan
+db.users.find({ name: "berger" }).explain("executionStats")
+
+// Create an index on the name field
+db.users.createIndex({ name: 1 })
+
+// List the indexes for the collection
+db.users.getIndexes()
+
+// Drop a specific index by name
+db.users.dropIndex("name_1")
+</script>
+
+<script>
+/* ==========================================================
+   File registry — every .js file in this directory
+   ========================================================== */
+const FILES = [
+  { file: 'hello_mongodb.mongo', label: 'Hello MongoDB',
+    links: [
+      {
+        title: 'MongoDB — Install',
+        icon: '⚙',
+        embed: {
+          type: 'html',
+          html: `
+            <h4>What to install</h4>
+            <ul>
+              <li><a href="https://www.mongodb.com/try/download/community" target="_blank" rel="noopener">MongoDB Community Server</a></li>
+              <li><a href="https://www.mongodb.com/try/download/shell" target="_blank" rel="noopener">mongosh</a> — the MongoDB shell. Add it to your <b>PATH</b> environment variable.</li>
+              <li><a href="https://code.visualstudio.com/" target="_blank" rel="noopener">Visual Studio Code</a> with the official <a href="https://marketplace.visualstudio.com/items?itemName=mongodb.mongodb-vscode" target="_blank" rel="noopener">MongoDB extension</a>.</li>
+            </ul>
+
+            <h4>Verify</h4>
+            <p>Open a new terminal and run:</p>
+<pre><code>mongosh</code></pre>
+            <p>You should land in the <code>test&gt;</code> prompt.</p>
+
+            <p class="note">This lab ships a <b>mongosh emulator</b> in your browser — every command in the lessons runs against an in-memory store, so you can practice the syntax without anything installed locally. The store resets on each Run.</p>
+          `,
+        },
+      },
+      {
+        title: 'MongoDB Manual',
+        url: 'https://www.mongodb.com/docs/manual/introduction/',
+      },
+      {
+        title: 'W3Schools — MongoDB',
+        url: 'https://www.w3schools.com/mongodb/mongodb_get_started.php',
+      },
+    ],
+  },
+  { file: 'create_db.mongo',     label: 'Create DB' },
+  { file: 'insert_data.mongo',   label: 'Insert Data' },
+  { file: 'find.mongo',          label: 'Find' },
+  { file: 'aggregate.mongo',     label: 'Aggregate' },
+  { file: 'indexing.mongo',      label: 'Indexing',
+    links: [
+      {
+        title: 'Node.js + MongoDB Server',
+        icon: '⚙',
+        embed: {
+          type: 'html',
+          html: `
+            <h4>Scaffold the project</h4>
+<pre><code>mkdir nodejs-mongodb-api
+cd nodejs-mongodb-api
+npm init -y</code></pre>
+
+            <h4>Install dependencies</h4>
+<pre><code>npm install express mongoose cors dotenv
+npm install nodemon --save-dev</code></pre>
+
+            <h4>Run in development</h4>
+<pre><code>npm run dev</code></pre>
+            <p class="note">Add <code>"dev": "nodemon server.js"</code> to your <code>package.json</code> scripts so <kbd>nodemon</kbd> auto-restarts on file changes.</p>
+          `,
+        },
+      },
+    ],
+  },
+];
+
+/* ==========================================================
+   3D background — Three.js scene with floating wireframes
+   ========================================================== */
+(function init3D(){
+  const canvas = document.getElementById('bg-3d');
+  if(!window.THREE){ return; }
+  const renderer = new THREE.WebGLRenderer({ canvas, alpha:true, antialias:true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 100);
+  camera.position.z = 7;
+
+  // Group of floating wireframe shapes
+  const group = new THREE.Group();
+  scene.add(group);
+
+  const palette = [0x7c5cff, 0x35d0ff, 0xff6ec7, 0xf7df1e];
+
+  function addShape(geom, color, scale, position){
+    const mat = new THREE.LineBasicMaterial({ color, transparent:true, opacity:0.55 });
+    const wire = new THREE.WireframeGeometry(geom);
+    const line = new THREE.LineSegments(wire, mat);
+    line.scale.setScalar(scale);
+    line.position.set(position.x, position.y, position.z);
+    line.userData.spinSpeed = {
+      x: (Math.random() - 0.5) * 0.004,
+      y: (Math.random() - 0.5) * 0.004,
+      z: (Math.random() - 0.5) * 0.0025
+    };
+    line.userData.float = { phase: Math.random()*Math.PI*2, amp: 0.3 + Math.random()*0.4 };
+    group.add(line);
+    return line;
+  }
+
+  addShape(new THREE.IcosahedronGeometry(1, 0), palette[0], 1.6,  { x:-4.5, y:1.6, z:-2 });
+  addShape(new THREE.TorusKnotGeometry(0.7, 0.22, 80, 12), palette[1], 1.4, { x: 4.5, y:-1.8, z:-1 });
+  addShape(new THREE.OctahedronGeometry(1, 0), palette[2], 1.0,  { x: 3.0, y: 2.2, z:-3 });
+  addShape(new THREE.TetrahedronGeometry(1, 0), palette[3], 0.9, { x:-3.2, y:-2.0, z:-2.5 });
+  addShape(new THREE.IcosahedronGeometry(1, 0), palette[1], 0.6, { x: 0.2, y: 0.0, z:-4 });
+  addShape(new THREE.DodecahedronGeometry(1, 0), palette[0], 0.7,{ x:-1.6, y: 2.6, z:-3.5 });
+  addShape(new THREE.OctahedronGeometry(1, 0), palette[3], 0.55, { x: 1.8, y:-2.6, z:-3.5 });
+
+  // Particle field
+  const pCount = 220;
+  const pGeom = new THREE.BufferGeometry();
+  const pPos = new Float32Array(pCount * 3);
+  for(let i=0; i<pCount; i++){
+    pPos[i*3+0] = (Math.random() - 0.5) * 18;
+    pPos[i*3+1] = (Math.random() - 0.5) * 12;
+    pPos[i*3+2] = (Math.random() - 0.5) * 10 - 2;
+  }
+  pGeom.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+  const pMat = new THREE.PointsMaterial({ color:0xffffff, size:0.025, transparent:true, opacity:0.65 });
+  const points = new THREE.Points(pGeom, pMat);
+  scene.add(points);
+
+  // Mouse parallax
+  const target = { x:0, y:0 };
+  const current = { x:0, y:0 };
+  window.addEventListener('mousemove', (e)=>{
+    target.x = (e.clientX / window.innerWidth - 0.5) * 0.6;
+    target.y = (e.clientY / window.innerHeight - 0.5) * 0.4;
+  });
+
+  function resize(){
+    const w = window.innerWidth, h = window.innerHeight;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  let t = 0;
+  function tick(){
+    t += 0.01;
+    current.x += (target.x - current.x) * 0.05;
+    current.y += (target.y - current.y) * 0.05;
+
+    group.children.forEach((m)=>{
+      m.rotation.x += m.userData.spinSpeed.x;
+      m.rotation.y += m.userData.spinSpeed.y;
+      m.rotation.z += m.userData.spinSpeed.z;
+      m.position.y += Math.sin(t + m.userData.float.phase) * 0.0025 * m.userData.float.amp;
+    });
+    group.rotation.y = current.x * 0.4;
+    group.rotation.x = -current.y * 0.3;
+    points.rotation.y += 0.0006;
+    points.rotation.x = -current.y * 0.05;
+
+    renderer.render(scene, camera);
+    requestAnimationFrame(tick);
+  }
+  tick();
+})();
+
+/* ==========================================================
+   CodeMirror setup
+   ========================================================== */
+const editor = CodeMirror.fromTextArea(document.getElementById('editor'), {
+  mode: 'javascript',
+  theme: 'dracula',
+  lineNumbers: true,
+  matchBrackets: true,
+  autoCloseBrackets: true,
+  styleActiveLine: true,
+  indentUnit: 2,
+  tabSize: 2,
+  smartIndent: true,
+  lineWrapping: true,
+  extraKeys: {
+    'Cmd-Enter': runCode,
+    'Ctrl-Enter': runCode,
+    'Cmd-/': 'toggleComment',
+    'Ctrl-/': 'toggleComment',
+  },
+});
+editor.setValue('// Loading…\n');
+
+/* ==========================================================
+   File loading & state
+   ========================================================== */
+const fileListEl = document.getElementById('fileList');
+const fileNameEl = document.getElementById('fileName');
+const fileSubEl  = document.getElementById('fileSub');
+const chromeNameEl = document.getElementById('chromeName');
+const searchEl = document.getElementById('search');
+
+const state = {
+  active: null,           // current file name
+  originals: {},          // file -> original text from disk
+  buffers: {},            // file -> "All" buffer text (preserved per file)
+  loaded: {},             // file -> bool
+  lineCounts: {},         // file -> line count
+  steps: {},              // file -> [{n, title, code}] | null  (parsed step list)
+  activeStep: {},         // file -> 0 (All) | step number
+  stepEdits: {},          // file -> { stepN: editedCode }       (per-step scratch buffer)
+};
+
+/* Parse "// N) title" headings into step snippets. A step is included only if
+   its extracted code contains at least one console.* call (otherwise running
+   it would produce no visible output). The file gets step tabs only if 2+
+   steps qualify. Bodies that are mostly commented-out get their leading "// "
+   stripped; bodies that already contain live code are left as-is. */
+function parseSteps(source){
+  if(!source) return null;
+  const lines = source.split('\n');
+  const headingRe = /^(\s*)\/\/\s*(\d+)\)\s*(.*)$/;
+  const headings = [];
+  for(let i=0; i<lines.length; i++){
+    const m = lines[i].match(headingRe);
+    if(m) headings.push({ n: parseInt(m[2],10), title: m[3].trim(), line: i });
+  }
+  if(headings.length < 2) return null;
+
+  const result = [];
+  for(let h=0; h<headings.length; h++){
+    const start = headings[h].line;
+    const end = (h+1 < headings.length) ? headings[h+1].line : lines.length;
+    const block = lines.slice(start, end);
+
+    // Decide commented-mode vs live-mode by counting body lines (skip heading)
+    let commented = 0, live = 0;
+    for(let j=1; j<block.length; j++){
+      const t = block[j].trim();
+      if(!t) continue;
+      if(t.startsWith('//')) commented++;
+      else live++;
+    }
+    let code;
+    if(commented > live){
+      // Strip a single "// " (or "//") from each non-heading line
+      code = [block[0]].concat(
+        block.slice(1).map(line => line.replace(/^(\s*)\/\/ ?/, '$1'))
+      ).join('\n');
+    }else{
+      code = block.join('\n');
+    }
+
+    if(/\bconsole\.(log|info|warn|error|table|dir|trace)\b/.test(code)){
+      result.push({ n: headings[h].n, title: headings[h].title, code });
+    }
+  }
+  return result.length >= 2 ? result : null;
+}
+
+/* Save whatever's in the editor into the right slot for the active file/step. */
+function saveCurrentEditor(){
+  const file = state.active;
+  if(!file) return;
+  const step = state.activeStep[file] || 0;
+  const v = editor.getValue();
+  if(step === 0){
+    state.buffers[file] = v;
+    // Editing the canonical "All" view invalidates per-step caches —
+    // they should be regenerated from the new buffer next time.
+    if(state.stepEdits[file]) delete state.stepEdits[file];
+    state.steps[file] = parseSteps(v);
+  }else{
+    if(!state.stepEdits[file]) state.stepEdits[file] = {};
+    state.stepEdits[file][step] = v;
+  }
+}
+
+/* Set the editor content + chrome labels for the currently-active step. */
+function loadEditorForCurrentStep(){
+  const file = state.active;
+  if(!file) return;
+  const step = state.activeStep[file] || 0;
+  let content;
+  if(step === 0){
+    content = state.buffers[file] ?? state.originals[file] ?? '';
+    chromeNameEl.textContent = file;
+    fileSubEl.textContent = 'mongodb/' + file;
+  }else{
+    const cached = state.stepEdits[file] && state.stepEdits[file][step];
+    if(cached != null){
+      content = cached;
+    }else{
+      const steps = parseSteps(state.buffers[file] ?? state.originals[file] ?? '');
+      const s = (steps || []).find(x => x.n === step);
+      content = s ? s.code : '// step ' + step + ' not found';
+    }
+    const s = (state.steps[file] || []).find(x => x.n === step);
+    chromeNameEl.textContent = file + '  ·  step ' + step;
+    fileSubEl.textContent = s ? `step ${step} — ${s.title}` : `step ${step}`;
+  }
+  editor.setValue(content);
+  editor.clearHistory();
+}
+
+function switchStep(stepN){
+  const file = state.active;
+  if(!file) return;
+  saveCurrentEditor();
+  state.activeStep[file] = stepN;
+  loadEditorForCurrentStep();
+  renderStepTabs();
+  refreshDirty(file);
+  editor.focus();
+}
+
+function renderStepTabs(){
+  const tabsEl = document.getElementById('stepTabs');
+  const file = state.active;
+  const steps = state.steps[file];
+  if(!steps || steps.length < 2){
+    tabsEl.innerHTML = '';
+    return;
+  }
+  const cur = state.activeStep[file] || 0;
+  const esc = (s) => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+  let html = '';
+  steps.forEach(s => {
+    const tip = `${s.n}) ${s.title || 'Step '+s.n}`;
+    html += `<button class="step-tab ${cur===s.n?'active':''}" data-step="${s.n}" title="${esc(tip)}">${s.n}</button>`;
+  });
+  html += `<button class="step-tab ${cur===0?'active':''}" data-step="0" title="Run the full file">All</button>`;
+  tabsEl.innerHTML = html;
+  tabsEl.querySelectorAll('.step-tab').forEach(b => {
+    b.addEventListener('click', () => switchStep(parseInt(b.dataset.step, 10)));
+  });
+}
+
+function renderFileLinks(){
+  const linksEl = document.getElementById('fileLinks');
+  const entry = FILES.find(f => f.file === state.active);
+  const links = (entry && entry.links) || [];
+  if(!links.length){ linksEl.innerHTML = ''; return; }
+  const esc = (s) => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+  linksEl.innerHTML = links.map((l, i) => {
+    let host = '';
+    try { host = new URL(l.url).hostname.replace(/^www\./,''); } catch {}
+    const isEmbed = !!l.embed;
+    const defaultIco = isEmbed
+      ? (l.embed.type === 'video' ? '▶' : (l.embed.type === 'html' ? '📥' : '⤢'))
+      : '📚';
+    const ico = l.icon || defaultIco;
+    const arrow = isEmbed ? '⤢' : '↗';
+    const tag = isEmbed ? 'button type="button"' : `a href="${esc(l.url || '#')}" target="_blank" rel="noopener noreferrer"`;
+    const close = isEmbed ? 'button' : 'a';
+    const tip = l.url ? esc(l.url) : esc(l.title);
+    return `<${tag} class="file-link" data-link-index="${i}" title="${tip}">`
+         + `<span class="ico">${esc(ico)}</span><span>${esc(l.title)}</span>`
+         + (host ? `<span class="host">${esc(host)}</span>` : '')
+         + `<span class="arrow">${arrow}</span></${close}>`;
+  }).join('');
+  // Attach click handlers for embed-style links
+  linksEl.querySelectorAll('button.file-link').forEach(btn => {
+    const idx = parseInt(btn.dataset.linkIndex, 10);
+    const link = links[idx];
+    if(!link) return;
+    btn.addEventListener('click', () => openMediaModal(link));
+  });
+}
+
+/* ==========================================================
+   Media modal — plays cross-origin video (and optional separate
+   audio track, e.g. Reddit DASH) inside the lab.
+   ========================================================== */
+const mediaModalEl = document.getElementById('mediaModal');
+const mediaTitleEl = document.getElementById('mediaTitle');
+const mediaHostEl  = document.getElementById('mediaHost');
+const mediaBodyEl  = document.getElementById('mediaBody');
+const mediaSrcLink = document.getElementById('mediaSource');
+
+function openMediaModal(link){
+  if(!link || !link.embed) return;
+  const e = link.embed;
+  const foot = document.getElementById('mediaFoot');
+  mediaTitleEl.textContent = link.title || 'Embedded media';
+  let host = '';
+  try { if(link.url) host = new URL(link.url).hostname.replace(/^www\./,''); } catch {}
+  mediaHostEl.textContent = host;
+  // Footer is only meaningful when there's an external source URL
+  if(link.url){
+    foot.style.display = '';
+    mediaSrcLink.href = link.url;
+    mediaSrcLink.textContent = host || 'source';
+    mediaSrcLink.title = link.url;
+  }else{
+    foot.style.display = 'none';
+  }
+
+  mediaBodyEl.classList.remove('html-mode');
+  mediaBodyEl.innerHTML = '<div class="media-loading">Loading…</div>';
+  mediaModalEl.classList.add('open');
+
+  if(e.type === 'html'){
+    mediaBodyEl.classList.add('html-mode');
+    mediaBodyEl.innerHTML = e.html || '';
+    return;
+  }
+  if(e.type === 'video'){
+    const video = document.createElement('video');
+    video.src = e.videoSrc;
+    video.controls = true;
+    video.playsInline = true;
+    video.preload = 'metadata';
+    if(e.poster) video.poster = e.poster;
+    if(e.width) video.width = e.width;
+    if(e.height) video.height = e.height;
+
+    let audio = null;
+    if(e.audioSrc){
+      // Reddit DASH videos have audio in a separate file; play in sync
+      audio = document.createElement('audio');
+      audio.src = e.audioSrc;
+      audio.preload = 'metadata';
+      const sync = () => { try { audio.currentTime = video.currentTime; } catch {} };
+      video.addEventListener('play',   () => { sync(); audio.play().catch(()=>{}); });
+      video.addEventListener('pause',  () => audio.pause());
+      video.addEventListener('seeking',() => sync());
+      video.addEventListener('seeked', () => sync());
+      video.addEventListener('ratechange', () => { audio.playbackRate = video.playbackRate; });
+      video.addEventListener('volumechange', () => { audio.volume = video.volume; audio.muted = video.muted; });
+      // Periodically nudge if drift > 0.25s
+      setInterval(() => {
+        if(audio.paused || video.paused) return;
+        const drift = audio.currentTime - video.currentTime;
+        if(Math.abs(drift) > 0.25) sync();
+      }, 1000);
+    }
+
+    mediaBodyEl.innerHTML = '';
+    mediaBodyEl.appendChild(video);
+    if(audio) mediaBodyEl.appendChild(audio);
+  } else if(e.type === 'iframe'){
+    mediaBodyEl.innerHTML = '';
+    const ifr = document.createElement('iframe');
+    ifr.src = e.src;
+    ifr.style.cssText = 'border:0;width:100%;height:60vh;border-radius:10px;background:#000';
+    if(e.allow) ifr.allow = e.allow;
+    mediaBodyEl.appendChild(ifr);
+  } else {
+    mediaBodyEl.innerHTML = '<div class="media-loading">Unsupported embed type.</div>';
+  }
+}
+
+function closeMediaModal(){
+  mediaModalEl.classList.remove('open');
+  // Tear down media to stop playback and free the network stream
+  mediaBodyEl.querySelectorAll('video, audio, iframe').forEach(n => {
+    if(n.tagName === 'IFRAME'){ n.src = 'about:blank'; }
+    else { try { n.pause(); } catch {} n.removeAttribute('src'); n.load && n.load(); }
+  });
+  mediaBodyEl.classList.remove('html-mode');
+  mediaBodyEl.innerHTML = '';
+}
+
+document.getElementById('mediaClose').addEventListener('click', closeMediaModal);
+mediaModalEl.addEventListener('click', (e) => {
+  if(e.target === mediaModalEl) closeMediaModal();
+});
+window.addEventListener('keydown', (e) => {
+  if(e.key === 'Escape' && mediaModalEl.classList.contains('open')) closeMediaModal();
+});
+
+function fileButtonNode(entry){
+  const li = document.createElement('li');
+  const btn = document.createElement('button');
+  btn.className = 'file-btn';
+  btn.dataset.file = entry.file;
+  btn.innerHTML = `
+    <span class="ico">M</span>
+    <span class="label">${entry.label}</span>
+    <span class="lines" data-lines>—</span>
+  `;
+  btn.addEventListener('click', ()=> activate(entry.file));
+  li.appendChild(btn);
+  return li;
+}
+
+FILES.forEach(f => fileListEl.appendChild(fileButtonNode(f)));
+
+searchEl.addEventListener('input', ()=>{
+  const q = searchEl.value.toLowerCase().trim();
+  document.querySelectorAll('.file-btn').forEach(b=>{
+    const f = b.dataset.file;
+    const label = b.querySelector('.label').textContent.toLowerCase();
+    const match = !q || f.toLowerCase().includes(q) || label.includes(q);
+    b.parentElement.style.display = match ? '' : 'none';
+  });
+});
+
+function readEmbedded(name){
+  const node = document.querySelector(`script[type="text/plain"][data-mongofile="${CSS.escape(name)}"]`);
+  if(!node) return null;
+  // Restore "<\/script" → "</script" in case anything was neutralized at embed time
+  return node.textContent.replace(/<\\\/script/gi, '</script');
+}
+
+async function loadFile(name){
+  if(state.loaded[name]) return state.originals[name];
+  let text = readEmbedded(name);
+  if(text == null){
+    // Fall back to fetch when served over http(s) and a file isn't embedded
+    try{
+      const r = await fetch(name + '?t=' + Date.now());
+      if(!r.ok) throw new Error('HTTP ' + r.status);
+      text = await r.text();
+    }catch(err){
+      text = `// Source for ${name} is not embedded in this page and could not be fetched.\n// ${err.message}\n`;
+    }
+  }
+  state.originals[name] = text;
+  state.buffers[name] = text;
+  state.loaded[name] = true;
+  state.lineCounts[name] = text.split('\n').length;
+  const btn = document.querySelector(`.file-btn[data-file="${name}"]`);
+  if(btn){
+    const lines = btn.querySelector('[data-lines]');
+    if(lines) lines.textContent = state.lineCounts[name] + 'L';
+  }
+  return text;
+}
+
+async function activate(name){
+  // Save current view (file + step) into its slot
+  if(state.active){
+    saveCurrentEditor();
+    refreshDirty(state.active);
+  }
+  state.active = name;
+  document.querySelectorAll('.file-btn').forEach(b=>{
+    b.classList.toggle('active', b.dataset.file === name);
+  });
+  fileNameEl.firstChild.textContent = name;
+  if(!state.loaded[name]){
+    editor.setValue('// Loading ' + name + '…');
+    await loadFile(name);
+  }
+  // (Re)compute steps from the current "All" buffer
+  state.steps[name] = parseSteps(state.buffers[name] ?? state.originals[name] ?? '');
+  // First time this file is opened: default to the LAST step when there are
+  // multiple steps; otherwise fall back to All (0).
+  if(state.activeStep[name] == null){
+    const ss = state.steps[name];
+    state.activeStep[name] = (ss && ss.length >= 2) ? ss[ss.length - 1].n : 0;
+  }
+  // If a previously-active step no longer exists (e.g. headings removed), fall back to the last available step or All
+  if(state.activeStep[name] !== 0 && !(state.steps[name] || []).some(s => s.n === state.activeStep[name])){
+    const ss = state.steps[name];
+    state.activeStep[name] = (ss && ss.length) ? ss[ss.length - 1].n : 0;
+  }
+  loadEditorForCurrentStep();
+  renderStepTabs();
+  renderFileLinks();
+  refreshDirty(name);
+  editor.focus();
+}
+
+function refreshDirty(name){
+  // "Dirty" = the file's canonical (All) buffer differs from the original.
+  // The editor view may be a step extraction — that derivation is not
+  // a real edit, so don't read editor.getValue() here.
+  const buf = state.buffers[name];
+  const dirty = state.loaded[name] && buf != null && buf !== state.originals[name];
+  const btn = document.querySelector(`.file-btn[data-file="${name}"]`);
+  if(btn) btn.classList.toggle('dirty', dirty);
+  if(name === state.active){
+    fileNameEl.classList.toggle('dirty', dirty);
+  }
+}
+
+editor.on('change', ()=>{
+  if(!state.active) return;
+  const file = state.active;
+  const step = state.activeStep[file] || 0;
+  const v = editor.getValue();
+  if(step === 0){
+    state.buffers[file] = v;
+    if(state.stepEdits[file]) delete state.stepEdits[file];
+    const newSteps = parseSteps(v);
+    state.steps[file] = newSteps;
+    renderStepTabs();
+  }else{
+    if(!state.stepEdits[file]) state.stepEdits[file] = {};
+    state.stepEdits[file][step] = v;
+  }
+  refreshDirty(file);
+});
+
+/* ==========================================================
+   Reset / Clear / Run
+   ========================================================== */
+document.getElementById('resetBtn').addEventListener('click', ()=>{
+  const file = state.active;
+  if(!file || state.originals[file] == null) return;
+  const step = state.activeStep[file] || 0;
+  if(step === 0){
+    state.buffers[file] = state.originals[file];
+    if(state.stepEdits[file]) delete state.stepEdits[file];
+    state.steps[file] = parseSteps(state.originals[file]);
+    loadEditorForCurrentStep();
+    renderStepTabs();
+    toast('Reset ' + file);
+  }else{
+    // Forget any in-flight edits for this step, then regenerate from current All buffer
+    if(state.stepEdits[file]) delete state.stepEdits[file][step];
+    loadEditorForCurrentStep();
+    toast(`Reset step ${step}`);
+  }
+  refreshDirty(file);
+});
+document.getElementById('clearBtn').addEventListener('click', clearConsole);
+document.getElementById('clearOutBtn').addEventListener('click', clearConsole);
+document.getElementById('runBtn').addEventListener('click', () => {
+  if(isRunning) stopRun('user');
+  else runCode();
+});
+document.getElementById('copyOutBtn').addEventListener('click', ()=>{
+  const out = document.getElementById('consoleOut');
+  const text = Array.from(out.querySelectorAll('.line .c')).map(n=>n.textContent).join('\n');
+  if(!text){ toast('Nothing to copy'); return; }
+  navigator.clipboard?.writeText(text).then(()=> toast('Output copied'));
+});
+
+window.addEventListener('keydown', (e)=>{
+  if((e.metaKey || e.ctrlKey) && e.key === 'Enter'){
+    e.preventDefault();
+    runCode();
+  }
+});
+
+/* ==========================================================
+   Console output
+   ========================================================== */
+const consoleOut = document.getElementById('consoleOut');
+const consoleStatus = document.getElementById('consoleStatus');
+const consoleStats = document.getElementById('consoleStats');
+let runStartTime = 0;
+let logCount = 0;
+let warnCount = 0;
+let errorCount = 0;
+
+function clearConsole(){
+  consoleOut.innerHTML = '<div class="empty">Console cleared.</div>';
+  logCount = warnCount = errorCount = 0;
+  consoleStats.textContent = '';
+  consoleStatus.classList.remove('error','running');
+  consoleStatus.textContent = 'Idle';
+}
+function ensureConsoleEmptyCleared(){
+  const empty = consoleOut.querySelector('.empty');
+  if(empty) empty.remove();
+}
+function ts(){
+  const now = (performance.now() - runStartTime) / 1000;
+  return (now >= 0 && runStartTime > 0) ? '+' + now.toFixed(3) + 's' : '';
+}
+function appendLine(kind, parts){
+  ensureConsoleEmptyCleared();
+  const line = document.createElement('div');
+  line.className = 'line ' + kind;
+  const t = document.createElement('span'); t.className = 't'; t.textContent = ts();
+  const c = document.createElement('span'); c.className = 'c';
+  c.textContent = parts.map(formatVal).join(' ');
+  line.append(t, c);
+  consoleOut.appendChild(line);
+  consoleOut.scrollTop = consoleOut.scrollHeight;
+}
+function appendTable(parts){
+  ensureConsoleEmptyCleared();
+  const data = parts[0];
+  if(data == null || typeof data !== 'object'){ appendLine('log', parts); return; }
+  const rows = Array.isArray(data) ? data : Object.entries(data).map(([k,v])=>({ '(key)':k, value:v }));
+  const cols = new Set();
+  rows.forEach(r => {
+    if(r && typeof r === 'object') Object.keys(r).forEach(k=>cols.add(k));
+    else cols.add('value');
+  });
+  const colArr = ['(index)', ...cols];
+  const tbl = document.createElement('table');
+  const thead = document.createElement('thead'); const trH = document.createElement('tr');
+  colArr.forEach(c=>{ const th = document.createElement('th'); th.textContent = c; trH.appendChild(th); });
+  thead.appendChild(trH); tbl.appendChild(thead);
+  const tbody = document.createElement('tbody');
+  rows.forEach((r, i)=>{
+    const tr = document.createElement('tr');
+    colArr.forEach(col=>{
+      const td = document.createElement('td');
+      let val;
+      if(col === '(index)') val = i;
+      else if(r && typeof r === 'object') val = r[col];
+      else if(col === 'value') val = r;
+      td.textContent = val === undefined ? '' : formatVal(val);
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+  tbl.appendChild(tbody);
+  const wrap = document.createElement('div'); wrap.className = 'line log';
+  const t = document.createElement('span'); t.className = 't'; t.textContent = ts();
+  const c = document.createElement('span'); c.className = 'c'; c.appendChild(tbl);
+  wrap.append(t, c);
+  consoleOut.appendChild(wrap);
+  consoleOut.scrollTop = consoleOut.scrollHeight;
+}
+function formatVal(v){
+  if(v === null) return 'null';
+  if(v === undefined) return 'undefined';
+  if(typeof v === 'string') return v;
+  if(typeof v === 'number' || typeof v === 'boolean') return String(v);
+  if(typeof v === 'bigint') return v.toString() + 'n';
+  if(typeof v === 'function') return v.toString();
+  if(typeof v === 'symbol') return v.toString();
+  try { return JSON.stringify(v, replacer, 2); }
+  catch { return String(v); }
+}
+function replacer(_, value){
+  if(typeof value === 'bigint') return value.toString() + 'n';
+  if(typeof value === 'function') return '[Function ' + (value.name || 'anonymous') + ']';
+  if(typeof value === 'symbol') return value.toString();
+  return value;
+}
+
+function bumpStats(kind){
+  if(kind === 'log' || kind === 'info') logCount++;
+  else if(kind === 'warn') warnCount++;
+  else if(kind === 'error') errorCount++;
+  consoleStats.textContent = `${logCount} log · ${warnCount} warn · ${errorCount} err`;
+}
+
+/* ==========================================================
+   Sandbox runner — uses srcdoc iframe so timers + async work,
+   and so the runner cannot pollute or break this page.
+   ========================================================== */
+let sandbox = null;
+let sandboxId = 0;
+
+function killSandbox(){
+  if(sandbox){ sandbox.remove(); sandbox = null; }
+}
+
+/* Run/Stop button state — keeps Stop visible while the iframe is alive
+   (so async setTimeout/Promise output can still arrive). Auto-reverts to
+   Run after a brief idle window with no incoming messages, or immediately
+   if the user clicks Stop. */
+let isRunning = false;
+let idleTimer = null;
+const IDLE_WINDOW_MS = 800;
+
+function setRunButton(running){
+  const btn = document.getElementById('runBtn');
+  if(!btn) return;
+  if(running){
+    btn.classList.remove('run-btn');
+    btn.classList.add('stop-btn');
+    btn.title = 'Stop running code';
+    btn.innerHTML = '■ Stop <span class="k">⌘↵</span>';
+  }else{
+    btn.classList.remove('stop-btn');
+    btn.classList.add('run-btn');
+    btn.title = 'Run code';
+    btn.innerHTML = '▶ Run <span class="k">⌘↵</span>';
+  }
+}
+
+function scheduleIdle(){
+  if(idleTimer) clearTimeout(idleTimer);
+  idleTimer = setTimeout(()=>{
+    idleTimer = null;
+    if(!isRunning) return;
+    killSandbox();
+    isRunning = false;
+    setRunButton(false);
+  }, IDLE_WINDOW_MS);
+}
+
+function stopRun(reason){
+  if(idleTimer){ clearTimeout(idleTimer); idleTimer = null; }
+  const wasRunning = isRunning;
+  killSandbox();
+  isRunning = false;
+  setRunButton(false);
+  if(wasRunning){
+    consoleStatus.classList.remove('running');
+    if(errorCount > 0){ consoleStatus.classList.add('error'); consoleStatus.textContent = 'Failed'; }
+    else { consoleStatus.textContent = reason === 'user' ? 'Stopped' : 'Done'; }
+    if(reason === 'user') appendLine('system', ['■ Stopped by user']);
+  }
+}
+
+/* In-browser mongosh emulator. Concatenated to the user's code before it
+   runs in the sandbox iframe. Exposes `db` and `__mongo` (used by the
+   shell-command preprocessor below) on window. The store resets every run. */
+const MONGO_EMULATOR_SOURCE = `
+(function(){
+  const dbs = Object.create(null);
+  let currentDbName = 'test';
+  function __getDb(){ if(!dbs[currentDbName]) dbs[currentDbName] = Object.create(null); return dbs[currentDbName]; }
+  function __getColl(name, opts){
+    const db = __getDb();
+    if(!db[name]) db[name] = { _docs:[], _options:opts||{}, _indexes:[{ v:2, key:{_id:1}, name:'_id_' }] };
+    return db[name];
+  }
+  function __genId(){ return Array.from({length:24},()=>Math.floor(Math.random()*16).toString(16)).join(''); }
+  function __isPlain(v){ return v && typeof v==='object' && !Array.isArray(v) && Object.getPrototypeOf(v)===Object.prototype; }
+  function __matches(doc, filter){
+    if(!filter || Object.keys(filter).length===0) return true;
+    return Object.entries(filter).every(([k,v])=>{
+      if(k==='$and') return v.every(s=>__matches(doc,s));
+      if(k==='$or')  return v.some(s=>__matches(doc,s));
+      if(k==='$nor') return v.every(s=>!__matches(doc,s));
+      if(__isPlain(v)){
+        return Object.entries(v).every(([op,opv])=>{
+          const dv = doc[k];
+          if(op==='$eq') return dv===opv;
+          if(op==='$ne') return dv!==opv;
+          if(op==='$gt') return dv>opv;
+          if(op==='$gte') return dv>=opv;
+          if(op==='$lt') return dv<opv;
+          if(op==='$lte') return dv<=opv;
+          if(op==='$in') return Array.isArray(opv) && opv.includes(dv);
+          if(op==='$nin') return Array.isArray(opv) && !opv.includes(dv);
+          if(op==='$exists') return (dv!==undefined)===!!opv;
+          return false;
+        });
+      }
+      return doc[k]===v;
+    });
+  }
+  function __project(doc, projection){
+    if(!projection || Object.keys(projection).length===0) return doc;
+    const fields = Object.entries(projection);
+    const includeMode = fields.some(([k,v])=>k!=='_id' && (v===1||v===true));
+    let out;
+    if(includeMode){
+      out = {};
+      if(projection._id!==0 && projection._id!==false) out._id = doc._id;
+      fields.forEach(([k,v])=>{ if(k==='_id') return; if((v===1||v===true) && doc[k]!==undefined) out[k] = doc[k]; });
+    } else {
+      out = { ...doc };
+      fields.forEach(([k,v])=>{ if(v===0||v===false) delete out[k]; });
+    }
+    return out;
+  }
+  function __applyUpdate(doc, update){
+    Object.entries(update).forEach(([op,fields])=>{
+      if(op==='$set') Object.assign(doc, fields);
+      else if(op==='$unset') Object.keys(fields).forEach(k=>delete doc[k]);
+      else if(op==='$rename') Object.entries(fields).forEach(([from,to])=>{
+        if(from in doc){ doc[to] = doc[from]; delete doc[from]; }
+      });
+      else if(op==='$inc') Object.entries(fields).forEach(([k,v])=>{ doc[k]=(doc[k]||0)+v; });
+      else if(op==='$push') Object.entries(fields).forEach(([k,v])=>{ if(!Array.isArray(doc[k])) doc[k]=[]; doc[k].push(v); });
+      else throw new Error('Unsupported update operator: '+op);
+    });
+  }
+  function __later(fn){ setTimeout(fn, 0); }
+  class Cursor {
+    constructor(coll, filter, projection){
+      this._coll = coll; this._filter = filter||{}; this._projection = projection||null;
+      this._sort = null; this._limit = null; this._skip = 0;
+      this._pending = null;
+      this._schedule();
+    }
+    _schedule(){ if(this._pending) clearTimeout(this._pending); this._pending = setTimeout(()=>this._auto(), 0); }
+    _cancel(){ if(this._pending){ clearTimeout(this._pending); this._pending = null; } }
+    sort(s){ this._cancel(); this._sort = s; this._schedule(); return this; }
+    limit(n){ this._cancel(); this._limit = n; this._schedule(); return this; }
+    skip(n){ this._cancel(); this._skip = n; this._schedule(); return this; }
+    toArray(){ this._cancel(); return this._materialize(); }
+    _materialize(){
+      let arr = this._coll._docs.filter(d=>__matches(d, this._filter));
+      if(this._sort){
+        const entries = Object.entries(this._sort);
+        arr = arr.slice().sort((a,b)=>{
+          for(const [k,dir] of entries){
+            if(a[k]===b[k]) continue;
+            return (a[k]>b[k]?1:-1) * (dir<0?-1:1);
+          }
+          return 0;
+        });
+      }
+      if(this._skip) arr = arr.slice(this._skip);
+      if(this._limit!=null) arr = arr.slice(0, this._limit);
+      if(this._projection) arr = arr.map(d=>__project(d, this._projection));
+      return arr;
+    }
+    _auto(){
+      const arr = this._materialize();
+      if(arr.length===0) console.log('(no documents)');
+      else arr.forEach(d=>console.log(d));
+    }
+    explain(){
+      this._cancel();
+      const arr = this._materialize();
+      const indexes = this._coll._indexes;
+      const useIdx = indexes.find(i => Object.keys(i.key).some(k => k!=='_id' && this._filter && Object.prototype.hasOwnProperty.call(this._filter,k)));
+      const stage = useIdx ? 'IXSCAN' : 'COLLSCAN';
+      const explained = {
+        executionStats: {
+          executionSuccess: true,
+          nReturned: arr.length,
+          executionTimeMillis: Math.floor(Math.random()*5),
+          totalDocsExamined: stage==='IXSCAN' ? arr.length : this._coll._docs.length,
+          executionStages: { stage, indexName: useIdx ? useIdx.name : undefined }
+        }
+      };
+      __later(()=>console.log(explained));
+      return explained;
+    }
+  }
+
+  function __collProxy(name){
+    const coll = __getColl(name);
+    return {
+      insertOne(doc){
+        if(!doc._id) doc._id = __genId();
+        coll._docs.push(doc);
+        const res = { acknowledged:true, insertedId: doc._id };
+        __later(()=>console.log(res));
+        return res;
+      },
+      insertMany(docs){
+        const ids = [];
+        docs.forEach(d=>{ if(!d._id) d._id = __genId(); coll._docs.push(d); ids.push(d._id); });
+        const res = { acknowledged:true, insertedIds: ids };
+        __later(()=>console.log(res));
+        return res;
+      },
+      find(filter, projection){ return new Cursor(coll, filter||{}, projection||null); },
+      findOne(filter, projection){
+        const found = coll._docs.find(d=>__matches(d, filter||{}));
+        const out = found ? (projection ? __project(found, projection) : found) : null;
+        __later(()=>console.log(out));
+        return out;
+      },
+      updateOne(filter, update){
+        const idx = coll._docs.findIndex(d=>__matches(d, filter||{}));
+        if(idx===-1){
+          const res = { acknowledged:true, matchedCount:0, modifiedCount:0 };
+          __later(()=>console.log(res)); return res;
+        }
+        const before = JSON.stringify(coll._docs[idx]);
+        __applyUpdate(coll._docs[idx], update);
+        const modified = JSON.stringify(coll._docs[idx])!==before;
+        const res = { acknowledged:true, matchedCount:1, modifiedCount: modified?1:0 };
+        __later(()=>console.log(res)); return res;
+      },
+      updateMany(filter, update){
+        let m=0, mod=0;
+        coll._docs.forEach(d=>{
+          if(__matches(d, filter||{})){
+            m++;
+            const before = JSON.stringify(d);
+            __applyUpdate(d, update);
+            if(JSON.stringify(d)!==before) mod++;
+          }
+        });
+        const res = { acknowledged:true, matchedCount:m, modifiedCount:mod };
+        __later(()=>console.log(res)); return res;
+      },
+      deleteOne(filter){
+        const idx = coll._docs.findIndex(d=>__matches(d, filter||{}));
+        const deleted = idx!==-1 ? 1 : 0;
+        if(deleted) coll._docs.splice(idx,1);
+        const res = { acknowledged:true, deletedCount: deleted };
+        __later(()=>console.log(res)); return res;
+      },
+      deleteMany(filter){
+        let d=0;
+        coll._docs = coll._docs.filter(x=>{
+          if(__matches(x, filter||{})){ d++; return false; }
+          return true;
+        });
+        const res = { acknowledged:true, deletedCount: d };
+        __later(()=>console.log(res)); return res;
+      },
+      drop(){
+        const db = __getDb();
+        const existed = !!db[name];
+        delete db[name];
+        __later(()=>console.log(existed));
+        return existed;
+      },
+      countDocuments(filter){
+        const n = coll._docs.filter(d=>__matches(d, filter||{})).length;
+        __later(()=>console.log(n)); return n;
+      },
+      aggregate(pipeline){
+        let docs = coll._docs.slice();
+        for(const stage of pipeline){
+          if(stage.$match) docs = docs.filter(d=>__matches(d, stage.$match));
+          else if(stage.$group){
+            const spec = stage.$group;
+            const idExpr = spec._id;
+            const aggs = Object.entries(spec).filter(([k])=>k!=='_id');
+            const evalKey = (d) => (typeof idExpr==='string' && idExpr.startsWith('$')) ? d[idExpr.slice(1)] : idExpr;
+            const evalExpr = (expr, d) => (typeof expr==='string' && expr.startsWith('$')) ? d[expr.slice(1)] : expr;
+            const groups = new Map();
+            docs.forEach(d=>{
+              const key = JSON.stringify(evalKey(d));
+              if(!groups.has(key)) groups.set(key, { _id: evalKey(d), _vals: {} });
+              const g = groups.get(key);
+              aggs.forEach(([k, agg])=>{
+                const op = Object.keys(agg)[0];
+                const v = evalExpr(agg[op], d);
+                if(!g._vals[k]) g._vals[k] = [];
+                g._vals[k].push(v);
+              });
+            });
+            docs = Array.from(groups.values()).map(g=>{
+              const out = { _id: g._id };
+              aggs.forEach(([k, agg])=>{
+                const op = Object.keys(agg)[0];
+                const vs = g._vals[k] || [];
+                const nums = vs.filter(v=>typeof v==='number');
+                if(op==='$sum'){
+                  if(typeof agg[op]==='number') out[k] = agg[op] * vs.length;
+                  else out[k] = nums.reduce((a,b)=>a+b, 0);
+                }
+                else if(op==='$avg') out[k] = nums.length ? nums.reduce((a,b)=>a+b,0)/nums.length : null;
+                else if(op==='$min') out[k] = nums.length ? Math.min.apply(null, nums) : null;
+                else if(op==='$max') out[k] = nums.length ? Math.max.apply(null, nums) : null;
+                else if(op==='$count') out[k] = vs.length;
+                else if(op==='$first') out[k] = vs[0];
+                else if(op==='$last')  out[k] = vs[vs.length-1];
+                else if(op==='$push')  out[k] = vs;
+                else out[k] = null;
+              });
+              return out;
+            });
+          }
+          else if(stage.$sort){
+            const entries = Object.entries(stage.$sort);
+            docs = docs.slice().sort((a,b)=>{
+              for(const [k,dir] of entries){
+                if(a[k]===b[k]) continue;
+                return (a[k]>b[k]?1:-1) * (dir<0?-1:1);
+              }
+              return 0;
+            });
+          }
+          else if(stage.$limit) docs = docs.slice(0, stage.$limit);
+          else if(stage.$skip)  docs = docs.slice(stage.$skip);
+          else if(stage.$project) docs = docs.map(d=>__project(d, stage.$project));
+        }
+        __later(()=>{ if(!docs.length) console.log('(no documents)'); else docs.forEach(d=>console.log(d)); });
+        return docs;
+      },
+      createIndex(spec, options){
+        const idxName = (options && options.name) || Object.entries(spec).map(([k,v])=>k+'_'+v).join('_');
+        if(!coll._indexes.some(i=>i.name===idxName)){
+          coll._indexes.push({ v:2, key:{...spec}, name: idxName });
+        }
+        __later(()=>console.log(idxName));
+        return idxName;
+      },
+      getIndexes(){
+        const arr = coll._indexes.map(i=>({ ...i, key:{...i.key} }));
+        __later(()=>arr.forEach(i=>console.log(i)));
+        return arr;
+      },
+      dropIndex(idxName){
+        const before = coll._indexes.length;
+        coll._indexes = coll._indexes.filter(i=>i.name!==idxName);
+        const dropped = before - coll._indexes.length;
+        const res = { nIndexesWas: before, ok: dropped>0 ? 1 : 0 };
+        __later(()=>console.log(res));
+        return res;
+      },
+    };
+  }
+
+  const db = new Proxy({}, {
+    get(_, name){
+      if(name==='createCollection'){
+        return function(collName, opts){
+          __getColl(collName, opts);
+          const res = { ok: 1 };
+          __later(()=>console.log(res));
+          return res;
+        };
+      }
+      if(name==='getCollectionNames' || name==='getCollectionInfos'){
+        return function(){
+          const ndb = __getDb();
+          const out = Object.keys(ndb);
+          __later(()=>console.log(out));
+          return out;
+        };
+      }
+      if(name==='dropDatabase'){
+        return function(){
+          delete dbs[currentDbName];
+          const res = { dropped: currentDbName, ok: 1 };
+          __later(()=>console.log(res));
+          return res;
+        };
+      }
+      if(typeof name==='symbol' || name==='then') return undefined;
+      return __collProxy(name);
+    }
+  });
+
+  const __mongo = {
+    show(what){
+      if(what==='dbs' || what==='databases'){
+        const list = Object.keys(dbs).map(n=>({ name: n, sizeOnDisk: 0, empty: !dbs[n] || Object.keys(dbs[n]).length===0 }));
+        __later(()=>{ if(!list.length) console.log('(no databases yet — write something with insertOne to create one)'); else list.forEach(d=>console.log(d)); });
+        return list;
+      }
+      if(what==='collections' || what==='tables'){
+        const ndb = __getDb();
+        const list = Object.keys(ndb);
+        __later(()=>{ if(!list.length) console.log('(no collections in '+currentDbName+')'); else list.forEach(c=>console.log(c)); });
+        return list;
+      }
+      __later(()=>console.log('show '+what+' — not implemented in this lab'));
+      return null;
+    },
+    use(name){
+      currentDbName = name;
+      __later(()=>console.log('switched to db '+name));
+    },
+    cls(){ __later(()=>console.log('(cls — clears the real terminal; in this lab use the ✕ Clear button)')); },
+  };
+
+  Object.defineProperty(window, 'db', { value: db, writable: false, configurable: false });
+  Object.defineProperty(window, '__mongo', { value: __mongo, writable: false, configurable: false });
+})();
+`;
+
+/* Convert mongosh shell-only directives at the start of a line into JS calls
+   on __mongo (because `show dbs`, `use myapp`, `cls` aren't valid JS). */
+function preprocessMongoshell(code){
+  return code.split('\n').map(line => {
+    const m = line.match(/^(\s*)(show|use|cls|clear)\b\s*([^\n]*)$/);
+    if(!m) return line;
+    let [, lead, cmd, rest] = m;
+    // Strip a JS line comment from the rest
+    const cIdx = rest.indexOf('//');
+    if(cIdx !== -1) rest = rest.slice(0, cIdx);
+    rest = rest.replace(/[;\s]+$/, '').trim();
+    if(cmd === 'cls' || cmd === 'clear') return lead + '__mongo.cls();';
+    if(cmd === 'show'){
+      const arg = rest.split(/\s+/)[0] || '';
+      return lead + '__mongo.show(' + JSON.stringify(arg) + ');';
+    }
+    if(cmd === 'use'){
+      const name = rest.split(/\s+/)[0] || '';
+      return lead + '__mongo.use(' + JSON.stringify(name) + ');';
+    }
+    return line;
+  }).join('\n');
+}
+
+function buildSandboxSrc(code, runId){
+  // serialize the user code as a JSON string so quotes/backticks survive intact
+  const codeJson = JSON.stringify(code);
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body><script>
+(function(){
+  const RUN_ID = ${runId};
+  function send(kind, payload){
+    parent.postMessage({ __js_lab__: true, runId: RUN_ID, kind, payload }, '*');
+  }
+  function pack(args){
+    return Array.from(args).map(a => {
+      if(a instanceof Error) return { __t:'error', name:a.name, message:a.message, stack:a.stack };
+      return a;
+    });
+  }
+  const origLog = console.log;
+  ['log','info','warn','error','debug'].forEach(m=>{
+    console[m] = function(){ send(m === 'debug' ? 'log' : m, pack(arguments)); };
+  });
+  console.table = function(data){ send('table', [data]); };
+  console.dir = function(o){ send('log', [o]); };
+  console.trace = function(){ send('log', ['trace']); };
+  console.group = function(){ send('log', ['▼ '+Array.from(arguments).join(' ')]); };
+  console.groupEnd = function(){};
+  console.time = function(l){ console.__t = console.__t||{}; console.__t[l||'default']=performance.now(); };
+  console.timeEnd = function(l){
+    const k = l||'default';
+    const start = (console.__t||{})[k];
+    if(start!=null) send('info', [k+': '+(performance.now()-start).toFixed(3)+'ms']);
+  };
+  window.addEventListener('error', function(e){
+    send('error', [{__t:'error', name:(e.error&&e.error.name)||'Error', message:e.message, stack:(e.error&&e.error.stack)||''}]);
+  });
+  window.addEventListener('unhandledrejection', function(e){
+    const r = e.reason;
+    if(r instanceof Error) send('error', [{__t:'error', name:r.name, message:r.message, stack:r.stack}]);
+    else send('error', ['Unhandled promise rejection: '+String(r)]);
+  });
+  // Run user code; wrap in a fresh function so top-level "return" works
+  // and so syntax errors are reported as errors.
+  const userCode = ${codeJson};
+  try{
+    (0, eval)(userCode);
+    send('done', []);
+  }catch(err){
+    send('error', [{__t:'error', name:err.name, message:err.message, stack:err.stack}]);
+    send('done', []);
+  }
+})();
+<\/script></body></html>`;
+}
+
+window.addEventListener('message', (ev)=>{
+  const data = ev.data;
+  if(!data || !data.__js_lab__) return;
+  if(data.runId !== sandboxId) return;
+  const { kind, payload } = data;
+  if(kind === 'done'){
+    // Sync user code finished — start the idle window. Any further
+    // async output (setTimeout/Promise) will reset it.
+    consoleStatus.classList.remove('running');
+    if(errorCount > 0){ consoleStatus.classList.add('error'); consoleStatus.textContent = 'Failed'; }
+    else { consoleStatus.textContent = 'Done'; }
+    if(isRunning) scheduleIdle();
+    return;
+  }
+  if(kind === 'table'){ appendTable(payload); }
+  else {
+    // unwrap structured errors
+    const display = payload.map(p => {
+      if(p && p.__t === 'error') return `${p.name}: ${p.message}` + (p.stack ? '\n' + indent(p.stack) : '');
+      return p;
+    });
+    appendLine(kind, display);
+    bumpStats(kind);
+  }
+  // Any async output extends the idle window — keep Stop visible
+  if(isRunning && idleTimer) scheduleIdle();
+});
+function indent(s){ return s.split('\n').map(l=>'    '+l).join('\n'); }
+
+function runCode(){
+  if(!state.active){ toast('No file selected'); return; }
+  const userCode = editor.getValue();
+  // Reset console
+  consoleOut.innerHTML = '';
+  logCount = warnCount = errorCount = 0;
+  consoleStats.textContent = '';
+  consoleStatus.classList.remove('error');
+  consoleStatus.classList.add('running');
+  consoleStatus.textContent = 'Running…';
+  appendLine('system', [`▶ Running ${state.active} — in-memory db reset`]);
+
+  // 1) Convert shell-only directives (show, use, cls) to JS calls on __mongo
+  // 2) Prepend the mongosh emulator so `db` and `__mongo` are defined
+  const code = MONGO_EMULATOR_SOURCE + ';\n' + preprocessMongoshell(userCode);
+
+  // Tear down any previous run, including its idle timer
+  if(idleTimer){ clearTimeout(idleTimer); idleTimer = null; }
+  killSandbox();
+  sandboxId += 1;
+  runStartTime = performance.now();
+  const iframe = document.createElement('iframe');
+  iframe.sandbox = 'allow-scripts';
+  iframe.style.display = 'none';
+  iframe.srcdoc = buildSandboxSrc(code, sandboxId);
+  document.body.appendChild(iframe);
+  sandbox = iframe;
+  isRunning = true;
+  setRunButton(true);
+}
+
+/* ==========================================================
+   Toast helper
+   ========================================================== */
+const toastEl = document.getElementById('toast');
+let toastTimer;
+function toast(msg, kind){
+  toastEl.textContent = msg;
+  toastEl.classList.toggle('error', kind === 'error');
+  toastEl.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=> toastEl.classList.remove('show'), 1800);
+}
+
+/* ==========================================================
+   Drag-to-resize splitter between editor and console
+   ========================================================== */
+(function initSplitter(){
+  const pane     = document.querySelector('.editor-pane');
+  const splitter = document.getElementById('splitter');
+  const editorCardEl_  = document.querySelector('.editor-pane > .editor-card');
+  const consoleCardEl_ = document.querySelector('.editor-pane > .console-card');
+  if(!pane || !splitter || !editorCardEl_ || !consoleCardEl_) return;
+  const HANDLE_W = 6, MIN_PANE = 160;
+  const STORAGE = 'mongo-lab-split-ratio';
+  let savedRatio = null;
+  try { const v = parseFloat(localStorage.getItem(STORAGE)); if(v > 0 && v < 1) savedRatio = v; } catch {}
+  function applyRatio(ratio){
+    const total = pane.clientWidth - parseFloat(getComputedStyle(pane).paddingLeft) * 2 - HANDLE_W - 14 * 2;
+    if(total <= 0) return;
+    const left  = Math.max(MIN_PANE, Math.min(total - MIN_PANE, total * ratio));
+    const right = total - left;
+    pane.style.setProperty('--col-1', left + 'px');
+    pane.style.setProperty('--col-2', right + 'px');
+    if(typeof editor !== 'undefined' && editor.refresh){
+      clearTimeout(applyRatio._t);
+      applyRatio._t = setTimeout(() => editor.refresh(), 30);
+    }
+  }
+  if(savedRatio != null) applyRatio(savedRatio);
+
+  let drag = null;
+  function start(e){
+    e.preventDefault();
+    const rect = pane.getBoundingClientRect();
+    const padL = parseFloat(getComputedStyle(pane).paddingLeft) || 0;
+    drag = {
+      paneLeft: rect.left + padL,
+      total: pane.clientWidth - padL * 2 - HANDLE_W - 14 * 2,
+    };
+    splitter.classList.add('active');
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  }
+  function move(e){
+    if(!drag) return;
+    let editorPx = e.clientX - drag.paneLeft;
+    editorPx = Math.max(MIN_PANE, Math.min(drag.total - MIN_PANE, editorPx));
+    applyRatio(editorPx / drag.total);
+  }
+  function end(){
+    if(!drag) return;
+    drag = null;
+    splitter.classList.remove('active');
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+    const total = pane.clientWidth - parseFloat(getComputedStyle(pane).paddingLeft) * 2 - HANDLE_W - 14 * 2;
+    const colL = parseFloat(pane.style.getPropertyValue('--col-1')) || total / 2;
+    try { localStorage.setItem(STORAGE, (colL / total).toFixed(4)); } catch {}
+  }
+  splitter.addEventListener('pointerdown', start);
+  window.addEventListener('pointermove', move);
+  window.addEventListener('pointerup',   end);
+  window.addEventListener('pointercancel', end);
+  splitter.addEventListener('dblclick', () => {
+    pane.style.removeProperty('--col-1');
+    pane.style.removeProperty('--col-2');
+    try { localStorage.removeItem(STORAGE); } catch {}
+    if(typeof editor !== 'undefined' && editor.refresh) setTimeout(() => editor.refresh(), 30);
+  });
+  window.addEventListener('resize', () => {
+    if(savedRatio != null){
+      const v = parseFloat(localStorage.getItem(STORAGE));
+      if(v > 0 && v < 1) applyRatio(v);
+    }
+    if(typeof editor !== 'undefined' && editor.refresh){
+      clearTimeout(applyRatio._t);
+      applyRatio._t = setTimeout(() => editor.refresh(), 60);
+    }
+  });
+})();
+
+/* ==========================================================
+   Boot
+   ========================================================== */
+(async function boot(){
+  // Pre-fetch line counts for sidebar in the background
+  FILES.forEach(f => loadFile(f.file));
+  // Activate first file
+  await activate(FILES[0].file);
+})();
+</script>
+</body>
+</html>

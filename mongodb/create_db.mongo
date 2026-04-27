@@ -1,0 +1,20 @@
+// 1) See available databases
+show dbs
+
+// 2) Switch to (or create) a database
+use myapp
+
+// 3) Create an empty collection
+db.createCollection("users")
+
+// 4) List collections in the current db
+show collections
+
+// 5) Capped collection — max 100 documents OR 10 MB, whichever first
+db.createCollection("games", { capped: true, size: 10000000, max: 100 })
+
+// 6) Drop a collection
+db.games.drop()
+
+// 7) Empty find — no documents yet
+db.users.find()

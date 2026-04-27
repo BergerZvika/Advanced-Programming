@@ -207,6 +207,35 @@ section.lab-section{ margin-top: 56px }
 }
 .subgroup-title::after{ flex: 1 }
 
+/* MongoDB-themed featured card variant */
+.featured-card.mongo-theme::before{
+  background: linear-gradient(135deg, rgba(19,170,82,0.55), rgba(124,92,255,0) 40%, rgba(53,208,255,0.40));
+}
+.featured-card.mongo-theme:hover{ border-color: rgba(19,170,82,0.4); box-shadow: 0 36px 90px -30px rgba(0,104,74,0.30), 0 10px 30px -15px rgba(0,0,0,0.7) }
+.featured-card.mongo-theme .featured-art{
+  background:
+    radial-gradient(420px 220px at 30% 30%, rgba(19,170,82,0.26), transparent 60%),
+    radial-gradient(380px 220px at 80% 70%, rgba(124,92,255,0.16), transparent 60%),
+    linear-gradient(135deg, rgba(0,104,74,0.06), rgba(124,92,255,0.06));
+}
+.featured-card.mongo-theme .tag{
+  color: #b6e8cc; background: rgba(19,170,82,0.12); border-color: rgba(19,170,82,0.32);
+}
+.mongo-leaf{
+  width: 130px; height: 130px; border-radius: 22px;
+  background: linear-gradient(135deg, #13aa52, #00684a);
+  color: #ffffff; font-weight: 900; font-size: 56px;
+  display: flex; align-items: center; justify-content: center;
+  letter-spacing: 1px;
+  box-shadow:
+    0 30px 70px -22px rgba(0,104,74,0.55),
+    inset 0 0 0 1px rgba(255,255,255,0.20),
+    inset 0 -16px 28px -10px rgba(0,0,0,0.30);
+  transform: rotate(5deg);
+  animation: floatY 5s ease-in-out infinite;
+  text-shadow: 0 2px 0 rgba(0,0,0,0.18);
+}
+
 /* Bootstrap-themed featured card variant */
 .featured-card.bs-theme::before{
   background: linear-gradient(135deg, rgba(121,82,179,0.55), rgba(124,92,255,0) 40%, rgba(255,110,199,0.40));
@@ -532,6 +561,7 @@ footer a:hover{ color: var(--text) }
     <a class="nav-link" href="#html">HTML</a>
     <a class="nav-link" href="#css">CSS</a>
     <a class="nav-link" href="#bootstrap">Bootstrap</a>
+    <a class="nav-link" href="#mongodb">MongoDB</a>
     <a class="nav-link primary" href="tools.html">BergerOverflow ↗</a>
   </div>
 </nav>
@@ -663,6 +693,34 @@ footer a:hover{ color: var(--text) }
     </a>
   </section>
 
+  <!-- MongoDB — featured -->
+  <section class="lab-section" id="mongodb">
+    <div class="section-head">
+      <h2>MongoDB</h2>
+      <span class="count">in-browser mongosh</span>
+      <p>Run real mongosh syntax against an in-memory database — no server, no install. CRUD, projections, comparison operators, sort/limit, aggregate, indexes.</p>
+    </div>
+
+    <a class="featured-card mongo-theme" href="mongodb/index.html">
+      <div class="featured-art">
+        <span class="ring r1"></span>
+        <span class="ring r2"></span>
+        <div class="mongo-leaf">M</div>
+      </div>
+      <div class="featured-body">
+        <span class="tag">Featured</span>
+        <h3>MongoDB Lab</h3>
+        <p>Type <code>show dbs</code>, <code>use myapp</code>, <code>db.users.insertMany([…])</code> — they all work, against a sandbox store that resets on every Run. The lab understands the full curriculum: <code>$gt</code>/<code>$gte</code>/<code>$in</code>/<code>$and</code>, <code>.sort()</code>/<code>.limit()</code>, <code>aggregate</code> with <code>$group</code>/<code>$avg</code>/<code>$sum</code>/<code>$min</code>/<code>$max</code>, <code>createIndex</code>/<code>dropIndex</code>/<code>explain</code>.</p>
+        <div class="meta">
+          <span>6 lessons</span>
+          <span>mongosh emulator</span>
+          <span>install + node-server guides</span>
+        </div>
+        <span class="open">Open the lab <span aria-hidden="true">→</span></span>
+      </div>
+    </a>
+  </section>
+
   <!-- Bootstrap — featured -->
   <section class="lab-section" id="bootstrap">
     <div class="section-head">
@@ -694,7 +752,7 @@ footer a:hover{ color: var(--text) }
 </main>
 
 <footer>
-  <p>Advanced Programming · <a href="tools.html">BergerOverflow Tools</a> · <a href="javascript/index.html">JS Lab</a> · <a href="typescript/index.html">TS Lab</a> · <a href="html/lab.html">HTML Lab</a> · <a href="css/index.html">CSS Lab</a> · <a href="bootstrap/index.html">Bootstrap Lab</a></p>
+  <p>Advanced Programming · <a href="tools.html">BergerOverflow Tools</a> · <a href="javascript/index.html">JS Lab</a> · <a href="typescript/index.html">TS Lab</a> · <a href="html/lab.html">HTML Lab</a> · <a href="css/index.html">CSS Lab</a> · <a href="bootstrap/index.html">Bootstrap Lab</a> · <a href="mongodb/index.html">MongoDB Lab</a></p>
 </footer>
 
 <script>

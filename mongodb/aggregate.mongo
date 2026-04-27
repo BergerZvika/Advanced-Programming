@@ -1,0 +1,13 @@
+use myapp
+db.users.insertMany([
+  { name: "zvi",    grade: 59,  year: 2024 },
+  { name: "berger", grade: 80,  year: 2025 },
+  { name: "zvika",  grade: 70,  year: 2025 },
+  { name: "db",     grade: 100, year: 2025 }
+])
+
+// $group with aggregation operators
+db.users.aggregate([{ $group: { _id: "$year", averageGrade: { $avg: "$grade" } } }])
+db.users.aggregate([{ $group: { _id: "$year", SumGrade:     { $sum: "$grade" } } }])
+db.users.aggregate([{ $group: { _id: "$year", MinGrade:     { $min: "$grade" } } }])
+db.users.aggregate([{ $group: { _id: "$year", MaxGrade:     { $max: "$grade" } } }])

@@ -1,0 +1,18 @@
+use myapp
+db.users.insertMany([
+  { name: "zvi",    grade: 59 },
+  { name: "berger", grade: 80 },
+  { name: "zvika",  grade: 70 }
+])
+
+// Without an index — full collection scan
+db.users.find({ name: "berger" }).explain("executionStats")
+
+// Create an index on the name field
+db.users.createIndex({ name: 1 })
+
+// List the indexes for the collection
+db.users.getIndexes()
+
+// Drop a specific index by name
+db.users.dropIndex("name_1")

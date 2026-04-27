@@ -1,0 +1,40 @@
+use myapp
+db.createCollection("users")
+
+// One document at a time
+db.users.insertOne({ name: "zvi", grade: 59 })
+
+// Many at once
+db.users.insertMany([
+  { name: "berger", grade: 80 },
+  { name: "zvika",  grade: 70 },
+  { name: "db",     grade: 100 }
+])
+
+// Rich document with nested fields, dates, and arrays
+db.users.insertOne({
+  name: "Israel Unisraeli",
+  age: 14,
+  grade: 59.3,
+  student: true,
+  registerDate: new Date(),
+  friends: null,
+  courses: ["Advanced Programming", "Data Base", "Algorithm"],
+  Adress: {
+    street: "Israelia",
+    city: "Mini Israel",
+    zip: 123456
+  }
+})
+
+// Update operators
+db.users.updateOne ({ name: "db"  }, { $set:    { grade: 80 } })
+db.users.updateMany({},               { $set:    { year: 2025 } })
+db.users.updateOne ({ name: "db"  }, { $unset:  { year: "" } })
+db.users.updateOne ({ name: "zvi" }, { $rename: { year: "date" } })
+
+// Delete a document
+db.users.deleteOne({ name: "zvi" })
+
+// View the collection
+db.users.find()
