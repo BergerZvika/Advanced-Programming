@@ -17920,6 +17920,699 @@ async function runMongoLite(source, writeOut){
 // zeros, ones, linspace, sin/cos/tan/exp/log/sqrt/abs/pi/e, round/floor/ceil,
 // sum/mean/max/min, mod, rem, char, num2str.  No plotting, no complex
 // indexing, no transpose — unsupported constructs surface as JS errors.
+/* ============================================================
+   Neo4j IDE — Cypher subset emulator + 3D force-directed viz.
+   Lazily loads three.js / three-spritetext / 3d-force-graph
+   from CDN on first Run.
+   ============================================================ */
+
+let _cypherDepsPromise = null;
+function _loadScript(url){
+  return new Promise((resolve, reject) => {
+    const existing = document.querySelector('script[data-cypher-dep="' + url + '"]');
+    if(existing){
+      if(existing.dataset.loaded === '1') resolve();
+      else existing.addEventListener('load', () => resolve());
+      return;
+    }
+    const s = document.createElement('script');
+    s.src = url;
+    s.async = false;
+    s.dataset.cypherDep = url;
+    s.onload = () => { s.dataset.loaded = '1'; resolve(); };
+    s.onerror = () => reject(new Error('Could not load ' + url));
+    document.head.appendChild(s);
+  });
+}
+function ensureCypherDeps(){
+  if(_cypherDepsPromise) return _cypherDepsPromise;
+  _cypherDepsPromise = (async () => {
+    if(typeof THREE === 'undefined'){
+      await _loadScript('https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js');
+    }
+    if(typeof SpriteText === 'undefined'){
+      await _loadScript('https://unpkg.com/three-spritetext@1.10.0/dist/three-spritetext.min.js');
+    }
+    if(typeof ForceGraph3D === 'undefined'){
+      await _loadScript('https://cdn.jsdelivr.net/npm/3d-force-graph@1.73.4/dist/3d-force-graph.min.js');
+    }
+  })();
+  return _cypherDepsPromise;
+}
+
+function makeCypherDB(){
+  const nodes = new Map();
+  const edges = new Map();
+  let nextId = 1;
+  function newId(){ return nextId++; }
+  function snapshot(){
+    return {
+      nodes: Array.from(nodes.values()).map(n => ({ id:n.id, labels:n.labels.slice(), props:{...n.props} })),
+      edges: Array.from(edges.values()).map(e => ({ id:e.id, source:e.source, target:e.target, type:e.type, props:{...e.props} })),
+    };
+  }
+  function addNode(labels, props){
+    const id = newId();
+    nodes.set(id, { id, labels: labels.slice(), props: {...props} });
+    return nodes.get(id);
+  }
+  function addEdge(source, target, type, props){
+    const id = newId();
+    edges.set(id, { id, source, target, type, props: {...props} });
+    return edges.get(id);
+  }
+  function parseProps(s){
+    if(!s) return {};
+    const t = s.trim();
+    if(!t || t === '{}') return {};
+    let json = t;
+    json = json.replace(/'((?:[^'\\]|\\.)*)'/g, (m, inner) => '"' + inner.replace(/"/g, '\\"') + '"');
+    json = json.replace(/([{,]\s*)(\w+)\s*:/g, '$1"$2":');
+    try { return JSON.parse(json); }
+    catch(e){ throw new Error('Could not parse property map: ' + t); }
+  }
+  function tokenizePattern(text){
+    const out = []; let i = 0;
+    while(i < text.length){
+      while(i < text.length && /\s/.test(text[i])) i++;
+      if(i >= text.length) break;
+      const ch = text[i];
+      if(ch === '('){
+        const start = i; let depth = 0;
+        while(i < text.length){
+          if(text[i] === '{'){
+            let bd = 0;
+            do { if(text[i]==='{') bd++; else if(text[i]==='}') bd--; i++; }
+            while(i < text.length && bd > 0);
+            continue;
+          }
+          if(text[i] === '(') depth++;
+          else if(text[i] === ')'){ depth--; if(depth===0){ i++; break; } }
+          i++;
+        }
+        out.push({ kind:'node', text: text.slice(start+1, i-1) });
+      } else if(ch === '<' || ch === '-'){
+        const start = i;
+        let leftArrow = false, rightArrow = false;
+        if(text[i] === '<'){ leftArrow = true; i++; if(text[i] === '-') i++; }
+        else if(text[i] === '-') i++;
+        if(text[i] === '['){
+          let bd = 0;
+          while(i < text.length){
+            if(text[i] === '{'){
+              let cb = 0;
+              do { if(text[i]==='{') cb++; else if(text[i]==='}') cb--; i++; }
+              while(i < text.length && cb > 0);
+              continue;
+            }
+            if(text[i] === '[') bd++;
+            else if(text[i] === ']'){ bd--; if(bd===0){ i++; break; } }
+            i++;
+          }
+        }
+        if(text[i] === '-') i++;
+        if(text[i] === '>'){ rightArrow = true; i++; }
+        out.push({ kind:'rel', text: text.slice(start, i), leftArrow, rightArrow });
+      } else if(ch === ','){ out.push({ kind:'sep' }); i++; }
+      else { i++; }
+    }
+    return out;
+  }
+  function parseNodeInner(text){
+    const t = (text || '').trim();
+    let varName = '', label = '', props = {};
+    const m = t.match(/^(\w*)(?::(\w+))?\s*(\{[\s\S]*\})?$/);
+    if(m){ varName = m[1] || ''; label = m[2] || ''; if(m[3]) props = parseProps(m[3]); }
+    return { varName, label, props };
+  }
+  function parseRelInner(text){
+    const m = text.match(/\[([^\]]*)\]/);
+    if(!m) return { varName:'', type:'', props:{} };
+    const tm = m[1].trim().match(/^(\w*)(?::(\w+))?\s*(\{[\s\S]*\})?$/);
+    if(!tm) return { varName:'', type:'', props:{} };
+    return {
+      varName: tm[1] || '', type: tm[2] || '',
+      props: tm[3] ? parseProps(tm[3]) : {},
+    };
+  }
+  function execCreate(body){
+    const segs = tokenizePattern(body);
+    const scope = {};
+    let prevNode = null, pendingRel = null;
+    for(const s of segs){
+      if(s.kind === 'sep'){ prevNode = null; pendingRel = null; continue; }
+      if(s.kind === 'rel'){ pendingRel = s; continue; }
+      if(s.kind === 'node'){
+        const ni = parseNodeInner(s.text);
+        let node;
+        if(ni.varName && scope[ni.varName]) node = scope[ni.varName];
+        else { node = addNode(ni.label ? [ni.label] : [], ni.props); if(ni.varName) scope[ni.varName] = node; }
+        if(prevNode && pendingRel){
+          const r = parseRelInner(pendingRel.text);
+          const source = pendingRel.rightArrow ? prevNode.id : node.id;
+          const target = pendingRel.rightArrow ? node.id : prevNode.id;
+          addEdge(source, target, r.type || '', r.props);
+        }
+        prevNode = node; pendingRel = null;
+      }
+    }
+    return { type: 'create', summary: 'created' };
+  }
+  function findMatchingNode(label, props){
+    for(const n of nodes.values()){
+      if(label && !n.labels.includes(label)) continue;
+      let ok = true;
+      for(const k in props){ if(n.props[k] !== props[k]){ ok = false; break; } }
+      if(ok) return n;
+    }
+    return null;
+  }
+  function findMatchingEdge(source, target, type, props){
+    for(const e of edges.values()){
+      if(e.source !== source || e.target !== target) continue;
+      if(type && e.type !== type) continue;
+      let ok = true;
+      for(const k in props){ if(e.props[k] !== props[k]){ ok = false; break; } }
+      if(ok) return e;
+    }
+    return null;
+  }
+  function execMerge(body){
+    const segs = tokenizePattern(body);
+    const scope = {};
+    let created = 0, matched = 0;
+    let prevNode = null, pendingRel = null;
+    for(const s of segs){
+      if(s.kind === 'sep'){ prevNode = null; pendingRel = null; continue; }
+      if(s.kind === 'rel'){ pendingRel = s; continue; }
+      if(s.kind === 'node'){
+        const ni = parseNodeInner(s.text);
+        let node;
+        if(ni.varName && scope[ni.varName]) node = scope[ni.varName];
+        else {
+          const found = findMatchingNode(ni.label, ni.props);
+          if(found){ node = found; matched++; }
+          else { node = addNode(ni.label ? [ni.label] : [], ni.props); created++; }
+          if(ni.varName) scope[ni.varName] = node;
+        }
+        if(prevNode && pendingRel){
+          const r = parseRelInner(pendingRel.text);
+          const source = pendingRel.rightArrow ? prevNode.id : node.id;
+          const target = pendingRel.rightArrow ? node.id : prevNode.id;
+          const foundEdge = findMatchingEdge(source, target, r.type, r.props);
+          if(foundEdge) matched++;
+          else { addEdge(source, target, r.type || '', r.props); created++; }
+        }
+        prevNode = node; pendingRel = null;
+      }
+    }
+    return { type: 'merge', created, matched };
+  }
+  function execMatchPattern(pattern){
+    const segs = tokenizePattern(pattern);
+    if(segs.length === 0) return [];
+    const pathNodes = [], pathRels = [];
+    for(const s of segs){
+      if(s.kind === 'sep') break;
+      if(s.kind === 'node') pathNodes.push(parseNodeInner(s.text));
+      else if(s.kind === 'rel'){ const r = parseRelInner(s.text); pathRels.push({ ...r, leftArrow: s.leftArrow, rightArrow: s.rightArrow }); }
+    }
+    if(pathNodes.length === 0) return [];
+    const allNodes = Array.from(nodes.values());
+    const allEdges = Array.from(edges.values());
+    const out = [];
+    function bind(idx, binding, prev){
+      const np = pathNodes[idx];
+      const candidates = allNodes.filter(n => {
+        if(np.label && !n.labels.includes(np.label)) return false;
+        for(const k in np.props){ if(n.props[k] !== np.props[k]) return false; }
+        if(np.varName && binding[np.varName] && binding[np.varName].id !== n.id) return false;
+        return true;
+      });
+      for(const n of candidates){
+        let edgeUsed = null;
+        if(idx > 0){
+          const rel = pathRels[idx - 1];
+          const matchEdge = allEdges.find(e => {
+            if(rel.type && e.type !== rel.type) return false;
+            if(rel.rightArrow) return e.source === prev.id && e.target === n.id;
+            if(rel.leftArrow)  return e.source === n.id && e.target === prev.id;
+            return (e.source === prev.id && e.target === n.id) ||
+                   (e.source === n.id && e.target === prev.id);
+          });
+          if(!matchEdge) continue;
+          edgeUsed = matchEdge;
+        }
+        const next = { ...binding };
+        if(np.varName) next[np.varName] = n;
+        if(edgeUsed && pathRels[idx-1].varName) next[pathRels[idx-1].varName] = edgeUsed;
+        if(idx === pathNodes.length - 1) out.push(next);
+        else bind(idx + 1, next, n);
+      }
+    }
+    bind(0, {}, null);
+    return out;
+  }
+  function parseLiteral(s){
+    const t = s.trim();
+    if(t.startsWith('"') || t.startsWith("'")) return t.slice(1, -1).replace(/\\(.)/g, '$1');
+    if(t.startsWith('[') && t.endsWith(']')){
+      const inner = t.slice(1,-1).trim();
+      if(!inner) return [];
+      const items = []; let depth = 0, cur = '';
+      for(const ch of inner){
+        if(ch === ',' && depth === 0){ items.push(cur); cur = ''; }
+        else { if('[{('.includes(ch)) depth++; else if(']}'.includes(ch) || ch===')') depth--; cur += ch; }
+      }
+      if(cur.trim()) items.push(cur);
+      return items.map(x => parseLiteral(x.trim()));
+    }
+    if(/^-?\d+(\.\d+)?$/.test(t)) return Number(t);
+    if(t.toLowerCase() === 'true') return true;
+    if(t.toLowerCase() === 'false') return false;
+    if(t.toLowerCase() === 'null') return null;
+    return t;
+  }
+  function evalWhere(expr, binding){
+    if(!expr) return true;
+    const orParts = expr.split(/\s+OR\s+/i);
+    if(orParts.length > 1) return orParts.some(p => evalWhere(p, binding));
+    const andParts = expr.split(/\s+AND\s+/i);
+    if(andParts.length > 1) return andParts.every(p => evalWhere(p, binding));
+    const m = expr.trim().match(/^(\w+)(?:\.(\w+))?\s*(=|<>|!=|>=|<=|>|<|IN)\s*(.+)$/i);
+    if(!m) return true;
+    const [, varName, propName, op, valueText] = m;
+    const node = binding[varName];
+    if(!node) return false;
+    const lhs = propName ? (node.props ? node.props[propName] : undefined) : node;
+    const rhs = parseLiteral(valueText);
+    switch(op.toUpperCase()){
+      case '=':  return lhs == rhs;
+      case '<>': case '!=': return lhs != rhs;
+      case '>':  return lhs > rhs;
+      case '>=': return lhs >= rhs;
+      case '<':  return lhs < rhs;
+      case '<=': return lhs <= rhs;
+      case 'IN': return Array.isArray(rhs) && rhs.includes(lhs);
+    }
+    return false;
+  }
+  function evalReturn(returnText, rows){
+    let work = returnText.trim();
+    let distinct = false;
+    if(/^DISTINCT\s+/i.test(work)){ distinct = true; work = work.replace(/^DISTINCT\s+/i, ''); }
+    const items = []; let depth = 0, cur = '';
+    for(const ch of work){
+      if(ch === ',' && depth === 0){ items.push(cur); cur = ''; }
+      else { if('[{('.includes(ch)) depth++; else if(']}'.includes(ch) || ch===')') depth--; cur += ch; }
+    }
+    if(cur.trim()) items.push(cur);
+    const projItems = items.map(it => {
+      const t = it.trim();
+      const am = t.match(/^(.*?)\s+AS\s+(\w+)\s*$/i);
+      const expr = am ? am[1].trim() : t;
+      const alias = am ? am[2].trim() : t;
+      const aggM = expr.match(/^(count|sum|avg|min|max|collect)\(\s*(\*|\w+(?:\.\w+)?)\s*\)$/i);
+      return { expr, alias, agg: aggM ? aggM[1].toLowerCase() : null, aggArg: aggM ? aggM[2] : null };
+    });
+    const evalOne = (expr, row) => {
+      if(!expr) return undefined;
+      const parts = expr.split('.');
+      const v = row[parts[0]];
+      if(parts.length === 2) return v && v.props ? v.props[parts[1]] : undefined;
+      return v;
+    };
+    const aggregate = (p, vals) => {
+      const nums = vals.filter(v => typeof v === 'number');
+      switch(p.agg){
+        case 'count':   return vals.length;
+        case 'sum':     return nums.reduce((a,b)=>a+b, 0);
+        case 'avg':     return nums.length ? nums.reduce((a,b)=>a+b,0)/nums.length : null;
+        case 'min':     return nums.length ? Math.min.apply(null, nums) : null;
+        case 'max':     return nums.length ? Math.max.apply(null, nums) : null;
+        case 'collect': return vals;
+      }
+      return null;
+    };
+    const hasAgg  = projItems.some(p => p.agg);
+    const groupBy = projItems.filter(p => !p.agg);
+    if(hasAgg && groupBy.length === 0){
+      const out = {};
+      projItems.forEach(p => {
+        const vals = rows.map(r => p.aggArg === '*' ? 1 : evalOne(p.aggArg, r)).filter(v => v !== undefined);
+        out[p.alias] = aggregate(p, vals);
+      });
+      return [out];
+    }
+    if(hasAgg){
+      const groups = new Map();
+      rows.forEach(r => {
+        const key = JSON.stringify(groupBy.map(p => evalOne(p.expr, r)));
+        if(!groups.has(key)) groups.set(key, []);
+        groups.get(key).push(r);
+      });
+      const out = [];
+      groups.forEach(grpRows => {
+        const row = {};
+        groupBy.forEach(p => { row[p.alias] = evalOne(p.expr, grpRows[0]); });
+        projItems.filter(p => p.agg).forEach(p => {
+          const vals = grpRows.map(r => p.aggArg === '*' ? 1 : evalOne(p.aggArg, r)).filter(v => v !== undefined);
+          row[p.alias] = aggregate(p, vals);
+        });
+        out.push(row);
+      });
+      return out;
+    }
+    const projected = rows.map(r => {
+      const row = {};
+      projItems.forEach(p => { row[p.alias] = evalOne(p.expr, r); });
+      if(projItems.length === 1 && !projItems[0].expr.includes('.') && projItems[0].expr === projItems[0].alias){
+        return r[projItems[0].expr] ?? row;
+      }
+      return row;
+    });
+    if(distinct){
+      const seen = new Set();
+      return projected.filter(p => { const k = JSON.stringify(p); if(seen.has(k)) return false; seen.add(k); return true; });
+    }
+    return projected;
+  }
+  function applyOrder(rows, orderText){
+    const items = orderText.split(',').map(s => {
+      const m = s.trim().match(/^(.+?)\s*(ASC|DESC)?$/i);
+      return { expr: m[1].trim(), dir: (m[2] || 'ASC').toUpperCase() === 'DESC' ? -1 : 1 };
+    });
+    const resolve = (expr, row) => {
+      if(row && expr in row) return row[expr];
+      const parts = expr.split('.');
+      const v = row && row[parts[0]];
+      if(parts.length === 2 && v && v.props) return v.props[parts[1]];
+      return undefined;
+    };
+    return rows.slice().sort((a,b) => {
+      for(const { expr, dir } of items){
+        const av = resolve(expr, a), bv = resolve(expr, b);
+        if(av === bv) continue;
+        return (av > bv ? 1 : -1) * dir;
+      }
+      return 0;
+    });
+  }
+  function splitTopLevel(text, sep){
+    const out = []; let depth = 0, cur = '';
+    for(const ch of text){
+      if(ch === sep && depth === 0){ out.push(cur); cur = ''; }
+      else { if('[{('.includes(ch)) depth++; else if(']}'.includes(ch) || ch===')') depth--; cur += ch; }
+    }
+    if(cur.trim()) out.push(cur);
+    return out;
+  }
+  function execSet(setText, rows){
+    const items = splitTopLevel(setText, ',');
+    let updated = 0; const seen = new Set();
+    for(const r of rows){
+      for(const itemRaw of items){
+        const item = itemRaw.trim();
+        const propM = item.match(/^(\w+)\.(\w+)\s*=\s*(.+)$/);
+        if(propM){
+          const target = r[propM[1]];
+          if(target && target.props){
+            target.props[propM[2]] = parseLiteral(propM[3]);
+            const key = (target.id || '') + ':' + propM[2];
+            if(!seen.has(key)){ seen.add(key); updated++; }
+          }
+          continue;
+        }
+        const labelM = item.match(/^(\w+):(\w+)$/);
+        if(labelM){
+          const target = r[labelM[1]];
+          if(target && Array.isArray(target.labels) && !target.labels.includes(labelM[2])){
+            target.labels.push(labelM[2]);
+            const key = (target.id || '') + ':L:' + labelM[2];
+            if(!seen.has(key)){ seen.add(key); updated++; }
+          }
+        }
+      }
+    }
+    return updated;
+  }
+  function execRemove(removeText, rows){
+    const items = splitTopLevel(removeText, ',');
+    let removed = 0; const seen = new Set();
+    for(const r of rows){
+      for(const itemRaw of items){
+        const item = itemRaw.trim();
+        const propM = item.match(/^(\w+)\.(\w+)$/);
+        if(propM){
+          const target = r[propM[1]];
+          if(target && target.props && propM[2] in target.props){
+            delete target.props[propM[2]];
+            const key = (target.id || '') + ':' + propM[2];
+            if(!seen.has(key)){ seen.add(key); removed++; }
+          }
+          continue;
+        }
+        const labelM = item.match(/^(\w+):(\w+)$/);
+        if(labelM){
+          const target = r[labelM[1]];
+          if(target && Array.isArray(target.labels)){
+            const idx = target.labels.indexOf(labelM[2]);
+            if(idx !== -1){
+              target.labels.splice(idx, 1);
+              const key = (target.id || '') + ':L:' + labelM[2];
+              if(!seen.has(key)){ seen.add(key); removed++; }
+            }
+          }
+        }
+      }
+    }
+    return removed;
+  }
+  function parseMatchStmt(stmt){
+    const re = /\b(MATCH|WHERE|RETURN|ORDER\s+BY|LIMIT|SKIP|DELETE|SET|REMOVE)\b/gi;
+    const matches = [...stmt.matchAll(re)];
+    const parts = {};
+    for(let i = 0; i < matches.length; i++){
+      const kw = matches[i][1].toUpperCase().replace(/\s+/g,' ');
+      const start = matches[i].index + matches[i][0].length;
+      const end = i+1 < matches.length ? matches[i+1].index : stmt.length;
+      const body = stmt.slice(start, end).trim();
+      if(kw === 'MATCH') parts.match = body;
+      else if(kw === 'WHERE') parts.where = body;
+      else if(kw === 'RETURN') parts.return_ = body;
+      else if(kw === 'ORDER BY') parts.orderBy = body;
+      else if(kw === 'LIMIT') parts.limit = parseInt(body, 10);
+      else if(kw === 'SKIP') parts.skip = parseInt(body, 10);
+      else if(kw === 'DELETE') parts.delete_ = body;
+      else if(kw === 'SET') parts.set = body;
+      else if(kw === 'REMOVE') parts.remove = body;
+    }
+    return parts;
+  }
+  function execStatement(stmt){
+    const trimmed = stmt.trim();
+    if(!trimmed) return null;
+    const upper = trimmed.toUpperCase();
+    if(upper.startsWith('CREATE')) return execCreate(trimmed.slice('CREATE'.length).trim());
+    if(upper.startsWith('MERGE'))  return execMerge(trimmed.slice('MERGE'.length).trim());
+    if(upper.startsWith('MATCH')){
+      const parts = parseMatchStmt(trimmed);
+      let rows = execMatchPattern(parts.match || '');
+      if(parts.where) rows = rows.filter(r => evalWhere(parts.where, r));
+      if(parts.set){ const updated = execSet(parts.set, rows); return { type: 'update', updated, matched: rows.length }; }
+      if(parts.remove){ const removed = execRemove(parts.remove, rows); return { type: 'update', updated: removed, matched: rows.length, removed: true }; }
+      if(parts.return_){
+        let out = evalReturn(parts.return_, rows);
+        if(parts.orderBy) out = applyOrder(out, parts.orderBy);
+        if(parts.skip != null) out = out.slice(parts.skip);
+        if(parts.limit != null) out = out.slice(0, parts.limit);
+        return { type: 'return', rows: out };
+      }
+      if(parts.delete_){
+        const toDelete = parts.delete_.trim().split(/\s*,\s*/);
+        const seenIds = new Set();
+        rows.forEach(r => {
+          toDelete.forEach(v => {
+            const node = r[v];
+            if(node && !seenIds.has(node.id)){
+              seenIds.add(node.id);
+              for(const [eid, e] of edges){ if(e.source === node.id || e.target === node.id) edges.delete(eid); }
+              nodes.delete(node.id);
+            }
+          });
+        });
+        return { type: 'delete', count: seenIds.size };
+      }
+      return { type: 'match', count: rows.length };
+    }
+    throw new Error('Unsupported clause: ' + trimmed.slice(0, 50));
+  }
+  function splitStatements(text){
+    let s = text.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
+    const lines = s.split('\n');
+    const stmts = []; let cur = [];
+    const startKW = /^\s*(CREATE|MATCH|MERGE|UNWIND|CALL)\b/i;
+    for(const line of lines){
+      if(startKW.test(line) && cur.some(l => l.trim())){ stmts.push(cur.join('\n')); cur = []; }
+      cur.push(line);
+    }
+    if(cur.some(l => l.trim())) stmts.push(cur.join('\n'));
+    return stmts.map(s => s.replace(/;\s*$/, '')).filter(s => s.trim());
+  }
+  function exec(text){
+    const stmts = splitStatements(text);
+    const results = [];
+    for(const stmt of stmts){ const r = execStatement(stmt); if(r) results.push(r); }
+    return results;
+  }
+  return { exec, snapshot };
+}
+
+const _CYPHER_LABEL_COLORS = {
+  Person:'#4FC3F7', Company:'#FF8A65', Movie:'#BA68C8', Place:'#81C784',
+  Department:'#FFD54F', Hobby:'#F06292',
+};
+function _cypherColor(labels){
+  for(const l of labels) if(_CYPHER_LABEL_COLORS[l]) return _CYPHER_LABEL_COLORS[l];
+  if(labels.length) return '#9bd3ff';
+  return '#7c5cff';
+}
+
+async function runCypherLite(source, writeOut, output){
+  // Reset & execute Cypher
+  const db = makeCypherDB();
+  let results;
+  try { results = db.exec(source); }
+  catch(e){ writeOut('⚠ ' + (e && e.message || String(e)), 'stderr'); return; }
+
+  // Side-by-side layout: 3D viz panel on the left, textual results on the right.
+  // flex-wrap: wraps to stacked when the output area is narrow.
+  const split = document.createElement('div');
+  split.style.cssText = 'display:flex;flex-wrap:wrap;gap:12px;margin-bottom:12px;align-items:stretch;';
+
+  const vizWrap = document.createElement('div');
+  vizWrap.className = 'cypher-viz-wrap';
+  vizWrap.style.cssText = 'position:relative;flex:1 1 320px;min-width:280px;height:380px;border-radius:10px;overflow:hidden;background:radial-gradient(800px 600px at 50% 40%, rgba(1,139,255,0.08), transparent 70%) #06081a;border:1px solid rgba(1,139,255,0.25);';
+  const vizHost = document.createElement('div');
+  vizHost.style.cssText = 'position:absolute;inset:0;';
+  const vizStats = document.createElement('div');
+  vizStats.style.cssText = 'position:absolute;left:10px;top:8px;font:11px/1 \'JetBrains Mono\',monospace;color:#9bd3ff;background:rgba(8,12,28,0.78);padding:4px 9px;border-radius:6px;border:1px solid rgba(1,139,255,0.35);pointer-events:none;z-index:2;';
+  const vizLoading = document.createElement('div');
+  vizLoading.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:rgba(155,211,255,0.7);font-size:13px;font-style:italic;';
+  vizLoading.textContent = 'Loading 3D graph viewer…';
+  vizWrap.appendChild(vizHost); vizWrap.appendChild(vizStats); vizWrap.appendChild(vizLoading);
+
+  const textPanel = document.createElement('div');
+  textPanel.style.cssText = 'flex:1 1 320px;min-width:280px;height:380px;overflow:auto;padding:10px 12px;background:rgba(8,12,28,0.45);border:1px solid rgba(1,139,255,0.20);border-radius:10px;font-family:\'JetBrains Mono\',ui-monospace,monospace;font-size:12.5px;line-height:1.55;color:var(--text);scrollbar-width:thin;';
+
+  split.appendChild(textPanel); split.appendChild(vizWrap);
+  output.appendChild(split);
+
+  // Local writeOut directs into the right-side text panel
+  const writeText = (text, cls='stdout') => {
+    const d = document.createElement('div');
+    if(cls) d.className = cls;
+    d.textContent = String(text);
+    textPanel.appendChild(d);
+    textPanel.scrollTop = textPanel.scrollHeight;
+  };
+
+  // Print textual results into the right panel
+  for(const r of results){
+    if(r.type === 'return'){
+      if(!r.rows.length) writeText('(no rows)', 'muted');
+      else r.rows.forEach(row => {
+        const isNode = row && typeof row === 'object' && 'id' in row && Array.isArray(row.labels) && row.props;
+        if(isNode){
+          writeText(JSON.stringify({ labels: row.labels, props: row.props }, null, 2), 'stdout');
+        } else if(row && typeof row === 'object'){
+          writeText(JSON.stringify(row), 'stdout');
+        } else {
+          writeText(String(row), 'stdout');
+        }
+      });
+    } else if(r.type === 'create'){ writeText('+ pattern created', 'muted'); }
+    else if(r.type === 'merge'){ writeText('~ merged: ' + r.matched + ' matched, ' + r.created + ' created', 'muted'); }
+    else if(r.type === 'update'){
+      const verb = r.removed ? 'removed' : 'set';
+      writeText('~ ' + verb + ' ' + r.updated + ' propert' + (r.updated===1?'y':'ies') + ' across ' + r.matched + ' match' + (r.matched===1?'':'es'), 'muted');
+    }
+    else if(r.type === 'delete'){ writeText('- deleted ' + r.count + ' node' + (r.count===1?'':'s') + ' (and connected rels)', 'muted'); }
+  }
+  if(!results.length) writeText('(empty query)', 'muted');
+
+  // Render the graph
+  try {
+    await ensureCypherDeps();
+  } catch(e){
+    vizLoading.textContent = '⚠ Could not load 3D graph viewer (' + e.message + ')';
+    return;
+  }
+  vizLoading.remove();
+
+  const snap = db.snapshot();
+  vizStats.textContent = snap.nodes.length + ' node' + (snap.nodes.length===1?'':'s') + ' · ' + snap.edges.length + ' rel' + (snap.edges.length===1?'':'s');
+
+  const data = {
+    nodes: snap.nodes.map(n => ({ id: n.id, labels: n.labels, props: n.props })),
+    links: snap.edges.map(e => ({ source: e.source, target: e.target, type: e.type, props: e.props })),
+  };
+
+  const graph = ForceGraph3D()(vizHost)
+    .backgroundColor('rgba(0,0,0,0)')
+    .nodeColor(n => _cypherColor(n.labels))
+    .nodeOpacity(0.95)
+    .nodeRelSize(6)
+    .nodeLabel(n => {
+      const props = Object.entries(n.props).map(([k,v]) => '<b>'+k+'</b>: '+v).join('<br>');
+      return '<div style="background:rgba(8,12,28,0.95);padding:8px 12px;border-radius:8px;border:1px solid rgba(1,139,255,0.5);color:#cfeaff;font-size:12px"><b>'+(n.labels.join(':') || '(no label)')+'</b><br>'+props+'</div>';
+    })
+    .nodeThreeObjectExtend(true)
+    .nodeThreeObject(n => {
+      if(typeof SpriteText !== 'function') return null;
+      const keys = Object.keys(n.props || {});
+      let text;
+      if(keys.length){ const v = n.props[keys[0]]; text = String(v == null ? '' : v); }
+      else text = (n.labels[0] || 'node') + '#' + n.id;
+      if(text.length > 24) text = text.slice(0, 22) + '…';
+      const sprite = new SpriteText(text);
+      sprite.color = '#ffffff';
+      sprite.backgroundColor = 'rgba(8,12,28,0.85)';
+      sprite.borderColor = _cypherColor(n.labels);
+      sprite.borderWidth = 0.5;
+      sprite.borderRadius = 3;
+      sprite.padding = [3, 5];
+      sprite.fontFace = 'Inter, system-ui, sans-serif';
+      sprite.fontWeight = '600';
+      sprite.textHeight = 4;
+      sprite.position.y = 9;
+      return sprite;
+    })
+    .linkLabel(l => l.type ? ':'+l.type : '')
+    .linkColor(() => 'rgba(255,255,255,0.5)')
+    .linkOpacity(0.7)
+    .linkDirectionalArrowLength(4)
+    .linkDirectionalArrowRelPos(1)
+    .linkDirectionalParticles(2)
+    .linkDirectionalParticleWidth(1.5)
+    .linkDirectionalParticleColor(() => '#4FC3F7')
+    .graphData(data);
+
+  function fit(){
+    const r = vizHost.getBoundingClientRect();
+    if(r.width > 0 && r.height > 0){
+      graph.width(r.width).height(r.height);
+    }
+  }
+  fit();
+  setTimeout(fit, 80);
+  if(data.nodes.length) setTimeout(() => graph.zoomToFit(700, 60), 250);
+
+  const ro = new ResizeObserver(() => fit());
+  ro.observe(vizHost);
+}
+
+
 async function runMatlabLite(source, writeOut){
   const fmt = (x) => {
     if (typeof x === 'number') return Number.isInteger(x) ? String(x) : String(+x.toFixed(4));
@@ -18411,6 +19104,20 @@ function renderIDE(root, lang){
         };
         try {
           await runMongoLite(ta.value, writeOut);
+        } catch(e){
+          writeOut('⚠ ' + (e && e.message || String(e)), 'stderr');
+        }
+      } else if (lang.local === 'neo4j'){
+        progressive = true;
+        where = 'browser (Cypher subset + 3D viz)';
+        runHeader.remove();
+        const writeOut = (text, cls='stdout') => {
+          const d = el('div', {class: cls}, String(text));
+          output.appendChild(d);
+          output.scrollTop = output.scrollHeight;
+        };
+        try {
+          await runCypherLite(ta.value, writeOut, output);
         } catch(e){
           writeOut('⚠ ' + (e && e.message || String(e)), 'stderr');
         }
@@ -19146,6 +19853,14 @@ const IDE_LANGS = [
       {name:'Group by + count', code:`db.orders.insertMany([\n  { _id: 1, customer: 'Tom',  product: 'Apple',  qty: 2 },\n  { _id: 2, customer: 'Lucy', product: 'Banana', qty: 5 },\n  { _id: 3, customer: 'Tom',  product: 'Banana', qty: 3 },\n  { _id: 4, customer: 'Lucy', product: 'Apple',  qty: 1 },\n  { _id: 5, customer: 'Tom',  product: 'Apple',  qty: 4 }\n]);\n\ndb.orders.aggregate([\n  { $group: {\n    _id: '$customer',\n    totalOrders: { $sum: 1 },\n    totalQty: { $sum: '$qty' }\n  }},\n  { $sort: { totalQty: -1 } }\n]);`},
       {name:'Update & delete', code:`db.users.insertMany([\n  { _id: 1, name: 'Tom',    age: 34 },\n  { _id: 2, name: 'Lucy',   age: 28 },\n  { _id: 3, name: 'Frank',  age: 45 }\n]);\n\n// $inc everyone's age by 1\ndb.users.updateMany({}, { $inc: { age: 1 } });\n\n// Remove Frank\ndb.users.deleteOne({ name: 'Frank' });\n\ndb.users.find();`},
     ]},
+  {id:'neo4j', name:'Neo4j', icon:'N', prism:'cypher', file:'query.cypher', local:'neo4j', noInput:true,
+    samples:[
+      {name:'Create a tiny graph + 3D visualisation', code:`// Build a small social graph in one statement.\n// Below the output you'll see a 3D force-directed view of it.\nCREATE\n  (alice:Person {name: "Alice", age: 30}),\n  (bob:Person   {name: "Bob",   age: 25}),\n  (carol:Person {name: "Carol", age: 35}),\n  (alice)-[:KNOWS {since: 2018}]->(bob),\n  (bob)-[:KNOWS {since: 2019}]->(carol),\n  (alice)-[:KNOWS {since: 2020}]->(carol)\n\n// Show every node\nMATCH (n) RETURN n`},
+      {name:'MATCH + WHERE + ORDER BY', code:`CREATE\n  (:Person {name:"Alice", age:30, city:"TLV"}),\n  (:Person {name:"Bob",   age:25, city:"Haifa"}),\n  (:Person {name:"Carol", age:35, city:"TLV"}),\n  (:Person {name:"Dave",  age:42, city:"Jerusalem"})\n\n// People over 30, oldest first\nMATCH (p:Person) WHERE p.age >= 30\nRETURN p.name AS name, p.age AS age\nORDER BY p.age DESC`},
+      {name:'Aggregations (count / avg / group by)', code:`CREATE\n  (alice:Person {name:"Alice", age:30}),\n  (bob:Person   {name:"Bob",   age:25}),\n  (carol:Person {name:"Carol", age:35}),\n  (apple:Company  {name:"Apple"}),\n  (google:Company {name:"Google"}),\n  (alice)-[:WORKS_AT]->(apple),\n  (bob)-[:WORKS_AT]->(apple),\n  (carol)-[:WORKS_AT]->(google)\n\n// Headcount per company\nMATCH (p:Person)-[:WORKS_AT]->(c:Company)\nRETURN c.name AS company, count(p) AS headcount\nORDER BY headcount DESC\n\n// And the average age\nMATCH (p:Person) RETURN avg(p.age) AS avgAge`},
+      {name:'MERGE = find-or-create', code:`// First MERGE creates Alice\nMERGE (:Person {name:"Alice"})\n\n// Same MERGE again — finds the existing Alice, no duplicate\nMERGE (:Person {name:"Alice"})\n\n// MERGE on a path — creates Alice…KNOWS…Carol if missing,\n// reuses each piece that already exists.\nMERGE (:Person {name:"Alice"})-[:KNOWS]->(:Person {name:"Carol"})\nMERGE (:Person {name:"Alice"})-[:KNOWS]->(:Person {name:"Carol"})\n\nMATCH (n) RETURN n`},
+      {name:'Movies dataset (Matrix trilogy)', code:`CREATE\n  (keanu:Person   {name:"Keanu Reeves",       born:1964}),\n  (carrie:Person  {name:"Carrie-Anne Moss",   born:1967}),\n  (laurence:Person {name:"Laurence Fishburne", born:1961}),\n  (lana:Person    {name:"Lana Wachowski",     born:1965}),\n  (matrix:Movie   {title:"The Matrix",          released:1999}),\n  (matrix2:Movie  {title:"The Matrix Reloaded", released:2003}),\n  (keanu)-[:ACTED_IN {role:"Neo"}]->(matrix),\n  (carrie)-[:ACTED_IN {role:"Trinity"}]->(matrix),\n  (laurence)-[:ACTED_IN {role:"Morpheus"}]->(matrix),\n  (lana)-[:DIRECTED]->(matrix),\n  (keanu)-[:ACTED_IN {role:"Neo"}]->(matrix2),\n  (carrie)-[:ACTED_IN {role:"Trinity"}]->(matrix2),\n  (lana)-[:DIRECTED]->(matrix2)\n\n// Cast of the original Matrix\nMATCH (p:Person)-[r:ACTED_IN]->(:Movie {title:"The Matrix"})\nRETURN p.name AS actor, r.role AS role`},
+    ]},
 ];
 
 for (const lang of IDE_LANGS){
@@ -19162,6 +19877,8 @@ for (const lang of IDE_LANGS){
       ? `Write ${lang.name} with syntax highlighting and run it via a built-in MATLAB-lite interpreter — runs 100% in your browser. Supports assignments, cell/matrix literals, fprintf/disp/sprintf, 1-based indexing, for/while/if, function definitions, and common math built-ins. Full MATLAB Toolboxes (e.g. plotting, image processing) are not emulated.`
       : lang.local === 'mongodb'
       ? `Write MongoDB shell-style commands and run them against an in-memory database — 100% local, no external libraries. Supports db.coll.insertOne/insertMany/find/findOne/aggregate/updateOne/updateMany/deleteOne/deleteMany/countDocuments/distinct and the common operators ($match, $group, $sum/$avg/$min/$max, $project, $sort, $gt/$gte/$lt/$lte, $in/$nin, $regex, $unwind, $addFields, …).`
+      : lang.local === 'neo4j'
+      ? `Write Cypher and watch the resulting graph render in 3D. Subset of Cypher: CREATE / MERGE / MATCH / WHERE (=, <>, >, >=, <, <=, IN, AND, OR), RETURN with property projection, AS aliases, DISTINCT, count/sum/avg/min/max/collect, ORDER BY / LIMIT / SKIP, SET, REMOVE, DELETE, multi-hop directed/undirected paths. Each Run resets the in-memory graph and re-renders. The 3D viewer is loaded on demand from CDN.`
       : lang.local
       ? `Write ${lang.name} with live syntax highlighting and run it directly in your browser. Nothing leaves this page.`
       : `Write ${lang.name} with syntax highlighting and execute it via the public Judge0 CE API (ce.judge0.com). Source is sent over the network — avoid sensitive data.`,
