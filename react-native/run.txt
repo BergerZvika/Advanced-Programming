@@ -1,0 +1,18 @@
+npm install -g create-react-native-app
+
+
+npx create-expo-app react-native-app --template
+npm install -g expo-cli
+npx expo install react-dom react-native-web
+cd react-native-app/
+npx expo start --tunnel
+
+
+---- install router -----
+npx create-expo-app@latest MyRouter --template
+cd MyRouter
+npm install -g expo-cli
+npx expo install react-dom react-native-web
+npm install @react-navigation/native @react-navigation/stack react-native-safe-area-context react-native-screens react-native-gesture-handler --legacy-peer-deps
+
+npx expo start --tunnel

@@ -1,0 +1,2912 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>React Native Lab — Advanced Programming</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/theme/dracula.min.css">
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/xml/xml.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/javascript/javascript.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/jsx/jsx.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/edit/closebrackets.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/edit/matchbrackets.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/selection/active-line.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/comment/comment.min.js"></script>
+
+<style>
+:root{
+  --bg-0:#06060c;
+  --surface:rgba(255,255,255,0.04);
+  --surface-2:rgba(255,255,255,0.07);
+  --border:rgba(255,255,255,0.09);
+  --border-strong:rgba(255,255,255,0.18);
+  --text:#e8e8f3;
+  --text-dim:#9a9ab0;
+  --text-faint:#666680;
+  --accent:#7c5cff;
+  --accent-2:#35d0ff;
+  --rn-purple:#a978ff;
+  --rn-cyan:#61dafb;
+  --rn-dark:#20232a;
+  --success:#38d39f;
+  --warn:#ffb547;
+  --error:#ff5a7a;
+  --radius:18px;
+  --shadow-lg: 0 30px 80px -30px rgba(169,120,255,0.32), 0 10px 30px -15px rgba(0,0,0,0.6);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg-0);color:var(--text);font-family:'Inter',system-ui,sans-serif;height:100%;overflow:hidden}
+code,pre,textarea,.mono,.CodeMirror{font-family:'JetBrains Mono',ui-monospace,monospace}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+
+#bg-3d{
+  position:fixed; inset:0; z-index:-2; display:block;
+  background:
+    radial-gradient(1200px 700px at 8% -10%, rgba(169,120,255,0.28), transparent 60%),
+    radial-gradient(1000px 600px at 110% 0%,  rgba(97,218,251,0.20), transparent 60%),
+    radial-gradient(900px 600px at 50% 130%,  rgba(124,92,255,0.16), transparent 60%),
+    linear-gradient(180deg, #050510 0%, #08081a 50%, #050510 100%);
+}
+body::after{
+  content:""; position:fixed; inset:0; z-index:-1; pointer-events:none; opacity:.32;
+  background-image:
+    radial-gradient(1px 1px at 20% 30%, #ffffff 100%, transparent),
+    radial-gradient(1px 1px at 70% 60%, #ffffff 100%, transparent),
+    radial-gradient(1.5px 1.5px at 40% 80%, #ffffff 100%, transparent),
+    radial-gradient(1px 1px at 85% 20%, #ffffff 100%, transparent),
+    radial-gradient(1px 1px at 15% 65%, #ffffff 100%, transparent);
+  background-size: 1200px 800px;
+  mask-image:linear-gradient(180deg,transparent,#000 20%,#000 80%,transparent);
+}
+
+.app{ display:grid; grid-template-columns: 320px 1fr; height:100vh }
+@media (max-width: 980px){
+  .app{ grid-template-columns: 1fr; height:auto; min-height:100vh; overflow:auto }
+  html,body{ overflow:auto; height:auto }
+}
+
+.sidebar{
+  padding:22px 16px; position:relative; z-index:5;
+  background:linear-gradient(180deg, rgba(12,12,24,0.85), rgba(8,8,18,0.85));
+  backdrop-filter: blur(22px) saturate(140%);
+  -webkit-backdrop-filter: blur(22px) saturate(140%);
+  border-right:1px solid var(--border);
+  overflow-y:auto; scrollbar-width:thin;
+}
+.sidebar::-webkit-scrollbar{width:6px}
+.sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.08);border-radius:6px}
+
+.brand{ display:flex;align-items:center;gap:12px;margin-bottom:18px;padding:6px 4px;border-radius:14px;user-select:none }
+.brand-cube{
+  width:46px;height:46px;border-radius:12px;position:relative;
+  background:linear-gradient(135deg, var(--rn-purple), var(--rn-cyan));
+  box-shadow:
+    0 12px 30px -10px rgba(169,120,255,0.55),
+    inset 0 0 0 1px rgba(255,255,255,0.25),
+    inset 0 -10px 20px -8px rgba(0,0,0,0.35);
+  transform: rotate(-6deg);
+  display:flex;align-items:center;justify-content:center;
+  font-weight:800;font-size:15px;color:var(--rn-dark);letter-spacing:0.5px;
+  animation: floatY 5s ease-in-out infinite;
+}
+.brand-cube::after{
+  content:""; position:absolute; inset:auto -6px -6px auto;
+  width:100%;height:100%; border-radius:12px;
+  background:linear-gradient(135deg, rgba(169,120,255,0.5), rgba(97,218,251,0.4));
+  filter:blur(14px); z-index:-1;
+}
+@keyframes floatY{ 0%,100%{ transform: rotate(-6deg) translateY(0) } 50%{ transform: rotate(-2deg) translateY(-4px) } }
+.brand h1{margin:0;font-size:17px;font-weight:700;letter-spacing:-0.02em}
+.brand .sub{font-size:11px;color:var(--text-faint);letter-spacing:0.14em;text-transform:uppercase}
+
+.search-wrap{ position:relative; margin-bottom:14px }
+.search{
+  width:100%;padding:10px 14px 10px 34px;border-radius:12px;border:1px solid var(--border);
+  background:rgba(255,255,255,0.03);color:var(--text);font-size:13.5px;outline:none;
+  transition:border-color .2s, box-shadow .2s;
+}
+.search:focus{border-color:var(--rn-purple);box-shadow:0 0 0 3px rgba(169,120,255,0.22)}
+.search-wrap::before{
+  content:"⌕"; position:absolute; left:11px; top:50%; transform:translateY(-50%);
+  color:var(--text-faint); font-size:14px; pointer-events:none;
+}
+
+.section-label{ font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:var(--text-faint); padding:14px 8px 6px }
+
+.file-list{ list-style:none; padding:0; margin:0 }
+.file-list li{ margin:2px 0 }
+.file-btn{
+  width:100%;display:flex;align-items:center;gap:10px;
+  background:transparent;color:var(--text-dim);
+  padding:10px 12px;border-radius:10px;font-size:13.5px;font-weight:500;text-align:left;
+  transition: background .15s, color .15s, transform .15s, box-shadow .2s;
+  border:1px solid transparent;
+}
+.file-btn:hover{ background:var(--surface); color:var(--text); transform:translateX(2px) }
+.file-btn.active{
+  background:linear-gradient(135deg,rgba(169,120,255,0.20),rgba(97,218,251,0.10));
+  color:#fff; border-color:rgba(169,120,255,0.32);
+  box-shadow: inset 0 0 0 1px rgba(169,120,255,0.18), 0 8px 24px -16px rgba(169,120,255,0.55);
+}
+.file-btn .ico{
+  width:24px; height:24px; flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  border-radius:6px;
+  background:linear-gradient(135deg, var(--rn-purple), var(--rn-cyan));
+  color:var(--rn-dark); font-weight:800; font-size:9.5px; letter-spacing:0.5px;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.2);
+}
+.file-btn .label{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+.file-btn .lines{
+  font-size:10.5px; color:var(--text-faint); padding:1px 6px; border-radius:20px;
+  background:rgba(255,255,255,0.04); flex-shrink:0;
+}
+.file-btn.active .lines{ background:rgba(169,120,255,0.20); color:#e0d5ff }
+.file-btn.dirty::before{
+  content:""; width:6px; height:6px; border-radius:50%;
+  background:var(--rn-cyan); flex-shrink:0;
+  box-shadow: 0 0 8px var(--rn-cyan);
+}
+.file-group-head{
+  list-style:none; padding:14px 12px 4px;
+  font-size:10.5px; letter-spacing:0.18em; text-transform:uppercase;
+  color:var(--text-faint); font-weight:600;
+}
+
+.back-link{
+  display:flex;align-items:center;gap:8px;
+  margin-top:18px; padding:10px 12px;border-radius:10px;
+  color:var(--text-dim); font-size:13px; text-decoration:none;
+  border:1px solid var(--border);
+  transition: background .15s, color .15s, border-color .15s;
+}
+.back-link:hover{ background:var(--surface); color:var(--text); border-color:var(--border-strong) }
+
+.editor-pane{
+  position:relative; padding:22px;
+  display:grid;
+  grid-template-columns: var(--col-1, 1fr) 6px var(--col-2, 1fr);
+  grid-template-rows: auto 1fr;
+  grid-template-areas:
+    "topbar  topbar  topbar"
+    "editor  split   preview";
+  gap:14px;
+  min-width:0; min-height:0; overflow:hidden;
+}
+.editor-pane > .top-bar     { grid-area: topbar }
+.editor-pane > .editor-card { grid-area: editor;  min-width: 0 }
+.editor-pane > .preview-card{ grid-area: preview; min-width: 0 }
+
+.splitter{
+  grid-area: split; cursor: col-resize; position: relative;
+  background: transparent; user-select: none; touch-action: none;
+}
+.splitter::before{
+  content: ""; position: absolute;
+  left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: 4px; height: 64px; border-radius: 2px;
+  background: var(--border-strong);
+  transition: background .18s, height .18s, box-shadow .18s;
+}
+.splitter:hover::before, .splitter.active::before{
+  background: linear-gradient(180deg, var(--rn-purple), var(--rn-cyan));
+  height: 110px;
+  box-shadow: 0 0 16px -2px rgba(169,120,255,0.55);
+}
+
+@media (max-width: 980px){
+  .editor-pane{
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr 1fr;
+    grid-template-areas: "topbar" "editor" "preview";
+  }
+  .splitter{ display:none }
+}
+
+.top-bar{
+  display:flex;align-items:center;gap:14px; padding:14px 18px;
+  background: linear-gradient(135deg, rgba(20,20,40,0.7), rgba(12,12,24,0.7));
+  border:1px solid var(--border); border-radius: var(--radius);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  box-shadow: var(--shadow-lg);
+}
+.file-meta{ display:flex; align-items:center; gap:12px; min-width:0 }
+.file-icon{
+  width:36px;height:36px;border-radius:10px;
+  background:linear-gradient(135deg, var(--rn-purple), var(--rn-cyan));
+  color:var(--rn-dark); font-weight:800; font-size:13px; letter-spacing:0.5px;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow: 0 6px 18px -8px rgba(169,120,255,0.55), inset 0 0 0 1px rgba(255,255,255,0.25);
+  flex-shrink:0;
+}
+.file-name{ font-size:15px; font-weight:600; letter-spacing:-0.01em }
+.file-name .dirty-mark{ color:var(--rn-cyan); margin-left:6px; opacity:0; transition:opacity .15s }
+.file-name.dirty .dirty-mark{ opacity:1 }
+.file-sub{ font-size:11.5px; color:var(--text-faint); margin-top:1px; font-family:'JetBrains Mono',monospace }
+.spacer{ flex:1 }
+
+.action-btn{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:8px 14px; border-radius:10px;
+  border:1px solid var(--border); background:rgba(255,255,255,0.03);
+  color:var(--text-dim); font-size:13px; font-weight:600;
+  transition: background .15s, color .15s, border-color .15s, transform .15s;
+}
+.action-btn:hover{ background:var(--surface-2); color:var(--text); border-color:var(--border-strong) }
+.action-btn:active{ transform:translateY(1px) }
+.action-btn .k{ font-family:'JetBrains Mono',monospace; font-size:10.5px; opacity:.6; padding:1px 5px; border-radius:5px; background:rgba(255,255,255,0.06) }
+.run-btn{
+  background:linear-gradient(135deg, var(--rn-purple), var(--rn-cyan));
+  color:var(--rn-dark); border-color:transparent; font-weight:700;
+  box-shadow: 0 10px 30px -12px rgba(169,120,255,0.7);
+}
+.run-btn:hover{ filter:brightness(1.08); transform:translateY(-1px); border-color:transparent }
+
+.editor-card{
+  position:relative; min-height:0;
+  background: linear-gradient(180deg, rgba(20,20,40,0.65), rgba(8,8,18,0.65));
+  border:1px solid var(--border); border-radius: var(--radius);
+  overflow:hidden;
+  backdrop-filter: blur(22px) saturate(150%);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  box-shadow: var(--shadow-lg);
+  transform-style: preserve-3d;
+  transition: transform .25s cubic-bezier(.2,.7,.2,1);
+}
+.editor-card::before{
+  content:""; position:absolute; inset:-1px; border-radius: calc(var(--radius) + 1px); pointer-events:none;
+  background: linear-gradient(135deg, rgba(169,120,255,0.45), rgba(124,92,255,0.0) 40%, rgba(97,218,251,0.30));
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  padding:1px; opacity:.55;
+}
+.editor-chrome{
+  display:flex; align-items:center; gap:10px; padding:9px 14px;
+  border-bottom:1px solid var(--border);
+  background: linear-gradient(180deg, rgba(255,255,255,0.025), transparent);
+}
+.dot{ width:11px; height:11px; border-radius:50% }
+.dot.r{ background:#ff5a7a; box-shadow:0 0 10px rgba(255,90,122,0.55) }
+.dot.y{ background:#ffb547; box-shadow:0 0 10px rgba(255,181,71,0.55) }
+.dot.g{ background:#38d39f; box-shadow:0 0 10px rgba(56,211,159,0.55) }
+
+.file-tabs{
+  display:flex; gap:4px; margin: 0 6px 0 6px;
+  flex:1; min-width:0; overflow-x:auto; overflow-y:hidden;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(169,120,255,0.35) transparent;
+  /* Fade the leftmost / rightmost 18px so the user sees there's more
+     content past the visible edge when the strip overflows. */
+  mask-image: linear-gradient(to right, transparent 0, #000 18px, #000 calc(100% - 18px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 18px, #000 calc(100% - 18px), transparent 100%);
+  /* Reserve a sliver below the tabs for the scrollbar so it doesn't
+     cover the tab text. */
+  padding-bottom: 4px;
+}
+.file-tabs::-webkit-scrollbar{ height: 4px }
+.file-tabs::-webkit-scrollbar-track{ background: transparent }
+.file-tabs::-webkit-scrollbar-thumb{
+  background: rgba(169,120,255,0.35); border-radius: 4px;
+}
+.file-tabs::-webkit-scrollbar-thumb:hover{ background: rgba(169,120,255,0.55) }
+.file-tab{
+  flex-shrink:0;
+  padding: 3px 11px; font-size:11.5px; border-radius:7px;
+  border:1px solid var(--border); background:rgba(255,255,255,0.025);
+  color:var(--text-dim); font-weight:500;
+  font-family:'JetBrains Mono', ui-monospace, monospace;
+  transition: background .15s, color .15s, border-color .15s;
+  white-space:nowrap;
+}
+.file-tab:hover{ background:var(--surface-2); color:var(--text); border-color:var(--border-strong) }
+.file-tab.active{
+  background:linear-gradient(135deg, rgba(169,120,255,0.32), rgba(97,218,251,0.18));
+  color:#fff; border-color:rgba(169,120,255,0.45);
+  box-shadow: 0 0 0 1px rgba(169,120,255,0.25), 0 6px 14px -8px rgba(169,120,255,0.45);
+}
+.file-tab.entry::before{
+  content:"▶"; font-size:9px; margin-right:5px; color: var(--rn-cyan); opacity:.85;
+}
+.file-tab.dirty::after{
+  content:""; display:inline-block; width:5px; height:5px; border-radius:50%;
+  background:var(--rn-cyan); margin-left:6px; vertical-align:1px;
+  box-shadow: 0 0 6px var(--rn-cyan);
+}
+.editor-chrome .badge{
+  font-size:10.5px; letter-spacing:0.14em; text-transform:uppercase;
+  padding:3px 9px; border-radius:20px;
+  background:rgba(169,120,255,0.10); border:1px solid rgba(169,120,255,0.32);
+  color:#dccaff;
+  /* Let the badge shrink and ellipsize so the file-tabs strip keeps room. */
+  flex-shrink: 1; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  max-width: 90px;
+}
+/* Make the file-tabs hold at least ~200px so several tab labels are
+   actually visible at the same time even on a narrow editor pane. */
+.file-tabs{ min-width: 200px }
+.cm-host{ position:relative; height:calc(100% - 41px) }
+.CodeMirror{
+  height:100% !important; background:transparent;
+  font-size:14px; line-height:1.55; padding: 6px 0;
+}
+.CodeMirror-gutters{ background:transparent; border-right:1px solid var(--border) }
+.CodeMirror-linenumber{ color:rgba(154,154,176,0.4) }
+.CodeMirror-cursor{ border-left-color:#fff }
+.CodeMirror-activeline-background{ background:rgba(169,120,255,0.05) !important }
+.CodeMirror-selected{ background:rgba(169,120,255,0.20) !important }
+.CodeMirror-matchingbracket{ color:var(--rn-cyan) !important; text-shadow:0 0 8px rgba(97,218,251,0.6) }
+
+.preview-card{
+  background: linear-gradient(180deg, rgba(20,20,40,0.7), rgba(8,8,18,0.7));
+  border:1px solid var(--border); border-radius: var(--radius);
+  display:flex; flex-direction:column; min-height:0;
+  backdrop-filter: blur(22px) saturate(150%);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  box-shadow: var(--shadow-lg);
+  overflow:hidden; position: relative;
+}
+.preview-card::before{
+  content:""; position: absolute; inset:-1px; border-radius: calc(var(--radius) + 1px); pointer-events:none;
+  background: linear-gradient(135deg, rgba(169,120,255,0.45), rgba(124,92,255,0) 40%, rgba(97,218,251,0.4));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude; padding: 1px;
+  opacity: .55;
+}
+.preview-head{
+  display:flex; align-items:center; gap:10px; padding:9px 14px;
+  border-bottom:1px solid var(--border);
+  background: linear-gradient(180deg, rgba(255,255,255,0.025), transparent);
+  position: relative; z-index: 1;
+}
+.preview-head .label{
+  font-size:11.5px; letter-spacing:0.18em; text-transform:uppercase; color:var(--text-dim);
+  display:flex; align-items:center; gap:8px;
+}
+.preview-head .label::before{
+  content:""; width:8px; height:8px; border-radius:50%;
+  background: var(--success); box-shadow: 0 0 10px rgba(56,211,159,0.7);
+}
+.preview-head .label.rendering::before{ background: var(--rn-cyan); box-shadow: 0 0 10px rgba(97,218,251,0.7); animation: pulse 1s ease infinite }
+.preview-head .label.error::before{ background: var(--error); box-shadow: 0 0 10px rgba(255,90,122,0.7) }
+@keyframes pulse{ 0%,100%{ transform: scale(1); opacity:1 } 50%{ transform: scale(1.4); opacity:.55 } }
+.preview-head .stats{ font-size:11px; color:var(--text-faint); font-family:'JetBrains Mono',monospace }
+.preview-head .right{ margin-left:auto; display:flex; gap:6px; align-items:center }
+.preview-head .icon-btn{
+  padding:5px 10px; border-radius:8px; border:1px solid var(--border);
+  background:rgba(255,255,255,0.02); color:var(--text-dim); font-size:11.5px;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.preview-head .icon-btn:hover{ background:var(--surface-2); color:var(--text); border-color:var(--border-strong) }
+
+/* Phone-shaped frame around the iframe so the preview reads as "mobile". */
+.phone-stage{
+  flex:1; min-height:0; display:flex; align-items:center; justify-content:center;
+  padding: 16px; overflow: auto;
+  background:
+    radial-gradient(700px 350px at 30% 30%, rgba(169,120,255,0.08), transparent 60%),
+    radial-gradient(600px 350px at 80% 80%, rgba(97,218,251,0.08), transparent 60%),
+    linear-gradient(180deg, #0e0e1c, #08081a);
+}
+.phone{
+  width: 320px; height: 580px;
+  background: #0c0c14; padding: 10px;
+  border-radius: 38px;
+  border: 2px solid #2a2a3a;
+  box-shadow:
+    0 30px 60px -20px rgba(0,0,0,0.7),
+    inset 0 0 0 2px rgba(255,255,255,0.05),
+    0 0 0 1px rgba(169,120,255,0.18);
+  position: relative;
+  flex-shrink: 0;
+}
+.phone::before{
+  content:""; position: absolute; top: 6px; left: 50%;
+  transform: translateX(-50%);
+  width: 110px; height: 18px;
+  background: #0c0c14;
+  border-radius: 0 0 12px 12px;
+  z-index: 2;
+}
+.phone .screen{
+  width: 100%; height: 100%;
+  background: #fff;
+  border-radius: 28px;
+  overflow: hidden;
+  position: relative;
+}
+.phone iframe{
+  width: 100%; height: 100%;
+  border: 0;
+  display: block;
+}
+
+/* Console panel — same style as the React lab */
+.console-panel{
+  border-top: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(8,8,18,0.92), rgba(6,6,14,0.92));
+  display: flex; flex-direction: column;
+  flex-shrink: 0;
+  height: 160px;
+  transition: height .2s ease;
+  position: relative; z-index: 2;
+}
+.console-panel.collapsed{ height: 34px; }
+.console-head{
+  display: flex; align-items: center; gap: 10px;
+  padding: 6px 12px; border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(20,20,40,0.6), rgba(8,8,18,0.0));
+  cursor: pointer; user-select: none;
+  flex-shrink: 0;
+}
+.console-head .label{
+  font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-dim);
+  display: flex; align-items: center; gap: 8px;
+}
+.console-head .label::before{
+  content:""; width:7px; height:7px; border-radius:50%;
+  background: var(--text-faint);
+}
+.console-panel.has-output .console-head .label::before{ background: var(--rn-cyan); box-shadow: 0 0 8px rgba(97,218,251,0.7) }
+.console-panel.has-error  .console-head .label::before{ background: var(--error);   box-shadow: 0 0 8px rgba(255,90,122,0.7) }
+.console-head .count{
+  font-size: 10.5px; color: var(--text-faint); padding: 1px 7px; border-radius: 20px;
+  background: rgba(255,255,255,0.06); font-family: 'JetBrains Mono', ui-monospace, monospace;
+}
+.console-panel.has-output .console-head .count{ background: rgba(97,218,251,0.18); color: #c8f0ff }
+.console-panel.has-error  .console-head .count{ background: rgba(255,90,122,0.20); color: #ffd1d8 }
+.console-head .right{ margin-left: auto; display: flex; gap: 6px; }
+.console-head .icon-btn{
+  padding: 3px 9px; border-radius: 6px;
+  border: 1px solid var(--border); background: rgba(255,255,255,0.02);
+  color: var(--text-dim); font-size: 11px; font-family: 'Inter', sans-serif;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.console-head .icon-btn:hover{ background: var(--surface-2); color: var(--text); border-color: var(--border-strong) }
+.console-out{
+  flex: 1; min-height: 0; overflow: auto;
+  padding: 4px 0;
+  scrollbar-width: thin;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 12px; line-height: 1.55;
+}
+.console-panel.collapsed .console-out{ display: none; }
+.console-out::-webkit-scrollbar{ width: 6px; height: 6px }
+.console-out::-webkit-scrollbar-thumb{ background: rgba(255,255,255,0.08); border-radius: 6px }
+.console-out .empty{
+  color: var(--text-faint); text-align: center; padding: 24px 12px;
+  font-style: italic; font-family: 'Inter', sans-serif; font-size: 12px;
+}
+.console-line{
+  display: flex; gap: 8px; padding: 2px 12px;
+  border-left: 2px solid transparent;
+  white-space: pre-wrap; word-break: break-word;
+}
+.console-line .lvl{
+  flex-shrink: 0; min-width: 38px; font-size: 10px; text-transform: uppercase;
+  letter-spacing: 0.08em; padding-top: 2px; opacity: 0.7;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+}
+.console-line .body{ flex: 1; min-width: 0 }
+.console-line.log  { color: #dcd5ff; border-left-color: rgba(124,92,255,0.30) }
+.console-line.info { color: #9bd9ff; border-left-color: rgba(53,208,255,0.50) }
+.console-line.warn { color: #ffe0a3; border-left-color: rgba(255,181,71,0.55); background: rgba(255,181,71,0.04) }
+.console-line.error{ color: #ffb1bf; border-left-color: rgba(255,90,122,0.65); background: rgba(255,90,122,0.06) }
+.console-line.debug{ color: #a8b9d3; border-left-color: rgba(154,154,176,0.30) }
+
+.ambient{
+  position:absolute; border-radius:50%; pointer-events:none; z-index:0;
+  filter: blur(60px); opacity:.5;
+}
+.ambient.a{ width:340px;height:340px; background:rgba(169,120,255,0.30); top:-80px; right:-100px; animation:floatA 14s ease-in-out infinite }
+.ambient.b{ width:280px;height:280px; background:rgba(97,218,251,0.22); bottom:-60px; left:8%; animation:floatB 18s ease-in-out infinite }
+@keyframes floatA{ 0%,100%{transform:translate(0,0)} 50%{transform:translate(-30px,20px)} }
+@keyframes floatB{ 0%,100%{transform:translate(0,0)} 50%{transform:translate(40px,-20px)} }
+
+.toast{
+  position:fixed; bottom:22px; right:22px; z-index:50;
+  padding:10px 14px; border-radius:12px; font-size:13px;
+  background:linear-gradient(135deg, var(--rn-purple), var(--rn-cyan));
+  color:#08151c; font-weight:600;
+  box-shadow: 0 18px 40px -18px rgba(169,120,255,0.7);
+  transform: translateY(20px); opacity:0;
+  transition: transform .25s ease, opacity .25s ease;
+}
+.toast.show{ transform: translateY(0); opacity:1 }
+.toast.error{ background:linear-gradient(135deg,#ff5a7a,#ff8c5a); color:#fff }
+
+/* Floating Home button injected by ../home.js overlaps the Render button.
+   The sidebar already has a "⌂ Home" link, so hide the floating one. */
+.ap-home-btn{ display: none !important }
+</style>
+</head>
+<body>
+<canvas id="bg-3d"></canvas>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-cube">RN</div>
+      <div>
+        <h1>React Native Lab</h1>
+        <div class="sub">phone preview</div>
+      </div>
+    </div>
+
+    <div class="search-wrap">
+      <input class="search" id="search" placeholder="Filter steps…" />
+    </div>
+
+    <div class="section-label">Steps</div>
+    <ul class="file-list" id="fileList"></ul>
+
+    <a class="back-link" href="../index.html" style="margin-top:18px">⌂ Home</a>
+  </aside>
+
+  <main class="editor-pane">
+    <div class="ambient a"></div>
+    <div class="ambient b"></div>
+
+    <header class="top-bar">
+      <div class="file-meta">
+        <div class="file-icon">RN</div>
+        <div style="min-width:0">
+          <div class="file-name" id="fileName">state<span class="dirty-mark">●</span></div>
+          <div class="file-sub" id="fileSub">react-native/state.tsx</div>
+        </div>
+      </div>
+      <div class="spacer"></div>
+      <label class="action-btn" id="autoLbl" style="cursor:pointer" title="Auto-render preview as you type">
+        <input type="checkbox" id="autoChk" checked style="margin-right:6px;vertical-align:middle"> Auto
+      </label>
+      <button class="action-btn" id="resetBtn" title="Revert all files in this step">⟲ Reset</button>
+      <button class="action-btn run-btn" id="runBtn" title="Bundle &amp; render">▶ Render <span class="k">⌘↵</span></button>
+    </header>
+
+    <section class="editor-card" id="editorCard">
+      <div class="editor-chrome">
+        <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <div class="file-tabs" id="fileTabs"></div>
+        <button class="action-btn" id="bundledToggleBtn"
+                style="padding:3px 10px;font-size:11px;font-family:'JetBrains Mono',monospace;letter-spacing:0.06em"
+                title="Show the bundled JS that actually runs in the iframe (read-only)">🔨 Bundled</button>
+        <span class="badge" id="modeBadge">TSX</span>
+      </div>
+      <div class="cm-host">
+        <textarea id="editor"></textarea>
+      </div>
+    </section>
+
+    <div class="splitter" id="splitter" role="separator" aria-orientation="vertical" title="Drag to resize"></div>
+
+    <section class="preview-card" id="previewCard">
+      <div class="preview-head">
+        <span class="label" id="previewStatus">Preview</span>
+        <span class="stats" id="previewStats"></span>
+        <div class="right">
+          <button class="icon-btn" id="popoutBtn" title="Open the rendered preview in a new tab">↗ Pop out</button>
+        </div>
+      </div>
+      <div class="phone-stage">
+        <div class="phone">
+          <div class="screen">
+            <iframe id="preview" sandbox="allow-scripts allow-same-origin" title="Phone preview"></iframe>
+          </div>
+        </div>
+      </div>
+      <div class="console-panel" id="consolePanel">
+        <div class="console-head" id="consoleHead">
+          <span class="label">Console</span>
+          <span class="count" id="consoleCount">0</span>
+          <div class="right">
+            <button class="icon-btn" id="consoleClearBtn" title="Clear console">⌫ Clear</button>
+            <button class="icon-btn" id="consoleCollapseBtn" title="Collapse / expand">▾</button>
+          </div>
+        </div>
+        <div class="console-out" id="consoleOut">
+          <div class="empty">No console output yet — anything the React Native code logs will appear here.</div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- =====================================================================
+     Embedded source files — every .tsx file from
+     /home/zvbe/ap/Advanced-Programming/react-native/, verbatim.
+     ===================================================================== -->
+
+<script type="text/plain" data-rxfile="state.tsx">import React from 'react';
+import { Text, View, Button } from 'react-native';
+
+export default class App extends React.Component {
+  state = {
+      myState: "zvika state",
+      count: 0
+   }
+
+    render() {
+      return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text> {this.state.myState} </Text>
+        <Text>Count: {this.state.count}</Text>
+        <Button title="Increase"onPress={() => this.setState({ count: this.state.count + 1 })} />
+      </View>
+    );
+  }
+}
+</script>
+
+<script type="text/plain" data-rxfile="props.tsx">import React from 'react';
+import { Text, View } from 'react-native';
+
+
+const Greeting = ({ name }) => <Text>Hello {name}!</Text>;
+
+export default class App extends React.Component {
+  state = {
+      myState: "zvika state",
+      count: 0
+   }
+
+    render() {
+return (
+    <View style={{ flex: 1, padding: 50 }}>
+      <Greeting name="Student" />
+      <Greeting name="Teaching Assistant" />
+    </View>
+    );
+  }
+}
+</script>
+
+<script type="text/plain" data-rxfile="style.tsx">import { StyleSheet, View } from 'react-native';
+
+export default function LayoutDemo() {
+  return (
+    <View style={styles.container}>
+      <View style={styles.boxRed} />
+      <View style={styles.boxBlue} />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    flexDirection: 'row', // Horizontal
+    justifyContent: 'center', // Main axis
+    alignItems: 'center', // Cross axis
+  },
+  boxRed: { width: 50, height: 50, backgroundColor: 'red' },
+  boxBlue: { width: 50, height: 50, backgroundColor: 'blue' },
+});
+</script>
+
+<script type="text/plain" data-rxfile="list.tsx">import React, { Component } from 'react'
+import { Text, View, TouchableOpacity, StyleSheet } from 'react-native'
+
+class List extends Component {
+   state = {
+      names: [
+         {
+            id: 0,
+            name: 'Zvika',
+         },
+         {
+            id: 1,
+            name: 'Berger',
+         },
+         {
+            id: 2,
+            name: 'React',
+         },
+         {
+            id: 3,
+            name: 'Native',
+         }
+      ]
+   }
+   alertItemName = (item) => {
+      alert(item.name)
+   }
+   render() {
+      return (
+         <View>
+            {
+               this.state.names.map((item, index) => (
+                  <TouchableOpacity
+                     key = {item.id}
+                     style = {styles.container}
+                     onPress = {() => this.alertItemName(item)}>
+                     <Text style = {styles.text}>
+                        {item.name}
+                     </Text>
+                  </TouchableOpacity>
+               ))
+            }
+         </View>
+      )
+   }
+}
+export default List
+
+const styles = StyleSheet.create ({
+   container: {
+      padding: 10,
+      marginTop: 3,
+      backgroundColor: '#d9f9b1',
+      alignItems: 'center',
+   },
+   text: {
+      color: '#4f603c'
+   }
+})
+</script>
+
+<script type="text/plain" data-rxfile="image.tsx">import React from 'react';
+import { StyleSheet, Text, View, Image, ScrollView, SafeAreaView } from 'react-native';
+
+export default function ImageExample() {
+  return (
+    <SafeAreaView style={styles.container}>
+      <ScrollView contentContainerStyle={styles.centerContent}>
+
+        <Text style={styles.title}>Image Demonstration</Text>
+
+        {/* 1. Displaying a Local Asset */}
+        <Text style={styles.label}>Local Asset (icon.png):</Text>
+        <Image
+          source={require('./assets/icon.png')}
+          style={styles.localImage}
+        />
+
+        {/* 2. Displaying a Network Image from a URL */}
+        <Text style={styles.label}>Network Image (from URL):</Text>
+        <Image
+          source={{ uri: 'https://reactnative.dev/img/tiny_logo.png' }}
+          style={styles.networkImage}
+        />
+
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  centerContent: {
+    alignItems: 'center',
+    padding: 20,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 20,
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginTop: 20,
+    marginBottom: 10,
+    alignSelf: 'flex-start',
+  },
+  localImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 20, // Making it rounded
+  },
+  networkImage: {
+    width: 100,
+    height: 100,
+  },
+  bannerImage: {
+    width: '100%',
+    height: 200,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: '#ddd',
+  },
+});
+</script>
+
+<script type="text/plain" data-rxfile="switch.tsx">import React, { useState } from 'react';
+import { View, Text, Switch, StyleSheet, SafeAreaView } from 'react-native';
+
+const SwitchExample = () => {
+  // 1. Initialize the state (false = Light Mode, true = Dark Mode)
+  const [isEnabled, setIsEnabled] = useState(false);
+
+  // 2. Function to handle the toggle
+  const toggleSwitch = () => setIsEnabled(previousState => !previousState);
+
+  return (
+    <SafeAreaView style={[styles.container, isEnabled ? styles.darkBg : styles.lightBg]}>
+      <View style={styles.content}>
+        <Text style={[styles.statusText, { color: isEnabled ? '#fff' : '#000' }]}>
+          {isEnabled ? 'Dark Mode is ON' : 'Light Mode is ON'}
+        </Text>
+
+        {/* 3. The Switch Component */}
+        <Switch
+          trackColor={{ false: '#767577', true: '#81b0ff' }} // Background color when off/on
+          thumbColor={isEnabled ? '#f5dd4b' : '#f4f3f4'}    // Circle color
+          ios_backgroundColor="#3e3e3e"
+          onValueChange={toggleSwitch}
+          value={isEnabled}
+        />
+      </View>
+    </SafeAreaView>
+  );
+};
+
+export default SwitchExample;
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  lightBg: {
+    backgroundColor: '#ffffff',
+  },
+  darkBg: {
+    backgroundColor: '#121212',
+  },
+  content: {
+    alignItems: 'center',
+    padding: 20,
+    borderRadius: 15,
+    backgroundColor: 'rgba(150, 150, 150, 0.1)',
+  },
+  statusText: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 20,
+  },
+});
+</script>
+
+<script type="text/plain" data-rxfile="picker.tsx">import React, { useState } from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+import { Picker } from '@react-native-picker/picker';
+
+// npx expo install @react-native-picker/picker
+const PickerExample = () => {
+  // 1. State to hold the selected value
+  const [selectedCourse, setSelectedCourse] = useState('react_native');
+
+  return (
+    <View style={styles.container}>
+      <Text style={styles.label}>Select a Course to Learn:</Text>
+
+      <View style={styles.pickerContainer}>
+        <Picker
+          selectedValue={selectedCourse}
+          onValueChange={(itemValue) => setSelectedCourse(itemValue)}
+          style={styles.picker}
+          dropdownIconColor="#007AFF"
+        >
+          {/* 2. Defining the options */}
+          <Picker.Item label="React Native" value="react_native" />
+          <Picker.Item label="TypeScript" value="typescript" />
+          <Picker.Item label="Android" value="android" />
+          <Picker.Item label="MongoDB" value="mongodb" />
+        </Picker>
+      </View>
+
+      {/* 3. Displaying the selection */}
+      <View style={styles.resultBox}>
+        <Text style={styles.resultText}>
+          Currently studying: <Text style={styles.boldText}>{selectedCourse.replace('_', ' ')}</Text>
+        </Text>
+      </View>
+    </View>
+  );
+};
+
+export default PickerExample;
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    padding: 20,
+    backgroundColor: '#fff',
+  },
+  label: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 10,
+    color: '#333',
+  },
+  pickerContainer: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 10,
+    backgroundColor: '#f9f9f9',
+    overflow: 'hidden', // Ensures the picker stays inside rounded corners
+  },
+  picker: {
+    height: 50,
+    width: '100%',
+  },
+  resultBox: {
+    marginTop: 30,
+    padding: 20,
+    backgroundColor: '#E1F5FE',
+    borderRadius: 8,
+  },
+  resultText: {
+    fontSize: 16,
+    color: '#01579B',
+    textAlign: 'center',
+  },
+  boldText: {
+    fontWeight: 'bold',
+    textTransform: 'capitalize',
+  },
+});
+</script>
+
+<script type="text/plain" data-rxfile="ActivityIndicator.tsx">import React, { useState } from 'react';
+import { ActivityIndicator, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+
+const ActivityIndicatorExample = () => {
+  // 1. State to track if the indicator is spinning
+  const [animating, setAnimating] = useState(true);
+
+  // 2. Function to toggle the state
+  const toggleActivityIndicator = () => {
+    setAnimating(!animating);
+  };
+
+  return (
+    <View style={styles.container}>
+      {/* The Activity Indicator */}
+      <ActivityIndicator
+        animating={animating}
+        color="#bc2b78"
+        size="large"
+        style={styles.activityIndicator}
+      />
+
+      {/* The Control Button */}
+      <TouchableOpacity
+        style={[styles.button, { backgroundColor: animating ? '#FF3B30' : '#34C759' }]}
+        onPress={toggleActivityIndicator}
+      >
+        <Text style={styles.buttonText}>
+          {animating ? "Pause Animation" : "Start Animation"}
+        </Text>
+      </TouchableOpacity>
+    </View>
+  );
+};
+
+export default ActivityIndicatorExample;
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+  },
+  activityIndicator: {
+    height: 80,
+    marginBottom: 20,
+  },
+  button: {
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    borderRadius: 25,
+    elevation: 3, // Android shadow
+    shadowColor: '#000', // iOS shadow
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+  },
+  buttonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+});
+</script>
+
+<script type="text/plain" data-rxfile="login.tsx">import React, { useState } from 'react';
+import {
+  StyleSheet,
+  Text,
+  View,
+  TextInput,
+  TouchableOpacity
+} from 'react-native';
+
+export default function LoginScreen() {
+  // 1. State for inputs and success message
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // 2. The function triggered by the button
+  const handleLogin = () => {
+    if (username.length > 0 && password.length > 0) {
+      setIsLoggedIn(true);
+    }
+  };
+
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>Student Portal</Text>
+
+      {/* Username Input */}
+      <TextInput
+        style={styles.input}
+        placeholder="Username"
+        value={username}
+        onChangeText={(text) => setUsername(text)}
+      />
+
+      {/* Password Input */}
+      <TextInput
+        style={styles.input}
+        placeholder="Password"
+        value={password}
+        secureTextEntry={true} // Hides the characters
+        onChangeText={(text) => setPassword(text)}
+      />
+
+      {/* Login Button */}
+      <TouchableOpacity style={styles.button} onPress={handleLogin}>
+        <Text style={styles.buttonText}>Login</Text>
+      </TouchableOpacity>
+
+      {/* 3. Conditional Rendering: Success Message */}
+      {isLoggedIn && (
+        <View style={styles.successBox}>
+          <Text style={styles.successText}>✅ Success log in!</Text>
+          <Text>Welcome back, {username}!</Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    padding: 20,
+    backgroundColor: '#f5f5f5',
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    marginBottom: 30,
+    textAlign: 'center',
+  },
+  input: {
+    height: 50,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    paddingHorizontal: 15,
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  button: {
+    backgroundColor: '#007AFF',
+    height: 50,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  successBox: {
+    marginTop: 30,
+    padding: 20,
+    backgroundColor: '#d4edda',
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  successText: {
+    color: '#155724',
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+});
+</script>
+
+<script type="text/plain" data-rxfile="http.tsx">import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Text, View } from 'react-native';
+
+export default function HttpDemo() {
+  const [data, setData] = useState(null);
+
+  // https://jsonplaceholder.typicode.com/
+  useEffect(() => {
+    fetch('https://jsonplaceholder.typicode.com/posts/1')
+      .then(res => res.json())
+      .then(json => setData(json));
+  }, []);
+
+  return (
+    <View style={{ flex: 1, justifyContent: 'center' }}>
+      {!data ? <ActivityIndicator /> : <Text>{data.title}</Text>}
+    </View>
+  );
+}
+</script>
+
+<script type="text/plain" data-rxfile="animation.tsx">import React, { useRef } from 'react';
+import { Animated, View, Button } from 'react-native';
+
+export default function AnimDemo() {
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  const fadeIn = () => {
+    Animated.timing(fadeAnim, { toValue: 1, duration: 2000, useNativeDriver: true }).start();
+  };
+
+  return (
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+      <Animated.View style={{ opacity: fadeAnim, width: 100, height: 100, backgroundColor: 'purple' }} />
+      <Button title="Fade In" onPress={fadeIn} />
+    </View>
+  );
+}
+</script>
+
+<!-- ============== router/ — stack navigator project ============== -->
+<script type="text/plain" data-rxfile="router/App.tsx">import 'react-native-gesture-handler';
+import React from 'react';
+import { TouchableOpacity, Text, StyleSheet, View } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
+import { createStackNavigator } from '@react-navigation/stack';
+
+// Screens
+import HomeScreen from './src/screens/HomeScreen';
+import SettingsScreen from './src/screens/SettingsScreen';
+import ProfileScreen from './src/screens/ProfileScreen';
+import NotificationsScreen from './src/screens/NotificationsScreen';
+
+const Stack = createStackNavigator();
+
+export default function App() {
+  return (
+    <NavigationContainer>
+      <Stack.Navigator
+        initialRouteName="Home"
+        screenOptions={({ navigation }) => ({
+          headerStyle: { backgroundColor: '#bc2b78', height: 100 },
+          headerTintColor: '#fff',
+          headerTitleStyle: { fontWeight: 'bold' },
+          headerTitleAlign: 'center',
+
+          // 1. LEFT SIDE: Settings
+          headerLeft: () => (
+              <TouchableOpacity onPress={() => navigation.navigate('Home')}>
+                <Text style={styles.iconText}>🏠</Text>
+              </TouchableOpacity>
+          ),
+
+          // 2. RIGHT SIDE: Home, Notifications, Profile
+          headerRight: () => (
+            <View style={styles.rightToolbar}>
+              <TouchableOpacity
+              style={styles.leftIcon}
+              onPress={() => navigation.navigate('Settings')}>
+              <Text style={styles.iconText}>⚙️</Text>
+            </TouchableOpacity>
+
+              <TouchableOpacity onPress={() => navigation.navigate('Notifications')}>
+                <Text style={styles.iconText}>🔔</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
+                <Text style={styles.iconText}>👤</Text>
+              </TouchableOpacity>
+            </View>
+          ),
+        })}
+      >
+        <Stack.Screen name="Home" component={HomeScreen} options={{ title: 'MAIN' }} />
+        <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'CONFIG' }} />
+        <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: 'USER' }} />
+        <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'ALERTS' }} />
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
+}
+
+const styles = StyleSheet.create({
+  rightToolbar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 15,
+  },
+  leftIcon: {
+    marginLeft: 15,
+  },
+  iconText: {
+    fontSize: 22,
+    marginHorizontal: 8,
+    color: '#fff',
+  }
+});
+</script>
+
+<script type="text/plain" data-rxfile="router/src/screens/HomeScreen.tsx">import React from 'react';
+import { StyleSheet, Text, View } from 'react-native';
+
+const HomeScreen = () => {
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>Home Screen</Text>
+      <Text style={styles.subtitle}>Use the toolbar icons above to navigate</Text>
+    </View>
+  );
+};
+
+export default HomeScreen;
+
+const styles = StyleSheet.create({
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' },
+  title: { fontSize: 24, fontWeight: 'bold' },
+  subtitle: { fontSize: 16, color: 'gray', marginTop: 10 }
+});
+</script>
+
+<script type="text/plain" data-rxfile="router/src/screens/SettingsScreen.tsx">import React from 'react';
+import { StyleSheet, Text, View } from 'react-native';
+
+const SettingsScreen = () => {
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>Settings Screen</Text>
+      <Text style={styles.subtitle}>Use the toolbar button to return home</Text>
+    </View>
+  );
+};
+
+export default SettingsScreen;
+
+const styles = StyleSheet.create({
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' },
+  title: { fontSize: 24, fontWeight: 'bold' },
+  subtitle: { fontSize: 16, color: 'gray', marginTop: 10 }
+});
+</script>
+
+<script type="text/plain" data-rxfile="router/src/screens/ProfileScreen.tsx">import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+
+export default function ProfileScreen() {
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>User Profile 👤</Text>
+    </View>
+  );
+}
+const styles = StyleSheet.create({
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  title: { fontSize: 22 }
+});
+</script>
+
+<script type="text/plain" data-rxfile="router/src/screens/NotificationsScreen.tsx">import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+
+export default function NotificationsScreen() {
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>Notifications 🔔</Text>
+    </View>
+  );
+}
+const styles = StyleSheet.create({
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  title: { fontSize: 22 }
+});
+</script>
+
+<!-- ============== FlatList ============== -->
+<script type="text/plain" data-rxfile="FlatList.tsx">// FlatList — the canonical way to render lists in React Native. Unlike
+// `.map()` inside a <View>, FlatList virtualizes (only mounts visible
+// rows), supports keyExtractor / ItemSeparatorComponent / ListEmptyComponent
+// / pull-to-refresh / infinite scroll, and behaves correctly on long lists.
+
+import React, { useState } from 'react';
+import { FlatList, Text, View, StyleSheet, TouchableOpacity } from 'react-native';
+
+const initialUsers = [
+  { id: '1', name: 'Alice',   role: 'Admin'  },
+  { id: '2', name: 'Bob',     role: 'Editor' },
+  { id: '3', name: 'Carol',   role: 'Viewer' },
+  { id: '4', name: 'Dave',    role: 'Editor' },
+  { id: '5', name: 'Erin',    role: 'Admin'  },
+  { id: '6', name: 'Frank',   role: 'Viewer' },
+  { id: '7', name: 'Grace',   role: 'Admin'  },
+  { id: '8', name: 'Heidi',   role: 'Editor' },
+];
+
+export default function UserList() {
+  const [users, setUsers] = useState(initialUsers);
+
+  const remove = (id: string) =>
+    setUsers(prev => prev.filter(u => u.id !== id));
+
+  return (
+    <View style={styles.container}>
+      <Text style={styles.header}>Users ({users.length})</Text>
+
+      <FlatList
+        data={users}
+        keyExtractor={item => item.id}
+        renderItem={({ item }) => (
+          <View style={styles.row}>
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>{item.name[0]}</Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.name}>{item.name}</Text>
+              <Text style={styles.role}>{item.role}</Text>
+            </View>
+            <TouchableOpacity onPress={() => remove(item.id)}>
+              <Text style={styles.removeBtn}>×</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+        ItemSeparatorComponent={() => <View style={styles.sep} />}
+        ListEmptyComponent={() => <Text style={styles.empty}>(no users left)</Text>}
+      />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container:  { flex: 1, padding: 16, backgroundColor: '#f5f5f5' },
+  header:     { fontSize: 18, fontWeight: 'bold', marginBottom: 12 },
+  row:        { flexDirection: 'row', alignItems: 'center', padding: 12, backgroundColor: '#fff', borderRadius: 8 },
+  avatar:     { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', marginRight: 10, backgroundColor: '#bc2b78' },
+  avatarText: { color: '#fff', fontWeight: 'bold' },
+  name:       { fontWeight: '600', fontSize: 16 },
+  role:       { color: '#666', fontSize: 13 },
+  removeBtn:  { fontSize: 24, color: '#c33', paddingHorizontal: 8 },
+  sep:        { height: 8 },
+  empty:      { textAlign: 'center', color: '#999', padding: 24, fontStyle: 'italic' },
+});
+</script>
+
+<!-- ============== Modal ============== -->
+<script type="text/plain" data-rxfile="Modal.tsx">// Modal — a fullscreen overlay. Visibility is controlled by a state value;
+// the dialog draws itself with whatever JSX you put inside.
+//
+// Common props:
+//   visible        — boolean, when true the modal renders
+//   transparent    — keep parent visible behind the modal
+//   animationType  — 'none' | 'slide' | 'fade'
+//   onRequestClose — Android back-button handler (always wire it up)
+
+import React, { useState } from 'react';
+import { Modal, Text, View, Button, StyleSheet, TouchableOpacity } from 'react-native';
+
+export default function ModalDemo() {
+  const [visible, setVisible] = useState(false);
+
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>Modal demo</Text>
+      <Button title="Open dialog" onPress={() => setVisible(true)} />
+
+      <Modal
+        visible={visible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setVisible(false)}
+      >
+        <View style={styles.overlay}>
+          <View style={styles.dialog}>
+            <Text style={styles.dialogTitle}>👋 Hello from a Modal</Text>
+            <Text style={styles.dialogBody}>
+              Modals overlay the entire screen. Tap a button below to dismiss.
+            </Text>
+            <View style={styles.buttonRow}>
+              <TouchableOpacity onPress={() => setVisible(false)} style={styles.btn}>
+                <Text style={styles.btnText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setVisible(false)} style={[styles.btn, styles.btnPrimary]}>
+                <Text style={[styles.btnText, { color: '#fff' }]}>OK</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container:   { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
+  title:       { fontSize: 22, fontWeight: 'bold', marginBottom: 16 },
+  overlay:     { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 },
+  dialog:      { backgroundColor: '#fff', padding: 24, borderRadius: 12 },
+  dialogTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 8 },
+  dialogBody:  { fontSize: 14, color: '#444', marginBottom: 16, lineHeight: 20 },
+  buttonRow:   { flexDirection: 'row', justifyContent: 'flex-end' },
+  btn:         { padding: 10, paddingHorizontal: 16, borderRadius: 6, marginLeft: 8 },
+  btnPrimary:  { backgroundColor: '#007AFF' },
+  btnText:     { fontSize: 14, fontWeight: '600', color: '#007AFF' },
+});
+</script>
+
+<!-- ============== Pressable ============== -->
+<script type="text/plain" data-rxfile="Pressable.tsx">// Pressable — modern replacement for TouchableOpacity / TouchableHighlight.
+// Two superpowers:
+//   1. `style` and `children` can be FUNCTIONS that receive { pressed }
+//      so you can change appearance based on press state without your
+//      own state variable.
+//   2. Built-in onLongPress / delayLongPress / hitSlop / disabled.
+
+import React from 'react';
+import { Pressable, Text, View, StyleSheet } from 'react-native';
+
+export default function PressableDemo() {
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>Pressable</Text>
+      <Text style={styles.subtitle}>
+        The press state flows through `style` / `children` callbacks — no
+        local useState needed for the visual feedback.
+      </Text>
+
+      {/* 1. style + children both receive the pressed state */}
+      <Pressable
+        onPress={() => alert('Tapped!')}
+        style={({ pressed }) => [
+          styles.btn,
+          { backgroundColor: pressed ? '#0051d4' : '#007AFF',
+            transform: [{ scale: pressed ? 0.97 : 1 }] },
+        ]}
+      >
+        {({ pressed }) => (
+          <Text style={styles.btnText}>{pressed ? 'Pressing…' : 'Press me'}</Text>
+        )}
+      </Pressable>
+
+      {/* 2. Long press with a delay */}
+      <Pressable
+        onLongPress={() => alert('Long press!')}
+        delayLongPress={500}
+        style={({ pressed }) => [
+          styles.btn,
+          { backgroundColor: pressed ? '#1a8a3a' : '#34C759', marginTop: 12 },
+        ]}
+      >
+        <Text style={styles.btnText}>Hold for 500ms</Text>
+      </Pressable>
+
+      {/* 3. Disabled state */}
+      <Pressable
+        disabled
+        onPress={() => alert('never')}
+        style={[styles.btn, { backgroundColor: '#ccc', marginTop: 12 }]}
+      >
+        <Text style={styles.btnText}>Disabled</Text>
+      </Pressable>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, padding: 24, justifyContent: 'center' },
+  title:     { fontSize: 22, fontWeight: 'bold', marginBottom: 8 },
+  subtitle:  { fontSize: 13, color: '#666', marginBottom: 24, lineHeight: 18 },
+  btn:       { paddingVertical: 14, borderRadius: 8, alignItems: 'center' },
+  btnText:   { color: '#fff', fontSize: 16, fontWeight: '600' },
+});
+</script>
+
+<!-- ============== theme/ — Theme via Context (multi-file) ============== -->
+<script type="text/plain" data-rxfile="theme/ThemeContext.tsx">// One context, two themes, three exports.
+
+import React, { createContext } from 'react';
+
+export const themes = {
+  light: { bg: '#ffffff', fg: '#222222', accent: '#007AFF', muted: '#888888' },
+  dark:  { bg: '#1a1a2a', fg: '#eeeeee', accent: '#bc2b78', muted: '#aaaaaa' },
+};
+
+export const ThemeContext = createContext({
+  theme: themes.light,
+  toggle: () => {},
+});
+</script>
+
+<script type="text/plain" data-rxfile="theme/useTheme.tsx">// Tiny convenience hook — saves every consumer from importing useContext
+// AND ThemeContext separately, and centralizes the lookup so the context
+// could be replaced later without touching call sites.
+
+import { useContext } from 'react';
+import { ThemeContext } from './ThemeContext';
+
+export default function useTheme() {
+  return useContext(ThemeContext);
+}
+</script>
+
+<script type="text/plain" data-rxfile="theme/Card.tsx">// A pure consumer — no theme prop in sight, the values come from context
+// via the custom hook.
+
+import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+import useTheme from './useTheme';
+
+export default function Card({ title, body }) {
+  const { theme } = useTheme();
+  return (
+    <View style={[styles.card, { backgroundColor: theme.bg, borderColor: theme.accent }]}>
+      <Text style={[styles.title, { color: theme.fg }]}>{title}</Text>
+      <Text style={[styles.body, { color: theme.muted }]}>{body}</Text>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  card:  { padding: 16, borderRadius: 10, borderWidth: 2, marginBottom: 12 },
+  title: { fontSize: 18, fontWeight: 'bold', marginBottom: 6 },
+  body:  { fontSize: 14, lineHeight: 20 },
+});
+</script>
+
+<script type="text/plain" data-rxfile="theme/App.tsx">// The Provider lives at the top. Every descendant — at any depth — can
+// read the theme without the parent passing it as a prop.
+
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { ThemeContext, themes } from './ThemeContext';
+import Card from './Card';
+
+export default function App() {
+  const [mode, setMode] = useState('light');
+  const value = {
+    theme: themes[mode],
+    toggle: () => setMode(m => m === 'light' ? 'dark' : 'light'),
+  };
+
+  return (
+    <ThemeContext.Provider value={value}>
+      <View style={[styles.container, { backgroundColor: themes[mode].bg }]}>
+        <Text style={[styles.heading, { color: themes[mode].fg }]}>Theme via Context</Text>
+
+        <Card title="Card 1" body="Reads colors from context — no theme prop drilled here." />
+        <Card title="Card 2" body="Same context, different content." />
+
+        <TouchableOpacity
+          onPress={value.toggle}
+          style={[styles.toggle, { backgroundColor: themes[mode].accent }]}
+        >
+          <Text style={styles.toggleText}>
+            Switch to {mode === 'light' ? 'dark' : 'light'} mode
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </ThemeContext.Provider>
+  );
+}
+
+const styles = StyleSheet.create({
+  container:  { flex: 1, padding: 20 },
+  heading:    { fontSize: 22, fontWeight: 'bold', marginBottom: 20 },
+  toggle:     { padding: 12, borderRadius: 8, alignItems: 'center', marginTop: 12 },
+  toggleText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+});
+</script>
+
+<!-- ============== tabs/ — bottom-tab navigator (multi-file) ============== -->
+<script type="text/plain" data-rxfile="tabs/App.tsx">import 'react-native-gesture-handler';
+import React from 'react';
+import { Text } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+
+import HomeTab from './screens/HomeTab';
+import SearchTab from './screens/SearchTab';
+import ProfileTab from './screens/ProfileTab';
+
+const Tab = createBottomTabNavigator();
+
+export default function App() {
+  return (
+    <NavigationContainer>
+      <Tab.Navigator
+        screenOptions={{
+          tabBarActiveTintColor:   '#bc2b78',
+          tabBarInactiveTintColor: '#888',
+        }}
+      >
+        <Tab.Screen
+          name="Home"
+          component={HomeTab}
+          options={{
+            tabBarLabel: 'Home',
+            tabBarIcon: ({ color }) => <Text style={{ fontSize: 22, color }}>🏠</Text>,
+          }}
+        />
+        <Tab.Screen
+          name="Search"
+          component={SearchTab}
+          options={{
+            tabBarLabel: 'Search',
+            tabBarIcon: ({ color }) => <Text style={{ fontSize: 22, color }}>🔍</Text>,
+          }}
+        />
+        <Tab.Screen
+          name="Profile"
+          component={ProfileTab}
+          options={{
+            tabBarLabel: 'Profile',
+            tabBarIcon: ({ color }) => <Text style={{ fontSize: 22, color }}>👤</Text>,
+          }}
+        />
+      </Tab.Navigator>
+    </NavigationContainer>
+  );
+}
+</script>
+
+<script type="text/plain" data-rxfile="tabs/screens/HomeTab.tsx">import React from 'react';
+import { Text, View, StyleSheet } from 'react-native';
+
+export default function HomeTab() {
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>🏠 Home</Text>
+      <Text style={styles.subtitle}>Your recent activity will appear here.</Text>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fdf2f8', padding: 20 },
+  title:     { fontSize: 28, fontWeight: 'bold', marginBottom: 8, color: '#bc2b78' },
+  subtitle:  { fontSize: 14, color: '#666', textAlign: 'center' },
+});
+</script>
+
+<script type="text/plain" data-rxfile="tabs/screens/SearchTab.tsx">import React, { useState } from 'react';
+import { Text, View, TextInput, StyleSheet } from 'react-native';
+
+export default function SearchTab() {
+  const [query, setQuery] = useState('');
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>🔍 Search</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="Type to search…"
+        value={query}
+        onChangeText={setQuery}
+      />
+      {query.length > 0 && (
+        <Text style={styles.echo}>Searching for: "{query}"</Text>
+      )}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, padding: 20, backgroundColor: '#f5f5f5' },
+  title:     { fontSize: 24, fontWeight: 'bold', marginVertical: 16, color: '#bc2b78' },
+  input:     { backgroundColor: '#fff', padding: 12, borderRadius: 8, fontSize: 16, borderWidth: 1, borderColor: '#ddd' },
+  echo:      { marginTop: 16, color: '#555', fontStyle: 'italic' },
+});
+</script>
+
+<script type="text/plain" data-rxfile="tabs/screens/ProfileTab.tsx">import React from 'react';
+import { Text, View, StyleSheet } from 'react-native';
+
+export default function ProfileTab() {
+  return (
+    <View style={styles.container}>
+      <View style={styles.avatar}><Text style={styles.avatarText}>Z</Text></View>
+      <Text style={styles.name}>Zvika Berger</Text>
+      <Text style={styles.handle}>@zvbe</Text>
+      <Text style={styles.bio}>Building the React Native lab.</Text>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container:  { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff', padding: 20 },
+  avatar:     { width: 80, height: 80, borderRadius: 40, backgroundColor: '#bc2b78', alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
+  avatarText: { fontSize: 36, color: '#fff', fontWeight: 'bold' },
+  name:       { fontSize: 22, fontWeight: 'bold' },
+  handle:     { fontSize: 14, color: '#888', marginBottom: 12 },
+  bio:        { fontSize: 14, color: '#444', textAlign: 'center' },
+});
+</script>
+
+<!-- ============== notes/ — Notes mini-app (multi-file) ============== -->
+<script type="text/plain" data-rxfile="notes/useNotes.tsx">// Custom hook owning the notes list + persistence. In a real RN app you'd
+// use @react-native-async-storage/async-storage; on web (where this lab
+// runs), it's just localStorage under the hood.
+
+import { useState, useEffect } from 'react';
+
+const STORAGE = 'rn-lab:notes';
+
+export default function useNotes() {
+  const [notes, setNotes] = useState([]);
+
+  // Load once on mount
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE);
+      if (raw) setNotes(JSON.parse(raw));
+    } catch {}
+  }, []);
+
+  // Persist on every change
+  useEffect(() => {
+    try { localStorage.setItem(STORAGE, JSON.stringify(notes)); } catch {}
+  }, [notes]);
+
+  const add = (title, body) => {
+    setNotes(prev => [{ id: String(Date.now()), title, body, ts: Date.now() }, ...prev]);
+  };
+  const remove = (id) => setNotes(prev => prev.filter(n => n.id !== id));
+
+  return { notes, add, remove };
+}
+</script>
+
+<script type="text/plain" data-rxfile="notes/NoteItem.tsx">import React from 'react';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+
+export default function NoteItem({ note, onRemove }) {
+  return (
+    <View style={styles.row}>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.title}>{note.title}</Text>
+        {!!note.body && (
+          <Text style={styles.body} numberOfLines={2}>{note.body}</Text>
+        )}
+      </View>
+      <TouchableOpacity onPress={() => onRemove(note.id)}>
+        <Text style={styles.x}>×</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  row:   { flexDirection: 'row', padding: 12, backgroundColor: '#fff', borderRadius: 8, alignItems: 'flex-start' },
+  title: { fontSize: 16, fontWeight: '600', marginBottom: 4 },
+  body:  { fontSize: 13, color: '#666', lineHeight: 18 },
+  x:     { fontSize: 22, color: '#c33', paddingHorizontal: 8 },
+});
+</script>
+
+<script type="text/plain" data-rxfile="notes/NoteList.tsx">// Renders the FlatList of notes plus an empty state.
+
+import React from 'react';
+import { FlatList, View, Text, StyleSheet } from 'react-native';
+import NoteItem from './NoteItem';
+
+export default function NoteList({ notes, onRemove }) {
+  if (notes.length === 0) {
+    return (
+      <View style={styles.empty}>
+        <Text style={styles.emptyText}>No notes yet.</Text>
+        <Text style={styles.emptySub}>Tap "+" to add your first one.</Text>
+      </View>
+    );
+  }
+
+  return (
+    <FlatList
+      data={notes}
+      keyExtractor={n => n.id}
+      renderItem={({ item }) => <NoteItem note={item} onRemove={onRemove} />}
+      ItemSeparatorComponent={() => <View style={styles.sep} />}
+      contentContainerStyle={styles.listContent}
+    />
+  );
+}
+
+const styles = StyleSheet.create({
+  listContent: { padding: 12 },
+  sep:         { height: 8 },
+  empty:       { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 },
+  emptyText:   { fontSize: 18, color: '#999', marginBottom: 6 },
+  emptySub:    { fontSize: 13, color: '#bbb', fontStyle: 'italic' },
+});
+</script>
+
+<script type="text/plain" data-rxfile="notes/AddNoteModal.tsx">// Controlled-input form inside a Modal. Holds its own draft so the parent
+// only hears about a finished note, not every keystroke.
+
+import React, { useState } from 'react';
+import { Modal, View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+
+export default function AddNoteModal({ visible, onClose, onAdd }) {
+  const [title, setTitle] = useState('');
+  const [body,  setBody]  = useState('');
+
+  function submit() {
+    if (!title.trim()) return;
+    onAdd(title.trim(), body.trim());
+    setTitle(''); setBody('');
+    onClose();
+  }
+
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <View style={styles.overlay}>
+        <View style={styles.dialog}>
+          <Text style={styles.dialogTitle}>New note</Text>
+
+          <TextInput
+            placeholder="Title"
+            value={title}
+            onChangeText={setTitle}
+            style={styles.input}
+            autoFocus
+          />
+          <TextInput
+            placeholder="Body (optional)"
+            value={body}
+            onChangeText={setBody}
+            style={[styles.input, styles.bodyInput]}
+            multiline
+          />
+
+          <View style={styles.row}>
+            <TouchableOpacity onPress={onClose} style={[styles.btn, styles.btnGhost]}>
+              <Text style={[styles.btnText, { color: '#666' }]}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={submit}
+              disabled={!title.trim()}
+              style={[styles.btn, styles.btnPrimary, { opacity: title.trim() ? 1 : 0.5 }]}
+            >
+              <Text style={[styles.btnText, { color: '#fff' }]}>Add</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+const styles = StyleSheet.create({
+  overlay:     { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 },
+  dialog:      { backgroundColor: '#fff', padding: 20, borderRadius: 12 },
+  dialogTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 12 },
+  input:       { borderWidth: 1, borderColor: '#ddd', borderRadius: 6, padding: 10, marginBottom: 10, fontSize: 15 },
+  bodyInput:   { minHeight: 80, textAlignVertical: 'top' },
+  row:         { flexDirection: 'row', justifyContent: 'flex-end', marginTop: 8 },
+  btn:         { padding: 10, paddingHorizontal: 16, borderRadius: 6, marginLeft: 8 },
+  btnGhost:    { backgroundColor: 'transparent' },
+  btnPrimary:  { backgroundColor: '#bc2b78' },
+  btnText:     { fontSize: 14, fontWeight: '600' },
+});
+</script>
+
+<script type="text/plain" data-rxfile="notes/App.tsx">// The composition root. Custom hook owns the data, the FlatList shows it,
+// the Modal adds new entries, and a floating action button opens the modal.
+
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
+import useNotes from './useNotes';
+import NoteList from './NoteList';
+import AddNoteModal from './AddNoteModal';
+
+export default function App() {
+  const { notes, add, remove } = useNotes();
+  const [modalVisible, setModalVisible] = useState(false);
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.title}>📝 Notes</Text>
+        <Text style={styles.count}>{notes.length}</Text>
+      </View>
+
+      <NoteList notes={notes} onRemove={remove} />
+
+      <TouchableOpacity style={styles.fab} onPress={() => setModalVisible(true)}>
+        <Text style={styles.fabText}>+</Text>
+      </TouchableOpacity>
+
+      <AddNoteModal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        onAdd={add}
+      />
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#f5f5f5' },
+  header:    { flexDirection: 'row', alignItems: 'center', padding: 16, backgroundColor: '#bc2b78' },
+  title:     { fontSize: 22, fontWeight: 'bold', color: '#fff', flex: 1 },
+  count:     { fontSize: 13, color: '#fff', backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
+  fab:       {
+    position: 'absolute', bottom: 20, right: 20,
+    width: 56, height: 56, borderRadius: 28,
+    backgroundColor: '#bc2b78',
+    alignItems: 'center', justifyContent: 'center',
+    shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 4 },
+    elevation: 5,
+  },
+  fabText:   { color: '#fff', fontSize: 32, fontWeight: '300', lineHeight: 36 },
+});
+</script>
+
+
+<script>
+/* ==========================================================
+   Step registry — one entry per sidebar item. Each entry lists:
+     - files       : files to display as tabs
+     - entry       : default file shown in the editor
+     - bundle      : .tsx files to concatenate (in dep order: leaves → main)
+     - needsNavigation : load the @react-navigation shim into the iframe
+   ========================================================== */
+const PROJECTS = [
+  // --- core fundamentals ---
+  { id: 'state',  label: '0 · state — useState in a class', group: 'basics/',
+    files: ['state.tsx'],  entry: 'state.tsx',  bundle: ['state.tsx'] },
+  { id: 'props',  label: '1 · props',                       group: 'basics/',
+    files: ['props.tsx'],  entry: 'props.tsx',  bundle: ['props.tsx'] },
+  { id: 'style',  label: '2 · style — StyleSheet + flex',   group: 'basics/',
+    files: ['style.tsx'],  entry: 'style.tsx',  bundle: ['style.tsx'] },
+
+  // --- common UI components ---
+  { id: 'list',     label: '3 · list — TouchableOpacity rows', group: 'components/',
+    files: ['list.tsx'],     entry: 'list.tsx',     bundle: ['list.tsx'] },
+  { id: 'image',    label: '4 · image — local + network',     group: 'components/',
+    files: ['image.tsx'],    entry: 'image.tsx',    bundle: ['image.tsx'] },
+  { id: 'switch',   label: '5 · switch — toggle dark mode',   group: 'components/',
+    files: ['switch.tsx'],   entry: 'switch.tsx',   bundle: ['switch.tsx'] },
+  { id: 'picker',   label: '6 · picker — dropdown',           group: 'components/',
+    files: ['picker.tsx'],   entry: 'picker.tsx',   bundle: ['picker.tsx'] },
+  { id: 'spinner',  label: '7 · ActivityIndicator',           group: 'components/',
+    files: ['ActivityIndicator.tsx'], entry: 'ActivityIndicator.tsx', bundle: ['ActivityIndicator.tsx'] },
+
+  // --- forms / data / animation ---
+  { id: 'login',     label: '8 · login — controlled form',       group: 'interaction/',
+    files: ['login.tsx'],     entry: 'login.tsx',     bundle: ['login.tsx'] },
+  { id: 'http',      label: '9 · http — fetch + ActivityIndicator', group: 'interaction/',
+    files: ['http.tsx'],      entry: 'http.tsx',      bundle: ['http.tsx'] },
+  { id: 'animation', label: '10 · animation — Animated.timing',   group: 'interaction/',
+    files: ['animation.tsx'], entry: 'animation.tsx', bundle: ['animation.tsx'] },
+
+  // --- navigation (multi-file) ---
+  { id: 'router', label: '11 · router — stack navigator', group: 'router/',
+    files: ['App.tsx','src/screens/HomeScreen.tsx','src/screens/SettingsScreen.tsx',
+            'src/screens/ProfileScreen.tsx','src/screens/NotificationsScreen.tsx'],
+    entry: 'App.tsx',
+    bundle: ['src/screens/HomeScreen.tsx','src/screens/SettingsScreen.tsx',
+             'src/screens/ProfileScreen.tsx','src/screens/NotificationsScreen.tsx',
+             'App.tsx'],
+    pathPrefix: 'router/',          // every file in `files` is under this prefix in the data-rxfile attr
+    needsNavigation: true,
+  },
+
+  // --- additional components ---
+  { id: 'flatlist', label: '12 · FlatList — virtualized list', group: 'components/',
+    files: ['FlatList.tsx'], entry: 'FlatList.tsx', bundle: ['FlatList.tsx'] },
+  { id: 'modal', label: '13 · Modal — dialog overlay', group: 'components/',
+    files: ['Modal.tsx'], entry: 'Modal.tsx', bundle: ['Modal.tsx'] },
+  { id: 'pressable', label: '14 · Pressable — modern touch', group: 'components/',
+    files: ['Pressable.tsx'], entry: 'Pressable.tsx', bundle: ['Pressable.tsx'] },
+
+  // --- patterns (multi-file) ---
+  { id: 'theme', label: '15 · theme — Context + custom hook', group: 'patterns/',
+    files: ['App.tsx','ThemeContext.tsx','useTheme.tsx','Card.tsx'],
+    entry: 'App.tsx',
+    bundle: ['ThemeContext.tsx','useTheme.tsx','Card.tsx','App.tsx'],
+    pathPrefix: 'theme/',
+  },
+
+  // --- second navigator ---
+  { id: 'tabs', label: '16 · tabs — bottom-tab navigator', group: 'router/',
+    files: ['App.tsx','screens/HomeTab.tsx','screens/SearchTab.tsx','screens/ProfileTab.tsx'],
+    entry: 'App.tsx',
+    bundle: ['screens/HomeTab.tsx','screens/SearchTab.tsx','screens/ProfileTab.tsx','App.tsx'],
+    pathPrefix: 'tabs/',
+    needsNavigation: true,
+  },
+
+  // --- mini-app ---
+  { id: 'notes', label: '17 · notes — mini app (everything together)', group: 'app/',
+    files: ['App.tsx','useNotes.tsx','AddNoteModal.tsx','NoteList.tsx','NoteItem.tsx'],
+    entry: 'App.tsx',
+    bundle: ['useNotes.tsx','NoteItem.tsx','NoteList.tsx','AddNoteModal.tsx','App.tsx'],
+    pathPrefix: 'notes/',
+  },
+];
+
+/* ==========================================================
+   3D background — same Three.js wireframes as the React lab
+   ========================================================== */
+(function init3D(){
+  const canvas = document.getElementById('bg-3d');
+  if(!window.THREE){ return; }
+  const renderer = new THREE.WebGLRenderer({ canvas, alpha:true, antialias:true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 100);
+  camera.position.z = 7;
+  const group = new THREE.Group();
+  scene.add(group);
+  const palette = [0xa978ff, 0x61dafb, 0x35d0ff, 0xff6ec7];
+  function addShape(geom, color, scale, position){
+    const mat = new THREE.LineBasicMaterial({ color, transparent:true, opacity:0.55 });
+    const wire = new THREE.WireframeGeometry(geom);
+    const line = new THREE.LineSegments(wire, mat);
+    line.scale.setScalar(scale);
+    line.position.set(position.x, position.y, position.z);
+    line.userData.spinSpeed = { x:(Math.random()-0.5)*0.004, y:(Math.random()-0.5)*0.004, z:(Math.random()-0.5)*0.0025 };
+    line.userData.float = { phase: Math.random()*Math.PI*2, amp: 0.3+Math.random()*0.4 };
+    group.add(line); return line;
+  }
+  addShape(new THREE.IcosahedronGeometry(1,0),         palette[0], 1.6, { x:-4.5, y: 1.6, z:-2 });
+  addShape(new THREE.TorusKnotGeometry(0.7,0.22,80,12),palette[1], 1.4, { x: 4.5, y:-1.8, z:-1 });
+  addShape(new THREE.OctahedronGeometry(1,0),          palette[2], 1.0, { x: 3.0, y: 2.2, z:-3 });
+  addShape(new THREE.TetrahedronGeometry(1,0),         palette[3], 0.9, { x:-3.2, y:-2.0, z:-2.5 });
+  addShape(new THREE.IcosahedronGeometry(1,0),         palette[1], 0.6, { x: 0.2, y: 0.0, z:-4 });
+  addShape(new THREE.DodecahedronGeometry(1,0),        palette[0], 0.7, { x:-1.6, y: 2.6, z:-3.5 });
+  addShape(new THREE.OctahedronGeometry(1,0),          palette[3], 0.55,{ x: 1.8, y:-2.6, z:-3.5 });
+  const pCount = 220, pGeom = new THREE.BufferGeometry();
+  const pPos = new Float32Array(pCount * 3);
+  for(let i=0;i<pCount;i++){ pPos[i*3]=(Math.random()-0.5)*18; pPos[i*3+1]=(Math.random()-0.5)*12; pPos[i*3+2]=(Math.random()-0.5)*10-2; }
+  pGeom.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+  scene.add(new THREE.Points(pGeom, new THREE.PointsMaterial({ color:0xffffff, size:0.025, transparent:true, opacity:0.65 })));
+  const target = { x:0,y:0 }, current = { x:0,y:0 };
+  window.addEventListener('mousemove', e => { target.x=(e.clientX/window.innerWidth-0.5)*0.6; target.y=(e.clientY/window.innerHeight-0.5)*0.4; });
+  function resize(){ const w=window.innerWidth,h=window.innerHeight; renderer.setSize(w,h,false); camera.aspect=w/h; camera.updateProjectionMatrix(); }
+  resize(); window.addEventListener('resize', resize);
+  let t=0; (function tick(){ t+=0.01; current.x+=(target.x-current.x)*0.05; current.y+=(target.y-current.y)*0.05;
+    group.children.forEach(m => { m.rotation.x+=m.userData.spinSpeed.x; m.rotation.y+=m.userData.spinSpeed.y; m.rotation.z+=m.userData.spinSpeed.z; m.position.y += Math.sin(t+m.userData.float.phase)*0.0025*m.userData.float.amp; });
+    group.rotation.y = current.x*0.4; group.rotation.x = -current.y*0.3;
+    renderer.render(scene, camera); requestAnimationFrame(tick); })();
+})();
+
+/* ==========================================================
+   CodeMirror setup — JSX/TSX mode
+   ========================================================== */
+const editor = CodeMirror.fromTextArea(document.getElementById('editor'), {
+  mode: { name: 'jsx', base: { name: 'javascript', typescript: true } },
+  theme: 'dracula',
+  lineNumbers: true, matchBrackets: true, autoCloseBrackets: true,
+  styleActiveLine: true, indentUnit: 2, tabSize: 2,
+  smartIndent: true, lineWrapping: true,
+  extraKeys: {
+    'Cmd-Enter':  () => renderPreview(),
+    'Ctrl-Enter': () => renderPreview(),
+    'Cmd-/':  'toggleComment',
+    'Ctrl-/': 'toggleComment',
+  },
+});
+editor.setValue('// Loading…\n');
+
+/* ==========================================================
+   Embedded source loader + per-step state
+   ========================================================== */
+const fileListEl  = document.getElementById('fileList');
+const fileNameEl  = document.getElementById('fileName');
+const fileSubEl   = document.getElementById('fileSub');
+const fileTabsEl  = document.getElementById('fileTabs');
+const modeBadgeEl = document.getElementById('modeBadge');
+const searchEl    = document.getElementById('search');
+
+const state = {
+  active: null,          // current PROJECTS[i].id
+  activeFile: {},        // proj.id -> file path (within proj.files)
+  originals: {},         // "<rxfile>" -> original embedded text
+  buffers: {},           // "<rxfile>" -> editable buffer text
+  loaded: {},            // "<rxfile>" -> bool
+  bundledMode: false,
+  bundledRestore: null,
+};
+
+// Resolve a step+file pair to the data-rxfile key used in the embedded scripts.
+function rxKey(proj, file){
+  return (proj.pathPrefix || '') + file;
+}
+
+const STORAGE_PREFIX = 'rn-lab:edit:';
+function saveBufferToStorage(rx, value){ try{ localStorage.setItem(STORAGE_PREFIX+rx, value); }catch{} }
+function loadBufferFromStorage(rx){ try{ return localStorage.getItem(STORAGE_PREFIX+rx); }catch{ return null; } }
+function clearBufferFromStorage(rx){ try{ localStorage.removeItem(STORAGE_PREFIX+rx); }catch{} }
+
+function readEmbedded(rx){
+  const node = document.querySelector('script[type="text/plain"][data-rxfile="' + CSS.escape(rx) + '"]');
+  if(!node) return null;
+  return node.textContent.replace(/<\\\/script/gi, '</script');
+}
+function ensureLoaded(proj, file){
+  const rx = rxKey(proj, file);
+  if(state.loaded[rx]) return state.originals[rx];
+  const text = readEmbedded(rx);
+  if(text == null){
+    const msg = '/* missing embedded source for ' + rx + ' */\n';
+    state.originals[rx] = msg;
+    state.buffers[rx]   = msg;
+  } else {
+    state.originals[rx] = text;
+    const saved = loadBufferFromStorage(rx);
+    state.buffers[rx]   = saved != null ? saved : text;
+  }
+  state.loaded[rx] = true;
+  return state.originals[rx];
+}
+function getFileText(proj, file){
+  const rx = rxKey(proj, file);
+  return state.buffers[rx] ?? state.originals[rx] ?? '';
+}
+
+/* Sidebar — one entry per step */
+function projectButtonNode(entry){
+  const li = document.createElement('li');
+  const btn = document.createElement('button');
+  btn.className = 'file-btn';
+  btn.dataset.proj = entry.id;
+  btn.innerHTML =
+    '<span class="ico">RN</span>' +
+    '<span class="label">' + entry.label + '</span>' +
+    '<span class="lines">' + entry.files.length + 'f</span>';
+  btn.addEventListener('click', () => activate(entry.id));
+  li.appendChild(btn);
+  return li;
+}
+(function renderProjectList(){
+  const groups = []; const seen = new Map();
+  PROJECTS.forEach(p => {
+    const g = p.group || 'Other';
+    if(!seen.has(g)){ seen.set(g, { name:g, items:[] }); groups.push(seen.get(g)); }
+    seen.get(g).items.push(p);
+  });
+  groups.forEach(g => {
+    const head = document.createElement('li');
+    head.className = 'file-group-head'; head.textContent = g.name;
+    fileListEl.appendChild(head);
+    g.items.forEach(p => fileListEl.appendChild(projectButtonNode(p)));
+  });
+})();
+
+searchEl.addEventListener('input', ()=>{
+  const q = searchEl.value.toLowerCase().trim();
+  document.querySelectorAll('.file-btn').forEach(b=>{
+    const id = b.dataset.proj;
+    const label = b.querySelector('.label').textContent.toLowerCase();
+    const match = !q || id.toLowerCase().includes(q) || label.includes(q);
+    b.parentElement.style.display = match ? '' : 'none';
+  });
+  document.querySelectorAll('.file-group-head').forEach(head => {
+    let n = head.nextElementSibling, anyVisible = false;
+    while(n && !n.classList.contains('file-group-head')){
+      if(n.style.display !== 'none'){ anyVisible = true; break; }
+      n = n.nextElementSibling;
+    }
+    head.style.display = anyVisible ? '' : 'none';
+  });
+});
+
+function modeForFile(name){
+  if(name.endsWith('.tsx') || name.endsWith('.jsx') || name.endsWith('.ts') || name.endsWith('.js'))
+    return { name: 'jsx', base: { name: 'javascript', typescript: name.endsWith('.tsx') || name.endsWith('.ts') } };
+  return 'jsx';
+}
+function badgeForFile(name){
+  if(name.endsWith('.tsx')) return 'TSX';        // short keeps the file-tabs strip wider
+  if(name.endsWith('.ts'))  return 'TS';
+  if(name.endsWith('.jsx')) return 'JSX';
+  return 'TXT';
+}
+
+function activeProject(){ return PROJECTS.find(p => p.id === state.active); }
+function isDirty(proj, file){
+  const rx = rxKey(proj, file);
+  return state.buffers[rx] != null && state.originals[rx] != null && state.buffers[rx] !== state.originals[rx];
+}
+function refreshDirty(){
+  const proj = activeProject();
+  if(!proj) return;
+  const dirty = proj.files.some(f => isDirty(proj, f));
+  const btn = document.querySelector('.file-btn[data-proj="' + proj.id + '"]');
+  if(btn) btn.classList.toggle('dirty', dirty);
+  fileNameEl.classList.toggle('dirty', dirty);
+  renderFileTabs();
+}
+function renderFileTabs(){
+  const proj = activeProject();
+  if(!proj){ fileTabsEl.innerHTML = ''; return; }
+  const cur  = state.activeFile[proj.id] || proj.entry;
+  const esc  = (s) => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+  fileTabsEl.innerHTML = proj.files.map(f => {
+    const isEntry = (proj.bundle && proj.bundle[proj.bundle.length-1] === f) || f === proj.entry;
+    const cls = ['file-tab'];
+    if(f === cur)  cls.push('active');
+    if(isEntry)    cls.push('entry');
+    if(isDirty(proj, f)) cls.push('dirty');
+    return '<button class="' + cls.join(' ') + '" data-file="' + esc(f) + '" title="' + esc(f) + '">' + esc(f) + '</button>';
+  }).join('');
+  fileTabsEl.querySelectorAll('.file-tab').forEach(b => {
+    b.addEventListener('click', () => switchFile(b.dataset.file));
+  });
+  // Bring the active tab into view (so when you switch step or file the
+  // selected tab is never hidden under the right-edge fade).
+  const activeBtn = fileTabsEl.querySelector('.file-tab.active');
+  if(activeBtn && activeBtn.scrollIntoView){
+    try { activeBtn.scrollIntoView({ block: 'nearest', inline: 'nearest' }); } catch {}
+  }
+}
+
+// Mouse wheel anywhere over the tab strip scrolls horizontally — otherwise
+// users have to know to shift+wheel or two-finger-swipe sideways.
+fileTabsEl.addEventListener('wheel', (e) => {
+  if(fileTabsEl.scrollWidth <= fileTabsEl.clientWidth) return;   // nothing to scroll
+  // Translate vertical wheel into horizontal scroll. Keep horizontal wheel as-is.
+  const delta = Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
+  if(delta === 0) return;
+  e.preventDefault();
+  fileTabsEl.scrollLeft += delta;
+}, { passive: false });
+
+function loadEditorFor(file){
+  const proj = activeProject();
+  if(!proj) return;
+  ensureLoaded(proj, file);
+  editor.setOption('mode', modeForFile(file));
+  editor.setValue(getFileText(proj, file));
+  editor.clearHistory();
+  modeBadgeEl.textContent = badgeForFile(file);
+  fileSubEl.textContent = 'react-native/' + (proj.pathPrefix || '') + file;
+  fileNameEl.firstChild.textContent = proj.label.replace(/^\d+\s*·\s*/, '');
+}
+
+function switchFile(file){
+  if(state.bundledMode) exitBundledMode();
+  const proj = activeProject();
+  if(!proj) return;
+  const cur = state.activeFile[proj.id] || proj.entry;
+  state.buffers[rxKey(proj, cur)] = editor.getValue();
+  state.activeFile[proj.id] = file;
+  loadEditorFor(file);
+  refreshDirty();
+  editor.focus();
+}
+
+function activate(projId){
+  if(state.bundledMode) exitBundledMode();
+  const prior = activeProject();
+  if(prior){
+    const cur = state.activeFile[prior.id] || prior.entry;
+    state.buffers[rxKey(prior, cur)] = editor.getValue();
+    refreshDirty();
+  }
+  state.active = projId;
+  document.querySelectorAll('.file-btn').forEach(b => b.classList.toggle('active', b.dataset.proj === projId));
+  const proj = activeProject();
+  proj.files.forEach(f => ensureLoaded(proj, f));
+  if(!state.activeFile[proj.id]) state.activeFile[proj.id] = proj.entry;
+  loadEditorFor(state.activeFile[proj.id]);
+  refreshDirty();
+  editor.focus();
+  renderPreview();
+}
+
+editor.on('change', ()=>{
+  if(state.bundledMode) return;
+  const proj = activeProject();
+  if(!proj) return;
+  const cur = state.activeFile[proj.id] || proj.entry;
+  const rx  = rxKey(proj, cur);
+  state.buffers[rx] = editor.getValue();
+  saveBufferToStorage(rx, editor.getValue());
+  refreshDirty();
+});
+
+/* ==========================================================
+   "Show bundled output" toggle
+   ========================================================== */
+const bundledBtn = document.getElementById('bundledToggleBtn');
+function enterBundledMode(){
+  const proj = activeProject(); if(!proj) return;
+  const cur = state.activeFile[proj.id] || proj.entry;
+  state.buffers[rxKey(proj, cur)] = editor.getValue();
+  state.bundledRestore = { file: cur };
+  state.bundledMode = true;
+  const bundle = bundleProjectJs(proj);
+  editor.setOption('mode', { name: 'jsx', base: { name: 'javascript', typescript: false } });
+  editor.setOption('readOnly', 'nocursor');
+  editor.setValue('// 🔨  Read-only — this is the JS that actually runs in the iframe\n' +
+                  '//     after import-rewrite + concatenation. Toggle off to edit again.\n\n' + bundle);
+  editor.clearHistory();
+  modeBadgeEl.textContent = 'BUNDLED · READ-ONLY';
+  bundledBtn.classList.add('run-btn');
+  bundledBtn.textContent = '✎ Source';
+  fileTabsEl.style.opacity = '0.45'; fileTabsEl.style.pointerEvents = 'none';
+}
+function exitBundledMode(){
+  state.bundledMode = false;
+  editor.setOption('readOnly', false);
+  bundledBtn.classList.remove('run-btn');
+  bundledBtn.textContent = '🔨 Bundled';
+  fileTabsEl.style.opacity = ''; fileTabsEl.style.pointerEvents = '';
+  const proj = activeProject();
+  if(proj){
+    const target = (state.bundledRestore && state.bundledRestore.file) || state.activeFile[proj.id] || proj.entry;
+    state.activeFile[proj.id] = target;
+    loadEditorFor(target);
+  }
+  state.bundledRestore = null;
+}
+bundledBtn.addEventListener('click', () => { state.bundledMode ? exitBundledMode() : enterBundledMode(); });
+
+/* ==========================================================
+   Reset / Render / Pop out
+   ========================================================== */
+document.getElementById('resetBtn').addEventListener('click', ()=>{
+  const proj = activeProject(); if(!proj) return;
+  if(state.bundledMode) exitBundledMode();
+  proj.files.forEach(f => {
+    const rx = rxKey(proj, f);
+    if(state.originals[rx] != null) state.buffers[rx] = state.originals[rx];
+    clearBufferFromStorage(rx);
+  });
+  loadEditorFor(state.activeFile[proj.id] || proj.entry);
+  refreshDirty();
+  renderPreview();
+  toast('Reset ' + proj.id);
+});
+document.getElementById('runBtn').addEventListener('click', () => renderPreview());
+window.addEventListener('keydown', (e)=>{
+  if((e.metaKey || e.ctrlKey) && e.key === 'Enter'){ e.preventDefault(); renderPreview(); }
+});
+
+/* ==========================================================
+   TSX/JSX bundler
+   ----------------------------------------------------------
+   Same flat-concat strategy as the React lab, with extras for
+   React Native's third-party packages and TypeScript:
+     import { View, Text } from 'react-native'
+        →  var View = ReactNative.View, Text = ReactNative.Text;
+     import { Picker } from '@react-native-picker/picker'
+        →  var Picker = ReactNativePicker.Picker;
+     import { NavigationContainer } from '@react-navigation/native'
+        →  var NavigationContainer = ReactNavigationNative.NavigationContainer;
+     import { createStackNavigator } from '@react-navigation/stack'
+        →  var createStackNavigator = ReactNavigationStack.createStackNavigator;
+     import 'react-native-gesture-handler';   →  drop (side-effect only)
+     require('./assets/icon.png')             →  data-URL placeholder string
+   ========================================================== */
+function transformImports(src){
+  function destructure(names, source){
+    return names.split(',').map(n => {
+      n = n.trim();
+      const aliased = /^(\w+)\s+as\s+(\w+)$/.exec(n);
+      if(aliased) return aliased[2] + ' = ' + source + '.' + aliased[1];
+      return n + ' = ' + source + '.' + n;
+    }).join(', ');
+  }
+  const placeholderImg =
+    "'data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22120%22 height=%22120%22>" +
+    "<rect width=%22120%22 height=%22120%22 fill=%22%23a978ff%22 rx=%2220%22/>" +
+    "<text x=%2260%22 y=%2270%22 font-size=%2220%22 text-anchor=%22middle%22 fill=%22%23fff%22 font-family=%22sans-serif%22>asset</text></svg>'";
+
+  return src
+    // require('./X.png')  →  data-URL placeholder string (RN Image accepts a URI)
+    .replace(/require\(\s*['"](?:\.{0,2}\/)?[^'"]+\.(png|jpg|jpeg|svg|gif|webp)['"]\s*\)/gi, placeholderImg)
+
+    // side-effect imports — drop
+    .replace(/^\s*import\s+['"][^'"]+['"][^\n]*$/gm, '')
+
+    // import logo from './assets/x.svg' or '/x.svg'
+    .replace(/^\s*import\s+(\w+)\s+from\s+['"](?:\.{0,2}\/)([^'"]+\.svg)['"][^\n]*$/gm,
+             "var $1 = " + placeholderImg + ";")
+
+    // import React, { A } from 'react'
+    .replace(/^\s*import\s+React\s*,\s*\{\s*([^}]+)\}\s+from\s+['"]react['"][^\n]*$/gm,
+             (_, names) => 'var ' + destructure(names, 'React') + ';')
+
+    // import React from 'react'
+    .replace(/^\s*import\s+React\s+from\s+['"]react['"][^\n]*$/gm, '')
+
+    // import { useState, … } from 'react'
+    .replace(/^\s*import\s+\{\s*([^}]+)\}\s+from\s+['"]react['"][^\n]*$/gm,
+             (_, names) => 'var ' + destructure(names, 'React') + ';')
+
+    // import { View, Text, … } from 'react-native'
+    .replace(/^\s*import\s+\{\s*([^}]+)\}\s+from\s+['"]react-native['"][^\n]*$/gm,
+             (_, names) => 'var ' + destructure(names, 'ReactNative') + ';')
+
+    // import { Picker } from '@react-native-picker/picker'
+    .replace(/^\s*import\s+\{\s*([^}]+)\}\s+from\s+['"]@react-native-picker\/picker['"][^\n]*$/gm,
+             (_, names) => 'var ' + destructure(names, 'ReactNativePicker') + ';')
+
+    // import { NavigationContainer } from '@react-navigation/native'
+    .replace(/^\s*import\s+\{\s*([^}]+)\}\s+from\s+['"]@react-navigation\/native['"][^\n]*$/gm,
+             (_, names) => 'var ' + destructure(names, 'ReactNavigationNative') + ';')
+
+    // import { createStackNavigator } from '@react-navigation/stack'
+    .replace(/^\s*import\s+\{\s*([^}]+)\}\s+from\s+['"]@react-navigation\/stack['"][^\n]*$/gm,
+             (_, names) => 'var ' + destructure(names, 'ReactNavigationStack') + ';')
+
+    // import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
+    .replace(/^\s*import\s+\{\s*([^}]+)\}\s+from\s+['"]@react-navigation\/bottom-tabs['"][^\n]*$/gm,
+             (_, names) => 'var ' + destructure(names, 'ReactNavigationBottomTabs') + ';')
+
+    // import X from './path'  (local default import)  →  drop
+    .replace(/^\s*import\s+\w+\s+from\s+['"]\.{1,2}\/[^'"]+['"][^\n]*$/gm, '')
+
+    // import { … } from './path'  (local named)  →  drop
+    .replace(/^\s*import\s+\{[^}]+\}\s+from\s+['"]\.{1,2}\/[^'"]+['"][^\n]*$/gm, '')
+
+    // export default function NAME(…)  →  function NAME(…)
+    .replace(/^\s*export\s+default\s+function\s+(\w+)/gm, 'function $1')
+
+    // export default class NAME  →  class NAME
+    .replace(/^\s*export\s+default\s+class\s+(\w+)/gm, 'class $1')
+
+    // export default NAME;  →  drop
+    .replace(/^\s*export\s+default\s+\w+\s*;?\s*$/gm, '')
+
+    // export const/let/var/function/class  →  strip "export"
+    .replace(/^\s*export\s+(const|let|var|function|class)\s+/gm, '$1 ');
+}
+
+// Pull the default-export name out of the entry file (before transformation
+// strips it). We auto-append a mount call for it because real RN files don't
+// call ReactDOM.render — the framework does that for them.
+function detectDefaultExport(src){
+  let m;
+  if((m = src.match(/^\s*export\s+default\s+function\s+(\w+)/m))) return m[1];
+  if((m = src.match(/^\s*export\s+default\s+class\s+(\w+)/m)))    return m[1];
+  if((m = src.match(/^\s*export\s+default\s+(\w+)\s*;?\s*$/m)))   return m[1];
+  return null;
+}
+
+function bundleProjectJs(proj){
+  if(!proj) return '';
+  const defaultName = detectDefaultExport(getFileText(proj, proj.entry));
+
+  const body = (proj.bundle || [proj.entry])
+    .map(f => {
+      const safe = f.replace(/[^a-zA-Z0-9]/g, '_');
+      let src = transformImports(getFileText(proj, f));
+      // RN files conventionally declare `const styles = StyleSheet.create({...})`.
+      // Concatenating multiple files in the router project would re-declare a
+      // const, which is a fatal parse error. Rename `styles` to a per-file
+      // suffix so each file's stylesheet stays private.
+      src = src.replace(/\bstyles\b/g, '__styles_' + safe);
+      return '/* ============== ' + f + ' ============== */\n' + src;
+    })
+    .join('\n\n');
+
+  const mount = defaultName
+    ? '\n\n/* === auto-mount: real RN does this at framework level === */\n' +
+      'ReactDOM.createRoot(document.getElementById("root"))' +
+      '.render(React.createElement(' + defaultName + '));\n'
+    : '\n\nconsole.error("[react-native-lab] no `export default` found in ' + proj.entry + '");\n';
+
+  return body + mount;
+}
+
+/* ==========================================================
+   Live preview — wraps the bundle in an HTML host that loads
+   React, ReactDOM, react-native-web, optional shims, and a
+   manual Babel.transform for TSX.
+   ========================================================== */
+const previewEl       = document.getElementById('preview');
+const previewStatusEl = document.getElementById('previewStatus');
+const previewStatsEl  = document.getElementById('previewStats');
+const autoChk         = document.getElementById('autoChk');
+
+function buildPreviewHtml(){
+  const proj = activeProject();
+  if(!proj) return '';
+  const cur = state.activeFile[proj.id] || proj.entry;
+  state.buffers[rxKey(proj, cur)] = editor.getValue();
+
+  const tsxBundle = bundleProjectJs(proj);
+  const safe = tsxBundle.replace(/<\/script/gi, '<\\/script');
+  // needsNavigation pulls in NavigationContainer + Stack + BottomTabs shims.
+  // They're tiny; loading all three is simpler than three flags.
+  const navShim = proj.needsNavigation ? (NAV_SHIM + '\n' + TABS_SHIM) : '';
+
+  return [
+    '<!DOCTYPE html>',
+    '<html><head><meta charset="UTF-8"><title>RN Lab — ' + proj.id + '</title>',
+    '<script type="importmap">',
+    '{ "imports": {',
+    '  "react": "https://esm.sh/react@18.3.1",',
+    '  "react-dom": "https://esm.sh/react-dom@18.3.1",',
+    '  "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",',
+    '  "react-native": "https://esm.sh/react-native-web@0.19.13?deps=react@18.3.1,react-dom@18.3.1"',
+    '}}',
+    '<\/script>',
+    '<script src="https://unpkg.com/@babel/standalone@7.24.5/babel.min.js"><\/script>',
+    '<style>',
+    '  html,body{margin:0;padding:0;height:100%;overflow:hidden;background:#fff;font-family:-apple-system,system-ui,sans-serif}',
+    '  #root{height:100%;display:flex;flex-direction:column}',
+    '  #__rn-error{display:none;color:#fff;background:#b00020;padding:12px 14px;font-family:ui-monospace,monospace;white-space:pre-wrap;border-radius:8px;margin:12px;font-size:12px;line-height:1.5}',
+    '<\/style>',
+    '</head><body>',
+    '<div id="root"></div>',
+    '<pre id="__rn-error"></pre>',
+    '<script type="module">',
+    '  // 1) Pull React, ReactDOM, react-native-web in via the import map',
+    '  //    (esm.sh dedupes React across them so hooks share state).',
+    '  import * as ReactNS from "react";',
+    '  import * as ReactDOMNS from "react-dom";',
+    '  import * as ReactDOMClient from "react-dom/client";',
+    '  import * as RN from "react-native";',
+    '  ',
+    '  const React = (ReactNS && ReactNS.default) || ReactNS;',
+    '  const ReactDOM = Object.assign({}, (ReactDOMNS && ReactDOMNS.default) || ReactDOMNS, ReactDOMClient);',
+    '  const ReactNative = (RN && RN.default) || RN;',
+    '  ',
+    '  window.React = React;',
+    '  window.ReactDOM = ReactDOM;',
+    '  window.ReactNative = ReactNative;',
+    '  ',
+    '  // 2) Console shim — forward console.* to the parent panel',
+    '  (function(){',
+    '    const levels = ["log","info","warn","error","debug"];',
+    '    function fmt(v){',
+    '      if(v === undefined) return "undefined";',
+    '      if(v === null) return "null";',
+    '      if(typeof v === "function") return v.toString().slice(0,200);',
+    '      if(typeof v === "string") return v;',
+    '      if(typeof v === "object"){',
+    '        try { return JSON.stringify(v, function(_,x){',
+    '          if(typeof x === "function") return "[Function " + (x.name || "anonymous") + "]";',
+    '          if(x && typeof x === "object" && x.$$typeof) return "[ReactElement]";',
+    '          return x;',
+    '        }, 2); } catch(e){ return Object.prototype.toString.call(v); }',
+    '      }',
+    '      return String(v);',
+    '    }',
+    '    levels.forEach(function(lv){',
+    '      const orig = window.console[lv] ? window.console[lv].bind(window.console) : function(){};',
+    '      window.console[lv] = function(){',
+    '        const args = Array.prototype.slice.call(arguments);',
+    '        try { window.parent.postMessage({ __reactLab:true, kind:"console", level:lv, args:args.map(fmt) }, "*"); } catch(e){}',
+    '        try { orig.apply(null, args); } catch(e){}',
+    '      };',
+    '    });',
+    '  })();',
+    '  ',
+    '  // 3) Error overlay',
+    '  function showErr(err){',
+    '    const box = document.getElementById("__rn-error");',
+    '    if(!box) return;',
+    '    box.style.display = "block";',
+    '    const msg = err && err.message ? err.message : String(err);',
+    '    const stack = err && err.stack ? "\\n\\n" + err.stack : "";',
+    '    box.textContent = msg + stack;',
+    '  }',
+    '  window.addEventListener("error", e => showErr(e.error || e.message));',
+    '  window.addEventListener("unhandledrejection", e => showErr(e.reason));',
+    '  ',
+    '  // 4) Inline shims for libraries we don\'t pull from npm',
+    '  ' + PICKER_SHIM,
+    '  ' + (proj.needsNavigation ? navShim : ''),
+    '  ',
+    '  // 5) Transform the user\'s TSX bundle and run it. We wrap the output',
+    '  //    in an IIFE so the bundle\'s `var` declarations stay local — at',
+    '  //    top-level script scope they become window properties, and e.g.',
+    '  //    `var Image = ReactNative.Image;` would clobber `window.Image`',
+    '  //    which react-native-web\'s ImageLoader needs to call `new Image()`.',
+    '  try {',
+    '    const raw = ' + JSON.stringify(safe) + ';',
+    '    const out = Babel.transform(raw, {',
+    '      presets: ["env", "react", ["typescript", { isTSX: true, allExtensions: true }]],',
+    '      filename: "lesson.tsx",',
+    '    }).code;',
+    '    const s = document.createElement("script");',
+    '    s.textContent = ";(function(){\\n" + out + "\\n}).call(window);";',
+    '    document.body.appendChild(s);',
+    '  } catch(err) {',
+    '    showErr(err);',
+    '  }',
+    '<\/script>',
+    '</body></html>'
+  ].join('\n');
+}
+
+/* In-iframe shim for @react-native-picker/picker — wraps a native <select>. */
+const PICKER_SHIM =
+  'const Picker = ({ selectedValue, onValueChange, children, style }) => {' +
+  '  const items = React.Children.toArray(children).filter(c => c && c.props).map(c => c.props);' +
+  '  return React.createElement("select", {' +
+  '    value: selectedValue,' +
+  '    onChange: e => onValueChange && onValueChange(e.target.value, 0),' +
+  '    style: Object.assign({ padding: 10, fontSize: 16, width: "100%", border: "none", background: "transparent" }, style || {}),' +
+  '  }, items.map((p, i) => React.createElement("option", { key: i, value: p.value }, p.label)));' +
+  '};' +
+  'Picker.Item = (() => null);' +
+  'window.ReactNativePicker = { Picker };';
+
+/* In-iframe shim for @react-navigation/bottom-tabs — minimal tab navigator
+   that renders the active screen and a fixed tab bar at the bottom. Tapping
+   a tab calls setRoute(name) which swaps the rendered screen. Supports
+   tabBarIcon (function returning a React element) and tabBarLabel. */
+const TABS_SHIM =
+  'window.ReactNavigationBottomTabs = {' +
+  '  createBottomTabNavigator: () => {' +
+  '    function Screen(){ return null; }' +
+  '    function Navigator(props){' +
+  '      const RN = window.ReactNative;' +
+  '      const screens = React.Children.toArray(props.children).filter(c => c && c.type === Screen).map(c => c.props);' +
+  '      const initial = props.initialRouteName || (screens[0] && screens[0].name);' +
+  '      const [routeName, setRoute] = React.useState(initial);' +
+  '      const route = screens.find(s => s.name === routeName) || screens[0];' +
+  '      if(!route) return null;' +
+  '      const navigation = { navigate: setRoute };' +
+  '      const baseOpts = typeof props.screenOptions === "function" ? props.screenOptions({ navigation, route }) : (props.screenOptions || {});' +
+  '      const opts = Object.assign({}, baseOpts, route.options || {});' +
+  '      const Component = route.component;' +
+  '      const activeColor   = opts.tabBarActiveTintColor   || baseOpts.tabBarActiveTintColor   || "#bc2b78";' +
+  '      const inactiveColor = opts.tabBarInactiveTintColor || baseOpts.tabBarInactiveTintColor || "#888";' +
+  '      return React.createElement(RN.View, { style: { flex: 1, height: "100%", flexDirection: "column" } },' +
+  '        React.createElement(RN.View, { style: { flex: 1 } },' +
+  '          React.createElement(Component, { navigation, route })' +
+  '        ),' +
+  '        React.createElement(RN.View, { style: { flexDirection: "row", borderTopWidth: 1, borderTopColor: "#ddd", backgroundColor: "#fff", paddingVertical: 6 } },' +
+  '          screens.map(s => {' +
+  '            const focused = s.name === routeName;' +
+  '            const color = focused ? activeColor : inactiveColor;' +
+  '            const sOpts = s.options || {};' +
+  '            const icon = sOpts.tabBarIcon ? sOpts.tabBarIcon({ focused, color, size: 22 }) : null;' +
+  '            const label = sOpts.tabBarLabel || s.name;' +
+  '            return React.createElement(RN.TouchableOpacity, {' +
+  '              key: s.name,' +
+  '              onPress: () => setRoute(s.name),' +
+  '              style: { flex: 1, alignItems: "center", paddingVertical: 4 },' +
+  '            },' +
+  '              icon,' +
+  '              React.createElement(RN.Text, { style: { fontSize: 11, color: color, marginTop: 2 } }, label)' +
+  '            );' +
+  '          })' +
+  '        )' +
+  '      );' +
+  '    }' +
+  '    return { Navigator, Screen };' +
+  '  }' +
+  '};';
+
+/* In-iframe shim for @react-navigation/{native,stack} — minimal stack
+   navigator that holds the current route in state and lets headerLeft
+   /headerRight call navigation.navigate(). Enough for the lab\'s
+   single-screen-at-a-time demo. */
+const NAV_SHIM =
+  'window.ReactNavigationNative = {' +
+  '  NavigationContainer: ({ children }) => React.createElement("div", { style: { display:"flex", flexDirection:"column", height:"100%", width:"100%" } }, children),' +
+  '};' +
+  'window.ReactNavigationStack = {' +
+  '  createStackNavigator: () => {' +
+  '    function Screen(){ return null; }' +
+  '    function Navigator(props){' +
+  '      const RN = window.ReactNative;' +
+  '      const screens = React.Children.toArray(props.children).filter(c => c && c.type === Screen).map(c => c.props);' +
+  '      const initial = props.initialRouteName || (screens[0] && screens[0].name);' +
+  '      const [routeName, setRoute] = React.useState(initial);' +
+  '      const route = screens.find(s => s.name === routeName) || screens[0];' +
+  '      if(!route) return null;' +
+  '      const navigation = { navigate: setRoute, goBack: () => setRoute(initial) };' +
+  '      const baseOpts = typeof props.screenOptions === "function" ? props.screenOptions({ navigation, route }) : (props.screenOptions || {});' +
+  '      const opts = Object.assign({}, baseOpts, route.options || {});' +
+  '      const Component = route.component;' +
+  '      const titleAlign = opts.headerTitleAlign === "center" ? { textAlign: "center" } : null;' +
+  '      return React.createElement(RN.View, { style: { flex: 1, height: "100%" } },' +
+  '        React.createElement(RN.View, { style: [{ flexDirection: "row", alignItems: "center", paddingHorizontal: 12 }, opts.headerStyle] },' +
+  '          opts.headerLeft ? opts.headerLeft() : null,' +
+  '          React.createElement(RN.Text, { style: [{ flex: 1, color: opts.headerTintColor || "#000", fontSize: 18, paddingHorizontal: 8 }, opts.headerTitleStyle, titleAlign] },' +
+  '            opts.title || route.name),' +
+  '          opts.headerRight ? opts.headerRight() : null' +
+  '        ),' +
+  '        React.createElement(RN.View, { style: { flex: 1 } },' +
+  '          React.createElement(Component, { navigation, route })' +
+  '        )' +
+  '      );' +
+  '    }' +
+  '    return { Navigator, Screen };' +
+  '  }' +
+  '};';
+
+function renderPreview(){
+  const proj = activeProject(); if(!proj) return;
+  const html = buildPreviewHtml();
+  previewStatusEl.classList.add('rendering');
+  previewStatusEl.classList.remove('error');
+  previewStatusEl.textContent = 'Rendering';
+  previewStatsEl.textContent = (proj.bundle ? proj.bundle.length : 1) + ' tsx' + (proj.needsNavigation ? ' · nav' : '');
+  clearConsole();
+  previewEl.srcdoc = html;
+}
+function schedulePreview(){
+  if(!autoChk.checked) return;
+  clearTimeout(schedulePreview._t);
+  schedulePreview._t = setTimeout(renderPreview, 600);
+}
+previewEl.addEventListener('load', ()=>{
+  previewStatusEl.classList.remove('rendering');
+  previewStatusEl.textContent = 'Preview';
+  try {
+    const doc = previewEl.contentDocument;
+    const errBox = doc && doc.getElementById('__rn-error');
+    if(errBox && errBox.style.display !== 'none' && errBox.textContent){
+      previewStatusEl.classList.add('error');
+      previewStatusEl.textContent = 'Error';
+    }
+  } catch {}
+});
+document.getElementById('popoutBtn').addEventListener('click', ()=>{
+  const html = buildPreviewHtml();
+  if(!html){ toast('Nothing to pop out yet'); return; }
+  const w = window.open('', '_blank', 'noopener,noreferrer');
+  if(!w){ toast('Pop-up blocked — allow popups for this page', 'error'); return; }
+  w.document.open(); w.document.write(html); w.document.close();
+});
+editor.on('change', schedulePreview);
+
+/* ==========================================================
+   Toast helper
+   ========================================================== */
+const toastEl = document.getElementById('toast');
+let toastTimer;
+function toast(msg, kind){
+  toastEl.textContent = msg;
+  toastEl.classList.toggle('error', kind === 'error');
+  toastEl.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=> toastEl.classList.remove('show'), 1800);
+}
+
+/* ==========================================================
+   Console panel — receives forwarded console.* calls
+   ========================================================== */
+const consolePanelEl     = document.getElementById('consolePanel');
+const consoleOutEl       = document.getElementById('consoleOut');
+const consoleCountEl     = document.getElementById('consoleCount');
+const consoleHeadEl      = document.getElementById('consoleHead');
+const consoleClearBtn    = document.getElementById('consoleClearBtn');
+const consoleCollapseBtn = document.getElementById('consoleCollapseBtn');
+let consoleN = 0, consoleErrN = 0;
+function clearConsole(){
+  consoleN = 0; consoleErrN = 0;
+  consoleCountEl.textContent = '0';
+  consolePanelEl.classList.remove('has-output','has-error');
+  consoleOutEl.innerHTML =
+    '<div class="empty">No console output yet — anything the React Native code logs will appear here.</div>';
+}
+function appendConsoleLine(level, args){
+  if(consoleN === 0) consoleOutEl.innerHTML = '';
+  consoleN++; if(level === 'error') consoleErrN++;
+  consoleCountEl.textContent = String(consoleN);
+  consolePanelEl.classList.add('has-output');
+  if(consoleErrN) consolePanelEl.classList.add('has-error');
+  const line = document.createElement('div');
+  line.className = 'console-line ' + level;
+  const lvl = document.createElement('span'); lvl.className = 'lvl'; lvl.textContent = level;
+  const body = document.createElement('span'); body.className = 'body'; body.textContent = (args||[]).join(' ');
+  line.appendChild(lvl); line.appendChild(body);
+  consoleOutEl.appendChild(line);
+  consoleOutEl.scrollTop = consoleOutEl.scrollHeight;
+}
+window.addEventListener('message', (e)=>{
+  if(!e.data || !e.data.__reactLab) return;
+  if(e.data.kind === 'console') appendConsoleLine(e.data.level, e.data.args);
+});
+consoleClearBtn.addEventListener('click', (e)=>{ e.stopPropagation(); clearConsole(); });
+consoleCollapseBtn.addEventListener('click', (e)=>{
+  e.stopPropagation();
+  consolePanelEl.classList.toggle('collapsed');
+  consoleCollapseBtn.textContent = consolePanelEl.classList.contains('collapsed') ? '▴' : '▾';
+});
+consoleHeadEl.addEventListener('click', (e)=>{
+  if(e.target.closest('button')) return;
+  consolePanelEl.classList.toggle('collapsed');
+  consoleCollapseBtn.textContent = consolePanelEl.classList.contains('collapsed') ? '▴' : '▾';
+});
+
+/* ==========================================================
+   Drag-to-resize splitter
+   ========================================================== */
+(function initSplitter(){
+  const pane = document.querySelector('.editor-pane');
+  const splitter = document.getElementById('splitter');
+  if(!pane || !splitter) return;
+  const HANDLE_W = 6, MIN_PANE = 160;
+  const STORAGE = 'rn-lab-split-ratio';
+  let savedRatio = null;
+  try { const v = parseFloat(localStorage.getItem(STORAGE)); if(v > 0 && v < 1) savedRatio = v; } catch {}
+  function applyRatio(ratio){
+    const total = pane.clientWidth - parseFloat(getComputedStyle(pane).paddingLeft) * 2 - HANDLE_W - 14 * 2;
+    if(total <= 0) return;
+    const left  = Math.max(MIN_PANE, Math.min(total - MIN_PANE, total * ratio));
+    pane.style.setProperty('--col-1', left + 'px');
+    pane.style.setProperty('--col-2', (total - left) + 'px');
+    if(typeof editor !== 'undefined' && editor.refresh){
+      clearTimeout(applyRatio._t);
+      applyRatio._t = setTimeout(() => editor.refresh(), 30);
+    }
+  }
+  if(savedRatio != null) applyRatio(savedRatio);
+  let drag = null;
+  splitter.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    const padL = parseFloat(getComputedStyle(pane).paddingLeft) || 0;
+    drag = { paneLeft: pane.getBoundingClientRect().left + padL,
+             total: pane.clientWidth - padL * 2 - HANDLE_W - 14 * 2 };
+    splitter.classList.add('active');
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  });
+  window.addEventListener('pointermove', (e) => {
+    if(!drag) return;
+    let editorPx = e.clientX - drag.paneLeft;
+    editorPx = Math.max(MIN_PANE, Math.min(drag.total - MIN_PANE, editorPx));
+    applyRatio(editorPx / drag.total);
+  });
+  window.addEventListener('pointerup', () => {
+    if(!drag) return;
+    drag = null;
+    splitter.classList.remove('active');
+    document.body.style.cursor = ''; document.body.style.userSelect = '';
+    const total = pane.clientWidth - parseFloat(getComputedStyle(pane).paddingLeft) * 2 - HANDLE_W - 14 * 2;
+    const colL = parseFloat(pane.style.getPropertyValue('--col-1')) || total / 2;
+    try { localStorage.setItem(STORAGE, (colL / total).toFixed(4)); } catch {}
+  });
+  splitter.addEventListener('dblclick', () => {
+    pane.style.removeProperty('--col-1'); pane.style.removeProperty('--col-2');
+    try { localStorage.removeItem(STORAGE); } catch {}
+    if(typeof editor !== 'undefined' && editor.refresh) setTimeout(() => editor.refresh(), 30);
+  });
+})();
+
+/* ==========================================================
+   Boot
+   ========================================================== */
+(function boot(){
+  PROJECTS.forEach(p => p.files.forEach(f => ensureLoaded(p, f)));
+  activate(PROJECTS[0].id);
+})();
+</script>
+<script src="../home.js"></script>
+</body>
+</html>
