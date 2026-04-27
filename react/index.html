@@ -297,10 +297,21 @@ body::after{
 /* Per-project sub-file tabs (.jsx, .css, .html within one project) */
 .file-tabs{
   display:flex; gap:4px; margin: 0 6px 0 6px;
-  flex:1; min-width:0; overflow-x:auto;
-  scrollbar-width:none;
+  flex:1; min-width:0; overflow-x:auto; overflow-y:hidden;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(97,218,251,0.35) transparent;
+  /* Fade the leftmost / rightmost 18px so the user sees there's more
+     content past the visible edge when the strip overflows. */
+  mask-image: linear-gradient(to right, transparent 0, #000 18px, #000 calc(100% - 18px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 18px, #000 calc(100% - 18px), transparent 100%);
+  padding-bottom: 4px;        /* keeps the scrollbar from covering tab text */
 }
-.file-tabs::-webkit-scrollbar{ display:none }
+.file-tabs::-webkit-scrollbar{ height: 4px }
+.file-tabs::-webkit-scrollbar-track{ background: transparent }
+.file-tabs::-webkit-scrollbar-thumb{
+  background: rgba(97,218,251,0.35); border-radius: 4px;
+}
+.file-tabs::-webkit-scrollbar-thumb:hover{ background: rgba(97,218,251,0.55) }
 .file-tab{
   flex-shrink:0;
   padding: 3px 11px; font-size:11.5px; border-radius:7px;
@@ -328,8 +339,14 @@ body::after{
   font-size:10.5px; letter-spacing:0.14em; text-transform:uppercase;
   padding:3px 9px; border-radius:20px;
   background:rgba(97,218,251,0.10); border:1px solid rgba(97,218,251,0.32);
-  color:#9be8ff; flex-shrink:0;
+  color:#9be8ff;
+  /* Let the badge shrink and ellipsize so the file-tabs strip keeps room. */
+  flex-shrink: 1; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  max-width: 90px;
 }
+/* Keep file-tabs wide enough that several labels are visible at once. */
+.file-tabs{ min-width: 200px }
 .cm-host{ position:relative; height:calc(100% - 41px) }
 .CodeMirror{
   height:100% !important; background:transparent;
@@ -2270,7 +2287,8 @@ function modeForFile(name){
   return 'jsx';
 }
 function badgeForFile(name){
-  if(name.endsWith('.jsx') || name.endsWith('.js'))  return 'JSX · React';
+  // Short to keep the file-tabs strip wide enough for several labels.
+  if(name.endsWith('.jsx') || name.endsWith('.js'))  return 'JSX';
   if(name.endsWith('.css'))                          return 'CSS';
   if(name.endsWith('.html'))                         return 'HTML';
   if(name.endsWith('.svg'))                          return 'SVG';
@@ -2410,7 +2428,22 @@ function renderFileTabs(){
   fileTabsEl.querySelectorAll('.file-tab').forEach(b => {
     b.addEventListener('click', () => switchFile(b.dataset.file));
   });
+  // Bring the active tab into view so it isn't hidden under the right-edge fade.
+  const activeBtn = fileTabsEl.querySelector('.file-tab.active');
+  if(activeBtn && activeBtn.scrollIntoView){
+    try { activeBtn.scrollIntoView({ block: 'nearest', inline: 'nearest' }); } catch {}
+  }
 }
+
+// Mouse wheel over the tab strip scrolls horizontally — without this you'd
+// have to know to shift+wheel or two-finger-swipe sideways to see all tabs.
+fileTabsEl.addEventListener('wheel', (e) => {
+  if(fileTabsEl.scrollWidth <= fileTabsEl.clientWidth) return;
+  const delta = Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
+  if(delta === 0) return;
+  e.preventDefault();
+  fileTabsEl.scrollLeft += delta;
+}, { passive: false });
 
 function activeProject(){
   return PROJECTS.find(p => p.id === state.active);
