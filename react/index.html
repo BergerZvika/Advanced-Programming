@@ -2328,15 +2328,28 @@ function readEmbedded(key){
    collide. The Reset button purges this for the active project.
    ---------------------------------------------------------- */
 const STORAGE_PREFIX = 'react-lab:edit:';
+// Version each saved buffer by a tiny hash of the embedded original. When
+// a lesson update ships, the hash changes, the old key is orphaned, and
+// the user sees the new source instead of a stale cached snapshot.
+function hashShort(s){
+  let h = 5381;
+  for(let i=0; i<s.length; i++) h = ((h<<5) + h + s.charCodeAt(i)) | 0;
+  return (h >>> 0).toString(36);
+}
+function rsKeyFor(projectName, file){
+  const k = projectName + '/' + file;
+  const orig = state.originals[k] || '';
+  return STORAGE_PREFIX + k + ':v' + hashShort(orig);
+}
 function saveBufferToStorage(projectName, file, value){
-  try { localStorage.setItem(STORAGE_PREFIX + projectName + '/' + file, value); } catch {}
+  try { localStorage.setItem(rsKeyFor(projectName, file), value); } catch {}
 }
 function loadBufferFromStorage(projectName, file){
-  try { return localStorage.getItem(STORAGE_PREFIX + projectName + '/' + file); }
+  try { return localStorage.getItem(rsKeyFor(projectName, file)); }
   catch { return null; }
 }
 function clearBufferFromStorage(projectName, file){
-  try { localStorage.removeItem(STORAGE_PREFIX + projectName + '/' + file); } catch {}
+  try { localStorage.removeItem(rsKeyFor(projectName, file)); } catch {}
 }
 
 function ensureLoaded(projectName, file){
@@ -2513,10 +2526,14 @@ editor.on('change', ()=>{
   if(state.bundledMode) return;        // read-only view; ignore changes
   const proj = activeProject();
   if(!proj) return;
-  const cur = state.activeFile[proj.id] || proj.entry;
-  const key = proj.project + '/' + cur;
-  state.buffers[key] = editor.getValue();
-  saveBufferToStorage(proj.project, cur, editor.getValue());
+  const cur   = state.activeFile[proj.id] || proj.entry;
+  const key   = proj.project + '/' + cur;
+  const value = editor.getValue();
+  state.buffers[key] = value;
+  // Only persist user diffs — `editor.setValue(original)` on every step
+  // open would otherwise snapshot the lesson and shadow future updates.
+  if(value !== state.originals[key]) saveBufferToStorage(proj.project, cur, value);
+  else                               clearBufferFromStorage(proj.project, cur);
   refreshDirty();
 });
 

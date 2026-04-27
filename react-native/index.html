@@ -2147,9 +2147,21 @@ function rxKey(proj, file){
 }
 
 const STORAGE_PREFIX = 'rn-lab:edit:';
-function saveBufferToStorage(rx, value){ try{ localStorage.setItem(STORAGE_PREFIX+rx, value); }catch{} }
-function loadBufferFromStorage(rx){ try{ return localStorage.getItem(STORAGE_PREFIX+rx); }catch{ return null; } }
-function clearBufferFromStorage(rx){ try{ localStorage.removeItem(STORAGE_PREFIX+rx); }catch{} }
+// Version each saved buffer by a tiny hash of the embedded original. When
+// a lesson update ships, the hash changes, the old key is orphaned, and
+// the user sees the new source instead of a stale cached snapshot.
+function hashShort(s){
+  let h = 5381;
+  for(let i=0; i<s.length; i++) h = ((h<<5) + h + s.charCodeAt(i)) | 0;
+  return (h >>> 0).toString(36);
+}
+function rxStorageKey(rx){
+  const orig = state.originals[rx] || '';
+  return STORAGE_PREFIX + rx + ':v' + hashShort(orig);
+}
+function saveBufferToStorage(rx, value){ try{ localStorage.setItem(rxStorageKey(rx), value); }catch{} }
+function loadBufferFromStorage(rx){ try{ return localStorage.getItem(rxStorageKey(rx)); }catch{ return null; } }
+function clearBufferFromStorage(rx){ try{ localStorage.removeItem(rxStorageKey(rx)); }catch{} }
 
 function readEmbedded(rx){
   const node = document.querySelector('script[type="text/plain"][data-rxfile="' + CSS.escape(rx) + '"]');
@@ -2332,10 +2344,14 @@ editor.on('change', ()=>{
   if(state.bundledMode) return;
   const proj = activeProject();
   if(!proj) return;
-  const cur = state.activeFile[proj.id] || proj.entry;
-  const rx  = rxKey(proj, cur);
-  state.buffers[rx] = editor.getValue();
-  saveBufferToStorage(rx, editor.getValue());
+  const cur   = state.activeFile[proj.id] || proj.entry;
+  const rx    = rxKey(proj, cur);
+  const value = editor.getValue();
+  state.buffers[rx] = value;
+  // Only persist user diffs — `editor.setValue(original)` on every step
+  // open would otherwise snapshot the lesson and shadow future updates.
+  if(value !== state.originals[rx]) saveBufferToStorage(rx, value);
+  else                              clearBufferFromStorage(rx);
   refreshDirty();
 });
 
