@@ -1,0 +1,3379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>C++ STL Lab — Advanced Programming</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/theme/dracula.min.css">
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/clike/clike.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/edit/closebrackets.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/edit/matchbrackets.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/selection/active-line.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/comment/comment.min.js"></script>
+
+<style>
+:root{
+  --bg-0:#04070d;
+  --surface:rgba(255,255,255,0.04);
+  --surface-2:rgba(255,255,255,0.07);
+  --border:rgba(255,255,255,0.09);
+  --border-strong:rgba(255,255,255,0.18);
+  --text:#e8eef9;
+  --text-dim:#9aa5bd;
+  --text-faint:#5e6a86;
+  --cpp-purple:#8b5cf6;
+  --cpp-purple-light:#a78bfa;
+  --cpp-purple-deep:#6d28d9;
+  --cpp-fuchsia:#e879f9;
+  --cpp-fuchsia-light:#f0abfc;
+  --cpp-glow:rgba(139,92,246,0.45);
+  --kw-color:#7dd3fc;
+  --type-color:#c4b5fd;
+  --string-color:#86efac;
+  --comment-color:#7c8cff;
+  --num-color:#fbbf24;
+  --success:#38d39f;
+  --warn:#ffb547;
+  --error:#ff5a7a;
+  --radius:18px;
+  --shadow-lg: 0 30px 80px -30px rgba(139,92,246,0.32), 0 10px 30px -15px rgba(0,0,0,0.6);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg-0);color:var(--text);font-family:'Inter',system-ui,sans-serif;height:100%;overflow:hidden}
+code,pre,textarea,.mono,.CodeMirror{font-family:'JetBrains Mono',ui-monospace,monospace}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+
+#bg-3d{
+  position:fixed; inset:0; z-index:-2; display:block;
+  background:
+    radial-gradient(1200px 700px at 8% -10%, rgba(139,92,246,0.30), transparent 60%),
+    radial-gradient(1000px 600px at 110% 0%,  rgba(232,121,249,0.18), transparent 60%),
+    radial-gradient(900px 600px at 50% 130%,  rgba(167,139,250,0.16), transparent 60%),
+    linear-gradient(180deg, #02060e 0%, #050811 50%, #02050a 100%);
+}
+body::after{
+  content:""; position:fixed; inset:0; z-index:-1; pointer-events:none; opacity:.32;
+  background-image:
+    radial-gradient(1px 1px at 20% 30%, #ffffff 100%, transparent),
+    radial-gradient(1px 1px at 70% 60%, #ffffff 100%, transparent),
+    radial-gradient(1.5px 1.5px at 40% 80%, #ffffff 100%, transparent),
+    radial-gradient(1px 1px at 85% 20%, #ffffff 100%, transparent),
+    radial-gradient(1px 1px at 15% 65%, #ffffff 100%, transparent);
+  background-size: 1200px 800px;
+  mask-image:linear-gradient(180deg,transparent,#000 20%,#000 80%,transparent);
+}
+
+.app{ display:grid; grid-template-columns: 320px 1fr; height:100vh }
+@media (max-width: 980px){
+  .app{ grid-template-columns: 1fr; height:auto; min-height:100vh; overflow:auto }
+  html,body{ overflow:auto; height:auto }
+}
+
+.sidebar{
+  padding:22px 16px; position:relative; z-index:5;
+  background:linear-gradient(180deg, rgba(10,15,30,0.85), rgba(6,10,22,0.85));
+  backdrop-filter: blur(22px) saturate(140%);
+  -webkit-backdrop-filter: blur(22px) saturate(140%);
+  border-right:1px solid var(--border);
+  overflow-y:auto; scrollbar-width:thin;
+}
+.sidebar::-webkit-scrollbar{width:6px}
+.sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.08);border-radius:6px}
+
+.brand{ display:flex;align-items:center;gap:12px;margin-bottom:18px;padding:6px 4px;border-radius:14px;user-select:none }
+.brand-cube{
+  width:46px;height:46px;border-radius:12px;position:relative;
+  background:linear-gradient(135deg, var(--cpp-purple-deep), var(--cpp-fuchsia-light));
+  box-shadow:
+    0 12px 30px -10px var(--cpp-glow),
+    inset 0 0 0 1px rgba(255,255,255,0.30),
+    inset 0 -10px 20px -8px rgba(0,0,0,0.35);
+  transform: rotate(-6deg);
+  display:flex;align-items:center;justify-content:center;
+  font-weight:800;font-size:14px;color:#fff;letter-spacing:0.3px;
+  animation: floatY 5s ease-in-out infinite;
+  text-shadow: 0 1px 0 rgba(0,0,0,0.18);
+}
+.brand-cube::after{
+  content:""; position:absolute; inset:auto -6px -6px auto;
+  width:100%;height:100%; border-radius:12px;
+  background:linear-gradient(135deg, rgba(139,92,246,0.5), rgba(232,121,249,0.4));
+  filter:blur(14px); z-index:-1;
+}
+@keyframes floatY{ 0%,100%{ transform: rotate(-6deg) translateY(0) } 50%{ transform: rotate(-2deg) translateY(-4px) } }
+.brand h1{margin:0;font-size:17px;font-weight:700;letter-spacing:-0.02em}
+.brand .sub{font-size:11px;color:var(--text-faint);letter-spacing:0.14em;text-transform:uppercase}
+
+.search-wrap{ position:relative; margin-bottom:14px }
+.search{
+  width:100%;padding:10px 14px 10px 34px;border-radius:12px;border:1px solid var(--border);
+  background:rgba(255,255,255,0.03);color:var(--text);font-size:13.5px;outline:none;
+  transition:border-color .2s, box-shadow .2s;
+}
+.search:focus{border-color:var(--cpp-purple);box-shadow:0 0 0 3px rgba(139,92,246,0.22)}
+.search-wrap::before{
+  content:"⌕"; position:absolute; left:11px; top:50%; transform:translateY(-50%);
+  color:var(--text-faint); font-size:14px; pointer-events:none;
+}
+
+.section-label{ font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:var(--text-faint); padding:14px 8px 6px }
+
+.file-list{ list-style:none; padding:0; margin:0 }
+.file-list li{ margin:2px 0 }
+.file-btn{
+  width:100%;display:flex;align-items:center;gap:10px;
+  background:transparent;color:var(--text-dim);
+  padding:10px 12px;border-radius:10px;font-size:13.5px;font-weight:500;text-align:left;
+  transition: background .15s, color .15s, transform .15s, box-shadow .2s;
+  border:1px solid transparent;
+}
+.file-btn:hover{ background:var(--surface); color:var(--text); transform:translateX(2px) }
+.file-btn.active{
+  background:linear-gradient(135deg,rgba(139,92,246,0.25),rgba(232,121,249,0.10));
+  color:#fff; border-color:rgba(139,92,246,0.32);
+  box-shadow: inset 0 0 0 1px rgba(139,92,246,0.18), 0 8px 24px -16px var(--cpp-glow);
+}
+.file-btn .ico{
+  width:24px; height:24px; flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  border-radius:6px;
+  background:linear-gradient(135deg, var(--cpp-purple-deep), var(--cpp-fuchsia-light));
+  color:#fff; font-weight:800; font-size:9.5px; letter-spacing:0.5px;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.2);
+  text-shadow:0 1px 0 rgba(0,0,0,0.2);
+}
+.file-btn .label{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+.file-btn .lines{
+  font-size:10.5px; color:var(--text-faint); padding:1px 6px; border-radius:20px;
+  background:rgba(255,255,255,0.04); flex-shrink:0;
+}
+.file-btn.active .lines{ background:rgba(139,92,246,0.20); color:#e9dcff }
+.file-btn.dirty::before{
+  content:""; width:6px; height:6px; border-radius:50%;
+  background:var(--cpp-fuchsia-light); flex-shrink:0;
+  box-shadow: 0 0 8px var(--cpp-fuchsia-light);
+}
+.file-group-head{
+  list-style:none; padding:14px 12px 4px;
+  font-size:10.5px; letter-spacing:0.18em; text-transform:uppercase;
+  color:var(--text-faint); font-weight:600;
+}
+.file-supergroup-head{
+  list-style:none;
+  margin:18px 4px 4px;
+  padding:8px 12px 6px;
+  font-size:13px; font-weight:800;
+  letter-spacing:0.10em; text-transform:uppercase;
+  color:#fff;
+  background:linear-gradient(135deg, rgba(139,92,246,0.18), rgba(232,121,249,0.10));
+  border-left:3px solid var(--cpp-fuchsia-light);
+  border-radius:8px;
+  text-shadow:0 1px 0 rgba(0,0,0,0.18);
+}
+.file-supergroup-head:first-child{ margin-top:6px }
+.file-supergroup-head .count{
+  float:right;
+  font-size:10.5px; font-weight:700;
+  color:var(--cpp-fuchsia-light);
+  background:rgba(255,255,255,0.06);
+  padding:1px 7px; border-radius:20px;
+  letter-spacing:0.06em;
+}
+
+.back-link{
+  display:flex;align-items:center;gap:8px;
+  margin-top:18px; padding:10px 12px;border-radius:10px;
+  color:var(--text-dim); font-size:13px; text-decoration:none;
+  border:1px solid var(--border);
+  transition: background .15s, color .15s, border-color .15s;
+}
+.back-link:hover{ background:var(--surface); color:var(--text); border-color:var(--border-strong) }
+
+.editor-pane{
+  position:relative; padding:22px;
+  display:grid;
+  grid-template-columns: var(--col-1, 1fr) 6px var(--col-2, 1fr);
+  grid-template-rows: auto 1fr;
+  grid-template-areas:
+    "topbar  topbar  topbar"
+    "editor  split   preview";
+  gap:14px;
+  min-width:0; min-height:0; overflow:hidden;
+}
+.editor-pane > .top-bar     { grid-area: topbar }
+.editor-pane > .editor-card { grid-area: editor;  min-width: 0 }
+.editor-pane > .preview-card{ grid-area: preview; min-width: 0 }
+
+.splitter{
+  grid-area: split; cursor: col-resize; position: relative;
+  background: transparent; user-select: none; touch-action: none;
+}
+.splitter::before{
+  content: ""; position: absolute;
+  left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: 4px; height: 64px; border-radius: 2px;
+  background: var(--border-strong);
+  transition: background .18s, height .18s, box-shadow .18s;
+}
+.splitter:hover::before, .splitter.active::before{
+  background: linear-gradient(180deg, var(--cpp-purple-deep), var(--cpp-fuchsia-light));
+  height: 110px;
+  box-shadow: 0 0 16px -2px var(--cpp-glow);
+}
+
+@media (max-width: 980px){
+  .editor-pane{
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr 1fr;
+    grid-template-areas: "topbar" "editor" "preview";
+  }
+  .splitter{ display:none }
+}
+
+.top-bar{
+  display:flex;align-items:center;gap:14px; padding:14px 18px;
+  background: linear-gradient(135deg, rgba(15,25,55,0.7), rgba(10,15,40,0.7));
+  border:1px solid var(--border); border-radius: var(--radius);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  box-shadow: var(--shadow-lg);
+}
+.file-meta{ display:flex; align-items:center; gap:12px; min-width:0 }
+.file-icon{
+  width:36px;height:36px;border-radius:10px;
+  background:linear-gradient(135deg, var(--cpp-purple-deep), var(--cpp-fuchsia-light));
+  color:#fff; font-weight:800; font-size:13px; letter-spacing:0.5px;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow: 0 6px 18px -8px var(--cpp-glow), inset 0 0 0 1px rgba(255,255,255,0.30);
+  flex-shrink:0;
+  text-shadow: 0 1px 0 rgba(0,0,0,0.18);
+}
+.file-name{ font-size:15px; font-weight:600; letter-spacing:-0.01em }
+.file-name .dirty-mark{ color:var(--cpp-fuchsia-light); margin-left:6px; opacity:0; transition:opacity .15s }
+.file-name.dirty .dirty-mark{ opacity:1 }
+.file-sub{ font-size:11.5px; color:var(--text-faint); margin-top:1px; font-family:'JetBrains Mono',monospace }
+.spacer{ flex:1 }
+
+.action-btn{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:8px 14px; border-radius:10px;
+  border:1px solid var(--border); background:rgba(255,255,255,0.03);
+  color:var(--text-dim); font-size:13px; font-weight:600;
+  transition: background .15s, color .15s, border-color .15s, transform .15s;
+  text-decoration: none;
+}
+.action-btn:hover{ background:var(--surface-2); color:var(--text); border-color:var(--border-strong) }
+.action-btn:active{ transform:translateY(1px) }
+.action-btn .k{ font-family:'JetBrains Mono',monospace; font-size:10.5px; opacity:.6; padding:1px 5px; border-radius:5px; background:rgba(255,255,255,0.06) }
+.run-btn{
+  background:linear-gradient(135deg, var(--cpp-purple-deep), var(--cpp-fuchsia-light));
+  color:#fff; border-color:transparent; font-weight:700;
+  box-shadow: 0 10px 30px -12px var(--cpp-glow);
+  text-shadow: 0 1px 0 rgba(0,0,0,0.18);
+}
+.run-btn:hover{ filter:brightness(1.08); transform:translateY(-1px); border-color:transparent }
+
+.editor-card{
+  position:relative; min-height:0;
+  background: linear-gradient(180deg, rgba(15,22,45,0.65), rgba(8,12,24,0.65));
+  border:1px solid var(--border); border-radius: var(--radius);
+  overflow:hidden;
+  backdrop-filter: blur(22px) saturate(150%);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  box-shadow: var(--shadow-lg);
+}
+.editor-card::before{
+  content:""; position:absolute; inset:-1px; border-radius: calc(var(--radius) + 1px); pointer-events:none;
+  background: linear-gradient(135deg, rgba(139,92,246,0.45), rgba(232,121,249,0.0) 40%, rgba(167,139,250,0.30));
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  padding:1px; opacity:.55;
+}
+.editor-chrome{
+  display:flex; align-items:center; gap:10px; padding:9px 14px;
+  border-bottom:1px solid var(--border);
+  background: linear-gradient(180deg, rgba(255,255,255,0.025), transparent);
+}
+.dot{ width:11px; height:11px; border-radius:50% }
+.dot.r{ background:#ff5a7a; box-shadow:0 0 10px rgba(255,90,122,0.55) }
+.dot.y{ background:#ffb547; box-shadow:0 0 10px rgba(255,181,71,0.55) }
+.dot.g{ background:#38d39f; box-shadow:0 0 10px rgba(56,211,159,0.55) }
+
+.file-tabs{
+  display:flex; gap:4px; margin: 0 6px 0 6px;
+  flex:1; min-width:200px; overflow-x:auto; overflow-y:hidden;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(139,92,246,0.35) transparent;
+  mask-image: linear-gradient(to right, transparent 0, #000 18px, #000 calc(100% - 18px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 18px, #000 calc(100% - 18px), transparent 100%);
+  padding-bottom: 4px;
+}
+.file-tabs::-webkit-scrollbar{ height: 4px }
+.file-tabs::-webkit-scrollbar-track{ background: transparent }
+.file-tabs::-webkit-scrollbar-thumb{ background: rgba(139,92,246,0.35); border-radius: 4px }
+.file-tabs::-webkit-scrollbar-thumb:hover{ background: rgba(139,92,246,0.55) }
+.file-tab{
+  flex-shrink:0;
+  padding: 3px 11px; font-size:11.5px; border-radius:7px;
+  border:1px solid var(--border); background:rgba(255,255,255,0.025);
+  color:var(--text-dim); font-weight:500;
+  font-family:'JetBrains Mono', ui-monospace, monospace;
+  transition: background .15s, color .15s, border-color .15s;
+  white-space:nowrap;
+}
+.file-tab.active{
+  background:linear-gradient(135deg, rgba(139,92,246,0.40), rgba(232,121,249,0.20));
+  color:#fff; border-color:rgba(139,92,246,0.45);
+  box-shadow: 0 0 0 1px rgba(139,92,246,0.25), 0 6px 14px -8px var(--cpp-glow);
+}
+.editor-chrome .badge{
+  font-size:10.5px; letter-spacing:0.14em; text-transform:uppercase;
+  padding:3px 9px; border-radius:20px;
+  background:rgba(139,92,246,0.10); border:1px solid rgba(139,92,246,0.32);
+  color:#e9dcff;
+}
+.cm-host{ position:relative; height:calc(100% - 41px) }
+.CodeMirror{
+  height:100% !important; background:transparent;
+  font-size:14px; line-height:1.55; padding: 6px 0;
+}
+.CodeMirror-gutters{ background:transparent; border-right:1px solid var(--border) }
+.CodeMirror-linenumber{ color:rgba(154,165,189,0.4) }
+.CodeMirror-cursor{ border-left-color:#fff }
+.CodeMirror-activeline-background{ background:rgba(139,92,246,0.05) !important }
+.CodeMirror-selected{ background:rgba(139,92,246,0.20) !important }
+.CodeMirror-matchingbracket{ color:var(--cpp-fuchsia-light) !important; text-shadow:0 0 8px var(--cpp-glow) }
+
+.preview-card{
+  background: linear-gradient(180deg, #060a14, #04060c);
+  border:1px solid var(--border); border-radius: var(--radius);
+  display:flex; flex-direction:column; min-height:0;
+  box-shadow: var(--shadow-lg);
+  overflow:hidden; position: relative;
+}
+.preview-card::before{
+  content:""; position: absolute; inset:-1px; border-radius: calc(var(--radius) + 1px); pointer-events:none;
+  background: linear-gradient(135deg, rgba(139,92,246,0.45), rgba(232,121,249,0) 40%, rgba(167,139,250,0.4));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude; padding: 1px;
+  opacity: .55;
+}
+.out-titlebar{
+  display:flex; align-items:center; gap:10px; padding:10px 14px;
+  background: linear-gradient(180deg, rgba(8,14,28,0.85), rgba(5,10,22,0.85));
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.out-titlebar .status{
+  display: flex; align-items: center; gap: 8px;
+  font-size: 11.5px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-dim);
+}
+.out-titlebar .status::before{
+  content:""; width:8px; height:8px; border-radius:50%; background: var(--text-faint);
+}
+.out-titlebar .status.ok::before{ background: var(--success); box-shadow: 0 0 10px rgba(56,211,159,0.7) }
+.out-titlebar .status.err::before{ background: var(--error); box-shadow: 0 0 10px rgba(255,90,122,0.7) }
+.out-titlebar .status.work::before{ background: var(--cpp-fuchsia-light); box-shadow: 0 0 10px var(--cpp-glow) }
+.out-titlebar .info{
+  font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-faint);
+}
+.out-titlebar .right{ margin-left: auto; display: flex; gap: 6px; align-items: center }
+.out-titlebar .icon-btn{
+  padding: 4px 10px; border-radius: 7px;
+  border: 1px solid var(--border); background: rgba(255,255,255,0.02);
+  color: var(--text-dim); font-size: 11.5px;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.out-titlebar .icon-btn:hover{ background: var(--surface-2); color: var(--text); border-color: var(--border-strong) }
+
+.out-body{
+  flex: 1; min-height: 0; overflow: auto;
+  padding: 14px 18px;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 13px; line-height: 1.55;
+  scrollbar-width: thin;
+}
+.out-body::-webkit-scrollbar{ width: 6px; height: 6px }
+.out-body::-webkit-scrollbar-thumb{ background: rgba(139,92,246,0.18); border-radius: 6px }
+.out-body::-webkit-scrollbar-thumb:hover{ background: rgba(139,92,246,0.40) }
+.out-body .empty{
+  color: var(--text-faint); text-align: center; padding: 40px 12px;
+  font-style: italic; font-family: 'Inter', sans-serif;
+}
+.out-body .ok-banner{
+  background: rgba(56,211,159,0.10);
+  border: 1px solid rgba(56,211,159,0.30);
+  color: #b6f0d2;
+  border-radius: 8px;
+  padding: 8px 14px; margin-bottom: 12px;
+  font-family: 'Inter', sans-serif; font-size: 12.5px;
+}
+.out-body .info-banner{
+  background: rgba(139,92,246,0.10);
+  border: 1px solid rgba(139,92,246,0.30);
+  color: #e9dcff;
+  border-radius: 8px;
+  padding: 8px 14px; margin-bottom: 12px;
+  font-family: 'Inter', sans-serif; font-size: 12.5px;
+}
+.out-body h4{
+  margin: 14px 0 6px; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--cpp-fuchsia-light); font-weight: 600; font-family: 'Inter', sans-serif;
+}
+.out-body h4:first-child{ margin-top: 0 }
+.out-body pre{
+  white-space: pre;
+  color: var(--text);
+  font-size: 12.5px; line-height: 1.6;
+  margin: 0;
+}
+
+.ambient{
+  position:absolute; border-radius:50%; pointer-events:none; z-index:0;
+  filter: blur(60px); opacity:.5;
+}
+.ambient.a{ width:340px;height:340px; background:rgba(139,92,246,0.30); top:-80px; right:-100px; animation:floatA 14s ease-in-out infinite }
+.ambient.b{ width:280px;height:280px; background:rgba(232,121,249,0.28); bottom:-60px; left:8%; animation:floatB 18s ease-in-out infinite }
+@keyframes floatA{ 0%,100%{transform:translate(0,0)} 50%{transform:translate(-30px,20px)} }
+@keyframes floatB{ 0%,100%{transform:translate(0,0)} 50%{transform:translate(40px,-20px)} }
+
+.toast{
+  position:fixed; bottom:22px; right:22px; z-index:50;
+  padding:10px 14px; border-radius:12px; font-size:13px;
+  background:linear-gradient(135deg, var(--cpp-purple-deep), var(--cpp-fuchsia-light));
+  color:#fff; font-weight:700;
+  box-shadow: 0 18px 40px -18px var(--cpp-glow);
+  transform: translateY(20px); opacity:0;
+  transition: transform .25s ease, opacity .25s ease;
+}
+.toast.show{ transform: translateY(0); opacity:1 }
+.toast.error{ background:linear-gradient(135deg,#ff5a7a,#ff8c5a); color:#fff }
+</style>
+</head>
+<body>
+<canvas id="bg-3d"></canvas>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-cube">C++</div>
+      <div>
+        <h1>C++ STL Lab</h1>
+        <div class="sub">containers · iterators · algorithms</div>
+      </div>
+    </div>
+
+    <div class="search-wrap">
+      <input class="search" id="search" placeholder="Filter steps…" />
+    </div>
+
+    <div class="section-label">Steps</div>
+    <ul class="file-list" id="fileList"></ul>
+
+    <a class="back-link" href="../index.html" style="margin-top:18px">⌂ Home</a>
+  </aside>
+
+  <main class="editor-pane">
+    <div class="ambient a"></div>
+    <div class="ambient b"></div>
+
+    <header class="top-bar">
+      <div class="file-meta">
+        <div class="file-icon">CPP</div>
+        <div style="min-width:0">
+          <div class="file-name" id="fileName">Loading…<span class="dirty-mark">●</span></div>
+          <div class="file-sub" id="fileSub"></div>
+        </div>
+      </div>
+      <div class="spacer"></div>
+      <button class="action-btn" id="resetBtn" title="Revert this file to the original">⟲ Reset</button>
+      <button class="action-btn run-btn" id="runBtn" title="Show expected output">▶ Run <span class="k">⌘↵</span></button>
+    </header>
+
+    <section class="editor-card">
+      <div class="editor-chrome">
+        <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <div class="file-tabs" id="fileTabs"></div>
+        <span class="badge">C++17</span>
+      </div>
+      <div class="cm-host">
+        <textarea id="editor"></textarea>
+      </div>
+    </section>
+
+    <div class="splitter" id="splitter" role="separator" aria-orientation="vertical" title="Drag to resize"></div>
+
+    <section class="preview-card">
+      <div class="out-titlebar">
+        <span class="status" id="statusLabel">Ready</span>
+        <span class="info" id="statusInfo"></span>
+        <div class="right">
+          <button class="icon-btn" id="copyOutBtn" title="Copy expected output to clipboard">⧉ Copy</button>
+        </div>
+      </div>
+      <div class="out-body" id="outBody">
+        <div class="empty">Press ▶ Run to see expected output for this demo.</div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- =====================================================================
+     Embedded lesson sources — every <script type="text/plain"
+     data-cppfile="…"> block is the verbatim source of one demo.
+     ===================================================================== -->
+
+<script type="text/plain" data-cppfile="01a_vector.cpp">// Concept: std::vector — the workhorse dynamic array (contiguous heap storage).
+//
+// vs C: in C you'd write your own malloc + realloc + size/capacity tracking.
+// vector does all of that, frees its memory in its destructor (RAII), and
+// supports element types with constructors/destructors.
+//
+// Big-O:
+//   push_back / pop_back  → amortised O(1)
+//   index access [i]      → O(1)
+//   insert/erase middle   → O(n)
+#include <iostream>
+#include <vector>
+
+int main() {
+    std::vector<int> v{1, 2, 3};
+    v.push_back(4);
+    v.push_back(5);
+
+    std::cout << "size=" << v.size()
+              << "  capacity=" << v.capacity()
+              << "  v[0]=" << v[0] << "\n";
+
+    std::cout << "elements:";
+    for (int x : v) std::cout << " " << x;
+    std::cout << "\n";
+
+    // Reserve avoids reallocations when you know the final size:
+    std::vector<int> big;
+    big.reserve(1000);
+
+    v.erase(v.begin() + 1);
+    std::cout << "after erase v[1]:";
+    for (int x : v) std::cout << " " << x;
+    std::cout << "\n";
+
+    // .data() yields a raw pointer to use with C APIs:
+    int* raw = v.data();
+    std::cout << "raw[0] = " << raw[0] << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="01b_array.cpp">// Concept: std::array<T, N> — fixed-size array with the type's full power.
+//
+// vs C: a C array (int a[5]) decays to a pointer when passed to a function
+// and forgets its size. std::array is a real type that remembers its size,
+// supports begin()/end(), is copyable/assignable, and can be returned by value.
+#include <array>
+#include <iostream>
+
+int main() {
+    std::array<int, 5> a{10, 20, 30, 40, 50};
+
+    std::cout << "size       = " << a.size()  << "\n";
+    std::cout << "front/back = " << a.front() << " / " << a.back() << "\n";
+    std::cout << "a.at(2)    = " << a.at(2)   << "  (bounds-checked, throws on bad index)\n";
+
+    int sum = 0;
+    for (int x : a) sum += x;
+    std::cout << "sum        = " << sum << "\n";
+
+    std::array<int, 5> b = a;     // copy
+    b[0] = 999;
+    std::cout << "a[0]=" << a[0] << "  b[0]=" << b[0] << "  (independent copies)\n";
+}
+</script>
+<script type="text/plain" data-cppfile="01c_deque.cpp">// Concept: std::deque — Double-Ended QUEue.
+//
+// Internally a sequence of fixed-size blocks linked in an index, so it
+// supports O(1) push_front AND push_back, plus random access [i].
+// Element addresses are NOT contiguous — pointers/references can be invalidated
+// by inserts at either end.
+//
+// Pick deque when you need fast push at BOTH ends; otherwise prefer vector.
+#include <deque>
+#include <iostream>
+
+int main() {
+    std::deque<int> dq{2, 3};
+    dq.push_front(1);          // O(1) — vector cannot do this efficiently
+    dq.push_back(4);
+    dq.push_back(5);
+
+    std::cout << "deque:";
+    for (int x : dq) std::cout << " " << x;
+    std::cout << "\n";
+
+    std::cout << "front=" << dq.front()
+              << "  back=" << dq.back()
+              << "  size=" << dq.size() << "\n";
+
+    dq.pop_front();
+    dq.pop_back();
+    std::cout << "after pop_front+pop_back:";
+    for (int x : dq) std::cout << " " << x;
+    std::cout << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="01d_list.cpp">// Concept: std::list — doubly-linked list.
+//
+// vs C: in C you'd write   struct Node { int v; Node* prev, *next; };  by hand,
+// plus insert/erase plumbing. std::list does it for you.
+//
+// Trade-offs:
+//   + O(1) insert/erase given an iterator
+//   + iterators NOT invalidated when others are inserted/removed
+//   - no random access (no [i])
+//   - poor cache locality — usually slower than vector for typical workloads
+//
+// Modern advice: prefer vector unless you genuinely need stable iterators
+// or O(1) splice.
+#include <iostream>
+#include <list>
+
+int main() {
+    std::list<int> l{1, 2, 4, 5};
+
+    auto it = std::next(l.begin(), 2);   // points at 4
+    l.insert(it, 3);                      // O(1) — list is now {1,2,3,4,5}
+
+    std::cout << "list after insert:";
+    for (int x : l) std::cout << " " << x;
+    std::cout << "\n";
+
+    // splice — O(1) move of nodes from another list (no copies, no allocations)
+    std::list<int> other{100, 200};
+    l.splice(l.end(), other);
+    std::cout << "after splice:        ";
+    for (int x : l) std::cout << " " << x;
+    std::cout << "  (other.size=" << other.size() << ")\n";
+
+    // list also has its own sort() — std::sort needs random access.
+    l.sort();
+    std::cout << "after l.sort():      ";
+    for (int x : l) std::cout << " " << x;
+    std::cout << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="01e_forward_list.cpp">// Concept: std::forward_list — singly-linked list (C++11).
+//
+// Leaner than std::list: only forward links, no size() member (counting would
+// be O(n)), and a special insert_after API since there is no back-pointer.
+//
+// Use only when memory is very tight; otherwise list or vector is more ergonomic.
+#include <forward_list>
+#include <iostream>
+
+int main() {
+    std::forward_list<int> fl{1, 2, 3, 4, 5};
+
+    fl.push_front(0);                  // only push_front exists
+
+    auto it = fl.begin();              // 0
+    ++it;                              // 1
+    fl.insert_after(it, 99);           // insert 99 between 1 and 2
+
+    std::cout << "forward_list:";
+    for (int x : fl) std::cout << " " << x;
+    std::cout << "\n";
+
+    int n = 0;
+    for (auto p = fl.begin(); p != fl.end(); ++p) ++n;
+    std::cout << "manual size = " << n << "  (no .size() member)\n";
+}
+</script>
+<script type="text/plain" data-cppfile="02a_pair.cpp">// Concept: std::pair — bundle two heterogeneous values.
+//
+// vs C: a one-off struct for every (a, b) you need. std::pair gives you
+// .first / .second, comparison, and structured bindings (C++17) for free.
+// It is the building block of std::map (each entry is a pair<const K, V>).
+#include <iostream>
+#include <string>
+#include <utility>     // std::pair, std::make_pair
+
+int main() {
+    std::pair<int, std::string> p{42, "answer"};
+    std::cout << "p.first=" << p.first << "  p.second=" << p.second << "\n";
+
+    auto q = std::make_pair(3.14, true);   // template argument deduction
+
+    auto [num, ok] = q;                    // C++17 structured bindings
+    std::cout << "num=" << num << "  ok=" << ok << "\n";
+
+    // Pairs compare lexicographically (first then second):
+    std::pair<int,int> a{1,2}, b{1,3};
+    std::cout << "a < b ? " << (a < b ? "yes" : "no") << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="02b_map.cpp">// Concept: std::map — sorted key→value dictionary (red-black tree).
+//
+// vs C: no standard map; you'd build a hash table or bsearch a sorted array.
+// std::map gives O(log n) insert/find/erase, iteration in KEY ORDER, and
+// range queries (lower_bound / upper_bound).
+//
+// Use std::map when you need ordered traversal or range queries.
+// Use std::unordered_map (step 3) when you only need fast lookup.
+#include <iostream>
+#include <map>
+#include <string>
+
+int main() {
+    std::map<std::string, int> ages;
+    ages["Alice"] = 30;
+    ages["Bob"]   = 25;
+    ages.insert({"Carol", 35});
+
+    // Lookup
+    if (auto it = ages.find("Alice"); it != ages.end())
+        std::cout << "Alice -> " << it->second << "\n";
+
+    // operator[] inserts a default-constructed value if missing — beware:
+    int eve = ages["Eve"];
+    std::cout << "Eve -> " << eve << "  (operator[] inserted a default)\n";
+
+    // Safer existence check:
+    if (ages.count("Frank") == 0) std::cout << "Frank is not in the map\n";
+
+    // Iteration is in KEY ORDER:
+    std::cout << "all entries (sorted by key):\n";
+    for (const auto& [name, age] : ages)
+        std::cout << "  " << name << " -> " << age << "\n";
+
+    // Range query: keys in [B, F)
+    auto lo = ages.lower_bound("B");
+    auto hi = ages.lower_bound("F");
+    std::cout << "keys in [B, F):\n";
+    for (auto it = lo; it != hi; ++it) std::cout << "  " << it->first << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="02c_set.cpp">// Concept: std::set — sorted collection of unique values.
+//
+// vs C: keep an ordered array and binary-search it. std::set gives
+// O(log n) insert/find/erase and iterates IN ORDER. Each value appears
+// at most once. Implementation is a balanced BST (red-black tree).
+#include <iostream>
+#include <set>
+
+int main() {
+    std::set<int> s{3, 1, 4, 1, 5, 9, 2, 6, 5};   // duplicates dropped on insert
+
+    std::cout << "size  = " << s.size() << "  (duplicates removed)\n";
+    std::cout << "values:";
+    for (int x : s) std::cout << " " << x;        // sorted
+    std::cout << "\n";
+
+    std::cout << "contains 4? " << (s.count(4) ? "yes" : "no") << "\n";
+    std::cout << "contains 7? " << (s.count(7) ? "yes" : "no") << "\n";
+
+    // Range query — find every value in [3, 6]:
+    std::cout << "values in [3,6]:";
+    auto lo = s.lower_bound(3);     // first ≥ 3
+    auto hi = s.upper_bound(6);     // first > 6
+    for (auto it = lo; it != hi; ++it) std::cout << " " << *it;
+    std::cout << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="02d_multimap_multiset.cpp">// Concept: std::multimap / std::multiset — like map / set but ALLOW DUPLICATES.
+//
+// equal_range(key) returns the half-open range of all entries with that key.
+#include <iostream>
+#include <map>
+#include <set>
+#include <string>
+
+int main() {
+    std::multimap<std::string, std::string> phone;
+    phone.insert({"alice", "111-1111"});
+    phone.insert({"alice", "222-2222"});       // same key — allowed
+    phone.insert({"bob",   "333-3333"});
+
+    std::cout << "alice's numbers:\n";
+    auto [lo, hi] = phone.equal_range("alice");
+    for (auto it = lo; it != hi; ++it)
+        std::cout << "  " << it->second << "\n";
+
+    std::multiset<int> bag{1, 2, 2, 3, 3, 3};
+    std::cout << "bag: count(2)=" << bag.count(2)
+              << "  count(3)=" << bag.count(3) << "\n";
+    std::cout << "bag values:";
+    for (int x : bag) std::cout << " " << x;
+    std::cout << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="03a_unordered_basics.cpp">// Concept: std::unordered_map / unordered_set — HASH-based associative containers.
+//
+// vs C: you'd build a hash table by hand. std::unordered_map<K, V> does it for
+// you, with average O(1) insert/find/erase.
+//
+//   std::map               unordered_map
+//   ─────────────────      ─────────────────
+//   ordered iteration       NO order
+//   O(log n)                average O(1), worst O(n)
+//   compares with <         hashes with std::hash<K> + ==
+//
+// Pick unordered when you don't care about order.
+#include <iostream>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
+
+int main() {
+    // Word counting — quintessential unordered_map use case
+    std::unordered_map<std::string, int> word_count;
+    for (const char* w : {"the","quick","the","fox","the","quick"})
+        ++word_count[w];
+
+    std::cout << "word counts (unordered iteration):\n";
+    for (const auto& [w, n] : word_count)
+        std::cout << "  " << w << " : " << n << "\n";
+
+    // Rehashing controls
+    std::cout << "buckets = " << word_count.bucket_count()
+              << "  load factor = " << word_count.load_factor() << "\n";
+    word_count.reserve(1000);    // hint: I expect ~1000 entries
+    std::cout << "buckets after reserve(1000) = " << word_count.bucket_count() << "\n";
+
+    std::unordered_set<int> seen{1, 2, 3, 2, 1};
+    std::cout << "seen.size = " << seen.size()
+              << "  (duplicates removed, no order)\n";
+}
+</script>
+<script type="text/plain" data-cppfile="03b_custom_hash.cpp">// Concept: to use your OWN type as the key of an unordered_map / unordered_set
+// you must provide:
+//   1) operator==(const T&, const T&)
+//   2) a hasher: a callable Hasher with size_t operator()(const T&) const
+//
+// Two ways to plug in the hasher:
+//   - specialise std::hash<T>
+//   - pass a hasher type as the third template parameter
+#include <functional>
+#include <iostream>
+#include <string>
+#include <unordered_set>
+
+struct Point {
+    int x, y;
+    bool operator==(const Point& o) const { return x == o.x && y == o.y; }
+};
+
+// Option A: specialise std::hash for Point
+namespace std {
+    template<> struct hash<Point> {
+        size_t operator()(const Point& p) const noexcept {
+            // Combine the two int hashes — a common pattern (boost::hash_combine).
+            return hash<int>{}(p.x) ^ (hash<int>{}(p.y) << 1);
+        }
+    };
+}
+
+int main() {
+    std::unordered_set<Point> visited;
+    visited.insert({1, 2});
+    visited.insert({3, 4});
+    visited.insert({1, 2});            // duplicate — dropped
+    std::cout << "visited.size = " << visited.size() << "  (1,2 was duplicate)\n";
+
+    // Option B: pass a hasher as the third template parameter
+    auto hasher = [](const Point& p) {
+        return std::hash<long>{}((long(p.x) << 32) | p.y);
+    };
+    using PointEq = std::equal_to<Point>;
+    std::unordered_set<Point, decltype(hasher), PointEq> alt(8, hasher);
+    alt.insert({5, 6});
+    std::cout << "alt.size     = " << alt.size() << "  (uses lambda hasher)\n";
+}
+</script>
+<script type="text/plain" data-cppfile="04a_tuple.cpp">// Concept: std::tuple — heterogeneous fixed-size pack (any number of values).
+//
+// vs C: a struct, or "out" pointers to return multiple values from a function.
+// std::tuple lets a function return multiple values directly; C++17 structured
+// bindings unpack them at the call site.
+#include <iostream>
+#include <string>
+#include <tuple>
+
+std::tuple<int, double, std::string> stats() {
+    return {42, 3.14, "ok"};
+}
+
+int main() {
+    std::tuple<int, double, std::string> t{1, 2.5, "hello"};
+
+    // Access by index (compile-time)
+    std::cout << "get<0>=" << std::get<0>(t)
+              << "  get<2>='" << std::get<2>(t) << "'\n";
+
+    // Access by type (only if the type appears exactly once)
+    std::cout << "get<double>=" << std::get<double>(t) << "\n";
+
+    // Structured bindings — preferred way to unpack:
+    auto [n, pi, status] = stats();
+    std::cout << "stats() → n=" << n << "  pi=" << pi
+              << "  status=" << status << "\n";
+
+    std::cout << "tuple_size = " << std::tuple_size_v<decltype(t)> << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="04b_stack.cpp">// Concept: std::stack — LIFO container adapter.
+//
+// Wraps a sequence container (default std::deque) and exposes a restricted API:
+//   push, pop, top, empty, size.
+//
+// vs C: hand-rolled with a vector + index, or a linked list.
+#include <iostream>
+#include <stack>
+#include <string>
+
+int main() {
+    std::stack<int> s;
+    for (int x : {1, 2, 3, 4, 5}) s.push(x);
+
+    std::cout << "size=" << s.size() << "  top=" << s.top() << "\n";
+    std::cout << "pop order (LIFO):";
+    while (!s.empty()) {
+        std::cout << " " << s.top();
+        s.pop();
+    }
+    std::cout << "\n";
+
+    // Use case — balanced bracket checker
+    auto balanced = [](const std::string& expr){
+        std::stack<char> st;
+        for (char c : expr) {
+            if (c == '(' || c == '[') st.push(c);
+            else if (c == ')' || c == ']') {
+                if (st.empty()) return false;
+                char open = st.top(); st.pop();
+                if ((c == ')' && open != '(') || (c == ']' && open != '[')) return false;
+            }
+        }
+        return st.empty();
+    };
+    std::cout << "(([])) balanced? " << (balanced("(([]))") ? "yes" : "no") << "\n";
+    std::cout << "(([)) balanced?  " << (balanced("(([))")  ? "yes" : "no") << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="04c_queue.cpp">// Concept: std::queue — FIFO container adapter.
+// Wraps a sequence container (default std::deque) with: push, pop, front, back.
+#include <iostream>
+#include <queue>
+
+int main() {
+    std::queue<int> q;
+    for (int x : {1, 2, 3, 4, 5}) q.push(x);
+
+    std::cout << "front=" << q.front() << "  back=" << q.back()
+              << "  size=" << q.size() << "\n";
+
+    std::cout << "pop order (FIFO):";
+    while (!q.empty()) {
+        std::cout << " " << q.front();
+        q.pop();
+    }
+    std::cout << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="04d_priority_queue.cpp">// Concept: std::priority_queue — binary heap exposed as an adapter.
+// top() is the LARGEST element by default. Pass std::greater<T> for a min-heap.
+#include <functional>     // std::greater
+#include <iostream>
+#include <queue>
+#include <vector>
+
+int main() {
+    std::priority_queue<int> max_pq;
+    for (int x : {5, 3, 8, 1, 9, 4}) max_pq.push(x);
+    std::cout << "max-heap pop order:";
+    while (!max_pq.empty()) { std::cout << " " << max_pq.top(); max_pq.pop(); }
+    std::cout << "\n";
+
+    std::priority_queue<int, std::vector<int>, std::greater<int>> min_pq;
+    for (int x : {5, 3, 8, 1, 9, 4}) min_pq.push(x);
+    std::cout << "min-heap pop order:";
+    while (!min_pq.empty()) { std::cout << " " << min_pq.top(); min_pq.pop(); }
+    std::cout << "\n";
+
+    // Custom comparator (lambda) — pop strings by length, shortest first
+    auto by_len = [](const std::string& a, const std::string& b){
+        return a.size() > b.size();        // greater = MIN heap
+    };
+    std::priority_queue<std::string, std::vector<std::string>, decltype(by_len)> short_first(by_len);
+    for (auto s : {"hippopotamus", "cat", "elephant", "ox"}) short_first.push(s);
+    std::cout << "shortest first:";
+    while (!short_first.empty()) { std::cout << " " << short_first.top(); short_first.pop(); }
+    std::cout << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="05a_iterator_basics.cpp">// Concept: iterators — STL's generalisation of "pointer into a container".
+//
+// vs C: in C you traversed an array with a pointer or an index. STL containers
+// expose iterators via .begin() and .end(). Together they form a HALF-OPEN
+// RANGE [begin, end): begin points at the first element, end one PAST the last.
+//
+// *it dereferences, ++it advances. Range-for is sugar for an iterator loop.
+#include <iostream>
+#include <vector>
+
+int main() {
+    std::vector<int> v{10, 20, 30, 40};
+
+    std::cout << "manual loop:";
+    for (auto it = v.begin(); it != v.end(); ++it) std::cout << " " << *it;
+    std::cout << "\n";
+
+    std::cout << "range-for: ";
+    for (int x : v) std::cout << " " << x;
+    std::cout << "\n";
+
+    auto it = v.begin();
+    std::cout << "*it    = " << *it       << "\n";
+    std::cout << "*(it+2)= " << *(it + 2) << "\n";
+    std::cout << "it[3]  = " << it[3]     << "  (random-access iterator)\n";
+
+    std::cout << "v.end() - v.begin() = "
+              << (v.end() - v.begin()) << "  (size as a difference)\n";
+}
+</script>
+<script type="text/plain" data-cppfile="05b_iterator_categories.cpp">// Concept: iterator CATEGORIES.
+// Every container's iterator falls in one of these tiers, ordered from
+// least to most powerful. Algorithms specify the minimum category they need.
+//
+//   InputIterator         single-pass read,  ++it,  *it
+//   OutputIterator        single-pass write, ++it,  *it = v
+//   ForwardIterator       multi-pass, ++ only
+//   BidirectionalIterator adds --it     (list, set, map)
+//   RandomAccessIterator  adds it+n, it[n], <  (vector, deque, array)
+//
+// vs C: a C pointer behaves like a RandomAccessIterator into an array.
+// STL generalises so the SAME algorithms work on lists, sets, files, …
+#include <iostream>
+#include <iterator>
+#include <list>
+#include <vector>
+
+int main() {
+    std::vector<int> v{1, 2, 3};
+    std::list<int>   l{1, 2, 3};
+
+    using vit = decltype(v.begin());
+    using lit = decltype(l.begin());
+    using vcat = std::iterator_traits<vit>::iterator_category;
+    using lcat = std::iterator_traits<lit>::iterator_category;
+
+    std::cout << "vector::iterator → "
+              << (std::is_same_v<vcat, std::random_access_iterator_tag>
+                  ? "RandomAccess" : "other") << "\n";
+    std::cout << "list::iterator   → "
+              << (std::is_same_v<lcat, std::bidirectional_iterator_tag>
+                  ? "Bidirectional" : "other") << "\n";
+
+    // The category determines what operations are valid:
+    auto vit2 = v.begin();
+    vit2 += 2;                   // OK on RandomAccess
+    auto lit2 = l.begin();
+    // lit2 += 2;                // ← compile error
+    std::advance(lit2, 2);       // works for any forward+ iterator
+    std::cout << "*vit2=" << *vit2 << "  *lit2=" << *lit2 << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="05c_reverse_const_iterators.cpp">// Concept: reverse iterators and const iterators.
+//
+//   .rbegin() / .rend()   iterate from END toward BEGINNING
+//   .cbegin() / .cend()   const iterators (you cannot write through them)
+//   .crbegin() / .crend() both
+//
+// Reverse iterators let any algorithm run "backwards" without rewriting it:
+// std::find, std::sort, std::copy, etc. all work on rbegin/rend.
+#include <iostream>
+#include <vector>
+
+int main() {
+    std::vector<int> v{1, 2, 3, 4, 5};
+
+    std::cout << "forward: ";
+    for (auto it = v.begin(); it != v.end(); ++it) std::cout << *it << " ";
+    std::cout << "\n";
+
+    std::cout << "reverse: ";
+    for (auto it = v.rbegin(); it != v.rend(); ++it) std::cout << *it << " ";
+    std::cout << "\n";
+
+    // const iterators — promise read-only access:
+    for (auto it = v.cbegin(); it != v.cend(); ++it) {
+        // *it = 99;   // ← compile error
+        (void)it;
+    }
+    std::cout << "(cbegin/cend → read-only view)\n";
+
+    // Modern style: 'const auto&' in a range-for replaces explicit cbegin/cend.
+    int sum = 0;
+    for (const auto& x : v) sum += x;
+    std::cout << "sum = " << sum << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="05d_advance_distance.cpp">// Concept: iterator helpers from <iterator>.
+//
+//   std::advance(it, n)    move iterator forward (or back) by n
+//   std::distance(a, b)    count steps from a to b
+//   std::next(it [, n])    return it advanced (without modifying it)
+//   std::prev(it [, n])    return it stepped back
+//
+// These pick the most efficient implementation for the iterator category:
+//   - random-access  → O(1) using +/-
+//   - bidirectional  → O(n) walking step by step
+//   - forward only   → only positive n
+#include <iostream>
+#include <iterator>
+#include <list>
+#include <vector>
+
+int main() {
+    std::vector<int> v{10, 20, 30, 40, 50};
+
+    auto it = v.begin();
+    std::advance(it, 3);                       // points at 40
+    std::cout << "after advance(it, 3): *it=" << *it << "\n";
+
+    std::cout << "distance(begin, end) = "
+              << std::distance(v.begin(), v.end()) << "  (== size)\n";
+
+    auto first = v.begin();
+    auto third = std::next(first, 2);
+    std::cout << "*first=" << *first
+              << "  *next(first,2)=" << *third << "\n";
+
+    std::list<int> l{1, 2, 3, 4, 5};
+    auto lit = std::next(l.begin(), 2);
+    std::cout << "list[2] via std::next = " << *lit << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="05e_iterator_adapters.cpp">// Concept: iterator ADAPTERS — wrap something else (a container, a stream,
+// another iterator) in an iterator-shaped object.
+//
+//   std::back_inserter(c)   OutputIterator that calls c.push_back
+//   std::front_inserter(c)  OutputIterator that calls c.push_front
+//   std::inserter(c, it)    OutputIterator that inserts at position 'it'
+//   std::ostream_iterator<T>(os, sep)  writes to a stream
+//   std::istream_iterator<T>(is)       reads from a stream
+//
+// They turn any "place that produces or consumes one item at a time" into
+// something STL algorithms can target.
+#include <algorithm>
+#include <iostream>
+#include <iterator>
+#include <list>
+#include <sstream>
+#include <vector>
+
+int main() {
+    std::vector<int> src{1, 2, 3, 4, 5};
+
+    // back_inserter — append into an empty vector
+    std::vector<int> dst;
+    std::copy(src.begin(), src.end(), std::back_inserter(dst));
+    std::cout << "back_inserter dst:";
+    for (int x : dst) std::cout << " " << x;
+    std::cout << "\n";
+
+    // front_inserter — push to a list (vector lacks push_front)
+    std::list<int> l;
+    std::copy(src.begin(), src.end(), std::front_inserter(l));
+    std::cout << "front_inserter list:";
+    for (int x : l) std::cout << " " << x;     // reversed: 5 4 3 2 1
+    std::cout << "\n";
+
+    // ostream_iterator — pipe directly into std::cout
+    std::cout << "via ostream_iterator: ";
+    std::copy(src.begin(), src.end(), std::ostream_iterator<int>(std::cout, " "));
+    std::cout << "\n";
+
+    // istream_iterator — read ints from a stream
+    std::istringstream in("10 20 30 40");
+    std::vector<int> nums((std::istream_iterator<int>(in)),
+                           std::istream_iterator<int>());
+    std::cout << "from istream_iterator:";
+    for (int x : nums) std::cout << " " << x;
+    std::cout << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="06a_bidi_basics.cpp">// Concept: BIDIRECTIONAL ITERATORS — the next tier above forward.
+// You can step forward (++it) AND backward (--it), but you cannot jump (it+n).
+//
+// Containers whose iterators are exactly bidirectional:
+//   std::list, std::set, std::map, std::multiset, std::multimap
+// (deque, vector and array offer something stronger — random access — see step 7.)
+//
+// vs C: a doubly-linked list in C lets you walk in either direction by
+// chasing prev/next pointers; that's exactly what bidi iterators give you,
+// in a uniform interface.
+#include <iostream>
+#include <list>
+
+int main() {
+    std::list<int> l{10, 20, 30, 40, 50};
+
+    auto it = l.begin();
+    std::cout << "*begin     = " << *it << "\n";
+    ++it;                                      // walk forward
+    ++it;
+    std::cout << "after ++,++ = " << *it << "\n";
+    --it;                                      // walk backward
+    std::cout << "after  --   = " << *it << "\n";
+
+    // The classic "loop until end()" still works exactly as for forward iterators:
+    std::cout << "forward :";
+    for (auto p = l.begin(); p != l.end(); ++p) std::cout << " " << *p;
+    std::cout << "\n";
+
+    // Walking backward — start at the last element, stop BEFORE begin().
+    // (You cannot test 'p < l.begin()' because there is no '<' on bidi iterators.)
+    std::cout << "backward:";
+    auto p = l.end();
+    do { --p; std::cout << " " << *p; } while (p != l.begin());
+    std::cout << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="06b_bidi_in_associative.cpp">// Concept: associative containers (map, set, multimap, multiset) expose
+// BIDIRECTIONAL iterators, so you can walk them in BOTH directions in
+// key-sorted order.
+//
+// Note: for std::set and std::multiset, dereferencing the iterator yields a
+// CONST reference — keys cannot be mutated in place (that would break the
+// sort invariant). For std::map, *it is a pair where first is const and
+// second is mutable.
+#include <iostream>
+#include <map>
+#include <set>
+#include <string>
+
+int main() {
+    std::set<int> s{5, 1, 3, 7, 2};
+    std::cout << "set ascending :";
+    for (auto it = s.begin(); it != s.end(); ++it) std::cout << " " << *it;
+    std::cout << "\n";
+
+    std::cout << "set descending:";
+    auto p = s.end();
+    do { --p; std::cout << " " << *p; } while (p != s.begin());
+    std::cout << "\n";
+
+    // map iteration: it->first (const) and it->second (mutable)
+    std::map<std::string, int> ages{{"alice",30}, {"bob",25}, {"carol",35}};
+    std::cout << "map ascending:\n";
+    for (auto it = ages.begin(); it != ages.end(); ++it) {
+        std::cout << "  " << it->first << " -> " << it->second << "\n";
+        // it->first = "X";    // ← compile error: keys are const
+        it->second += 1;       // ← values are mutable
+    }
+    std::cout << "after walk-and-bump:\n";
+    for (const auto& [k, v] : ages)
+        std::cout << "  " << k << " -> " << v << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="06c_algos_needing_bidi.cpp">// Concept: algorithms that REQUIRE at least bidirectional iterators.
+// They need to step backward (or both directions), so a forward-only iterator
+// would be a compile error.
+//
+//   std::reverse(b, e)          swap pairs from both ends inward — bidi
+//   std::rotate(b, mid, e)      moves [mid, e) to the front — bidi
+//   std::next_permutation(b, e) walks the lex order — bidi
+//   std::prev_permutation(b, e) reverse direction — bidi
+//   std::stable_partition       relative order kept — bidi
+#include <algorithm>
+#include <iostream>
+#include <list>
+#include <vector>
+
+int main() {
+    // std::reverse on a bidi container (list)
+    std::list<int> l{1, 2, 3, 4, 5};
+    std::reverse(l.begin(), l.end());
+    std::cout << "reversed list:";
+    for (int x : l) std::cout << " " << x;
+    std::cout << "\n";
+
+    // std::rotate
+    std::vector<int> v{1, 2, 3, 4, 5, 6, 7};
+    std::rotate(v.begin(), v.begin() + 3, v.end());
+    std::cout << "rotate by 3 :";
+    for (int x : v) std::cout << " " << x;
+    std::cout << "\n";
+
+    // std::next_permutation — needs to scan back from the end
+    std::vector<int> p{1, 2, 3};
+    do {
+        std::cout << "  ";
+        for (int x : p) std::cout << x << " ";
+        std::cout << "\n";
+    } while (std::next_permutation(p.begin(), p.end()));
+    // None of the above would compile with a forward_list iterator.
+}
+</script>
+<script type="text/plain" data-cppfile="06d_bidi_limits.cpp">// Concept: what bidirectional iterators CANNOT do.
+//
+// Bidi only adds  --it  on top of forward. It does NOT add:
+//   it + n         (jump by n)
+//   it - n         (jump back by n)
+//   it[n]          (subscript)
+//   it1 - it2      (distance arithmetic)
+//   it1 < it2      (ordering)
+//
+// You can simulate these with std::advance / std::distance — but the cost
+// is O(n) hops, NOT O(1). If you need O(1) jumps, you need RANDOM ACCESS
+// iterators (see step 7).
+#include <iostream>
+#include <iterator>
+#include <list>
+
+int main() {
+    std::list<int> l{10, 20, 30, 40, 50};
+    auto it = l.begin();
+
+    // it += 3;            // ← compile error: list iterators are bidi, not random access
+    // it[3]               // ← compile error
+    // bool b = it < l.end();  // ← compile error: '<' not defined
+
+    // The portable way is std::advance / std::distance — they walk one node
+    // at a time on bidi (O(n)) but compile fine.
+    std::advance(it, 3);
+    std::cout << "after std::advance(it, 3): *it = " << *it << "\n";
+
+    auto end = l.end();
+    std::cout << "distance(begin, end) = "
+              << std::distance(l.begin(), end) << "  (O(n) for list — must walk)\n";
+
+    // std::next / std::prev work too:
+    auto it2 = std::next(l.begin(), 2);
+    std::cout << "next(begin, 2) = " << *it2 << "\n";
+    auto it3 = std::prev(l.end(), 2);
+    std::cout << "prev(end, 2)   = " << *it3 << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="07a_random_access_basics.cpp">// Concept: RANDOM ACCESS ITERATORS — the most powerful tier.
+// Every operation a raw pointer supports works in O(1):
+//
+//   it + n        jump forward by n          (O(1))
+//   it - n        jump backward
+//   it[n]         subscript — same as *(it + n)
+//   it1 - it2     distance — an integer
+//   it1 < it2     ordering: is one before the other?
+//
+// Containers whose iterators are random-access:
+//   std::vector, std::deque, std::array, raw C arrays (via pointers)
+#include <iostream>
+#include <vector>
+
+int main() {
+    std::vector<int> v{10, 20, 30, 40, 50, 60, 70};
+    auto it = v.begin();
+
+    // Jumps in O(1)
+    std::cout << "*(it + 0) = " << *(it + 0) << "\n";
+    std::cout << "*(it + 4) = " << *(it + 4) << "\n";
+    std::cout << "it[6]     = " <<   it[6]   << "  (same as *(it + 6))\n";
+
+    // Distance via subtraction — exact opposite of advance:
+    auto end = v.end();
+    std::cout << "end - begin = " << (end - it) << "\n";
+
+    // Ordering — '<' tells you which is closer to begin
+    auto a = it + 2;
+    auto b = it + 5;
+    std::cout << "a < b ? " << (a < b ? "yes" : "no") << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="07b_pointer_equivalence.cpp">// Concept: a raw C pointer satisfies the random-access iterator concept.
+// Anywhere an STL algorithm wants a random-access iterator pair, you can
+// pass two raw pointers (or a pointer and a length) and it will work.
+//
+// vs C: the operations you naturally do on T* — `*p`, `++p`, `--p`, `p+n`,
+// `p-n`, `p[n]`, `p1 - p2`, `p1 < p2` — are EXACTLY the random-access
+// iterator interface. STL containers expose iterators that behave the same.
+#include <algorithm>
+#include <iostream>
+#include <numeric>     // accumulate
+
+int main() {
+    int arr[] = {5, 2, 8, 1, 4, 9, 3};
+    constexpr int N = sizeof(arr) / sizeof(arr[0]);
+
+    int sum = std::accumulate(arr, arr + N, 0);
+    std::cout << "sum  = " << sum << "\n";
+
+    auto mx = std::max_element(arr, arr + N);
+    std::cout << "max  = " << *mx
+              << "  at index " << (mx - arr) << "\n";
+
+    std::sort(arr, arr + N);
+    std::cout << "sorted:";
+    for (int* p = arr; p != arr + N; ++p) std::cout << " " << *p;
+    std::cout << "\n";
+
+    // The same operations on std::begin / std::end (they pick the right form
+    // for both raw arrays and standard containers):
+    std::cout << "front element = " << *std::begin(arr)
+              << "  back element = " << *(std::end(arr) - 1) << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="07c_algos_needing_random.cpp">// Concept: algorithms that REQUIRE random-access iterators.
+//
+//   std::sort, std::stable_sort, std::partial_sort, std::nth_element
+//   std::shuffle
+//   std::push_heap / std::pop_heap / std::make_heap / std::sort_heap
+//   std::rotate (works with bidi too, but RA gives O(1) per element)
+//
+// Trying to sort a std::list with std::sort is a COMPILE ERROR — list's
+// iterators are bidirectional. (Use list's own .sort() member instead, which
+// is implemented as a merge sort over the linked structure.)
+#include <algorithm>
+#include <iostream>
+#include <random>
+#include <vector>
+
+int main() {
+    std::vector<int> v{4, 2, 5, 2, 1, 3, 5, 4};
+
+    std::sort(v.begin(), v.end());
+    std::cout << "sorted        :";
+    for (int x : v) std::cout << " " << x;
+    std::cout << "\n";
+
+    // nth_element — quickselect-style, requires random access for O(n) average
+    std::vector<int> w{9, 3, 7, 1, 8, 2, 5};
+    auto mid = w.begin() + w.size()/2;
+    std::nth_element(w.begin(), mid, w.end());
+    std::cout << "median (nth)  : " << *mid << "\n";
+
+    // shuffle (deterministic seed for repeatable output)
+    std::vector<int> s{1, 2, 3, 4, 5, 6, 7, 8};
+    std::mt19937 rng(42);
+    std::shuffle(s.begin(), s.end(), rng);
+    std::cout << "shuffled      :";
+    for (int x : s) std::cout << " " << x;
+    std::cout << "\n";
+
+    // std::list<int> ll{3,1,2};
+    // std::sort(ll.begin(), ll.end());   // ← compile error: list iterators are bidi
+    // ll.sort();                          // ← list provides its own sort
+}
+</script>
+<script type="text/plain" data-cppfile="07d_binary_search_complexity.cpp">// Concept: how the iterator category affects the COST of an algorithm.
+//
+//   std::binary_search / std::lower_bound / std::upper_bound
+//
+// These work on ANY forward iterator pair, but the cost differs:
+//   - Random access (vector, deque, array) → O(log n) jumps, true O(log n) total
+//   - Bidirectional / forward (list, set, map) → still O(log n) COMPARISONS,
+//     but O(n) HOPS to advance the iterator → not really faster than linear scan
+//
+// In practice: only call binary search on random-access containers.
+#include <algorithm>
+#include <iostream>
+#include <list>
+#include <vector>
+
+int main() {
+    std::vector<int> v{1, 3, 5, 7, 9, 11, 13, 15};   // sorted, random access
+    std::list<int>   l(v.begin(), v.end());           // sorted, bidi
+
+    std::cout << "vector binary_search(7) = "
+              << std::binary_search(v.begin(), v.end(), 7) << "  (true O(log n))\n";
+
+    std::cout << "list   binary_search(7) = "
+              << std::binary_search(l.begin(), l.end(), 7)
+              << "  (compiles, O(log n) compares but O(n) hops)\n";
+
+    // lower_bound — same story
+    auto vit = std::lower_bound(v.begin(), v.end(), 6);
+    std::cout << "vector lower_bound(6) → " << *vit
+              << "  at index " << (vit - v.begin()) << "\n";
+
+    // It's the it+n / it-n that random access provides which makes the binary
+    // search jump efficiently. Every other category falls back to walking.
+}
+</script>
+<script type="text/plain" data-cppfile="08a_find.cpp">// Concept: searching with std::find / std::find_if / std::find_if_not.
+//
+// vs C: linear scan you wrote yourself, or 'bsearch' on sorted arrays.
+// STL searches accept ANY iterator pair — same code works on vector, list,
+// map, even raw arrays.
+//
+//   std::find(b, e, v)      — first iterator with *it == v, else e
+//   std::find_if(b, e, p)   — first iterator with p(*it) true, else e
+//   std::find_if_not(b, e, p) — first with p(*it) false
+#include <algorithm>
+#include <iostream>
+#include <vector>
+
+int main() {
+    std::vector<int> v{1, 3, 5, 8, 13, 21, 34};
+
+    auto it = std::find(v.begin(), v.end(), 13);
+    if (it != v.end())
+        std::cout << "13 found at index "
+                  << std::distance(v.begin(), it) << "\n";
+
+    auto big = std::find_if(v.begin(), v.end(),
+                            [](int x){ return x > 10; });
+    std::cout << "first > 10  : " << *big << "\n";
+
+    auto small = std::find_if_not(v.begin(), v.end(),
+                                  [](int x){ return x < 10; });
+    std::cout << "first not<10: " << *small << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="08b_count_any_all_none.cpp">// Concept: counting and predicate quantifiers.
+//
+//   std::count(b, e, v)      — how many == v
+//   std::count_if(b, e, p)   — how many satisfy p
+//   std::any_of(b, e, p)     — does ANY element satisfy p?
+//   std::all_of(b, e, p)     — do ALL elements satisfy p?
+//   std::none_of(b, e, p)    — do NONE?
+#include <algorithm>
+#include <iostream>
+#include <vector>
+
+int main() {
+    std::vector<int> v{1, 2, 3, 2, 4, 2, 5};
+
+    std::cout << "count(==2)    : " << std::count(v.begin(), v.end(), 2) << "\n";
+    std::cout << "count_if(odd) : "
+              << std::count_if(v.begin(), v.end(), [](int x){ return x % 2; }) << "\n";
+
+    std::cout << "any  > 4 ? "
+              << std::any_of(v.begin(), v.end(), [](int x){ return x > 4; }) << "\n";
+    std::cout << "all  > 0 ? "
+              << std::all_of(v.begin(), v.end(), [](int x){ return x > 0; }) << "\n";
+    std::cout << "none < 0 ? "
+              << std::none_of(v.begin(), v.end(), [](int x){ return x < 0; }) << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="08c_equal_mismatch.cpp">// Concept: comparing two ranges element-wise.
+//
+//   std::equal(b1, e1, b2)            — true if every element pair matches
+//   std::equal(b1, e1, b2, e2)        — same, with both end iterators (C++14)
+//   std::mismatch(b1, e1, b2)         — pair of iterators at the first diff
+#include <algorithm>
+#include <iostream>
+#include <vector>
+
+int main() {
+    std::vector<int> a{1, 2, 3, 4, 5};
+    std::vector<int> b{1, 2, 3, 4, 5};
+    std::vector<int> c{1, 2, 9, 4, 5};
+
+    std::cout << "a == b ? " << std::equal(a.begin(), a.end(), b.begin()) << "\n";
+    std::cout << "a == c ? " << std::equal(a.begin(), a.end(), c.begin()) << "\n";
+
+    auto [ait, cit] = std::mismatch(a.begin(), a.end(), c.begin());
+    if (ait != a.end())
+        std::cout << "first mismatch at index "
+                  << std::distance(a.begin(), ait)
+                  << " : a=" << *ait << "  c=" << *cit << "\n";
+
+    // Custom comparator — case-insensitive equality of strings would go here
+    std::vector<int> evens_doubled{2, 4, 6, 8, 10};
+    bool b_is_double_a = std::equal(a.begin(), a.end(), evens_doubled.begin(),
+        [](int x, int y){ return 2*x == y; });
+    std::cout << "evens_doubled is 2*a ? " << b_is_double_a << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="08d_min_max.cpp">// Concept: min / max and the *_element family.
+//
+//   std::min(a, b)               smaller of two values
+//   std::max(a, b)               larger
+//   std::minmax(a, b)            both — returns std::pair
+//   std::min_element(b, e)       iterator to smallest in a range
+//   std::max_element(b, e)       iterator to largest
+//   std::minmax_element(b, e)    pair<min_it, max_it>
+#include <algorithm>
+#include <iostream>
+#include <vector>
+
+int main() {
+    std::cout << "min(7, 12) = " << std::min(7, 12) << "\n";
+    std::cout << "max(7, 12) = " << std::max(7, 12) << "\n";
+
+    auto [lo, hi] = std::minmax(7, 12);
+    std::cout << "minmax(7,12) = (" << lo << ", " << hi << ")\n";
+
+    std::vector<int> v{5, 2, 9, 1, 7, 3, 8};
+    auto mn = std::min_element(v.begin(), v.end());
+    auto mx = std::max_element(v.begin(), v.end());
+    std::cout << "min_element = " << *mn
+              << " at index " << std::distance(v.begin(), mn) << "\n";
+    std::cout << "max_element = " << *mx
+              << " at index " << std::distance(v.begin(), mx) << "\n";
+
+    auto [mnit, mxit] = std::minmax_element(v.begin(), v.end());
+    std::cout << "minmax_element = (" << *mnit << ", " << *mxit << ")\n";
+}
+</script>
+<script type="text/plain" data-cppfile="09a_copy_fill_generate_iota.cpp">// Concept: producing values into an output range.
+//
+//   std::copy(b, e, dst)            copy each element to dst
+//   std::fill(b, e, v)              set every element to v
+//   std::fill_n(dst, n, v)          same, given a count
+//   std::generate(b, e, fn)         set each element to fn()
+//   std::iota(b, e, start)          0,1,2,…  in <numeric>
+#include <algorithm>
+#include <iostream>
+#include <iterator>
+#include <numeric>     // iota
+#include <vector>
+
+int main() {
+    std::vector<int> src{10, 20, 30, 40};
+    std::vector<int> dst;
+    std::copy(src.begin(), src.end(), std::back_inserter(dst));
+    std::cout << "copy:";
+    for (int x : dst) std::cout << " " << x;
+    std::cout << "\n";
+
+    std::vector<int> z(5);
+    std::fill(z.begin(), z.end(), 7);
+    std::cout << "fill(7):";
+    for (int x : z) std::cout << " " << x;
+    std::cout << "\n";
+
+    int counter = 0;
+    std::vector<int> g(5);
+    std::generate(g.begin(), g.end(), [&]{
+        int i = counter++;
+        return i * i;
+    });
+    std::cout << "generate (i*i):";
+    for (int x : g) std::cout << " " << x;
+    std::cout << "\n";
+
+    std::vector<int> seq(8);
+    std::iota(seq.begin(), seq.end(), 100);    // 100, 101, 102, …
+    std::cout << "iota(100):";
+    for (int x : seq) std::cout << " " << x;
+    std::cout << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="09b_transform_for_each.cpp">// Concept: apply a function to every element.
+//
+//   std::for_each(b, e, fn)            fn called on each element (side effect)
+//   std::transform(b, e, dst, fn)      writes fn(*it) to dst
+//   std::transform(b1, e1, b2, dst, binop)   element-wise on two ranges
+//
+// vs C: you'd write the loop. Pulling it into an algorithm + lambda makes
+// the INTENT visible.
+#include <algorithm>
+#include <iostream>
+#include <iterator>
+#include <vector>
+
+int main() {
+    std::vector<int> v{1, 2, 3, 4, 5};
+
+    std::for_each(v.begin(), v.end(),
+                  [](int x){ std::cout << x << " "; });
+    std::cout << "\n";
+
+    std::vector<int> sq;
+    std::transform(v.begin(), v.end(), std::back_inserter(sq),
+                   [](int x){ return x * x; });
+    std::cout << "squared:";
+    for (int x : sq) std::cout << " " << x;
+    std::cout << "\n";
+
+    std::vector<int> a{1, 2, 3}, b{10, 20, 30}, sum;
+    std::transform(a.begin(), a.end(), b.begin(),
+                   std::back_inserter(sum),
+                   [](int x, int y){ return x + y; });
+    std::cout << "a + b  :";
+    for (int x : sum) std::cout << " " << x;
+    std::cout << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="09c_replace.cpp">// Concept: in-place substitution.
+//
+//   std::replace(b, e, old_v, new_v)         every old_v becomes new_v
+//   std::replace_if(b, e, pred, new_v)       every element with pred(*it)→true becomes new_v
+//   std::replace_copy / std::replace_copy_if write to a separate output
+#include <algorithm>
+#include <iostream>
+#include <iterator>
+#include <vector>
+
+int main() {
+    std::vector<int> v{1, 2, 3, 2, 4, 2, 5};
+    std::replace(v.begin(), v.end(), 2, 99);
+    std::cout << "replace 2 → 99:";
+    for (int x : v) std::cout << " " << x;
+    std::cout << "\n";
+
+    std::vector<int> w{1, 2, 3, 4, 5, 6};
+    std::replace_if(w.begin(), w.end(),
+                    [](int x){ return x % 2 == 0; }, -1);
+    std::cout << "replace_if even → -1:";
+    for (int x : w) std::cout << " " << x;
+    std::cout << "\n";
+
+    // replace_copy — keep the original, write to a new container
+    std::vector<int> u{1, 2, 3, 2, 4}, out;
+    std::replace_copy(u.begin(), u.end(), std::back_inserter(out), 2, 0);
+    std::cout << "u=";
+    for (int x : u) std::cout << " " << x;
+    std::cout << "  out (2→0):";
+    for (int x : out) std::cout << " " << x;
+    std::cout << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="09d_reverse_rotate_shuffle.cpp">// Concept: rearranging elements in place.
+//
+//   std::reverse(b, e)             reverse the range in place
+//   std::rotate(b, mid, e)         move [mid, e) to the front
+//   std::shuffle(b, e, rng)        randomise (C++11) — pass a random engine
+#include <algorithm>
+#include <iostream>
+#include <random>
+#include <vector>
+
+int main() {
+    std::vector<int> v{1, 2, 3, 4, 5, 6, 7};
+    std::reverse(v.begin(), v.end());
+    std::cout << "reverse:";
+    for (int x : v) std::cout << " " << x;
+    std::cout << "\n";
+
+    std::vector<int> r{1, 2, 3, 4, 5, 6, 7};
+    std::rotate(r.begin(), r.begin() + 3, r.end());
+    std::cout << "rotate by 3:";
+    for (int x : r) std::cout << " " << x;
+    std::cout << "  (4,5,6,7,1,2,3)\n";
+
+    // Deterministic shuffle for repeatable demo output:
+    std::vector<int> s{1, 2, 3, 4, 5, 6, 7, 8, 9};
+    std::mt19937 rng(42);          // fixed seed
+    std::shuffle(s.begin(), s.end(), rng);
+    std::cout << "shuffle:";
+    for (int x : s) std::cout << " " << x;
+    std::cout << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="10a_sort.cpp">// Concept: sorting.
+//
+// vs C: qsort takes a void-pointer comparator returning int — slow and
+// type-unsafe. std::sort takes ANY callable (free function, lambda,
+// function object), is type-safe, and often faster.
+//
+//   std::sort        O(n log n) — order of equals NOT preserved
+//   std::stable_sort O(n log n) — preserves original order of equal elements
+//   std::is_sorted   bool — is the range non-decreasing?
+#include <algorithm>
+#include <functional>
+#include <iostream>
+#include <string>
+#include <vector>
+
+int main() {
+    std::vector<int> v{4, 2, 5, 2, 1, 3, 5, 4};
+
+    std::sort(v.begin(), v.end());
+    std::cout << "asc :";
+    for (int x : v) std::cout << " " << x;
+    std::cout << "\n";
+
+    std::sort(v.begin(), v.end(), std::greater<int>{});
+    std::cout << "desc:";
+    for (int x : v) std::cout << " " << x;
+    std::cout << "\n";
+
+    // Lambda comparator — sort strings by length, ties alphabetical
+    std::vector<std::string> words{"the", "quick", "brown", "fox", "jumps"};
+    std::stable_sort(words.begin(), words.end(),
+                     [](const std::string& a, const std::string& b){
+                         if (a.size() != b.size()) return a.size() < b.size();
+                         return a < b;
+                     });
+    std::cout << "stable by len:";
+    for (const auto& w : words) std::cout << " " << w;
+    std::cout << "\n";
+
+    std::cout << "is_sorted? " << std::is_sorted(v.begin(), v.end()) << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="10b_partial_sort_nth_element.cpp">// Concept: when you don't need a FULL sort.
+//
+//   std::partial_sort(b, mid, e)
+//       The first (mid-b) elements are sorted into final order;
+//       the rest is unspecified. Cost: O(n log k) for k = mid-b.
+//
+//   std::nth_element(b, nth, e)
+//       After the call, *nth is the element that would be there if the
+//       range were fully sorted; everything before is ≤ *nth, after is ≥.
+//       Cost: O(n) on average. Useful for medians and "top-k".
+#include <algorithm>
+#include <iostream>
+#include <vector>
+
+int main() {
+    std::vector<int> v{9, 3, 7, 1, 8, 2, 5, 4, 6};
+
+    // Find the 3 smallest in sorted order, leave the rest alone
+    std::vector<int> a = v;
+    std::partial_sort(a.begin(), a.begin() + 3, a.end());
+    std::cout << "partial_sort first 3:";
+    for (int x : a) std::cout << " " << x;
+    std::cout << "  (the 3 smallest are at the front, sorted; tail unspecified)\n";
+
+    // Median of v in O(n)
+    std::vector<int> b = v;
+    auto mid = b.begin() + b.size()/2;
+    std::nth_element(b.begin(), mid, b.end());
+    std::cout << "median = " << *mid << "  (after nth_element)\n";
+
+    // Top-3 LARGEST values — partial_sort + greater<>
+    std::vector<int> c = v;
+    std::partial_sort(c.begin(), c.begin() + 3, c.end(), std::greater<int>{});
+    std::cout << "top-3 largest:";
+    for (int i = 0; i < 3; ++i) std::cout << " " << c[i];
+    std::cout << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="10c_binary_search.cpp">// Concept: binary search on SORTED ranges.
+//
+//   std::binary_search(b, e, v)   bool — present?
+//   std::lower_bound(b, e, v)     first iterator with *it ≥ v
+//   std::upper_bound(b, e, v)     first iterator with *it >  v
+//   std::equal_range(b, e, v)     pair (lower, upper)
+//
+// All four cost O(log n) on random-access iterators, O(n) hops on
+// bidirectional iterators (the same call still works).
+#include <algorithm>
+#include <iostream>
+#include <vector>
+
+int main() {
+    std::vector<int> v{1, 3, 5, 7, 7, 7, 9, 11};   // must be sorted
+
+    std::cout << "contains 7  ? "
+              << std::binary_search(v.begin(), v.end(), 7) << "\n";
+    std::cout << "contains 8  ? "
+              << std::binary_search(v.begin(), v.end(), 8) << "\n";
+
+    auto lo = std::lower_bound(v.begin(), v.end(), 7);
+    auto hi = std::upper_bound(v.begin(), v.end(), 7);
+    std::cout << "lower_bound(7) at index "
+              << std::distance(v.begin(), lo) << "\n";
+    std::cout << "upper_bound(7) at index "
+              << std::distance(v.begin(), hi) << "\n";
+    std::cout << "count of 7   = " << std::distance(lo, hi) << "\n";
+
+    // equal_range packs the two
+    auto [a, b] = std::equal_range(v.begin(), v.end(), 7);
+    std::cout << "equal_range(7) range size = " << std::distance(a, b) << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="11a_remove_erase.cpp">// Concept: the erase-remove idiom.
+//
+// vs C: in C you'd shift elements down by hand. STL splits the work:
+//
+//   std::remove(b, e, value)        moves keepers to the front, returns
+//                                    new_end. Container size does NOT change.
+//   container.erase(new_end, end()) actually drops the tail.
+//
+// C++20 added std::erase / std::erase_if as one-liners.
+#include <algorithm>
+#include <iostream>
+#include <string>
+#include <vector>
+
+int main() {
+    std::vector<int> v{1, 2, 3, 2, 4, 2, 5};
+
+    auto new_end = std::remove(v.begin(), v.end(), 2);
+    v.erase(new_end, v.end());
+    std::cout << "after removing 2s:";
+    for (int x : v) std::cout << " " << x;
+    std::cout << "\n";
+
+    // remove_if + erase — drop with a predicate
+    std::vector<std::string> tags{"keep", "drop_me", "ok", "drop_me"};
+    tags.erase(
+        std::remove_if(tags.begin(), tags.end(),
+                       [](const std::string& s){
+                           return s.rfind("drop", 0) == 0;
+                       }),
+        tags.end());
+    std::cout << "tags after drop_*:";
+    for (const auto& t : tags) std::cout << " " << t;
+    std::cout << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="11b_unique.cpp">// Concept: removing CONSECUTIVE duplicates.
+//
+//   std::unique(b, e)        moves consecutive duplicates past new_end,
+//                             returns new_end. Container size unchanged
+//                             until you call erase(new_end, end()).
+//
+// IMPORTANT: only consecutive duplicates! To dedup the whole range, sort first.
+#include <algorithm>
+#include <iostream>
+#include <vector>
+
+int main() {
+    std::vector<int> v{1, 1, 2, 2, 2, 3, 1, 1, 4};
+
+    auto end1 = std::unique(v.begin(), v.end());
+    v.erase(end1, v.end());
+    std::cout << "unique (consecutive only):";
+    for (int x : v) std::cout << " " << x;
+    std::cout << "  (the second '1' run survived)\n";
+
+    // Full dedup: sort first
+    std::vector<int> w{4, 2, 5, 2, 1, 3, 5, 4, 1};
+    std::sort(w.begin(), w.end());
+    w.erase(std::unique(w.begin(), w.end()), w.end());
+    std::cout << "sort + unique         :";
+    for (int x : w) std::cout << " " << x;
+    std::cout << "\n";
+
+    // unique with a custom equivalence — collapse runs of even neighbours
+    std::vector<int> z{2, 4, 6, 1, 8, 10, 3};
+    auto same_parity = [](int a, int b){ return (a%2) == (b%2); };
+    z.erase(std::unique(z.begin(), z.end(), same_parity), z.end());
+    std::cout << "collapse same-parity  :";
+    for (int x : z) std::cout << " " << x;
+    std::cout << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="11c_partition.cpp">// Concept: partitioning — split a range by a predicate without sorting.
+//
+//   std::partition(b, e, p)         elements with p(*it)==true go to the
+//                                    front, false to the back. Order within
+//                                    each side is unspecified. O(n).
+//   std::stable_partition(b, e, p)  same, but original relative order kept.
+//   std::partition_point(b, e, p)   on a partitioned range, returns the
+//                                    boundary in O(log n).
+#include <algorithm>
+#include <iostream>
+#include <vector>
+
+int main() {
+    std::vector<int> v{1, 2, 3, 4, 5, 6, 7, 8, 9};
+    auto is_even = [](int x){ return x % 2 == 0; };
+
+    // unstable
+    auto mid = std::partition(v.begin(), v.end(), is_even);
+    std::cout << "partition (evens first):";
+    for (int x : v) std::cout << " " << x;
+    std::cout << "  (boundary at index "
+              << std::distance(v.begin(), mid) << ")\n";
+
+    // stable
+    std::vector<int> w{1, 2, 3, 4, 5, 6, 7, 8, 9};
+    std::stable_partition(w.begin(), w.end(), is_even);
+    std::cout << "stable_partition       :";
+    for (int x : w) std::cout << " " << x;
+    std::cout << "  (relative order preserved)\n";
+
+    // partition_point — once partitioned, find the boundary in O(log n)
+    auto p = std::partition_point(v.begin(), v.end(), is_even);
+    std::cout << "partition_point at index "
+              << std::distance(v.begin(), p) << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="12a_set_operations.cpp">// Concept: set operations on SORTED ranges.
+//
+// All four require both inputs to be sorted (ascending). They write the
+// result into an output iterator (back_inserter / ostream_iterator / a
+// pre-allocated container).
+//
+//   std::set_union               in either A or B
+//   std::set_intersection        in both A and B
+//   std::set_difference          in A but not in B
+//   std::set_symmetric_difference   in exactly one of A, B
+#include <algorithm>
+#include <iostream>
+#include <iterator>
+#include <vector>
+
+void show(const char* tag, const std::vector<int>& v) {
+    std::cout << tag;
+    for (int x : v) std::cout << " " << x;
+    std::cout << "\n";
+}
+
+int main() {
+    std::vector<int> a{1, 2, 3, 4, 5};
+    std::vector<int> b{3, 4, 5, 6, 7};
+    std::vector<int> out;
+
+    out.clear();
+    std::set_union(a.begin(), a.end(), b.begin(), b.end(),
+                   std::back_inserter(out));
+    show("union               :", out);
+
+    out.clear();
+    std::set_intersection(a.begin(), a.end(), b.begin(), b.end(),
+                          std::back_inserter(out));
+    show("intersection        :", out);
+
+    out.clear();
+    std::set_difference(a.begin(), a.end(), b.begin(), b.end(),
+                        std::back_inserter(out));
+    show("difference (a - b)  :", out);
+
+    out.clear();
+    std::set_symmetric_difference(a.begin(), a.end(), b.begin(), b.end(),
+                                  std::back_inserter(out));
+    show("symmetric_difference:", out);
+}
+</script>
+<script type="text/plain" data-cppfile="13a_accumulate_reduce.cpp">// Concept: reductions — fold a range into a single value.
+//
+// Header: <numeric>
+//
+//   std::accumulate(b, e, init [, op])
+//       Left-fold: ((init op v0) op v1) op v2 …  (sequential)
+//
+//   std::reduce(b, e, init [, op])             [C++17]
+//       Same idea but the op MUST be associative & commutative; that lets
+//       implementations parallelise. Use it for sums on big ranges.
+#include <iostream>
+#include <numeric>
+#include <string>
+#include <vector>
+
+int main() {
+    std::vector<int> v{1, 2, 3, 4, 5};
+
+    int sum     = std::accumulate(v.begin(), v.end(), 0);
+    int product = std::accumulate(v.begin(), v.end(), 1,
+                                  [](int acc, int x){ return acc * x; });
+    std::cout << "sum     = " << sum     << "\n";
+    std::cout << "product = " << product << "\n";
+
+    // reduce — order is unspecified; only valid for ass+comm ops
+    int rsum = std::reduce(v.begin(), v.end(), 0);
+    std::cout << "reduce  = " << rsum << "  (same answer, possibly faster)\n";
+
+    // String concatenation with accumulate (NOT reduce — concat is non-commutative)
+    std::vector<std::string> words{"the", "quick", "fox"};
+    std::string joined = std::accumulate(
+        words.begin(), words.end(), std::string{},
+        [](const std::string& acc, const std::string& w){
+            return acc.empty() ? w : acc + " " + w;
+        });
+    std::cout << "joined  = " << joined << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="13b_inner_product_partial_sum.cpp">// Concept: more numeric algorithms (header <numeric>).
+//
+//   std::inner_product(b1, e1, b2, init)        Σ a_i * b_i  (dot product)
+//   std::partial_sum(b, e, dst)                 prefix sums  s_k = Σ_{i≤k} a_i
+//   std::adjacent_difference(b, e, dst)         differences  d_0=a_0, d_k=a_k-a_{k-1}
+//
+// All three accept a custom binary op as a final argument, so you can build
+// running products, ratios, etc.
+#include <iostream>
+#include <iterator>
+#include <numeric>
+#include <vector>
+
+int main() {
+    std::vector<int> a{1, 2, 3, 4};
+    std::vector<int> b{10, 20, 30, 40};
+
+    int dot = std::inner_product(a.begin(), a.end(), b.begin(), 0);
+    std::cout << "dot(a, b) = " << dot << "  (1·10 + 2·20 + 3·30 + 4·40)\n";
+
+    std::vector<int> ps;
+    std::partial_sum(a.begin(), a.end(), std::back_inserter(ps));
+    std::cout << "partial_sum(a):";
+    for (int x : ps) std::cout << " " << x;
+    std::cout << "\n";
+
+    std::vector<int> ad;
+    std::adjacent_difference(ps.begin(), ps.end(), std::back_inserter(ad));
+    std::cout << "adjacent_difference(prefix sums):";
+    for (int x : ad) std::cout << " " << x;
+    std::cout << "  (recovers the original a)\n";
+}
+</script>
+<script type="text/plain" data-cppfile="13c_permutations.cpp">// Concept: enumerate permutations of a range, in lexicographic order.
+//
+//   std::next_permutation(b, e)   rearrange to the NEXT lex permutation;
+//                                  returns false when wrapping around to
+//                                  the smallest one. Combined with sort()
+//                                  at the start, it iterates ALL n! permutations.
+//
+//   std::prev_permutation         the reverse direction.
+#include <algorithm>
+#include <iostream>
+#include <string>
+
+int main() {
+    std::string s = "abc";
+    std::sort(s.begin(), s.end());        // start at lexicographically smallest
+
+    std::cout << "all permutations of \"abc\":\n";
+    do {
+        std::cout << "  " << s << "\n";
+    } while (std::next_permutation(s.begin(), s.end()));
+
+    // is_permutation — different question: are two ranges permutations of each other?
+    int a[] = {1, 2, 3, 4};
+    int b[] = {3, 1, 4, 2};
+    std::cout << "a is permutation of b? "
+              << std::is_permutation(std::begin(a), std::end(a), std::begin(b)) << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="14a_functor_basics.cpp">// Concept: a FUNCTOR is a class with an overloaded operator() — an object
+// you can CALL like a function.
+//
+// vs C: in C the closest tool is a function pointer. A function pointer
+// can be passed around but it CANNOT carry per-instance state. A functor
+// does both: it is callable AND it can store data members.
+//
+// "Anywhere a callable is wanted (algorithms, threads, schedulers), a
+//  functor instance works."
+#include <iostream>
+
+class Greeter {
+public:
+    Greeter(const char* prefix) : prefix_(prefix) {}
+    // operator() — what makes Greeter a "callable" / functor.
+    void operator()(const char* who) const {
+        std::cout << "  " << prefix_ << ", " << who << "!\n";
+    }
+private:
+    const char* prefix_;
+};
+
+int main() {
+    Greeter hello("Hello");
+    Greeter ola  ("Olá");
+
+    hello("Ada");          // looks like a function call — actually hello.operator()("Ada")
+    hello("Linus");
+    ola  ("Bjarne");
+
+    // A function pointer cannot hold prefix_ — every function pointer of the
+    // same signature is interchangeable. With a functor, EACH INSTANCE carries
+    // its own data.
+}
+</script>
+<script type="text/plain" data-cppfile="14b_stateful_functor.cpp">// Concept: a STATEFUL functor — data members persist across calls.
+//
+// Useful when you need an algorithm to remember something between elements:
+// a running sum, a counter, a "have I seen this before?" flag.
+//
+// vs C: with a function pointer you'd need a global variable or thread-local
+// state. A functor instance is the per-call state, cleanly scoped.
+#include <algorithm>
+#include <iostream>
+#include <vector>
+
+class Multiplier {
+public:
+    explicit Multiplier(int factor) : factor_(factor), calls_(0) {}
+
+    int operator()(int x) {
+        ++calls_;
+        return x * factor_;
+    }
+
+    int calls() const { return calls_; }
+
+private:
+    int factor_;
+    int calls_;     // mutable state across calls
+};
+
+int main() {
+    std::vector<int> in{1, 2, 3, 4, 5};
+    std::vector<int> out(in.size());
+
+    Multiplier times3(3);
+    std::transform(in.begin(), in.end(), out.begin(), std::ref(times3));
+    // ↑ std::ref to keep ONE shared instance — by default std::transform
+    //   would COPY the functor and we'd lose the call count.
+
+    std::cout << "out:";
+    for (int x : out) std::cout << " " << x;
+    std::cout << "\n";
+    std::cout << "operator() was invoked " << times3.calls() << " times\n";
+}
+</script>
+<script type="text/plain" data-cppfile="14c_predefined_functors.cpp">// Concept: predefined functor templates in <functional>.
+//
+// You don't have to write your own — the standard library supplies the
+// common ones as TEMPLATES.
+//
+//   std::plus<T>        a + b
+//   std::minus<T>       a - b
+//   std::multiplies<T>  a * b
+//   std::divides<T>     a / b
+//   std::negate<T>      -a              (unary)
+//   std::less<T>        a <  b
+//   std::greater<T>     a >  b
+//   std::less_equal<T>      a <= b
+//   std::equal_to<T>    a == b
+//   std::logical_and<T> a && b
+//   std::logical_not<T> !a              (unary)
+//
+// Pass them to std::sort, std::accumulate, std::transform, priority_queue, …
+#include <algorithm>
+#include <functional>
+#include <iostream>
+#include <numeric>
+#include <vector>
+
+int main() {
+    std::vector<int> v{5, 2, 8, 1, 4};
+
+    // Sort descending using std::greater
+    std::sort(v.begin(), v.end(), std::greater<int>{});
+    std::cout << "sorted desc:";
+    for (int x : v) std::cout << " " << x;
+    std::cout << "\n";
+
+    // Product = accumulate with std::multiplies as the binary op
+    std::vector<int> nums{1, 2, 3, 4};
+    int product = std::accumulate(nums.begin(), nums.end(), 1, std::multiplies<int>{});
+    std::cout << "product 1·2·3·4 = " << product << "\n";
+
+    // Element-wise sum of two ranges via std::transform + std::plus
+    std::vector<int> a{10, 20, 30}, b{1, 2, 3}, sum(3);
+    std::transform(a.begin(), a.end(), b.begin(), sum.begin(), std::plus<int>{});
+    std::cout << "a + b      :";
+    for (int x : sum) std::cout << " " << x;
+    std::cout << "\n";
+
+    // Negate — unary functor
+    std::vector<int> neg(a.size());
+    std::transform(a.begin(), a.end(), neg.begin(), std::negate<int>{});
+    std::cout << "negate(a)  :";
+    for (int x : neg) std::cout << " " << x;
+    std::cout << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="14d_lambdas_as_functors.cpp">// Concept: a LAMBDA is just sugar for an anonymous functor class.
+//
+//   [factor](int x){ return x * factor; }
+//   ────────────────────────────────────
+//   The compiler generates an unnamed class, roughly:
+//     class __lambda {
+//         int factor_;
+//     public:
+//         __lambda(int f) : factor_(f) {}
+//         auto operator()(int x) const { return x * factor_; }
+//     };
+//
+// Capture clauses control the data members:
+//   []        capture nothing
+//   [=]       capture every used variable BY VALUE
+//   [&]       capture every used variable BY REFERENCE
+//   [x]       capture x by value
+//   [&x]      capture x by reference
+//   [=, &x]   default by value, but x by reference
+//   [x = expr]  init capture (C++14) — name a fresh member with a value
+//
+// Add 'mutable' to allow modifying the by-value captures inside the lambda.
+#include <algorithm>
+#include <iostream>
+#include <vector>
+
+int main() {
+    std::vector<int> v{1, 2, 3, 4, 5};
+
+    // [factor] → a member named factor stored by value
+    int factor = 10;
+    std::vector<int> scaled(v.size());
+    std::transform(v.begin(), v.end(), scaled.begin(),
+                   [factor](int x){ return x * factor; });
+    std::cout << "factor*v:";
+    for (int x : scaled) std::cout << " " << x;
+    std::cout << "\n";
+
+    // [&] capture by reference — let the lambda mutate caller-side state
+    int sum = 0;
+    std::for_each(v.begin(), v.end(), [&sum](int x){ sum += x; });
+    std::cout << "sum via &capture: " << sum << "\n";
+
+    // mutable + by-value capture — counter lives inside each call invocation
+    int call = 0;
+    auto numbered = [call](int x) mutable {
+        ++call;
+        return std::pair{call, x};
+    };
+    auto [c1, x1] = numbered(7);
+    auto [c2, x2] = numbered(8);
+    std::cout << "numbered(7)=(" << c1 << "," << x1 << ")  "
+              << "numbered(8)=(" << c2 << "," << x2 << ")\n";
+    // Note: each lambda VALUE has its own call counter — copies don't share state.
+}
+</script>
+<script type="text/plain" data-cppfile="14e_std_function.cpp">// Concept: std::function<R(Args...)> — a TYPE-ERASED callable holder.
+//
+// Stores any callable that matches the signature: a free function, a
+// functor instance, a member-function binding, a lambda. You can then
+// pass it around or store it in a container, regardless of its actual type.
+//
+//   pros: uniform type for "anything callable with this signature"
+//   cons: small heap allocation + indirection — slower than a template
+//         that is parameterised on the callable type directly
+#include <functional>
+#include <iostream>
+#include <vector>
+
+int free_add(int a, int b) { return a + b; }
+
+struct Mul { int operator()(int a, int b) const { return a * b; } };
+
+int main() {
+    using BinOp = std::function<int(int, int)>;
+
+    std::vector<BinOp> ops;
+    ops.push_back(&free_add);                        // free function
+    ops.push_back(Mul{});                            // functor object
+    ops.push_back([](int a, int b){ return a - b; }); // lambda
+    ops.push_back([factor=10](int a, int b){
+        return (a + b) * factor;                     // capturing lambda
+    });
+
+    for (const auto& op : ops) {
+        std::cout << "  op(3, 4) = " << op(3, 4) << "\n";
+    }
+
+    // Empty std::function is callable-checked — operator bool tells you if it's set:
+    std::function<int(int,int)> empty;
+    std::cout << "empty has target? " << static_cast<bool>(empty) << "\n";
+    // empty(1,2);   // ← throws std::bad_function_call at runtime
+}
+</script>
+
+<!-- =====================================================================
+     Embedded expected output for each demo.
+     ===================================================================== -->
+
+<script type="text/plain" data-outfile="01a_vector">size=5  capacity=6  v[0]=1
+elements: 1 2 3 4 5
+after erase v[1]: 1 3 4 5
+raw[0] = 1
+</script>
+<script type="text/plain" data-outfile="01b_array">size       = 5
+front/back = 10 / 50
+a.at(2)    = 30  (bounds-checked, throws on bad index)
+sum        = 150
+a[0]=10  b[0]=999  (independent copies)
+</script>
+<script type="text/plain" data-outfile="01c_deque">deque: 1 2 3 4 5
+front=1  back=5  size=5
+after pop_front+pop_back: 2 3 4
+</script>
+<script type="text/plain" data-outfile="01d_list">list after insert: 1 2 3 4 5
+after splice:         1 2 3 4 5 100 200  (other.size=0)
+after l.sort():       1 2 3 4 5 100 200
+</script>
+<script type="text/plain" data-outfile="01e_forward_list">forward_list: 0 1 99 2 3 4 5
+manual size = 7  (no .size() member)
+</script>
+<script type="text/plain" data-outfile="02a_pair">p.first=42  p.second=answer
+num=3.14  ok=1
+a < b ? yes
+</script>
+<script type="text/plain" data-outfile="02b_map">Alice -> 30
+Eve -> 0  (operator[] inserted a default)
+Frank is not in the map
+all entries (sorted by key):
+  Alice -> 30
+  Bob -> 25
+  Carol -> 35
+  Eve -> 0
+keys in [B, F):
+  Bob
+  Carol
+  Eve
+</script>
+<script type="text/plain" data-outfile="02c_set">size  = 7  (duplicates removed)
+values: 1 2 3 4 5 6 9
+contains 4? yes
+contains 7? no
+values in [3,6]: 3 4 5 6
+</script>
+<script type="text/plain" data-outfile="02d_multimap_multiset">alice's numbers:
+  111-1111
+  222-2222
+bag: count(2)=2  count(3)=3
+bag values: 1 2 2 3 3 3
+</script>
+<script type="text/plain" data-outfile="03a_unordered_basics">word counts (unordered iteration):
+  fox : 1
+  quick : 2
+  the : 3
+buckets = 13  load factor = 0.230769
+buckets after reserve(1000) = 1031
+seen.size = 3  (duplicates removed, no order)
+</script>
+<script type="text/plain" data-outfile="03b_custom_hash">visited.size = 2  (1,2 was duplicate)
+alt.size     = 1  (uses lambda hasher)
+</script>
+<script type="text/plain" data-outfile="04a_tuple">get<0>=1  get<2>='hello'
+get<double>=2.5
+stats() → n=42  pi=3.14  status=ok
+tuple_size = 3
+</script>
+<script type="text/plain" data-outfile="04b_stack">size=5  top=5
+pop order (LIFO): 5 4 3 2 1
+(([])) balanced? yes
+(([)) balanced?  no
+</script>
+<script type="text/plain" data-outfile="04c_queue">front=1  back=5  size=5
+pop order (FIFO): 1 2 3 4 5
+</script>
+<script type="text/plain" data-outfile="04d_priority_queue">max-heap pop order: 9 8 5 4 3 1
+min-heap pop order: 1 3 4 5 8 9
+shortest first: ox cat elephant hippopotamus
+</script>
+<script type="text/plain" data-outfile="05a_iterator_basics">manual loop: 10 20 30 40
+range-for:  10 20 30 40
+*it    = 10
+*(it+2)= 30
+it[3]  = 40  (random-access iterator)
+v.end() - v.begin() = 4  (size as a difference)
+</script>
+<script type="text/plain" data-outfile="05b_iterator_categories">vector::iterator → RandomAccess
+list::iterator   → Bidirectional
+*vit2=3  *lit2=3
+</script>
+<script type="text/plain" data-outfile="05c_reverse_const_iterators">forward: 1 2 3 4 5 
+reverse: 5 4 3 2 1 
+(cbegin/cend → read-only view)
+sum = 15
+</script>
+<script type="text/plain" data-outfile="05d_advance_distance">after advance(it, 3): *it=40
+distance(begin, end) = 5  (== size)
+*first=10  *next(first,2)=30
+list[2] via std::next = 3
+</script>
+<script type="text/plain" data-outfile="05e_iterator_adapters">back_inserter dst: 1 2 3 4 5
+front_inserter list: 5 4 3 2 1
+via ostream_iterator: 1 2 3 4 5 
+from istream_iterator: 10 20 30 40
+</script>
+<script type="text/plain" data-outfile="06a_bidi_basics">*begin     = 10
+after ++,++ = 30
+after  --   = 20
+forward : 10 20 30 40 50
+backward: 50 40 30 20 10
+</script>
+<script type="text/plain" data-outfile="06b_bidi_in_associative">set ascending : 1 2 3 5 7
+set descending: 7 5 3 2 1
+map ascending:
+  alice -> 30
+  bob -> 25
+  carol -> 35
+after walk-and-bump:
+  alice -> 31
+  bob -> 26
+  carol -> 36
+</script>
+<script type="text/plain" data-outfile="06c_algos_needing_bidi">reversed list: 5 4 3 2 1
+rotate by 3 : 4 5 6 7 1 2 3
+  1 2 3 
+  1 3 2 
+  2 1 3 
+  2 3 1 
+  3 1 2 
+  3 2 1 
+</script>
+<script type="text/plain" data-outfile="06d_bidi_limits">after std::advance(it, 3): *it = 40
+distance(begin, end) = 5  (O(n) for list — must walk)
+next(begin, 2) = 30
+prev(end, 2)   = 40
+</script>
+<script type="text/plain" data-outfile="07a_random_access_basics">*(it + 0) = 10
+*(it + 4) = 50
+it[6]     = 70  (same as *(it + 6))
+end - begin = 7
+a < b ? yes
+</script>
+<script type="text/plain" data-outfile="07b_pointer_equivalence">sum  = 32
+max  = 9  at index 5
+sorted: 1 2 3 4 5 8 9
+front element = 1  back element = 9
+</script>
+<script type="text/plain" data-outfile="07c_algos_needing_random">sorted        : 1 2 2 3 4 4 5 5
+median (nth)  : 5
+shuffled      : 2 7 8 1 6 5 4 3
+</script>
+<script type="text/plain" data-outfile="07d_binary_search_complexity">vector binary_search(7) = 1  (true O(log n))
+list   binary_search(7) = 1  (compiles, O(log n) compares but O(n) hops)
+vector lower_bound(6) → 7  at index 3
+</script>
+<script type="text/plain" data-outfile="08a_find">13 found at index 4
+first > 10  : 13
+first not<10: 13
+</script>
+<script type="text/plain" data-outfile="08b_count_any_all_none">count(==2)    : 3
+count_if(odd) : 3
+any  > 4 ? 1
+all  > 0 ? 1
+none < 0 ? 1
+</script>
+<script type="text/plain" data-outfile="08c_equal_mismatch">a == b ? 1
+a == c ? 0
+first mismatch at index 2 : a=3  c=9
+evens_doubled is 2*a ? 1
+</script>
+<script type="text/plain" data-outfile="08d_min_max">min(7, 12) = 7
+max(7, 12) = 12
+minmax(7,12) = (7, 12)
+min_element = 1 at index 3
+max_element = 9 at index 2
+minmax_element = (1, 9)
+</script>
+<script type="text/plain" data-outfile="09a_copy_fill_generate_iota">copy: 10 20 30 40
+fill(7): 7 7 7 7 7
+generate (i*i): 0 1 4 9 16
+iota(100): 100 101 102 103 104 105 106 107
+</script>
+<script type="text/plain" data-outfile="09b_transform_for_each">1 2 3 4 5 
+squared: 1 4 9 16 25
+a + b  : 11 22 33
+</script>
+<script type="text/plain" data-outfile="09c_replace">replace 2 → 99: 1 99 3 99 4 99 5
+replace_if even → -1: 1 -1 3 -1 5 -1
+u= 1 2 3 2 4  out (2→0): 1 0 3 0 4
+</script>
+<script type="text/plain" data-outfile="09d_reverse_rotate_shuffle">reverse: 7 6 5 4 3 2 1
+rotate by 3: 4 5 6 7 1 2 3  (4,5,6,7,1,2,3)
+shuffle: 5 8 3 4 9 6 2 1 7
+</script>
+<script type="text/plain" data-outfile="10a_sort">asc : 1 2 2 3 4 4 5 5
+desc: 5 5 4 4 3 2 2 1
+stable by len: fox the brown jumps quick
+is_sorted? 0
+</script>
+<script type="text/plain" data-outfile="10b_partial_sort_nth_element">partial_sort first 3: 1 2 3 9 8 7 5 4 6  (the 3 smallest are at the front, sorted; tail unspecified)
+median = 5  (after nth_element)
+top-3 largest: 9 8 7
+</script>
+<script type="text/plain" data-outfile="10c_binary_search">contains 7  ? 1
+contains 8  ? 0
+lower_bound(7) at index 3
+upper_bound(7) at index 6
+count of 7   = 3
+equal_range(7) range size = 3
+</script>
+<script type="text/plain" data-outfile="11a_remove_erase">after removing 2s: 1 3 4 5
+tags after drop_*: keep ok
+</script>
+<script type="text/plain" data-outfile="11b_unique">unique (consecutive only): 1 2 3 1 4  (the second '1' run survived)
+sort + unique         : 1 2 3 4 5
+collapse same-parity  : 2 1 8 3
+</script>
+<script type="text/plain" data-outfile="11c_partition">partition (evens first): 8 2 6 4 5 3 7 1 9  (boundary at index 4)
+stable_partition       : 2 4 6 8 1 3 5 7 9  (relative order preserved)
+partition_point at index 4
+</script>
+<script type="text/plain" data-outfile="12a_set_operations">union               : 1 2 3 4 5 6 7
+intersection        : 3 4 5
+difference (a - b)  : 1 2
+symmetric_difference: 1 2 6 7
+</script>
+<script type="text/plain" data-outfile="13a_accumulate_reduce">sum     = 15
+product = 120
+reduce  = 15  (same answer, possibly faster)
+joined  = the quick fox
+</script>
+<script type="text/plain" data-outfile="13b_inner_product_partial_sum">dot(a, b) = 300  (1·10 + 2·20 + 3·30 + 4·40)
+partial_sum(a): 1 3 6 10
+adjacent_difference(prefix sums): 1 2 3 4  (recovers the original a)
+</script>
+<script type="text/plain" data-outfile="13c_permutations">all permutations of "abc":
+  abc
+  acb
+  bac
+  bca
+  cab
+  cba
+a is permutation of b? 1
+</script>
+<script type="text/plain" data-outfile="14a_functor_basics">  Hello, Ada!
+  Hello, Linus!
+  Olá, Bjarne!
+</script>
+<script type="text/plain" data-outfile="14b_stateful_functor">out: 3 6 9 12 15
+operator() was invoked 5 times
+</script>
+<script type="text/plain" data-outfile="14c_predefined_functors">sorted desc: 8 5 4 2 1
+product 1·2·3·4 = 24
+a + b      : 11 22 33
+negate(a)  : -10 -20 -30
+</script>
+<script type="text/plain" data-outfile="14d_lambdas_as_functors">factor*v: 10 20 30 40 50
+sum via &capture: 15
+numbered(7)=(1,7)  numbered(8)=(2,8)
+</script>
+<script type="text/plain" data-outfile="14e_std_function">  op(3, 4) = 7
+  op(3, 4) = 12
+  op(3, 4) = -1
+  op(3, 4) = 70
+empty has target? 0
+</script>
+
+<script>
+const STEPS = [
+  {
+    "id": "01a_vector",
+    "label": "01a \u00b7 Vector",
+    "group": "1 \u2014 Sequence Containers",
+    "super": "Containers",
+    "file": "01a_vector.cpp",
+    "path": "step1_sequence_containers/01a_vector.cpp"
+  },
+  {
+    "id": "01b_array",
+    "label": "01b \u00b7 Array",
+    "group": "1 \u2014 Sequence Containers",
+    "super": "Containers",
+    "file": "01b_array.cpp",
+    "path": "step1_sequence_containers/01b_array.cpp"
+  },
+  {
+    "id": "01c_deque",
+    "label": "01c \u00b7 Deque",
+    "group": "1 \u2014 Sequence Containers",
+    "super": "Containers",
+    "file": "01c_deque.cpp",
+    "path": "step1_sequence_containers/01c_deque.cpp"
+  },
+  {
+    "id": "01d_list",
+    "label": "01d \u00b7 List",
+    "group": "1 \u2014 Sequence Containers",
+    "super": "Containers",
+    "file": "01d_list.cpp",
+    "path": "step1_sequence_containers/01d_list.cpp"
+  },
+  {
+    "id": "01e_forward_list",
+    "label": "01e \u00b7 Forward List",
+    "group": "1 \u2014 Sequence Containers",
+    "super": "Containers",
+    "file": "01e_forward_list.cpp",
+    "path": "step1_sequence_containers/01e_forward_list.cpp"
+  },
+  {
+    "id": "02a_pair",
+    "label": "02a \u00b7 Pair",
+    "group": "2 \u2014 Ordered Associative",
+    "super": "Containers",
+    "file": "02a_pair.cpp",
+    "path": "step2_ordered_associative/02a_pair.cpp"
+  },
+  {
+    "id": "02b_map",
+    "label": "02b \u00b7 Map",
+    "group": "2 \u2014 Ordered Associative",
+    "super": "Containers",
+    "file": "02b_map.cpp",
+    "path": "step2_ordered_associative/02b_map.cpp"
+  },
+  {
+    "id": "02c_set",
+    "label": "02c \u00b7 Set",
+    "group": "2 \u2014 Ordered Associative",
+    "super": "Containers",
+    "file": "02c_set.cpp",
+    "path": "step2_ordered_associative/02c_set.cpp"
+  },
+  {
+    "id": "02d_multimap_multiset",
+    "label": "02d \u00b7 Multimap Multiset",
+    "group": "2 \u2014 Ordered Associative",
+    "super": "Containers",
+    "file": "02d_multimap_multiset.cpp",
+    "path": "step2_ordered_associative/02d_multimap_multiset.cpp"
+  },
+  {
+    "id": "03a_unordered_basics",
+    "label": "03a \u00b7 Unordered Basics",
+    "group": "3 \u2014 Hash-based Associative",
+    "super": "Containers",
+    "file": "03a_unordered_basics.cpp",
+    "path": "step3_hash_associative/03a_unordered_basics.cpp"
+  },
+  {
+    "id": "03b_custom_hash",
+    "label": "03b \u00b7 Custom Hash",
+    "group": "3 \u2014 Hash-based Associative",
+    "super": "Containers",
+    "file": "03b_custom_hash.cpp",
+    "path": "step3_hash_associative/03b_custom_hash.cpp"
+  },
+  {
+    "id": "04a_tuple",
+    "label": "04a \u00b7 Tuple",
+    "group": "4 \u2014 Tuple & Adapters",
+    "super": "Containers",
+    "file": "04a_tuple.cpp",
+    "path": "step4_adapters/04a_tuple.cpp"
+  },
+  {
+    "id": "04b_stack",
+    "label": "04b \u00b7 Stack",
+    "group": "4 \u2014 Tuple & Adapters",
+    "super": "Containers",
+    "file": "04b_stack.cpp",
+    "path": "step4_adapters/04b_stack.cpp"
+  },
+  {
+    "id": "04c_queue",
+    "label": "04c \u00b7 Queue",
+    "group": "4 \u2014 Tuple & Adapters",
+    "super": "Containers",
+    "file": "04c_queue.cpp",
+    "path": "step4_adapters/04c_queue.cpp"
+  },
+  {
+    "id": "04d_priority_queue",
+    "label": "04d \u00b7 Priority Queue",
+    "group": "4 \u2014 Tuple & Adapters",
+    "super": "Containers",
+    "file": "04d_priority_queue.cpp",
+    "path": "step4_adapters/04d_priority_queue.cpp"
+  },
+  {
+    "id": "05a_iterator_basics",
+    "label": "05a \u00b7 Iterator Basics",
+    "group": "5 \u2014 Iterator Basics",
+    "super": "Iterators",
+    "file": "05a_iterator_basics.cpp",
+    "path": "step5_iterator_basics/05a_iterator_basics.cpp"
+  },
+  {
+    "id": "05b_iterator_categories",
+    "label": "05b \u00b7 Iterator Categories",
+    "group": "5 \u2014 Iterator Basics",
+    "super": "Iterators",
+    "file": "05b_iterator_categories.cpp",
+    "path": "step5_iterator_basics/05b_iterator_categories.cpp"
+  },
+  {
+    "id": "05c_reverse_const_iterators",
+    "label": "05c \u00b7 Reverse Const Iterators",
+    "group": "5 \u2014 Iterator Basics",
+    "super": "Iterators",
+    "file": "05c_reverse_const_iterators.cpp",
+    "path": "step5_iterator_basics/05c_reverse_const_iterators.cpp"
+  },
+  {
+    "id": "05d_advance_distance",
+    "label": "05d \u00b7 Advance Distance",
+    "group": "5 \u2014 Iterator Basics",
+    "super": "Iterators",
+    "file": "05d_advance_distance.cpp",
+    "path": "step5_iterator_basics/05d_advance_distance.cpp"
+  },
+  {
+    "id": "05e_iterator_adapters",
+    "label": "05e \u00b7 Iterator Adapters",
+    "group": "5 \u2014 Iterator Basics",
+    "super": "Iterators",
+    "file": "05e_iterator_adapters.cpp",
+    "path": "step5_iterator_basics/05e_iterator_adapters.cpp"
+  },
+  {
+    "id": "06a_bidi_basics",
+    "label": "06a \u00b7 Bidi Basics",
+    "group": "6 \u2014 Bidirectional Iterators",
+    "super": "Iterators",
+    "file": "06a_bidi_basics.cpp",
+    "path": "step6_bidirectional_iterators/06a_bidi_basics.cpp"
+  },
+  {
+    "id": "06b_bidi_in_associative",
+    "label": "06b \u00b7 Bidi In Associative",
+    "group": "6 \u2014 Bidirectional Iterators",
+    "super": "Iterators",
+    "file": "06b_bidi_in_associative.cpp",
+    "path": "step6_bidirectional_iterators/06b_bidi_in_associative.cpp"
+  },
+  {
+    "id": "06c_algos_needing_bidi",
+    "label": "06c \u00b7 Algos Needing Bidi",
+    "group": "6 \u2014 Bidirectional Iterators",
+    "super": "Iterators",
+    "file": "06c_algos_needing_bidi.cpp",
+    "path": "step6_bidirectional_iterators/06c_algos_needing_bidi.cpp"
+  },
+  {
+    "id": "06d_bidi_limits",
+    "label": "06d \u00b7 Bidi Limits",
+    "group": "6 \u2014 Bidirectional Iterators",
+    "super": "Iterators",
+    "file": "06d_bidi_limits.cpp",
+    "path": "step6_bidirectional_iterators/06d_bidi_limits.cpp"
+  },
+  {
+    "id": "07a_random_access_basics",
+    "label": "07a \u00b7 Random Access Basics",
+    "group": "7 \u2014 Random Access Iterators",
+    "super": "Iterators",
+    "file": "07a_random_access_basics.cpp",
+    "path": "step7_random_access_iterators/07a_random_access_basics.cpp"
+  },
+  {
+    "id": "07b_pointer_equivalence",
+    "label": "07b \u00b7 Pointer Equivalence",
+    "group": "7 \u2014 Random Access Iterators",
+    "super": "Iterators",
+    "file": "07b_pointer_equivalence.cpp",
+    "path": "step7_random_access_iterators/07b_pointer_equivalence.cpp"
+  },
+  {
+    "id": "07c_algos_needing_random",
+    "label": "07c \u00b7 Algos Needing Random",
+    "group": "7 \u2014 Random Access Iterators",
+    "super": "Iterators",
+    "file": "07c_algos_needing_random.cpp",
+    "path": "step7_random_access_iterators/07c_algos_needing_random.cpp"
+  },
+  {
+    "id": "07d_binary_search_complexity",
+    "label": "07d \u00b7 Binary Search Complexity",
+    "group": "7 \u2014 Random Access Iterators",
+    "super": "Iterators",
+    "file": "07d_binary_search_complexity.cpp",
+    "path": "step7_random_access_iterators/07d_binary_search_complexity.cpp"
+  },
+  {
+    "id": "08a_find",
+    "label": "08a \u00b7 Find",
+    "group": "8 \u2014 Non-modifying Algos",
+    "super": "Algorithms",
+    "file": "08a_find.cpp",
+    "path": "step8_non_modifying_algos/08a_find.cpp"
+  },
+  {
+    "id": "08b_count_any_all_none",
+    "label": "08b \u00b7 Count Any All None",
+    "group": "8 \u2014 Non-modifying Algos",
+    "super": "Algorithms",
+    "file": "08b_count_any_all_none.cpp",
+    "path": "step8_non_modifying_algos/08b_count_any_all_none.cpp"
+  },
+  {
+    "id": "08c_equal_mismatch",
+    "label": "08c \u00b7 Equal Mismatch",
+    "group": "8 \u2014 Non-modifying Algos",
+    "super": "Algorithms",
+    "file": "08c_equal_mismatch.cpp",
+    "path": "step8_non_modifying_algos/08c_equal_mismatch.cpp"
+  },
+  {
+    "id": "08d_min_max",
+    "label": "08d \u00b7 Min Max",
+    "group": "8 \u2014 Non-modifying Algos",
+    "super": "Algorithms",
+    "file": "08d_min_max.cpp",
+    "path": "step8_non_modifying_algos/08d_min_max.cpp"
+  },
+  {
+    "id": "09a_copy_fill_generate_iota",
+    "label": "09a \u00b7 Copy Fill Generate Iota",
+    "group": "9 \u2014 Modifying Algos",
+    "super": "Algorithms",
+    "file": "09a_copy_fill_generate_iota.cpp",
+    "path": "step9_modifying_algos/09a_copy_fill_generate_iota.cpp"
+  },
+  {
+    "id": "09b_transform_for_each",
+    "label": "09b \u00b7 Transform For Each",
+    "group": "9 \u2014 Modifying Algos",
+    "super": "Algorithms",
+    "file": "09b_transform_for_each.cpp",
+    "path": "step9_modifying_algos/09b_transform_for_each.cpp"
+  },
+  {
+    "id": "09c_replace",
+    "label": "09c \u00b7 Replace",
+    "group": "9 \u2014 Modifying Algos",
+    "super": "Algorithms",
+    "file": "09c_replace.cpp",
+    "path": "step9_modifying_algos/09c_replace.cpp"
+  },
+  {
+    "id": "09d_reverse_rotate_shuffle",
+    "label": "09d \u00b7 Reverse Rotate Shuffle",
+    "group": "9 \u2014 Modifying Algos",
+    "super": "Algorithms",
+    "file": "09d_reverse_rotate_shuffle.cpp",
+    "path": "step9_modifying_algos/09d_reverse_rotate_shuffle.cpp"
+  },
+  {
+    "id": "10a_sort",
+    "label": "10a \u00b7 Sort",
+    "group": "10 \u2014 Sorting & Searching",
+    "super": "Algorithms",
+    "file": "10a_sort.cpp",
+    "path": "step10_sorting_searching/10a_sort.cpp"
+  },
+  {
+    "id": "10b_partial_sort_nth_element",
+    "label": "10b \u00b7 Partial Sort Nth Element",
+    "group": "10 \u2014 Sorting & Searching",
+    "super": "Algorithms",
+    "file": "10b_partial_sort_nth_element.cpp",
+    "path": "step10_sorting_searching/10b_partial_sort_nth_element.cpp"
+  },
+  {
+    "id": "10c_binary_search",
+    "label": "10c \u00b7 Binary Search",
+    "group": "10 \u2014 Sorting & Searching",
+    "super": "Algorithms",
+    "file": "10c_binary_search.cpp",
+    "path": "step10_sorting_searching/10c_binary_search.cpp"
+  },
+  {
+    "id": "11a_remove_erase",
+    "label": "11a \u00b7 Remove Erase",
+    "group": "11 \u2014 Removing & Partitioning",
+    "super": "Algorithms",
+    "file": "11a_remove_erase.cpp",
+    "path": "step11_removing_partitioning/11a_remove_erase.cpp"
+  },
+  {
+    "id": "11b_unique",
+    "label": "11b \u00b7 Unique",
+    "group": "11 \u2014 Removing & Partitioning",
+    "super": "Algorithms",
+    "file": "11b_unique.cpp",
+    "path": "step11_removing_partitioning/11b_unique.cpp"
+  },
+  {
+    "id": "11c_partition",
+    "label": "11c \u00b7 Partition",
+    "group": "11 \u2014 Removing & Partitioning",
+    "super": "Algorithms",
+    "file": "11c_partition.cpp",
+    "path": "step11_removing_partitioning/11c_partition.cpp"
+  },
+  {
+    "id": "12a_set_operations",
+    "label": "12a \u00b7 Set Operations",
+    "group": "12 \u2014 Set Operations",
+    "super": "Algorithms",
+    "file": "12a_set_operations.cpp",
+    "path": "step12_set_operations/12a_set_operations.cpp"
+  },
+  {
+    "id": "13a_accumulate_reduce",
+    "label": "13a \u00b7 Accumulate Reduce",
+    "group": "13 \u2014 Numeric & Permutations",
+    "super": "Algorithms",
+    "file": "13a_accumulate_reduce.cpp",
+    "path": "step13_numeric_permutations/13a_accumulate_reduce.cpp"
+  },
+  {
+    "id": "13b_inner_product_partial_sum",
+    "label": "13b \u00b7 Inner Product Partial Sum",
+    "group": "13 \u2014 Numeric & Permutations",
+    "super": "Algorithms",
+    "file": "13b_inner_product_partial_sum.cpp",
+    "path": "step13_numeric_permutations/13b_inner_product_partial_sum.cpp"
+  },
+  {
+    "id": "13c_permutations",
+    "label": "13c \u00b7 Permutations",
+    "group": "13 \u2014 Numeric & Permutations",
+    "super": "Algorithms",
+    "file": "13c_permutations.cpp",
+    "path": "step13_numeric_permutations/13c_permutations.cpp"
+  },
+  {
+    "id": "14a_functor_basics",
+    "label": "14a \u00b7 Functor Basics",
+    "group": "14 \u2014 Functors",
+    "super": "Functors",
+    "file": "14a_functor_basics.cpp",
+    "path": "step14_functors/14a_functor_basics.cpp"
+  },
+  {
+    "id": "14b_stateful_functor",
+    "label": "14b \u00b7 Stateful Functor",
+    "group": "14 \u2014 Functors",
+    "super": "Functors",
+    "file": "14b_stateful_functor.cpp",
+    "path": "step14_functors/14b_stateful_functor.cpp"
+  },
+  {
+    "id": "14c_predefined_functors",
+    "label": "14c \u00b7 Predefined Functors",
+    "group": "14 \u2014 Functors",
+    "super": "Functors",
+    "file": "14c_predefined_functors.cpp",
+    "path": "step14_functors/14c_predefined_functors.cpp"
+  },
+  {
+    "id": "14d_lambdas_as_functors",
+    "label": "14d \u00b7 Lambdas As Functors",
+    "group": "14 \u2014 Functors",
+    "super": "Functors",
+    "file": "14d_lambdas_as_functors.cpp",
+    "path": "step14_functors/14d_lambdas_as_functors.cpp"
+  },
+  {
+    "id": "14e_std_function",
+    "label": "14e \u00b7 Std Function",
+    "group": "14 \u2014 Functors",
+    "super": "Functors",
+    "file": "14e_std_function.cpp",
+    "path": "step14_functors/14e_std_function.cpp"
+  }
+];
+
+/* ==========================================================
+   3D background — Three.js wireframes (purple/fuchsia palette)
+   ========================================================== */
+(function init3D(){
+  const canvas = document.getElementById('bg-3d');
+  if(!window.THREE){ return; }
+  const renderer = new THREE.WebGLRenderer({ canvas, alpha:true, antialias:true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 100);
+  camera.position.z = 7;
+  const group = new THREE.Group();
+  scene.add(group);
+  const palette = [0x8b5cf6, 0xa78bfa, 0xe879f9, 0xf0abfc];
+  function addShape(geom, color, scale, position){
+    const mat = new THREE.LineBasicMaterial({ color, transparent:true, opacity:0.55 });
+    const wire = new THREE.WireframeGeometry(geom);
+    const line = new THREE.LineSegments(wire, mat);
+    line.scale.setScalar(scale);
+    line.position.set(position.x, position.y, position.z);
+    line.userData.spinSpeed = { x:(Math.random()-0.5)*0.004, y:(Math.random()-0.5)*0.004, z:(Math.random()-0.5)*0.0025 };
+    line.userData.float = { phase: Math.random()*Math.PI*2, amp: 0.3+Math.random()*0.4 };
+    group.add(line); return line;
+  }
+  addShape(new THREE.IcosahedronGeometry(1,0),         palette[0], 1.6, { x:-4.5, y: 1.6, z:-2 });
+  addShape(new THREE.TorusKnotGeometry(0.7,0.22,80,12),palette[1], 1.4, { x: 4.5, y:-1.8, z:-1 });
+  addShape(new THREE.OctahedronGeometry(1,0),          palette[2], 1.0, { x: 3.0, y: 2.2, z:-3 });
+  addShape(new THREE.TetrahedronGeometry(1,0),         palette[3], 0.9, { x:-3.2, y:-2.0, z:-2.5 });
+  addShape(new THREE.IcosahedronGeometry(1,0),         palette[1], 0.6, { x: 0.2, y: 0.0, z:-4 });
+  addShape(new THREE.DodecahedronGeometry(1,0),        palette[0], 0.7, { x:-1.6, y: 2.6, z:-3.5 });
+  addShape(new THREE.OctahedronGeometry(1,0),          palette[3], 0.55,{ x: 1.8, y:-2.6, z:-3.5 });
+  const pCount = 220, pGeom = new THREE.BufferGeometry();
+  const pPos = new Float32Array(pCount * 3);
+  for(let i=0;i<pCount;i++){ pPos[i*3]=(Math.random()-0.5)*18; pPos[i*3+1]=(Math.random()-0.5)*12; pPos[i*3+2]=(Math.random()-0.5)*10-2; }
+  pGeom.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+  scene.add(new THREE.Points(pGeom, new THREE.PointsMaterial({ color:0xffffff, size:0.025, transparent:true, opacity:0.65 })));
+  const target={x:0,y:0}, current={x:0,y:0};
+  window.addEventListener('mousemove', e => { target.x=(e.clientX/window.innerWidth-0.5)*0.6; target.y=(e.clientY/window.innerHeight-0.5)*0.4; });
+  function resize(){ const w=window.innerWidth,h=window.innerHeight; renderer.setSize(w,h,false); camera.aspect=w/h; camera.updateProjectionMatrix(); }
+  resize(); window.addEventListener('resize', resize);
+  let t=0; (function tick(){ t+=0.01; current.x+=(target.x-current.x)*0.05; current.y+=(target.y-current.y)*0.05;
+    group.children.forEach(m => { m.rotation.x+=m.userData.spinSpeed.x; m.rotation.y+=m.userData.spinSpeed.y; m.rotation.z+=m.userData.spinSpeed.z; m.position.y += Math.sin(t+m.userData.float.phase)*0.0025*m.userData.float.amp; });
+    group.rotation.y = current.x*0.4; group.rotation.x = -current.y*0.3;
+    renderer.render(scene, camera); requestAnimationFrame(tick); })();
+})();
+
+/* ==========================================================
+   CodeMirror — C++ mode
+   ========================================================== */
+const editor = CodeMirror.fromTextArea(document.getElementById('editor'), {
+  mode: 'text/x-c++src',
+  theme: 'dracula',
+  lineNumbers: true, matchBrackets: true, autoCloseBrackets: true,
+  styleActiveLine: true, indentUnit: 4, tabSize: 4,
+  smartIndent: true, lineWrapping: false,
+  extraKeys: {
+    'Cmd-Enter':  () => runStep(),
+    'Ctrl-Enter': () => runStep(),
+    'Cmd-/':  'toggleComment',
+    'Ctrl-/': 'toggleComment',
+  },
+});
+editor.setValue('// Loading…\n');
+
+/* ==========================================================
+   Embedded source loader + state
+   ========================================================== */
+const fileListEl  = document.getElementById('fileList');
+const fileNameEl  = document.getElementById('fileName');
+const fileSubEl   = document.getElementById('fileSub');
+const fileTabsEl  = document.getElementById('fileTabs');
+const searchEl    = document.getElementById('search');
+const statusLabel = document.getElementById('statusLabel');
+const statusInfo  = document.getElementById('statusInfo');
+const outBody     = document.getElementById('outBody');
+const toastEl     = document.getElementById('toast');
+
+const state = {
+  active: null,
+  originals: {},
+  buffers: {},
+  outputs: {},
+  loaded: {},
+};
+
+const STORAGE_PREFIX = 'cpp-lab:edit:';
+function hashShort(s){
+  let h = 5381;
+  for(let i=0; i<s.length; i++) h = ((h<<5) + h + s.charCodeAt(i)) | 0;
+  return (h >>> 0).toString(36);
+}
+function storageKeyFor(file){
+  const orig = state.originals[file] || '';
+  return STORAGE_PREFIX + file + ':v' + hashShort(orig);
+}
+function saveBuffer(file, value){ try{ localStorage.setItem(storageKeyFor(file), value); }catch{} }
+function loadBuffer(file){ try{ return localStorage.getItem(storageKeyFor(file)); }catch{ return null; } }
+function clearBuffer(file){ try{ localStorage.removeItem(storageKeyFor(file)); }catch{} }
+
+function readSource(file){
+  const node = document.querySelector('script[type="text/plain"][data-cppfile="' + CSS.escape(file) + '"]');
+  return node ? node.textContent : null;
+}
+function readOutput(stepId){
+  const step = STEPS.find(s => s.id === stepId);
+  if(!step) return null;
+  const key = step.file.replace(/\.cpp$/, '');
+  const node = document.querySelector('script[type="text/plain"][data-outfile="' + CSS.escape(key) + '"]');
+  return node ? node.textContent : null;
+}
+function ensureLoaded(file){
+  if(state.loaded[file]) return state.originals[file];
+  const text = readSource(file);
+  if(text == null){
+    const msg = '// missing embedded source for ' + file + '\n';
+    state.originals[file] = msg; state.buffers[file] = msg;
+  } else {
+    state.originals[file] = text;
+    const saved = loadBuffer(file);
+    state.buffers[file]   = saved != null ? saved : text;
+  }
+  state.loaded[file] = true;
+  return state.originals[file];
+}
+
+/* Sidebar */
+function stepButtonNode(entry){
+  const li = document.createElement('li');
+  const btn = document.createElement('button');
+  btn.className = 'file-btn';
+  btn.dataset.step = entry.id;
+  const lineCount = (state.originals[entry.file] || '').split('\n').length;
+  btn.innerHTML =
+    '<span class="ico">CPP</span>' +
+    '<span class="label">' + entry.label + '</span>' +
+    '<span class="lines">' + lineCount + 'L</span>';
+  btn.addEventListener('click', () => activate(entry.id));
+  li.appendChild(btn);
+  return li;
+}
+(function renderSteps(){
+  STEPS.forEach(s => ensureLoaded(s.file));
+  // Build a 2-level hierarchy: super-group → group → items.
+  const supers = []; const seenSup = new Map();
+  STEPS.forEach(s => {
+    const sup = s.super || '';
+    if(!seenSup.has(sup)){
+      const node = { name: sup, count: 0, groups: [], seenG: new Map() };
+      seenSup.set(sup, node);
+      supers.push(node);
+    }
+    const sn = seenSup.get(sup);
+    sn.count++;
+    const g = s.group || 'Other';
+    if(!sn.seenG.has(g)){
+      const gn = { name: g, items: [] };
+      sn.seenG.set(g, gn);
+      sn.groups.push(gn);
+    }
+    sn.seenG.get(g).items.push(s);
+  });
+  supers.forEach(sup => {
+    if(sup.name){
+      const sh = document.createElement('li');
+      sh.className = 'file-supergroup-head';
+      sh.innerHTML = sup.name +
+        '<span class="count">' + sup.count + '</span>';
+      fileListEl.appendChild(sh);
+    }
+    sup.groups.forEach(g => {
+      const head = document.createElement('li');
+      head.className = 'file-group-head';
+      head.textContent = g.name;
+      fileListEl.appendChild(head);
+      g.items.forEach(p => fileListEl.appendChild(stepButtonNode(p)));
+    });
+  });
+})();
+searchEl.addEventListener('input', ()=>{
+  const q = searchEl.value.toLowerCase().trim();
+  document.querySelectorAll('.file-btn').forEach(b=>{
+    const id = b.dataset.step;
+    const step = STEPS.find(s=>s.id===id);
+    const hit = !q || step.label.toLowerCase().includes(q) || step.file.toLowerCase().includes(q);
+    b.style.display = hit ? '' : 'none';
+  });
+});
+
+function activeStep(){ return STEPS.find(s => s.id === state.active); }
+
+function activate(id){
+  const step = STEPS.find(s => s.id === id); if(!step) return;
+  state.active = id;
+  document.querySelectorAll('.file-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.step === id);
+  });
+  ensureLoaded(step.file);
+  editor.setOption('readOnly', false);
+  editor.setValue(state.buffers[step.file] || state.originals[step.file]);
+  editor.clearHistory();
+
+  const labelClean = step.label.replace(/^[\d]+[a-z]?\s*·\s*/, '');
+  fileNameEl.firstChild.nodeValue = labelClean;
+  fileSubEl.textContent = step.path;
+
+  // file tabs (single file per step)
+  fileTabsEl.innerHTML = '';
+  const tab = document.createElement('button');
+  tab.className = 'file-tab active';
+  tab.textContent = step.file;
+  fileTabsEl.appendChild(tab);
+
+  outBody.innerHTML = '<div class="empty">Press ▶ Run to see expected output for this demo.</div>';
+  setStatus('ready', 'Ready', step.path);
+  updateDirty();
+}
+
+function setStatus(kind, label, info){
+  statusLabel.className = 'status ' + (kind==='ready' ? '' : kind);
+  statusLabel.textContent = label;
+  statusInfo.textContent = info || '';
+}
+
+function updateDirty(){
+  const step = activeStep(); if(!step) return;
+  const cur = editor.getValue();
+  const dirty = cur !== state.originals[step.file];
+  fileNameEl.classList.toggle('dirty', dirty);
+  document.querySelector('.file-btn[data-step="' + step.id + '"]')?.classList.toggle('dirty', dirty);
+  document.querySelector('.file-tab')?.classList.toggle('dirty', dirty);
+}
+
+editor.on('change', () => {
+  const step = activeStep(); if(!step) return;
+  const cur = editor.getValue();
+  state.buffers[step.file] = cur;
+  if(cur === state.originals[step.file]) clearBuffer(step.file);
+  else saveBuffer(step.file, cur);
+  updateDirty();
+});
+
+/* Run — display the precomputed expected output */
+function escapeHtml(s){
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function runStep(){
+  const step = activeStep(); if(!step) return;
+  const out = readOutput(step.id);
+  if(out == null){
+    setStatus('err', 'No output', step.path);
+    outBody.innerHTML = '<div class="empty">No precomputed output found for this demo.</div>';
+    return;
+  }
+  setStatus('work', 'Running…', '');
+  // brief delay for the running animation feel
+  setTimeout(() => {
+    const cur = editor.getValue();
+    const isOriginal = cur === state.originals[step.file];
+    const banner = isOriginal
+      ? '<div class="ok-banner"><strong>Output</strong> — captured from <code>g++ -std=c++17 -o build/' + step.file.replace(/\.cpp$/,'') + ' ' + escapeHtml(step.path) + ' &amp;&amp; ./build/' + step.file.replace(/\.cpp$/,'') + '</code></div>'
+      : '<div class="info-banner"><strong>Note</strong> — you have unsaved edits. The output below is from the original source. Compile locally to see the effect of your changes.</div>';
+    outBody.innerHTML = banner + '<h4>stdout</h4><pre>' + escapeHtml(out) + '</pre>';
+    setStatus('ok', 'Done', step.path);
+  }, 110);
+}
+document.getElementById('runBtn').addEventListener('click', runStep);
+
+/* Reset — revert active file's buffer to original */
+document.getElementById('resetBtn').addEventListener('click', () => {
+  const step = activeStep(); if(!step) return;
+  state.buffers[step.file] = state.originals[step.file];
+  clearBuffer(step.file);
+  editor.setValue(state.originals[step.file]);
+  showToast('Reverted to original');
+});
+
+/* Copy — copy the precomputed output */
+document.getElementById('copyOutBtn').addEventListener('click', async () => {
+  const step = activeStep(); if(!step) return;
+  const out = readOutput(step.id);
+  if(out == null){ showToast('No output to copy', true); return; }
+  try{ await navigator.clipboard.writeText(out); showToast('Copied output'); }
+  catch{ showToast('Copy failed', true); }
+});
+
+/* Toast */
+let toastTimer = null;
+function showToast(msg, isError){
+  toastEl.textContent = msg;
+  toastEl.classList.toggle('error', !!isError);
+  toastEl.classList.add('show');
+  if(toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=> toastEl.classList.remove('show'), 1700);
+}
+
+/* Splitter — drag to resize editor vs preview */
+(function splitter(){
+  const root = document.querySelector('.editor-pane');
+  const handle = document.getElementById('splitter');
+  let dragging = false;
+  function setCols(p){
+    p = Math.max(0.18, Math.min(0.82, p));
+    root.style.setProperty('--col-1', p + 'fr');
+    root.style.setProperty('--col-2', (1 - p) + 'fr');
+  }
+  setCols(0.55);
+  handle.addEventListener('pointerdown', e => {
+    dragging = true; handle.classList.add('active');
+    handle.setPointerCapture(e.pointerId);
+  });
+  handle.addEventListener('pointermove', e => {
+    if(!dragging) return;
+    const r = root.getBoundingClientRect();
+    setCols((e.clientX - r.left - 22) / (r.width - 50));
+  });
+  function endDrag(){ dragging = false; handle.classList.remove('active'); }
+  handle.addEventListener('pointerup', endDrag);
+  handle.addEventListener('pointercancel', endDrag);
+})();
+
+/* Boot */
+activate(STEPS[0].id);
+</script>
+</body>
+</html>

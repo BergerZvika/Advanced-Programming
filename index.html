@@ -489,6 +489,192 @@ section.lab-section{ margin-top: 56px }
   text-shadow: 0 2px 0 rgba(0,0,0,0.18);
 }
 
+/* XML-themed featured card variant (amber / orange) */
+.featured-card.xml-theme::before{
+  background: linear-gradient(135deg, rgba(245,158,11,0.55), rgba(217,119,6,0) 40%, rgba(251,191,36,0.40));
+}
+.featured-card.xml-theme:hover{ border-color: rgba(245,158,11,0.45); box-shadow: 0 36px 90px -30px rgba(245,158,11,0.30), 0 10px 30px -15px rgba(0,0,0,0.7) }
+.featured-card.xml-theme .featured-art{
+  background:
+    radial-gradient(420px 220px at 30% 30%, rgba(245,158,11,0.30), transparent 60%),
+    radial-gradient(380px 220px at 80% 70%, rgba(217,119,6,0.18), transparent 60%),
+    linear-gradient(135deg, rgba(80,50,10,0.30), rgba(245,158,11,0.06));
+}
+.featured-card.xml-theme .tag{
+  color: #ffe5b4; background: rgba(245,158,11,0.14); border-color: rgba(245,158,11,0.32);
+}
+.xml-cube{
+  width: 130px; height: 130px; border-radius: 22px;
+  background: linear-gradient(135deg, #d97706, #fbbf24);
+  color: #1f1208; font-weight: 900; font-size: 30px;
+  display: flex; align-items: center; justify-content: center;
+  letter-spacing: 0.5px;
+  box-shadow:
+    0 30px 70px -22px rgba(245,158,11,0.55),
+    inset 0 0 0 1px rgba(255,255,255,0.30),
+    inset 0 -16px 28px -10px rgba(0,0,0,0.25);
+  transform: rotate(-6deg);
+  animation: floatY 5s ease-in-out infinite;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.18);
+}
+
+/* Git-themed featured card variant (Git official orange) */
+.featured-card.git-theme::before{
+  background: linear-gradient(135deg, rgba(240,80,50,0.55), rgba(193,50,24,0) 40%, rgba(255,114,80,0.40));
+}
+.featured-card.git-theme:hover{ border-color: rgba(240,80,50,0.45); box-shadow: 0 36px 90px -30px rgba(240,80,50,0.30), 0 10px 30px -15px rgba(0,0,0,0.7) }
+.featured-card.git-theme .featured-art{
+  background:
+    radial-gradient(420px 220px at 30% 30%, rgba(240,80,50,0.30), transparent 60%),
+    radial-gradient(380px 220px at 80% 70%, rgba(193,50,24,0.22), transparent 60%),
+    linear-gradient(135deg, rgba(80,15,5,0.30), rgba(240,80,50,0.06));
+}
+.featured-card.git-theme .tag{
+  color: #ffd6c7; background: rgba(240,80,50,0.14); border-color: rgba(240,80,50,0.35);
+}
+/* Mini DAG art — three "commit" dots connected, with a fourth branching off */
+.git-dag{
+  width: 200px; height: 160px; position: relative;
+  filter: drop-shadow(0 16px 36px rgba(240,80,50,0.45));
+  animation: floatY 5s ease-in-out infinite;
+}
+.git-dag .dag-edge{
+  position: absolute; height: 3px; border-radius: 2px;
+  background: linear-gradient(90deg, rgba(240,80,50,0.90), rgba(255,114,80,0.90));
+  box-shadow: 0 0 10px rgba(240,80,50,0.6);
+}
+.git-dag .dag-edge.e1{ left: 20px;  top: 80px; width: 50px; }
+.git-dag .dag-edge.e2{ left: 80px;  top: 80px; width: 50px; }
+.git-dag .dag-edge.e3{ left: 140px; top: 80px; width: 40px; }
+.git-dag .dag-edge.e4{
+  left: 78px; top: 50px; width: 70px;
+  background: linear-gradient(90deg, rgba(53,208,255,0.85), rgba(53,208,255,0.85));
+  box-shadow: 0 0 10px rgba(53,208,255,0.6);
+  transform: rotate(-25deg); transform-origin: left center;
+}
+.git-dag .dag-node{
+  position: absolute; width: 22px; height: 22px; border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #fff 0%, #fbbf24 60%, #d97706 100%);
+  box-shadow: 0 0 14px rgba(251,191,36,0.7), 0 0 0 2px rgba(255,255,255,0.20);
+}
+.git-dag .dag-node.merge{
+  background: radial-gradient(circle at 30% 30%, #fff 0%, #ff7250 50%, #c13218 100%);
+  box-shadow: 0 0 18px rgba(240,80,50,0.85), 0 0 0 2px rgba(255,255,255,0.30);
+  width: 26px; height: 26px;
+}
+.git-dag .dag-node.feat{
+  background: radial-gradient(circle at 30% 30%, #fff 0%, #35d0ff 60%, #0099c0 100%);
+  box-shadow: 0 0 14px rgba(53,208,255,0.7);
+}
+.git-dag .dag-node.n1{ left: 8px;   top: 70px; }
+.git-dag .dag-node.n2{ left: 68px;  top: 70px; }
+.git-dag .dag-node.n3{ left: 128px; top: 70px; }
+.git-dag .dag-node.n4{ left: 168px; top: 70px; }
+.git-dag .dag-node.n5{ left: 142px; top: 28px; }     /* feature commit */
+.git-dag .label{
+  position: absolute; font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; padding: 2px 7px; border-radius: 12px;
+  background: rgba(20,15,5,0.85); color: #ffd6c7;
+  border: 1px solid rgba(240,80,50,0.45); letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.git-dag .label.main { left: 158px; top: 102px; }
+.git-dag .label.feat { left: 130px; top:   8px; color: #9be8ff; border-color: rgba(53,208,255,0.5); }
+
+/* Docker-themed featured card variant (Docker official blue) */
+.featured-card.docker-theme::before{
+  background: linear-gradient(135deg, rgba(36,150,237,0.55), rgba(14,114,197,0) 40%, rgba(91,179,255,0.40));
+}
+.featured-card.docker-theme:hover{ border-color: rgba(36,150,237,0.45); box-shadow: 0 36px 90px -30px rgba(36,150,237,0.30), 0 10px 30px -15px rgba(0,0,0,0.7) }
+.featured-card.docker-theme .featured-art{
+  background:
+    radial-gradient(420px 220px at 30% 30%, rgba(36,150,237,0.30), transparent 60%),
+    radial-gradient(380px 220px at 80% 70%, rgba(14,114,197,0.22), transparent 60%),
+    linear-gradient(135deg, rgba(5,15,40,0.30), rgba(36,150,237,0.06));
+}
+.featured-card.docker-theme .tag{
+  color: #cfe6ff; background: rgba(36,150,237,0.14); border-color: rgba(36,150,237,0.35);
+}
+/* Mini stacked-layers art */
+.docker-stack{
+  width: 200px; height: 160px; position: relative;
+  filter: drop-shadow(0 16px 36px rgba(36,150,237,0.50));
+  animation: floatY 5s ease-in-out infinite;
+}
+.docker-stack .layer{
+  position: absolute; left: 50%; transform: translateX(-50%);
+  height: 22px; border-radius: 12px;
+  background: linear-gradient(135deg, #2496ED, #5BB3FF);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.20),
+              inset 0 -6px 12px -4px rgba(0,0,0,0.30),
+              0 4px 14px -6px rgba(36,150,237,0.5);
+}
+.docker-stack .layer.l1{ width: 150px; bottom: 8px;  background: linear-gradient(135deg, #2496ED, #5BB3FF) }
+.docker-stack .layer.l2{ width: 134px; bottom: 38px; background: linear-gradient(135deg, #38d39f, #6ee7b7) }
+.docker-stack .layer.l3{ width: 118px; bottom: 68px; background: linear-gradient(135deg, #ff8a3b, #fbbf24) }
+.docker-stack .layer.l4{ width: 100px; bottom: 98px; background: linear-gradient(135deg, #ff5a7a, #ff8c5a) }
+.docker-stack .layer.l5{ width:  82px; bottom: 128px; background: linear-gradient(135deg, #a978ff, #c7a4ff) }
+.docker-stack .label{
+  position: absolute; right: 10px; font-family: 'JetBrains Mono', monospace;
+  font-size: 9px; color: #cfe6ff; opacity: 0.85;
+  background: rgba(6,12,24,0.85); padding: 2px 6px; border-radius: 4px;
+  border: 1px solid rgba(36,150,237,0.35); white-space: nowrap;
+  letter-spacing: 0.04em;
+}
+.docker-stack .label.l1{ bottom: 12px } .docker-stack .label.l2{ bottom: 42px }
+.docker-stack .label.l3{ bottom: 72px } .docker-stack .label.l4{ bottom: 102px }
+.docker-stack .label.l5{ bottom: 132px }
+
+/* Memcached-themed featured card variant (emerald) */
+.featured-card.mc-theme::before{
+  background: linear-gradient(135deg, rgba(16,185,129,0.55), rgba(5,150,105,0) 40%, rgba(34,211,238,0.40));
+}
+.featured-card.mc-theme:hover{ border-color: rgba(16,185,129,0.45); box-shadow: 0 36px 90px -30px rgba(16,185,129,0.30), 0 10px 30px -15px rgba(0,0,0,0.7) }
+.featured-card.mc-theme .featured-art{
+  background:
+    radial-gradient(420px 220px at 30% 30%, rgba(16,185,129,0.30), transparent 60%),
+    radial-gradient(380px 220px at 80% 70%, rgba(34,211,238,0.20), transparent 60%),
+    linear-gradient(135deg, rgba(2,30,20,0.30), rgba(16,185,129,0.06));
+}
+.featured-card.mc-theme .tag{
+  color: #bff5e3; background: rgba(16,185,129,0.14); border-color: rgba(16,185,129,0.35);
+}
+/* Concentric slab-class rings — animated cache visualization */
+.mc-rings{
+  width: 200px; height: 200px; position: relative;
+  filter: drop-shadow(0 16px 36px rgba(16,185,129,0.45));
+  animation: floatY 5s ease-in-out infinite;
+}
+.mc-rings .ring{
+  position: absolute; left: 50%; top: 50%;
+  border-radius: 50%; transform: translate(-50%, -50%);
+  border: 2px solid rgba(255,255,255,0.30);
+}
+.mc-rings .ring.r1{ width: 70px;  height: 70px;  border-color: rgba(59,130,246,0.85);  box-shadow: 0 0 14px rgba(59,130,246,0.5)  inset, 0 0 14px rgba(59,130,246,0.5); }
+.mc-rings .ring.r2{ width: 110px; height: 110px; border-color: rgba(34,211,238,0.85);  box-shadow: 0 0 12px rgba(34,211,238,0.4)  inset; }
+.mc-rings .ring.r3{ width: 150px; height: 150px; border-color: rgba(16,185,129,0.85);  box-shadow: 0 0 12px rgba(16,185,129,0.45) inset; animation: spinSlow 22s linear infinite; }
+.mc-rings .ring.r4{ width: 190px; height: 190px; border-color: rgba(251,191,36,0.55);  box-shadow: 0 0 12px rgba(251,191,36,0.3)  inset; animation: spinSlow 30s linear infinite reverse; }
+@keyframes spinSlow{ to{ transform: translate(-50%,-50%) rotate(360deg) } }
+.mc-rings .core{
+  position: absolute; left: 50%; top: 50%;
+  width: 32px; height: 32px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff 0%, #34D399 55%, #059669 100%);
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 22px rgba(16,185,129,0.85);
+}
+.mc-rings .entry{
+  position: absolute; width: 12px; height: 12px; border-radius: 50%;
+  box-shadow: 0 0 10px rgba(255,255,255,0.5);
+}
+.mc-rings .entry.e1{ left: 50%; top: 14px;  transform: translateX(-50%); background: linear-gradient(135deg, #fbbf24, #ff8a3b); }
+.mc-rings .entry.e2{ right: 18px; top: 50%; transform: translateY(-50%); background: linear-gradient(135deg, #34D399, #10B981); }
+.mc-rings .entry.e3{ left: 50%; bottom: 14px; transform: translateX(-50%); background: linear-gradient(135deg, #ff6ec7, #ff5a7a); }
+.mc-rings .entry.e4{ left: 18px; top: 50%; transform: translateY(-50%); background: linear-gradient(135deg, #22d3ee, #3b82f6); }
+.mc-rings .entry.e5{ left: 30%; top: 30%; background: linear-gradient(135deg, #a978ff, #7c5cff); }
+.mc-rings .entry.e6{ right: 30%; top: 30%; background: linear-gradient(135deg, #fde68a, #fbbf24); }
+.mc-rings .entry.e7{ left: 30%; bottom: 30%; background: linear-gradient(135deg, #6ee7b7, #34D399); }
+.mc-rings .entry.e8{ right: 30%; bottom: 30%; background: linear-gradient(135deg, #ff8a5a, #ff5a7a); }
+
 /* HTML-themed featured card variant */
 .featured-card.html-theme::before{
   background: linear-gradient(135deg, rgba(227,79,38,0.55), rgba(124,92,255,0) 45%, rgba(53,208,255,0.4));
@@ -722,6 +908,9 @@ footer a:hover{ color: var(--text) }
     </div>
   </div>
   <div class="right">
+    <a class="nav-link" href="#cpp-basics">C++ Basics</a>
+    <a class="nav-link" href="#cpp-oop">C++ OOP</a>
+    <a class="nav-link" href="#cpp-stl">C++ STL</a>
     <a class="nav-link" href="#javascript">JavaScript</a>
     <a class="nav-link" href="#typescript">TypeScript</a>
     <a class="nav-link" href="#html">HTML</a>
@@ -732,6 +921,10 @@ footer a:hover{ color: var(--text) }
     <a class="nav-link" href="#react">React</a>
     <a class="nav-link" href="#react-native">React Native</a>
     <a class="nav-link" href="#csharp">C#</a>
+    <a class="nav-link" href="#xml">XML</a>
+    <a class="nav-link" href="#git">Git</a>
+    <a class="nav-link" href="#docker">Docker</a>
+    <a class="nav-link" href="#memcached">Memcached</a>
     <a class="nav-link primary" href="tools.html">BergerOverflow ↗</a>
   </div>
 </nav>
@@ -752,6 +945,90 @@ footer a:hover{ color: var(--text) }
 <main class="content">
 
   <!-- JavaScript — featured -->
+  <!-- C++ Basics — featured -->
+  <section class="lab-section" id="cpp-basics">
+    <div class="section-head">
+      <h2>C++ Basics</h2>
+      <span class="count">50 demos · 17 steps</span>
+      <p>A C-programmer's crash course in everything C++ adds on top of C — strings, references, smart pointers, move semantics, templates, exceptions, lambdas, and the four named casts. Every file frames the concept as "in C you'd do X, in C++ you can do Y because Z".</p>
+    </div>
+
+    <a class="featured-card" href="cpp-basics-tutorial/index.html">
+      <div class="featured-art">
+        <span class="ring r1"></span>
+        <span class="ring r2"></span>
+        <div class="js-cube" style="background:linear-gradient(135deg,#15803d,#a3e635);color:#06140a">C++</div>
+      </div>
+      <div class="featured-body">
+        <span class="tag">Featured</span>
+        <h3>C++ Basics Lab</h3>
+        <p>Single-page lab with CodeMirror, per-demo expected stdout, and a green/lime accent. Walk from <code>printf</code> vs <code>std::cout</code> through references, <code>const</code>/<code>constexpr</code>, smart pointers, templates, exceptions, lambdas, and the four C++ casts.</p>
+        <div class="meta">
+          <span>50 mini demos</span>
+          <span>17 steps</span>
+          <span>C → C++ throughout</span>
+        </div>
+        <span class="open">Open the lab <span aria-hidden="true">→</span></span>
+      </div>
+    </a>
+  </section>
+
+  <!-- C++ OOP — featured -->
+  <section class="lab-section" id="cpp-oop">
+    <div class="section-head">
+      <h2>C++ OOP</h2>
+      <span class="count">65 demos · 11 steps</span>
+      <p>A hands-on tour of object-oriented C++: classes, inheritance, polymorphism, the diamond problem, virtual inheritance, advanced patterns (CRTP, mixins, singletons), pitfalls, <code>const</code> correctness, <code>friend</code>, the Rule of 5, and operator overloading.</p>
+    </div>
+
+    <a class="featured-card" href="cpp-oop-tutorial/index.html">
+      <div class="featured-art">
+        <span class="ring r1"></span>
+        <span class="ring r2"></span>
+        <div class="js-cube" style="background:linear-gradient(135deg,#1d4ed8,#67e8f9);color:#031027">OOP</div>
+      </div>
+      <div class="featured-body">
+        <span class="tag">Featured</span>
+        <h3>C++ OOP Lab</h3>
+        <p>Single-page lab with CodeMirror and a cyan/blue accent. 65 single-concept programs split across 11 steps — every concept comes with the captured stdout from a clean <code>g++ -std=c++17 -Wall -Wextra</code> build.</p>
+        <div class="meta">
+          <span>65 mini demos</span>
+          <span>11 steps</span>
+          <span>diamond problem to Rule of 5</span>
+        </div>
+        <span class="open">Open the lab <span aria-hidden="true">→</span></span>
+      </div>
+    </a>
+  </section>
+
+  <!-- C++ STL — featured -->
+  <section class="lab-section" id="cpp-stl">
+    <div class="section-head">
+      <h2>C++ STL</h2>
+      <span class="count">51 demos · 14 steps</span>
+      <p>A deep tour of the Standard Template Library — containers, iterators, algorithms, and functors — grouped under four super-headers in the sidebar. Every container and algorithm comes with explicit Big-O complexity.</p>
+    </div>
+
+    <a class="featured-card" href="cpp-stl-tutorial/index.html">
+      <div class="featured-art">
+        <span class="ring r1"></span>
+        <span class="ring r2"></span>
+        <div class="js-cube" style="background:linear-gradient(135deg,#6d28d9,#f0abfc);color:#1a0431">STL</div>
+      </div>
+      <div class="featured-body">
+        <span class="tag">Featured</span>
+        <h3>C++ STL Lab</h3>
+        <p>Sequence and associative containers, iterator categories (incl. dedicated bidi and random-access steps), the full <code>&lt;algorithm&gt;</code> family, set operations on sorted ranges, numeric reductions, and a step on functors / lambdas / <code>std::function</code>.</p>
+        <div class="meta">
+          <span>51 mini demos</span>
+          <span>14 steps · 4 super-groups</span>
+          <span>complexity-annotated</span>
+        </div>
+        <span class="open">Open the lab <span aria-hidden="true">→</span></span>
+      </div>
+    </a>
+  </section>
+
   <section class="lab-section" id="javascript">
     <div class="section-head">
       <h2>JavaScript</h2>
@@ -1047,10 +1324,158 @@ footer a:hover{ color: var(--text) }
     </a>
   </section>
 
+  <!-- XML — featured -->
+  <section class="lab-section" id="xml">
+    <div class="section-head">
+      <h2>XML</h2>
+      <span class="count">parse · xpath · xslt</span>
+      <p>Edit XML, XSLT and SVG with full syntax highlighting and watch the browser actually <em>execute</em> each lesson — the lab uses the built-in <code>DOMParser</code>, <code>XPathEvaluator</code> and <code>XSLTProcessor</code> to validate well-formedness, run XPath queries against your XML, transform XML through XSLT into rendered HTML, and inline-render SVG.</p>
+    </div>
+
+    <a class="featured-card xml-theme" href="xml/index.html">
+      <div class="featured-art">
+        <span class="ring r1"></span>
+        <span class="ring r2"></span>
+        <div class="xml-cube">&lt;/&gt;</div>
+      </div>
+      <div class="featured-body">
+        <span class="tag">Featured</span>
+        <h3>XML Lab</h3>
+        <p>12 steps from <code>&lt;greeting&gt;Hello&lt;/greeting&gt;</code> through elements, attributes, escaping, CDATA, comments, processing instructions, namespaces, DTDs, XPath (basic + predicates), XSLT transformation, and SVG. Final project is a 2-file library catalog (<code>catalog.xml</code> + <code>catalog.xsl</code>) that the browser transforms into a styled HTML catalog page right inside the preview.</p>
+        <div class="meta">
+          <span>12 steps</span>
+          <span>real DOMParser / XPath / XSLT</span>
+          <span>live SVG render</span>
+          <span>multi-file final project</span>
+        </div>
+        <span class="open">Open the lab <span aria-hidden="true">→</span></span>
+      </div>
+    </a>
+  </section>
+
+  <!-- Git — featured -->
+  <section class="lab-section" id="git">
+    <div class="section-head">
+      <h2>Git</h2>
+      <span class="count">3D graph · 15 steps</span>
+      <p>Walk a 15-step Git curriculum — from <code>git init</code> through <code>rebase</code>, hooks, octopus merges, and recovering lost commits — with a real Three.js 3D graph visualizing each step's commit DAG. Drag to rotate, scroll to zoom, hover commits for details; branches are color-coded, HEAD pulses, tags wear golden rings.</p>
+    </div>
+
+    <a class="featured-card git-theme" href="git/index.html">
+      <div class="featured-art">
+        <span class="ring r1"></span>
+        <span class="ring r2"></span>
+        <div class="git-dag">
+          <div class="dag-edge e1"></div>
+          <div class="dag-edge e2"></div>
+          <div class="dag-edge e3"></div>
+          <div class="dag-edge e4"></div>
+          <div class="dag-node n1"></div>
+          <div class="dag-node n2"></div>
+          <div class="dag-node merge n3"></div>
+          <div class="dag-node n4"></div>
+          <div class="dag-node feat n5"></div>
+          <span class="label main">main</span>
+          <span class="label feat">feature</span>
+        </div>
+      </div>
+      <div class="featured-body">
+        <span class="tag">Featured</span>
+        <h3>Git Lab</h3>
+        <p>Each step pairs the actual bash scripts from <code>git/step*</code> (with bash syntax highlighting + tab navigation between scripts) with a 3D commit-DAG visualizer. The 15 steps cover: init &amp; objects, branching, merging (FF + 3-way + conflicts), remotes, rebase, log/blame/bisect, stash &amp; worktree, tags &amp; releases, hooks, cherry-pick &amp; reflog &amp; sparse-checkout, gitflow / trunk-based / forking workflows, plumbing internals, octopus merges, large-repo techniques, and disaster recovery.</p>
+        <div class="meta">
+          <span>15 steps · 56 scripts</span>
+          <span>3D Three.js graph</span>
+          <span>orbit · zoom · hover</span>
+          <span>HEAD pulse · tag rings</span>
+        </div>
+        <span class="open">Open the lab <span aria-hidden="true">→</span></span>
+      </div>
+    </a>
+  </section>
+
+  <!-- Docker — featured -->
+  <section class="lab-section" id="docker">
+    <div class="section-head">
+      <h2>Docker</h2>
+      <span class="count">3D layers · 15 steps</span>
+      <p>15 steps from <code>docker run hello-world</code> through multi-stage builds, Docker Compose, BuildKit secrets, Swarm replicas, and production hardening — each with a 3D visualizer that auto-detects the kind: <strong>image-layer towers</strong> for Dockerfile steps (each instruction is a colored disk in a stack, multi-stage builds get separate towers with a copy-arrow between them), or <strong>service topology</strong> for compose steps (services as 3D boxes around a circle, depends_on arrows, port labels, volume cylinders, network rings).</p>
+    </div>
+
+    <a class="featured-card docker-theme" href="docker/index.html">
+      <div class="featured-art">
+        <span class="ring r1"></span>
+        <span class="ring r2"></span>
+        <div class="docker-stack">
+          <span class="layer l5"></span><span class="label l5">CMD</span>
+          <span class="layer l4"></span><span class="label l4">EXPOSE</span>
+          <span class="layer l3"></span><span class="label l3">RUN</span>
+          <span class="layer l2"></span><span class="label l2">COPY</span>
+          <span class="layer l1"></span><span class="label l1">FROM</span>
+        </div>
+      </div>
+      <div class="featured-body">
+        <span class="tag">Featured</span>
+        <h3>Docker Lab</h3>
+        <p>Each step opens its actual <code>Dockerfile</code> / <code>docker-compose.yml</code> from <code>docker/step*</code> with proper syntax highlighting and tab navigation between every supporting file (app.py, requirements.txt, nginx.conf, init.sql, etc.). The 15 steps cover: hello-world CLI, first Dockerfile, layers &amp; cache, volumes, networking, ENV/ARG, multi-stage (gcc → alpine), Compose with Redis, HEALTHCHECK, registry push/pull, full 3-tier stack (Nginx → Flask → Postgres with two networks), BuildKit secrets, Swarm replicas with rolling updates, ENTRYPOINT vs CMD, and production hardening (read_only, cap_drop, mem_limit).</p>
+        <div class="meta">
+          <span>15 steps · 42 files</span>
+          <span>auto-parsed Dockerfiles</span>
+          <span>service topology in 3D</span>
+          <span>HEALTHCHECK pulse · network rings</span>
+        </div>
+        <span class="open">Open the lab <span aria-hidden="true">→</span></span>
+      </div>
+    </a>
+  </section>
+
+  <!-- Memcached — featured -->
+  <section class="lab-section" id="memcached">
+    <div class="section-head">
+      <h2>Memcached</h2>
+      <span class="count">3D cache · 7 steps</span>
+      <p>7 steps from <code>docker run memcached</code> through clusters and monitoring — each step picks the right 3D viz: <strong>concept overview</strong> for setup, <strong>concentric slab-class rings</strong> with cache entries color-coded by TTL for the protocol/advanced steps, <strong>client ↔ server flow</strong> with an animated request particle for the Python/Node clients, <strong>cache-aside pattern</strong> diagram for caching strategies, <strong>consistent-hash ring</strong> with 3 nodes and key→node spokes for clustering, and <strong>floating stat gauges</strong> for monitoring.</p>
+    </div>
+
+    <a class="featured-card mc-theme" href="memcached/index.html">
+      <div class="featured-art">
+        <span class="ring r1"></span>
+        <span class="ring r2"></span>
+        <div class="mc-rings">
+          <div class="ring r4"></div>
+          <div class="ring r3"></div>
+          <div class="ring r2"></div>
+          <div class="ring r1"></div>
+          <div class="entry e1"></div>
+          <div class="entry e2"></div>
+          <div class="entry e3"></div>
+          <div class="entry e4"></div>
+          <div class="entry e5"></div>
+          <div class="entry e6"></div>
+          <div class="entry e7"></div>
+          <div class="entry e8"></div>
+          <div class="core"></div>
+        </div>
+      </div>
+      <div class="featured-body">
+        <span class="tag">Featured</span>
+        <h3>Memcached Lab</h3>
+        <p>Each step opens its actual bash transcript from <code>memcached/step*</code> with shell syntax highlighting and tab navigation. The 7 steps cover: concepts &amp; setup (Docker / apt / WSL), the full ASCII protocol (set / get / add / replace / cas / incr / append / flush_all / multi-get), Python <code>pymemcache</code> + Node.js <code>memjs</code> clients, advanced features (CAS, TTL, item flags, atomics), the four caching patterns (cache-aside, write-through, write-back, refresh-ahead), clustering &amp; consistent hashing, and full <code>STATS</code> observability.</p>
+        <div class="meta">
+          <span>7 steps · 9 scripts</span>
+          <span>auto-extracted protocol ops</span>
+          <span>slab-class rings · TTL coloring</span>
+          <span>consistent-hash 3-node ring</span>
+        </div>
+        <span class="open">Open the lab <span aria-hidden="true">→</span></span>
+      </div>
+    </a>
+  </section>
+
 </main>
 
 <footer>
-  <p>Advanced Programming · <a href="tools.html">BergerOverflow Tools</a> · <a href="javascript/index.html">JS Lab</a> · <a href="typescript/index.html">TS Lab</a> · <a href="html/lab.html">HTML Lab</a> · <a href="css/index.html">CSS Lab</a> · <a href="bootstrap/index.html">Bootstrap Lab</a> · <a href="mongodb/index.html">MongoDB Lab</a> · <a href="neo4j/index.html">Neo4j Lab</a> · <a href="react/index.html">React Lab</a> · <a href="react-native/index.html">React Native Lab</a></p>
+  <p>Advanced Programming · <a href="tools.html">BergerOverflow Tools</a> · <a href="javascript/index.html">JS Lab</a> · <a href="typescript/index.html">TS Lab</a> · <a href="html/lab.html">HTML Lab</a> · <a href="css/index.html">CSS Lab</a> · <a href="bootstrap/index.html">Bootstrap Lab</a> · <a href="mongodb/index.html">MongoDB Lab</a> · <a href="neo4j/index.html">Neo4j Lab</a> · <a href="react/index.html">React Lab</a> · <a href="react-native/index.html">React Native Lab</a> · <a href="xml/index.html">XML Lab</a> · <a href="git/index.html">Git Lab</a> · <a href="docker/index.html">Docker Lab</a> · <a href="memcached/index.html">Memcached Lab</a></p>
 </footer>
 
 <script>

@@ -1,0 +1,3263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>C++ Basics Lab — Advanced Programming</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/theme/dracula.min.css">
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/clike/clike.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/edit/closebrackets.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/edit/matchbrackets.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/selection/active-line.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/comment/comment.min.js"></script>
+
+<style>
+:root{
+  --bg-0:#04070d;
+  --surface:rgba(255,255,255,0.04);
+  --surface-2:rgba(255,255,255,0.07);
+  --border:rgba(255,255,255,0.09);
+  --border-strong:rgba(255,255,255,0.18);
+  --text:#e8eef9;
+  --text-dim:#9aa5bd;
+  --text-faint:#5e6a86;
+  --cpp-green:#22c55e;
+  --cpp-green-light:#4ade80;
+  --cpp-green-deep:#15803d;
+  --cpp-lime:#a3e635;
+  --cpp-lime-light:#bef264;
+  --cpp-glow:rgba(34,197,94,0.45);
+  --kw-color:#7dd3fc;
+  --type-color:#c4b5fd;
+  --string-color:#86efac;
+  --comment-color:#7c8cff;
+  --num-color:#fbbf24;
+  --success:#38d39f;
+  --warn:#ffb547;
+  --error:#ff5a7a;
+  --radius:18px;
+  --shadow-lg: 0 30px 80px -30px rgba(34,197,94,0.32), 0 10px 30px -15px rgba(0,0,0,0.6);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg-0);color:var(--text);font-family:'Inter',system-ui,sans-serif;height:100%;overflow:hidden}
+code,pre,textarea,.mono,.CodeMirror{font-family:'JetBrains Mono',ui-monospace,monospace}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+
+#bg-3d{
+  position:fixed; inset:0; z-index:-2; display:block;
+  background:
+    radial-gradient(1200px 700px at 8% -10%, rgba(34,197,94,0.30), transparent 60%),
+    radial-gradient(1000px 600px at 110% 0%,  rgba(163,230,53,0.18), transparent 60%),
+    radial-gradient(900px 600px at 50% 130%,  rgba(74,222,128,0.16), transparent 60%),
+    linear-gradient(180deg, #02060e 0%, #050811 50%, #02050a 100%);
+}
+body::after{
+  content:""; position:fixed; inset:0; z-index:-1; pointer-events:none; opacity:.32;
+  background-image:
+    radial-gradient(1px 1px at 20% 30%, #ffffff 100%, transparent),
+    radial-gradient(1px 1px at 70% 60%, #ffffff 100%, transparent),
+    radial-gradient(1.5px 1.5px at 40% 80%, #ffffff 100%, transparent),
+    radial-gradient(1px 1px at 85% 20%, #ffffff 100%, transparent),
+    radial-gradient(1px 1px at 15% 65%, #ffffff 100%, transparent);
+  background-size: 1200px 800px;
+  mask-image:linear-gradient(180deg,transparent,#000 20%,#000 80%,transparent);
+}
+
+.app{ display:grid; grid-template-columns: 320px 1fr; height:100vh }
+@media (max-width: 980px){
+  .app{ grid-template-columns: 1fr; height:auto; min-height:100vh; overflow:auto }
+  html,body{ overflow:auto; height:auto }
+}
+
+.sidebar{
+  padding:22px 16px; position:relative; z-index:5;
+  background:linear-gradient(180deg, rgba(10,15,30,0.85), rgba(6,10,22,0.85));
+  backdrop-filter: blur(22px) saturate(140%);
+  -webkit-backdrop-filter: blur(22px) saturate(140%);
+  border-right:1px solid var(--border);
+  overflow-y:auto; scrollbar-width:thin;
+}
+.sidebar::-webkit-scrollbar{width:6px}
+.sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.08);border-radius:6px}
+
+.brand{ display:flex;align-items:center;gap:12px;margin-bottom:18px;padding:6px 4px;border-radius:14px;user-select:none }
+.brand-cube{
+  width:46px;height:46px;border-radius:12px;position:relative;
+  background:linear-gradient(135deg, var(--cpp-green-deep), var(--cpp-lime-light));
+  box-shadow:
+    0 12px 30px -10px var(--cpp-glow),
+    inset 0 0 0 1px rgba(255,255,255,0.30),
+    inset 0 -10px 20px -8px rgba(0,0,0,0.35);
+  transform: rotate(-6deg);
+  display:flex;align-items:center;justify-content:center;
+  font-weight:800;font-size:14px;color:#fff;letter-spacing:0.3px;
+  animation: floatY 5s ease-in-out infinite;
+  text-shadow: 0 1px 0 rgba(0,0,0,0.18);
+}
+.brand-cube::after{
+  content:""; position:absolute; inset:auto -6px -6px auto;
+  width:100%;height:100%; border-radius:12px;
+  background:linear-gradient(135deg, rgba(34,197,94,0.5), rgba(163,230,53,0.4));
+  filter:blur(14px); z-index:-1;
+}
+@keyframes floatY{ 0%,100%{ transform: rotate(-6deg) translateY(0) } 50%{ transform: rotate(-2deg) translateY(-4px) } }
+.brand h1{margin:0;font-size:17px;font-weight:700;letter-spacing:-0.02em}
+.brand .sub{font-size:11px;color:var(--text-faint);letter-spacing:0.14em;text-transform:uppercase}
+
+.search-wrap{ position:relative; margin-bottom:14px }
+.search{
+  width:100%;padding:10px 14px 10px 34px;border-radius:12px;border:1px solid var(--border);
+  background:rgba(255,255,255,0.03);color:var(--text);font-size:13.5px;outline:none;
+  transition:border-color .2s, box-shadow .2s;
+}
+.search:focus{border-color:var(--cpp-green);box-shadow:0 0 0 3px rgba(34,197,94,0.22)}
+.search-wrap::before{
+  content:"⌕"; position:absolute; left:11px; top:50%; transform:translateY(-50%);
+  color:var(--text-faint); font-size:14px; pointer-events:none;
+}
+
+.section-label{ font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:var(--text-faint); padding:14px 8px 6px }
+
+.file-list{ list-style:none; padding:0; margin:0 }
+.file-list li{ margin:2px 0 }
+.file-btn{
+  width:100%;display:flex;align-items:center;gap:10px;
+  background:transparent;color:var(--text-dim);
+  padding:10px 12px;border-radius:10px;font-size:13.5px;font-weight:500;text-align:left;
+  transition: background .15s, color .15s, transform .15s, box-shadow .2s;
+  border:1px solid transparent;
+}
+.file-btn:hover{ background:var(--surface); color:var(--text); transform:translateX(2px) }
+.file-btn.active{
+  background:linear-gradient(135deg,rgba(34,197,94,0.25),rgba(163,230,53,0.10));
+  color:#fff; border-color:rgba(34,197,94,0.32);
+  box-shadow: inset 0 0 0 1px rgba(34,197,94,0.18), 0 8px 24px -16px var(--cpp-glow);
+}
+.file-btn .ico{
+  width:24px; height:24px; flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  border-radius:6px;
+  background:linear-gradient(135deg, var(--cpp-green-deep), var(--cpp-lime-light));
+  color:#fff; font-weight:800; font-size:9.5px; letter-spacing:0.5px;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.2);
+  text-shadow:0 1px 0 rgba(0,0,0,0.2);
+}
+.file-btn .label{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+.file-btn .lines{
+  font-size:10.5px; color:var(--text-faint); padding:1px 6px; border-radius:20px;
+  background:rgba(255,255,255,0.04); flex-shrink:0;
+}
+.file-btn.active .lines{ background:rgba(34,197,94,0.20); color:#d4f5dd }
+.file-btn.dirty::before{
+  content:""; width:6px; height:6px; border-radius:50%;
+  background:var(--cpp-lime-light); flex-shrink:0;
+  box-shadow: 0 0 8px var(--cpp-lime-light);
+}
+.file-group-head{
+  list-style:none; padding:14px 12px 4px;
+  font-size:10.5px; letter-spacing:0.18em; text-transform:uppercase;
+  color:var(--text-faint); font-weight:600;
+}
+
+.back-link{
+  display:flex;align-items:center;gap:8px;
+  margin-top:18px; padding:10px 12px;border-radius:10px;
+  color:var(--text-dim); font-size:13px; text-decoration:none;
+  border:1px solid var(--border);
+  transition: background .15s, color .15s, border-color .15s;
+}
+.back-link:hover{ background:var(--surface); color:var(--text); border-color:var(--border-strong) }
+
+.editor-pane{
+  position:relative; padding:22px;
+  display:grid;
+  grid-template-columns: var(--col-1, 1fr) 6px var(--col-2, 1fr);
+  grid-template-rows: auto 1fr;
+  grid-template-areas:
+    "topbar  topbar  topbar"
+    "editor  split   preview";
+  gap:14px;
+  min-width:0; min-height:0; overflow:hidden;
+}
+.editor-pane > .top-bar     { grid-area: topbar }
+.editor-pane > .editor-card { grid-area: editor;  min-width: 0 }
+.editor-pane > .preview-card{ grid-area: preview; min-width: 0 }
+
+.splitter{
+  grid-area: split; cursor: col-resize; position: relative;
+  background: transparent; user-select: none; touch-action: none;
+}
+.splitter::before{
+  content: ""; position: absolute;
+  left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: 4px; height: 64px; border-radius: 2px;
+  background: var(--border-strong);
+  transition: background .18s, height .18s, box-shadow .18s;
+}
+.splitter:hover::before, .splitter.active::before{
+  background: linear-gradient(180deg, var(--cpp-green-deep), var(--cpp-lime-light));
+  height: 110px;
+  box-shadow: 0 0 16px -2px var(--cpp-glow);
+}
+
+@media (max-width: 980px){
+  .editor-pane{
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr 1fr;
+    grid-template-areas: "topbar" "editor" "preview";
+  }
+  .splitter{ display:none }
+}
+
+.top-bar{
+  display:flex;align-items:center;gap:14px; padding:14px 18px;
+  background: linear-gradient(135deg, rgba(15,25,55,0.7), rgba(10,15,40,0.7));
+  border:1px solid var(--border); border-radius: var(--radius);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  box-shadow: var(--shadow-lg);
+}
+.file-meta{ display:flex; align-items:center; gap:12px; min-width:0 }
+.file-icon{
+  width:36px;height:36px;border-radius:10px;
+  background:linear-gradient(135deg, var(--cpp-green-deep), var(--cpp-lime-light));
+  color:#fff; font-weight:800; font-size:13px; letter-spacing:0.5px;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow: 0 6px 18px -8px var(--cpp-glow), inset 0 0 0 1px rgba(255,255,255,0.30);
+  flex-shrink:0;
+  text-shadow: 0 1px 0 rgba(0,0,0,0.18);
+}
+.file-name{ font-size:15px; font-weight:600; letter-spacing:-0.01em }
+.file-name .dirty-mark{ color:var(--cpp-lime-light); margin-left:6px; opacity:0; transition:opacity .15s }
+.file-name.dirty .dirty-mark{ opacity:1 }
+.file-sub{ font-size:11.5px; color:var(--text-faint); margin-top:1px; font-family:'JetBrains Mono',monospace }
+.spacer{ flex:1 }
+
+.action-btn{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:8px 14px; border-radius:10px;
+  border:1px solid var(--border); background:rgba(255,255,255,0.03);
+  color:var(--text-dim); font-size:13px; font-weight:600;
+  transition: background .15s, color .15s, border-color .15s, transform .15s;
+  text-decoration: none;
+}
+.action-btn:hover{ background:var(--surface-2); color:var(--text); border-color:var(--border-strong) }
+.action-btn:active{ transform:translateY(1px) }
+.action-btn .k{ font-family:'JetBrains Mono',monospace; font-size:10.5px; opacity:.6; padding:1px 5px; border-radius:5px; background:rgba(255,255,255,0.06) }
+.run-btn{
+  background:linear-gradient(135deg, var(--cpp-green-deep), var(--cpp-lime-light));
+  color:#fff; border-color:transparent; font-weight:700;
+  box-shadow: 0 10px 30px -12px var(--cpp-glow);
+  text-shadow: 0 1px 0 rgba(0,0,0,0.18);
+}
+.run-btn:hover{ filter:brightness(1.08); transform:translateY(-1px); border-color:transparent }
+
+.editor-card{
+  position:relative; min-height:0;
+  background: linear-gradient(180deg, rgba(15,22,45,0.65), rgba(8,12,24,0.65));
+  border:1px solid var(--border); border-radius: var(--radius);
+  overflow:hidden;
+  backdrop-filter: blur(22px) saturate(150%);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  box-shadow: var(--shadow-lg);
+}
+.editor-card::before{
+  content:""; position:absolute; inset:-1px; border-radius: calc(var(--radius) + 1px); pointer-events:none;
+  background: linear-gradient(135deg, rgba(34,197,94,0.45), rgba(163,230,53,0.0) 40%, rgba(74,222,128,0.30));
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  padding:1px; opacity:.55;
+}
+.editor-chrome{
+  display:flex; align-items:center; gap:10px; padding:9px 14px;
+  border-bottom:1px solid var(--border);
+  background: linear-gradient(180deg, rgba(255,255,255,0.025), transparent);
+}
+.dot{ width:11px; height:11px; border-radius:50% }
+.dot.r{ background:#ff5a7a; box-shadow:0 0 10px rgba(255,90,122,0.55) }
+.dot.y{ background:#ffb547; box-shadow:0 0 10px rgba(255,181,71,0.55) }
+.dot.g{ background:#38d39f; box-shadow:0 0 10px rgba(56,211,159,0.55) }
+
+.file-tabs{
+  display:flex; gap:4px; margin: 0 6px 0 6px;
+  flex:1; min-width:200px; overflow-x:auto; overflow-y:hidden;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(34,197,94,0.35) transparent;
+  mask-image: linear-gradient(to right, transparent 0, #000 18px, #000 calc(100% - 18px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 18px, #000 calc(100% - 18px), transparent 100%);
+  padding-bottom: 4px;
+}
+.file-tabs::-webkit-scrollbar{ height: 4px }
+.file-tabs::-webkit-scrollbar-track{ background: transparent }
+.file-tabs::-webkit-scrollbar-thumb{ background: rgba(34,197,94,0.35); border-radius: 4px }
+.file-tabs::-webkit-scrollbar-thumb:hover{ background: rgba(34,197,94,0.55) }
+.file-tab{
+  flex-shrink:0;
+  padding: 3px 11px; font-size:11.5px; border-radius:7px;
+  border:1px solid var(--border); background:rgba(255,255,255,0.025);
+  color:var(--text-dim); font-weight:500;
+  font-family:'JetBrains Mono', ui-monospace, monospace;
+  transition: background .15s, color .15s, border-color .15s;
+  white-space:nowrap;
+}
+.file-tab.active{
+  background:linear-gradient(135deg, rgba(34,197,94,0.40), rgba(163,230,53,0.20));
+  color:#fff; border-color:rgba(34,197,94,0.45);
+  box-shadow: 0 0 0 1px rgba(34,197,94,0.25), 0 6px 14px -8px var(--cpp-glow);
+}
+.editor-chrome .badge{
+  font-size:10.5px; letter-spacing:0.14em; text-transform:uppercase;
+  padding:3px 9px; border-radius:20px;
+  background:rgba(34,197,94,0.10); border:1px solid rgba(34,197,94,0.32);
+  color:#d4f5dd;
+}
+.cm-host{ position:relative; height:calc(100% - 41px) }
+.CodeMirror{
+  height:100% !important; background:transparent;
+  font-size:14px; line-height:1.55; padding: 6px 0;
+}
+.CodeMirror-gutters{ background:transparent; border-right:1px solid var(--border) }
+.CodeMirror-linenumber{ color:rgba(154,165,189,0.4) }
+.CodeMirror-cursor{ border-left-color:#fff }
+.CodeMirror-activeline-background{ background:rgba(34,197,94,0.05) !important }
+.CodeMirror-selected{ background:rgba(34,197,94,0.20) !important }
+.CodeMirror-matchingbracket{ color:var(--cpp-lime-light) !important; text-shadow:0 0 8px var(--cpp-glow) }
+
+.preview-card{
+  background: linear-gradient(180deg, #060a14, #04060c);
+  border:1px solid var(--border); border-radius: var(--radius);
+  display:flex; flex-direction:column; min-height:0;
+  box-shadow: var(--shadow-lg);
+  overflow:hidden; position: relative;
+}
+.preview-card::before{
+  content:""; position: absolute; inset:-1px; border-radius: calc(var(--radius) + 1px); pointer-events:none;
+  background: linear-gradient(135deg, rgba(34,197,94,0.45), rgba(163,230,53,0) 40%, rgba(74,222,128,0.4));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude; padding: 1px;
+  opacity: .55;
+}
+.out-titlebar{
+  display:flex; align-items:center; gap:10px; padding:10px 14px;
+  background: linear-gradient(180deg, rgba(8,14,28,0.85), rgba(5,10,22,0.85));
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.out-titlebar .status{
+  display: flex; align-items: center; gap: 8px;
+  font-size: 11.5px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-dim);
+}
+.out-titlebar .status::before{
+  content:""; width:8px; height:8px; border-radius:50%; background: var(--text-faint);
+}
+.out-titlebar .status.ok::before{ background: var(--success); box-shadow: 0 0 10px rgba(56,211,159,0.7) }
+.out-titlebar .status.err::before{ background: var(--error); box-shadow: 0 0 10px rgba(255,90,122,0.7) }
+.out-titlebar .status.work::before{ background: var(--cpp-lime-light); box-shadow: 0 0 10px var(--cpp-glow) }
+.out-titlebar .info{
+  font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-faint);
+}
+.out-titlebar .right{ margin-left: auto; display: flex; gap: 6px; align-items: center }
+.out-titlebar .icon-btn{
+  padding: 4px 10px; border-radius: 7px;
+  border: 1px solid var(--border); background: rgba(255,255,255,0.02);
+  color: var(--text-dim); font-size: 11.5px;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.out-titlebar .icon-btn:hover{ background: var(--surface-2); color: var(--text); border-color: var(--border-strong) }
+
+.out-body{
+  flex: 1; min-height: 0; overflow: auto;
+  padding: 14px 18px;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 13px; line-height: 1.55;
+  scrollbar-width: thin;
+}
+.out-body::-webkit-scrollbar{ width: 6px; height: 6px }
+.out-body::-webkit-scrollbar-thumb{ background: rgba(34,197,94,0.18); border-radius: 6px }
+.out-body::-webkit-scrollbar-thumb:hover{ background: rgba(34,197,94,0.40) }
+.out-body .empty{
+  color: var(--text-faint); text-align: center; padding: 40px 12px;
+  font-style: italic; font-family: 'Inter', sans-serif;
+}
+.out-body .ok-banner{
+  background: rgba(56,211,159,0.10);
+  border: 1px solid rgba(56,211,159,0.30);
+  color: #b6f0d2;
+  border-radius: 8px;
+  padding: 8px 14px; margin-bottom: 12px;
+  font-family: 'Inter', sans-serif; font-size: 12.5px;
+}
+.out-body .info-banner{
+  background: rgba(34,197,94,0.10);
+  border: 1px solid rgba(34,197,94,0.30);
+  color: #d4f5dd;
+  border-radius: 8px;
+  padding: 8px 14px; margin-bottom: 12px;
+  font-family: 'Inter', sans-serif; font-size: 12.5px;
+}
+.out-body h4{
+  margin: 14px 0 6px; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--cpp-lime-light); font-weight: 600; font-family: 'Inter', sans-serif;
+}
+.out-body h4:first-child{ margin-top: 0 }
+.out-body pre{
+  white-space: pre;
+  color: var(--text);
+  font-size: 12.5px; line-height: 1.6;
+  margin: 0;
+}
+
+.ambient{
+  position:absolute; border-radius:50%; pointer-events:none; z-index:0;
+  filter: blur(60px); opacity:.5;
+}
+.ambient.a{ width:340px;height:340px; background:rgba(34,197,94,0.30); top:-80px; right:-100px; animation:floatA 14s ease-in-out infinite }
+.ambient.b{ width:280px;height:280px; background:rgba(163,230,53,0.28); bottom:-60px; left:8%; animation:floatB 18s ease-in-out infinite }
+@keyframes floatA{ 0%,100%{transform:translate(0,0)} 50%{transform:translate(-30px,20px)} }
+@keyframes floatB{ 0%,100%{transform:translate(0,0)} 50%{transform:translate(40px,-20px)} }
+
+.toast{
+  position:fixed; bottom:22px; right:22px; z-index:50;
+  padding:10px 14px; border-radius:12px; font-size:13px;
+  background:linear-gradient(135deg, var(--cpp-green-deep), var(--cpp-lime-light));
+  color:#fff; font-weight:700;
+  box-shadow: 0 18px 40px -18px var(--cpp-glow);
+  transform: translateY(20px); opacity:0;
+  transition: transform .25s ease, opacity .25s ease;
+}
+.toast.show{ transform: translateY(0); opacity:1 }
+.toast.error{ background:linear-gradient(135deg,#ff5a7a,#ff8c5a); color:#fff }
+</style>
+</head>
+<body>
+<canvas id="bg-3d"></canvas>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-cube">C++</div>
+      <div>
+        <h1>C++ Basics Lab</h1>
+        <div class="sub">syntax · types · ptrs · move</div>
+      </div>
+    </div>
+
+    <div class="search-wrap">
+      <input class="search" id="search" placeholder="Filter steps…" />
+    </div>
+
+    <div class="section-label">Steps</div>
+    <ul class="file-list" id="fileList"></ul>
+
+    <a class="back-link" href="../index.html" style="margin-top:18px">⌂ Home</a>
+  </aside>
+
+  <main class="editor-pane">
+    <div class="ambient a"></div>
+    <div class="ambient b"></div>
+
+    <header class="top-bar">
+      <div class="file-meta">
+        <div class="file-icon">CPP</div>
+        <div style="min-width:0">
+          <div class="file-name" id="fileName">Loading…<span class="dirty-mark">●</span></div>
+          <div class="file-sub" id="fileSub"></div>
+        </div>
+      </div>
+      <div class="spacer"></div>
+      <button class="action-btn" id="resetBtn" title="Revert this file to the original">⟲ Reset</button>
+      <button class="action-btn run-btn" id="runBtn" title="Show expected output">▶ Run <span class="k">⌘↵</span></button>
+    </header>
+
+    <section class="editor-card">
+      <div class="editor-chrome">
+        <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <div class="file-tabs" id="fileTabs"></div>
+        <span class="badge">C++17</span>
+      </div>
+      <div class="cm-host">
+        <textarea id="editor"></textarea>
+      </div>
+    </section>
+
+    <div class="splitter" id="splitter" role="separator" aria-orientation="vertical" title="Drag to resize"></div>
+
+    <section class="preview-card">
+      <div class="out-titlebar">
+        <span class="status" id="statusLabel">Ready</span>
+        <span class="info" id="statusInfo"></span>
+        <div class="right">
+          <button class="icon-btn" id="copyOutBtn" title="Copy expected output to clipboard">⧉ Copy</button>
+        </div>
+      </div>
+      <div class="out-body" id="outBody">
+        <div class="empty">Press ▶ Run to see expected output for this demo.</div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- =====================================================================
+     Embedded lesson sources — every <script type="text/plain"
+     data-cppfile="…"> block is the verbatim source of one demo.
+     ===================================================================== -->
+
+<script type="text/plain" data-cppfile="01a_hello_world.cpp">// Concept: the simplest C++ program.
+//
+// vs C:
+//   In C the standard greeting was:
+//       #include <stdio.h>
+//       int main(void) { printf("Hello, World!\n"); return 0; }
+//   In C++ you typically use <iostream> + std::cout, no manual return needed:
+//       int main() returns 0 implicitly.
+#include <iostream>
+
+int main() {
+    std::cout << "Hello, C++!\n";
+    // 'return 0;' is OPTIONAL in main() — it is implied if you fall off the end.
+}
+</script>
+<script type="text/plain" data-cppfile="01b_printf_vs_cout.cpp">// Concept: printf vs std::cout.
+//
+// vs C:
+//   C uses format strings — the compiler does NOT type-check arguments
+//   against the format specifiers (%d / %s / %f). Mismatches → undefined.
+//   C++ uses STREAM insertion via operator<< — the type is known at compile
+//   time, so the right formatting is selected automatically.
+//
+// Both are still legal in C++ (cstdio is a C++ header that wraps stdio.h).
+#include <cstdio>     // C: printf
+#include <iostream>   // C++: cout
+
+int main() {
+    int   age   = 42;
+    double pi   = 3.14159;
+    const char* name = "Ada";
+
+    // C-style — relies on you matching %d / %f / %s correctly:
+    std::printf("[printf] %s is %d years old, pi = %.2f\n", name, age, pi);
+
+    // C++ stream — types are deduced; chained insertions are left-to-right.
+    std::cout << "[cout]   " << name << " is " << age
+              << " years old, pi = " << pi << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="02a_variables_and_init.cpp">// Concept: variable declarations and the various init styles in C++.
+//
+// vs C:
+//   C only has copy-init   (int x = 7;) and zero-init for static storage.
+//   C99 added designated initialisers for arrays/structs.
+//   C++ adds:
+//     direct init:        int x(7);
+//     uniform brace init: int x{7};       (C++11) — disallows narrowing
+//     value init:         int x{};        zero-init
+//     constexpr / auto    (later steps)
+#include <iostream>
+
+int main() {
+    int a = 7;          // copy initialisation     — works in C too
+    int b(7);           // direct initialisation   — C++ only
+    int c{7};           // uniform/brace init      — C++11, no narrowing
+    int d{};            // value init: equivalent to int d = 0;
+
+    // double e{3.14};
+    // int    f{e};     // ← compile error: brace-init refuses narrowing
+    int    f = 3.14;    // ← legal in C++ (and C) — silent narrowing
+
+    std::cout << "a=" << a << "  b=" << b << "  c=" << c
+              << "  d=" << d << "  f(narrowed)=" << f << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="02b_uniform_init_aggregate.cpp">// Concept: brace (uniform) initialisation of aggregates.
+//
+// vs C:
+//   C99 designated initialisers:  struct Point p = { .x = 1, .y = 2 };
+//   In C++ since C++11, brace init works for aggregates AND many other types
+//   uniformly — same syntax for ints, structs, arrays, std::vector, etc.
+#include <iostream>
+#include <string>
+#include <vector>
+
+struct Point { int x, y; };
+
+int main() {
+    // Aggregate brace init — like C, but no '.x =' designator before C++20:
+    Point p{3, 4};
+
+    // Array brace init:
+    int arr[4]{1, 2, 3, 4};
+
+    // STL containers — brace init is uniform:
+    std::vector<int>         v{10, 20, 30};
+    std::vector<std::string> names{"Ada", "Linus", "Bjarne"};
+
+    std::cout << "p=(" << p.x << "," << p.y << ")  arr[2]=" << arr[2]
+              << "  v.size=" << v.size() << "  names[2]=" << names[2] << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="02c_range_for_loop.cpp">// Concept: range-based for loop (C++11).
+//
+// vs C:
+//   In C you write either an index loop or a pointer loop:
+//       for (int i = 0; i < n; ++i) sum += arr[i];
+//   In C++ the range-for visits each element directly:
+//       for (auto x : container) sum += x;
+//   Works for any type with begin()/end(): arrays, vectors, maps, …
+//   Use 'const auto&' to avoid copies. (See step 5 — auto.)
+#include <iostream>
+#include <vector>
+
+int main() {
+    int arr[] = {10, 20, 30, 40};
+    std::vector<int> v{1, 2, 3, 4, 5};
+
+    int s1 = 0;
+    for (int i = 0; i < 4; ++i) s1 += arr[i];     // C-style index loop
+    std::cout << "C-style sum  = " << s1 << "\n";
+
+    int s2 = 0;
+    for (int x : arr) s2 += x;                     // range-for over a C array
+    std::cout << "range-for arr= " << s2 << "\n";
+
+    int s3 = 0;
+    for (const auto& x : v) s3 += x;               // const auto& — no copies
+    std::cout << "range-for v  = " << s3 << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="03a_cstring_vs_string.cpp">// Concept: C-string (char array) vs std::string.
+//
+// vs C:
+//   C strings are null-terminated char arrays — fixed buffer, manual length
+//   tracking with strlen, manual concatenation with strcpy/strcat. Buffer
+//   overflow is a constant risk.
+//   std::string owns its memory, knows its length in O(1), grows
+//   automatically, and frees itself when it goes out of scope (RAII).
+#include <cstring>     // strlen, strcpy
+#include <iostream>
+#include <string>      // std::string
+
+int main() {
+    // ── C string ────────────────────────────────────────────────
+    char  c_buf[32];
+    std::strcpy(c_buf, "Hello, ");
+    std::strcat(c_buf, "C!");                     // hope c_buf is big enough!
+    std::cout << "C string:    " << c_buf
+              << "   length=" << std::strlen(c_buf) << "\n";
+
+    // ── C++ string ──────────────────────────────────────────────
+    std::string s = "Hello, ";
+    s += "C++!";                                  // operator+= grows as needed
+    std::cout << "std::string: " << s
+              << "  length=" << s.length()
+              << "  capacity=" << s.capacity() << "\n";
+
+    // Convert when you need a char* (e.g. for a C API):
+    const char* raw = s.c_str();
+    std::cout << "as char*:    " << raw << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="03b_string_operations.cpp">// Concept: common std::string operations.
+//
+// vs C:
+//   substring → strncpy + null term     vs   s.substr(pos, len)
+//   find      → strstr                  vs   s.find("needle")
+//   compare   → strcmp                  vs   operator==, operator<
+//   replace   → manual                  vs   s.replace(pos, len, new_text)
+#include <iostream>
+#include <string>
+
+int main() {
+    std::string s = "the quick brown fox";
+
+    std::cout << "s.size()           = " << s.size()           << "\n";
+    std::cout << "s.substr(4, 5)     = '" << s.substr(4, 5)    << "'\n";
+
+    auto pos = s.find("brown");
+    std::cout << "s.find(\"brown\")   = " << pos               << "\n";
+
+    if (s.find("dog") == std::string::npos)
+        std::cout << "'dog' not found    (npos == " << std::string::npos << ")\n";
+
+    std::string a = "abc", b = "abc", c = "abd";
+    std::cout << "a == b ? " << (a == b ? "yes" : "no") << "\n";
+    std::cout << "a <  c ? " << (a <  c ? "yes" : "no") << "\n";
+
+    s.replace(s.find("fox"), 3, "panda");
+    std::cout << "after replace:     " << s << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="03c_string_conversions.cpp">// Concept: number ↔ string conversions in C++.
+//
+// vs C:
+//   number → string :  snprintf(buf, ..., "%d", n)
+//   string → number :  atoi / atof / strtol (no error on bad input)
+//   In C++ you have:
+//     std::to_string(n)   safe number → string
+//     std::stoi / stod    string → number, throws on garbage, sets endpos
+#include <iostream>
+#include <stdexcept>
+#include <string>
+
+int main() {
+    int    n = 42;
+    double d = 3.14;
+
+    std::string s1 = std::to_string(n);            // "42"
+    std::string s2 = std::to_string(d);            // "3.140000"
+    std::cout << "to_string(int)    = '" << s1 << "'\n";
+    std::cout << "to_string(double) = '" << s2 << "'\n";
+
+    // string → number
+    int    parsed_int    = std::stoi("123abc");    // stops at 'a' → 123
+    double parsed_double = std::stod("2.71xyz");   // stops at 'x' → 2.71
+    std::cout << "stoi('123abc')    = " << parsed_int    << "\n";
+    std::cout << "stod('2.71xyz')   = " << parsed_double << "\n";
+
+    // Garbage input → exception (atoi would silently return 0).
+    try {
+        int bad = std::stoi("hello");
+        std::cout << "got " << bad << "\n";
+    } catch (const std::invalid_argument& e) {
+        std::cout << "stoi('hello')     → invalid_argument: " << e.what() << "\n";
+    }
+}
+</script>
+<script type="text/plain" data-cppfile="04a_bool_type.cpp">// Concept: the 'bool' type.
+//
+// vs C:
+//   In C the language had no native boolean until C99 added '_Bool' (and the
+//   <stdbool.h> macros 'bool', 'true', 'false'). Pre-C99 code used 'int'
+//   with the convention 0 == false, anything-else == true.
+//   In C++ 'bool', 'true', 'false' are built-in keywords from day one, and
+//   booleans round-trip cleanly to and from integers (true → 1, false → 0).
+#include <iostream>
+
+int main() {
+    bool a = true;
+    bool b = false;
+    bool c = (3 < 5);              // any comparison yields a real bool
+    bool d = 42;                   // implicit int → bool: anything non-zero is true
+
+    std::cout << "true  prints as: " << a << "\n";
+    std::cout << "false prints as: " << b << "\n";
+    std::cout << "3 < 5  →  "          << c << "\n";
+    std::cout << "bool d = 42 →  "     << d << "\n";
+
+    // Force "true"/"false" output instead of 1/0:
+    std::cout << std::boolalpha;
+    std::cout << "with boolalpha → " << a << " / " << b << "\n";
+
+    // sizeof(bool) is implementation-defined but is always at least 1 byte.
+    std::cout << "sizeof(bool) = " << sizeof(bool) << " byte(s)\n";
+}
+</script>
+<script type="text/plain" data-cppfile="05a_auto_basics.cpp">// Concept: 'auto' — let the compiler deduce the type from the initialiser.
+//
+// vs C:
+//   In C the keyword 'auto' was a (rarely used) storage-class specifier
+//   meaning "automatic local variable", which is the default anyway.
+//   Since C++11 it has been REPURPOSED to mean "deduce my type". The deduction
+//   rules are exactly those of template argument deduction.
+#include <iostream>
+#include <map>
+#include <string>
+#include <vector>
+
+int main() {
+    auto i = 42;                    // → int
+    auto d = 3.14;                  // → double
+    auto s = std::string{"hi"};     // → std::string
+
+    std::cout << "i=" << i << "  d=" << d << "  s=" << s << "\n";
+
+    // The win: write awful long iterator types ONCE — let auto do the rest.
+    std::map<std::string, std::vector<int>> stats{
+        {"alice", {1, 2, 3}}, {"bob", {4, 5}}};
+
+    for (auto it = stats.begin(); it != stats.end(); ++it) {     // it: map<...>::iterator
+        std::cout << "  " << it->first << " has " << it->second.size() << " entries\n";
+    }
+}
+</script>
+<script type="text/plain" data-cppfile="05b_auto_caveats.cpp">// Concept: auto caveats — auto strips reference/const by default.
+// Use 'auto&' or 'const auto&' to keep them.
+//
+//   auto x        = expr;   →  copy, drops const & reference
+//   auto& x       = expr;   →  reference, may be const-ref or non-const ref
+//   const auto& x = expr;   →  always a const reference (no copies)
+#include <iostream>
+#include <vector>
+
+int main() {
+    std::vector<int> v{1, 2, 3, 4};
+
+    // 'auto x' COPIES each element — modifying x does NOT change v.
+    for (auto x : v) x *= 10;
+    std::cout << "after 'auto x':       v[0]=" << v[0] << "  (unchanged)\n";
+
+    // 'auto&' takes a reference — modifying x DOES change v.
+    for (auto& x : v) x *= 10;
+    std::cout << "after 'auto& x':      v[0]=" << v[0] << "  (multiplied)\n";
+
+    // 'const auto&' — read-only view, no copies. Best default for read access.
+    int sum = 0;
+    for (const auto& x : v) sum += x;
+    std::cout << "sum via const auto&:  " << sum << "\n";
+
+    // Returns of auto: same trap. 'auto' on a function returning T& gives T (a copy).
+    int n = 5;
+    int& nref = n;
+    auto  x = nref;     // x is int (copy)  — independent of n
+    auto& y = nref;     // y is int&        — alias for n
+    x = 99; y = 77;
+    std::cout << "x=" << x << "  y=" << y << "  n=" << n
+              << "   (only y reached n)\n";
+}
+</script>
+<script type="text/plain" data-cppfile="06a_cout_basics.cpp">// Concept: std::cout — type-safe stream output.
+//
+// vs C:
+//   printf relies on YOU matching format specifiers to arg types.
+//   cout uses operator<< — overloaded once per type, so the right thing
+//   happens automatically. It's also extensible: define operator<< for
+//   your own types and you can stream them too. (See step9 of cpp-oop.)
+#include <iostream>
+#include <string>
+
+int main() {
+    // Multiple insertions chain left-to-right.
+    std::cout << "Hello"  << ", "  << "World" << "\n";
+
+    // Numbers, strings, char, bool — all routed to the right overload.
+    int    n = 5;
+    double d = 1.5;
+    std::string s = "foo";
+    char        c = 'A';
+    bool        b = true;
+
+    std::cout << "int:    " << n << "\n"
+              << "double: " << d << "\n"
+              << "string: " << s << "\n"
+              << "char:   " << c << "\n"
+              << "bool:   " << b << "  (use std::boolalpha for true/false)\n";
+
+    // std::endl flushes the buffer; "\n" does not. Prefer "\n" except when
+    // you really need a flush (e.g. logging just before a crash).
+    std::cout << "newline only \n";
+    std::cout << "flush also  " << std::endl;
+
+    // std::cerr is the unbuffered error stream (separate from std::cout).
+    std::cerr << "this goes to stderr\n";
+}
+</script>
+<script type="text/plain" data-cppfile="06b_cin_basics.cpp">// Concept: std::cin — type-safe stream input.
+//
+// vs C:
+//   scanf needs format strings + the address of every output, and silently
+//   misbehaves on type mismatch.
+//   cin >> x parses according to x's type and sets a 'fail' flag if parsing
+//   fails. Always check the stream state — if the user types garbage where
+//   you expect a number, cin goes into a failed state until you clear it.
+//
+// Pipe input for testing:  echo "42 3.14 hello" | ./build/06b_cin_basics
+#include <iostream>
+#include <string>
+
+int main() {
+    int    n;
+    double d;
+    std::string word;
+
+    std::cout << "Reading: int double word ...\n";
+
+    if (std::cin >> n >> d >> word) {
+        std::cout << "  n=" << n << "  d=" << d << "  word='" << word << "'\n";
+    } else {
+        std::cout << "  parse failed (set badbit/failbit)\n";
+    }
+
+    // To read a WHOLE line (including spaces) use std::getline:
+    // std::string line;
+    // std::getline(std::cin, line);
+}
+</script>
+<script type="text/plain" data-cppfile="06c_iomanip_formatting.cpp">// Concept: <iomanip> — formatted output (precision, width, base, fill, …).
+//
+// vs C:
+//   printf format specifiers like "%8.3f" or "%05d" do the same work, but
+//   they are stringly-typed. <iomanip> is verbose but type-safe.
+#include <iomanip>
+#include <iostream>
+
+int main() {
+    double pi = 3.141592653589;
+
+    std::cout << "default:                  " << pi << "\n";
+    std::cout << "setprecision(3):          "
+              << std::setprecision(3) << pi << "\n";
+    std::cout << "fixed setprecision(5):    "
+              << std::fixed << std::setprecision(5) << pi << "\n";
+
+    // setw + setfill — like %05d / %-8s in printf
+    std::cout << "setw(8) setfill('0'):     "
+              << std::setw(8) << std::setfill('0') << 42 << "\n";
+
+    // Number bases
+    std::cout << "dec/hex/oct of 255:       "
+              << std::dec << 255  << "  "
+              << std::hex << 255  << "  "
+              << std::oct << 255  << "\n";
+
+    // boolalpha — already met in step 4
+    std::cout << std::boolalpha << "true / false:             "
+              << true << " / " << false << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="07a_function_overloading.cpp">// Concept: function overloading — same name, different parameter list.
+//
+// vs C:
+//   C does NOT allow two functions with the same name. Every external
+//   identifier is unique. Standard library writers had to invent names like
+//   abs / labs / fabsf / fabsl just to differentiate by argument type.
+//   In C++ the COMPILER picks the right overload by looking at argument types
+//   ('overload resolution'), and the linker sees the mangled (decorated)
+//   names that include those types.
+#include <iostream>
+#include <string>
+
+void print(int n)               { std::cout << "  print(int)    " << n << "\n"; }
+void print(double d)            { std::cout << "  print(double) " << d << "\n"; }
+void print(const std::string& s){ std::cout << "  print(string) " << s << "\n"; }
+
+// Overloads can also differ by const-ness or reference / pointer:
+void mark(int& x)               { x = 1; std::cout << "  mark(int&)\n"; }
+void mark(const int& x)         { (void)x; std::cout << "  mark(const int&)\n"; }
+
+int main() {
+    print(7);
+    print(3.14);
+    print(std::string("hello"));
+
+    int a = 0;
+    const int b = 0;
+    mark(a);   // → mark(int&)
+    mark(b);   // → mark(const int&)
+}
+</script>
+<script type="text/plain" data-cppfile="07b_default_parameters.cpp">// Concept: default parameters — a parameter with a default value can be
+// omitted at the call site.
+//
+// vs C:
+//   C has NO default parameters. You either pass every argument or write
+//   a wrapper function. C++ lets the function declare its own fallbacks.
+//
+// Rules:
+//   - Defaults must be at the END of the parameter list.
+//   - They are part of the DECLARATION, not the definition — so headers
+//     normally carry them, and the body should not repeat them.
+#include <iostream>
+#include <string>
+
+void greet(const std::string& name = "World", int times = 1) {
+    for (int i = 0; i < times; ++i)
+        std::cout << "  Hello, " << name << "!\n";
+}
+
+int main() {
+    greet();                  // → "Hello, World!" once
+    greet("Alice");           // → "Hello, Alice!" once
+    greet("Bob", 3);          // → 3 times
+    // greet(, 5);            // ← compile error: cannot skip a non-trailing argument
+}
+</script>
+<script type="text/plain" data-cppfile="08a_namespaces_basics.cpp">// Concept: namespaces group related names and prevent collisions.
+//
+// vs C:
+//   C has only ONE global namespace, so libraries prefix everything to avoid
+//   collisions: 'gtk_widget_show', 'png_create_read_struct', etc.
+//   In C++ you put related names inside a namespace and address them with
+//   'name::' — the same name in two different namespaces is no conflict.
+#include <iostream>
+
+namespace math {
+    constexpr double pi = 3.14159265;
+    double square(double x) { return x * x; }
+}
+
+namespace physics {
+    constexpr double pi = 3.14;            // a coarser approximation
+    double force(double m, double a) { return m * a; }
+}
+
+int main() {
+    std::cout << "math::pi    = " << math::pi    << "\n";
+    std::cout << "physics::pi = " << physics::pi << "  (coarser approximation)\n";
+    std::cout << "math::square(5)        = " << math::square(5)      << "\n";
+    std::cout << "physics::force(2, 9.8) = " << physics::force(2,9.8)<< "\n";
+    // The standard library lives in namespace 'std' — that is why std::cout, etc.
+}
+</script>
+<script type="text/plain" data-cppfile="08b_using_directives.cpp">// Concept: 'using' brings names from a namespace into the current scope.
+//
+//   using std::cout;          → import a single name
+//   using namespace std;      → import EVERYTHING (avoid in headers!)
+//
+// In C++17 you can also nest namespace declarations as 'a::b::c':
+//   namespace app::module::ui { ... }
+#include <iostream>
+#include <string>
+
+namespace app::module::ui {        // C++17 nested syntax
+    void render() { std::cout << "  ui::render()\n"; }
+}
+
+int main() {
+    using std::cout;               // import 'cout' only
+    using std::string;             // and 'string'
+
+    string s = "no more std::";
+    cout << "  " << s << "\n";
+
+    app::module::ui::render();
+    // Best practice: NEVER write 'using namespace std;' in a header — it
+    // pollutes the global namespace of every TU that includes your header.
+}
+</script>
+<script type="text/plain" data-cppfile="09a_references_intro.cpp">// Concept: references — an ALIAS for an existing variable.
+//
+// vs C:
+//   C has NO references. The closest tools are pointers (which can be null
+//   or reseated) and macros. C++ adds 'T&' which is bound to one variable
+//   at construction and never reseats — it cannot be null.
+//
+// Properties:
+//   - Must be initialised when declared.
+//   - Cannot be reseated to refer to a different object.
+//   - Cannot be null.
+//   - Has the same address as its referent — &ref == &orig.
+#include <iostream>
+
+int main() {
+    int  x = 7;
+    int& r = x;                 // r is bound to x for life
+
+    std::cout << "x  = " << x  << "  &x  = " << &x  << "\n";
+    std::cout << "r  = " << r  << "  &r  = " << &r  << "  (same address)\n";
+
+    r = 42;                     // assigns through r → x becomes 42
+    std::cout << "after r = 42:  x = " << x << "\n";
+
+    int y = 99;
+    r = y;                      // does NOT reseat — copies y INTO x
+    std::cout << "after r = y :  x = " << x << "  (r still aliases x)\n";
+
+    // int& bad;                // ← compile error: must be initialised
+    // int& null_r = nullptr;   // ← compile error: cannot bind reference to null
+}
+</script>
+<script type="text/plain" data-cppfile="09b_pointer_vs_reference.cpp">// Concept: when to use a pointer vs a reference.
+//
+//   Use a REFERENCE when:
+//     - The thing always exists (no "no value" case).
+//     - You will not reseat to a different object.
+//     - You want the call site to look like 'f(x)' instead of 'f(&x)'.
+//
+//   Use a POINTER when:
+//     - "No value" is meaningful → nullptr.
+//     - You may want to reseat or do pointer arithmetic.
+//     - You manage ownership manually (or via smart pointers — step 13).
+//
+//   Behaviour comparison:
+#include <iostream>
+
+void via_pointer(int* p) {
+    if (p) ++*p;        // must check null!
+}
+void via_reference(int& r) {
+    ++r;                // can never be null — no check needed
+}
+
+int main() {
+    int n = 10;
+    via_pointer(&n);    // address-of at the call site
+    via_reference(n);   // looks like a normal value pass
+    std::cout << "n after both = " << n << "  (started at 10)\n";
+
+    int* p = nullptr;
+    via_pointer(p);     // safe — function checked for null
+    std::cout << "via_pointer(nullptr) returned safely\n";
+    // via_reference(*p);  // ← UB: dereferencing null
+}
+</script>
+<script type="text/plain" data-cppfile="09c_pass_by_x.cpp">// Concept: the four ways to pass an argument in C++.
+//
+//   by value          (copy)              T x         like C — copy-in
+//   by pointer        (caller's object)   T* x        like C — manual indirection
+//   by reference      (caller's object)   T& x        C++ only — no null
+//   by const reference                    const T& x  read-only, no copy — common
+//
+// vs C:
+//   C only has the first two. The 'pass by const reference' idiom in C++ is
+//   the modern equivalent of 'pass a const T*' but cleaner at call sites.
+#include <iostream>
+#include <string>
+
+void by_value(std::string s)            { s += "!"; }
+void by_pointer(std::string* s)         { if (s) *s += "!"; }
+void by_reference(std::string& s)       { s += "!"; }
+void by_const_reference(const std::string& s) {
+    std::cout << "  read-only view: " << s << "\n";
+    // s += "x";   // ← compile error: cannot modify a const reference
+}
+
+int main() {
+    std::string a = "value", b = "ptr", c = "ref", d = "cref";
+    by_value(a);            // a unchanged — function got a copy
+    by_pointer(&b);         // b changed
+    by_reference(c);        // c changed
+    by_const_reference(d);  // d unchanged (read-only)
+
+    std::cout << "a=" << a << "  b=" << b << "  c=" << c << "  d=" << d << "\n";
+    std::cout << "(only a is unchanged — value pass made a copy)\n";
+}
+</script>
+<script type="text/plain" data-cppfile="10a_const_qualifier.cpp">// Concept: 'const' — read-only qualifier.
+//
+// vs C:
+//   C has 'const' too — but only on variables and parameters. C++ adds:
+//     - const member functions (cannot mutate the object)
+//     - top-level const on return types
+//     - 'constexpr' for compile-time constants (next file)
+//
+// Pointer-/reference-const positions (same in C and C++):
+//   const T*       pointer to const T   — can't modify *p, can reseat p
+//   T* const       const pointer to T   — can modify *p, can't reseat p
+//   const T* const       both
+//   const T&       reference to const T — common parameter form
+#include <iostream>
+
+void print(const int& v) {
+    // v += 1;     // ← compile error: v is a reference-to-const
+    std::cout << "  read-only: " << v << "\n";
+}
+
+int main() {
+    const int max  = 100;        // immutable variable
+    int x = 5, y = 7;
+
+    const int* pc  = &x;         // pointer-to-const
+    pc = &y;                     // OK: reseat the pointer
+    // *pc = 9;                  // ← error: target is const
+
+    int* const cp  = &x;         // const pointer
+    *cp = 11;                    // OK: target is mutable
+    // cp = &y;                  // ← error: pointer is const
+
+    print(max);
+    std::cout << "max=" << max << "  x=" << x << "  *pc=" << *pc << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="10b_constexpr.cpp">// Concept: 'constexpr' — evaluated at COMPILE time when possible.
+//
+// vs C:
+//   C has '#define' macros (no type, no scope) and '_Generic' / __builtins,
+//   but no first-class compile-time function evaluation. C++11 introduced
+//   'constexpr' for true type-checked compile-time computation.
+//
+//   Difference from const:
+//     const     →  "this name does not change after initialisation"
+//     constexpr →  "this expression can be computed at compile time"
+#include <iostream>
+
+constexpr long factorial(int n) {
+    return n <= 1 ? 1 : n * factorial(n - 1);
+}
+
+int main() {
+    constexpr long f10 = factorial(10);     // computed at compile time
+    int arr[factorial(4)];                  // 24 ints — array bound is constexpr
+    static_assert(factorial(6) == 720,      // checked at compile time
+                  "math is broken");
+
+    std::cout << "factorial(10) = " << f10 << "\n";
+    std::cout << "arr length    = " << sizeof(arr)/sizeof(int) << "  (24)\n";
+
+    // Runtime call — same function works at runtime too:
+    int n = 5;
+    std::cout << "factorial(5)  = " << factorial(n) << "  (runtime)\n";
+}
+</script>
+<script type="text/plain" data-cppfile="11a_lvalue_vs_rvalue.cpp">// Concept: lvalues and rvalues.
+//
+//   lvalue — has a name and an address: a variable, a returned reference.
+//            You can take its address with '&'. Persists across statements.
+//   rvalue — temporary / about to die: a literal, the result of x + y,
+//            a function returning by value. About to be discarded.
+//
+// vs C:
+//   C has the lvalue/rvalue concept too, but it never had the language tools
+//   to BIND to an rvalue and steal its resources. C++11 introduced rvalue
+//   references ('T&&') exactly for that.
+#include <iostream>
+
+int  produce()    { return 42; }       // returns by value → result is an rvalue
+int& alias_to(int& x) { return x; }    // returns lvalue reference
+
+int main() {
+    int x = 5;
+    int& lref = x;                     // lvalue reference — must bind to an lvalue
+    // int& bad = 5;                   // ← error: 5 is an rvalue
+    const int& clref = 5;              // OK: const lvalue ref CAN bind to an rvalue
+
+    int&& rref = 5;                    // rvalue reference — binds to a temporary
+    int&& rref2 = produce();           // ditto
+
+    std::cout << "x=" << x << "  &x=" << &x << "\n";
+    std::cout << "lref=" << lref << "  &lref=" << &lref << "  (same as &x)\n";
+    std::cout << "clref=" << clref << "  (bound to a temporary 5)\n";
+    std::cout << "rref=" << rref << "  rref2=" << rref2 << "\n";
+
+    // alias_to(x)   is an lvalue (returns int&) → could appear on left of =:
+    alias_to(x) = 99;
+    std::cout << "x after alias_to(x)=99 → " << x << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="11b_rvalue_reference_and_move.cpp">// Concept: rvalue references + std::move.
+//
+//   T&&  — an rvalue reference. Used to identify "this resource is about to
+//          die — you can steal from it instead of copying it".
+//   std::move — a CAST that turns an lvalue expression into an rvalue
+//          expression. By itself it does not move; it merely AUTHORISES a
+//          subsequent operation (e.g. a move constructor) to do so.
+//
+// vs C:
+//   C has no concept of move semantics. Every assignment is effectively a
+//   bytewise copy. C++11 move semantics turn unnecessary copies of large
+//   objects (strings, vectors) into pointer-steals.
+#include <iostream>
+#include <string>
+#include <utility>     // std::move
+
+void show(const std::string& s) { std::cout << "  lvalue overload: " << s << "\n"; }
+void show(std::string&& s)      { std::cout << "  rvalue overload: " << s << "  (about to vanish)\n"; }
+
+int main() {
+    std::string a = "alpha";
+
+    show(a);                         // lvalue → calls const&
+    show(std::string("beta"));       // unnamed temp → calls &&
+    show(std::move(a));              // cast a to rvalue → calls &&
+
+    // Where the steal actually happens — std::string's move constructor:
+    std::string b = std::move(a);
+    std::cout << "  after move: a='" << a    // moved-from, often empty
+              << "'  b='" << b << "'\n";
+}
+</script>
+<script type="text/plain" data-cppfile="12a_new_vs_malloc.cpp">// Concept: 'new'/'delete' vs C's 'malloc'/'free'.
+//
+//   malloc(n)        →  raw bytes, no constructor; returns void*.
+//   free(p)          →  frees raw bytes, no destructor.
+//   new T(args)      →  allocates AND calls T's constructor; returns T*.
+//   delete p         →  calls T's destructor AND frees the storage.
+//
+// CRITICAL — the two systems do NOT interoperate:
+//   - never free() a 'new'-d pointer
+//   - never delete a 'malloc'-d pointer
+//   - both are UB in C++.
+#include <cstdlib>     // malloc / free
+#include <cstring>
+#include <iostream>
+#include <string>
+
+class Tag {
+public:
+    Tag(const std::string& n) : name_(n) { std::cout << "  Tag ctor " << name_ << "\n"; }
+    ~Tag() { std::cout << "  Tag dtor " << name_ << "\n"; }
+private:
+    std::string name_;
+};
+
+int main() {
+    // C-style: raw bytes, no constructor.
+    int* m = static_cast<int*>(std::malloc(sizeof(int)));
+    *m = 42;
+    std::cout << "malloc'd int = " << *m << "\n";
+    std::free(m);
+
+    // C++-style: full type semantics — ctor runs at new, dtor runs at delete.
+    Tag* t = new Tag("widget");
+    delete t;             // ← calls ~Tag, then releases storage
+
+    std::cout << "(if we'd called free(t) instead, ~Tag would NOT run → leak / UB)\n";
+}
+</script>
+<script type="text/plain" data-cppfile="12b_new_array.cpp">// Concept: 'new[]' / 'delete[]' for dynamic arrays.
+//
+//   new T[n]        — allocates an array of n T's, default-constructs each.
+//   delete[] p      — destroys each element in REVERSE order, then frees.
+//
+// CRITICAL: a 'new[]' result MUST be freed with 'delete[]'. Mixing
+//   'delete' (singular) and 'new[]' is UB. Same applies between malloc/free.
+//
+// Modern advice: prefer std::vector or std::unique_ptr<T[]> over raw new[].
+#include <iostream>
+
+int main() {
+    int n = 5;
+    int* a = new int[n]{};      // value-init → all zeros
+    for (int i = 0; i < n; ++i) a[i] = i * i;
+
+    std::cout << "array contents:";
+    for (int i = 0; i < n; ++i) std::cout << " " << a[i];
+    std::cout << "\n";
+
+    delete[] a;                 // matches new[] — calls dtor on each, then frees
+
+    // delete a;                // ← UB: must use delete[] for array allocations
+}
+</script>
+<script type="text/plain" data-cppfile="12c_manual_memory_dangers.cpp">// Concept: why manual memory management is dangerous.
+//
+// Common bugs you can hit with raw new/delete (every one of these is UB):
+//   - leak               — forget to delete
+//   - double free        — delete the same pointer twice
+//   - use after free     — keep using a pointer after delete
+//   - exception leak     — exception thrown between new and delete
+//
+// vs C: same bug classes as malloc/free; C++ adds a way out via RAII (smart
+// pointers — step 13). Heap-owning classes should follow the Rule of 5
+// (see cpp-oop-tutorial step 10).
+#include <iostream>
+
+class Tag {
+public:
+    Tag(int id) : id_(id) { std::cout << "  Tag ctor #" << id_ << "\n"; }
+    ~Tag()                { std::cout << "  Tag dtor #" << id_ << "\n"; }
+private:
+    int id_;
+};
+
+void leaky() {
+    Tag* t = new Tag(1);
+    if (true) return;          // ← early return → 't' is leaked
+    delete t;
+}
+
+void exception_leak() {
+    Tag* t = new Tag(2);
+    try {
+        throw 99;              // ← exception thrown before delete → leak
+        delete t;
+    } catch (int) {
+        std::cout << "  caught — but Tag #2 was leaked\n";
+    }
+}
+
+int main() {
+    std::cout << "── leaky() — early return ──\n";
+    leaky();
+    std::cout << "  ⇧ ~Tag never ran → leak\n";
+
+    std::cout << "── exception_leak() ──\n";
+    exception_leak();
+
+    std::cout << "Smart pointers (step 13) eliminate all four classes of bug above.\n";
+}
+</script>
+<script type="text/plain" data-cppfile="13a_unique_ptr.cpp">// Concept: std::unique_ptr — exclusive ownership.
+//
+//   - Owns the pointee. When the unique_ptr is destroyed, it deletes it.
+//   - NOT copyable. ONLY movable. Two unique_ptrs cannot share the resource.
+//   - Use std::make_unique<T>(args...) — preferred over 'new'.
+//
+// vs C:
+//   In C you'd manage a resource with malloc + a paired free. Forget once,
+//   leak forever. unique_ptr is automatic ('RAII'): the destructor frees
+//   the resource on every exit path — early return, exception, anything.
+#include <iostream>
+#include <memory>
+#include <string>
+
+class Connection {
+public:
+    Connection(std::string url) : url_(std::move(url)) {
+        std::cout << "  open  " << url_ << "\n";
+    }
+    ~Connection() { std::cout << "  close " << url_ << "\n"; }
+private:
+    std::string url_;
+};
+
+int main() {
+    {
+        std::unique_ptr<Connection> p = std::make_unique<Connection>("db://main");
+        // No 'delete' anywhere — ~Connection runs automatically at end of scope.
+    }   // ← Connection closed here, even if an exception had been thrown above.
+
+    // Move ownership, do not copy:
+    auto q = std::make_unique<Connection>("db://aux");
+    auto r = std::move(q);             // q is now empty, r owns the connection
+    std::cout << "  q is " << (q ? "non-null" : "null (moved)") << "\n";
+    std::cout << "  r is " << (r ? "non-null" : "null") << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="13b_shared_ptr.cpp">// Concept: std::shared_ptr — shared ownership via reference counting.
+//
+//   Each copy increments a use-count; destruction decrements it; the pointee
+//   is deleted when the count hits zero. Use std::make_shared<T>(args...).
+//
+// Trade-offs vs unique_ptr:
+//   + Multiple owners; the resource lives as long as ANY owner exists.
+//   - Atomic reference count is more expensive than nothing (unique_ptr).
+//   - Cycles of shared_ptrs leak — break with weak_ptr (next file).
+#include <iostream>
+#include <memory>
+#include <string>
+
+struct Resource {
+    Resource(std::string n) : name_(std::move(n)) {
+        std::cout << "  Resource ctor " << name_ << "\n";
+    }
+    ~Resource() { std::cout << "  Resource dtor " << name_ << "\n"; }
+    std::string name_;
+};
+
+int main() {
+    auto a = std::make_shared<Resource>("conn");
+    std::cout << "  use_count after make_shared: " << a.use_count() << "\n";
+    {
+        auto b = a;          // copy — both 'a' and 'b' own the resource
+        auto c = a;
+        std::cout << "  use_count with 3 owners:    " << a.use_count() << "\n";
+    }   // b, c destroyed here → count back to 1
+    std::cout << "  use_count after inner scope: " << a.use_count() << "\n";
+}   // a destroyed here → count = 0 → Resource dtor runs
+</script>
+<script type="text/plain" data-cppfile="13c_weak_ptr.cpp">// Concept: std::weak_ptr — a non-owning observer for a shared_ptr.
+//
+//   A weak_ptr does NOT keep its target alive. Use weak_ptr to BREAK cycles
+//   of shared_ptrs (parent ↔ child) which would otherwise leak.
+//
+//   .lock() returns a temporary shared_ptr if the object is still alive,
+//   or an empty shared_ptr if it has been destroyed. Always go through .lock().
+#include <iostream>
+#include <memory>
+#include <string>
+
+struct Node {
+    std::string                name;
+    std::weak_ptr<Node>        parent;     // weak — does not keep parent alive
+    std::shared_ptr<Node>      child;      // strong — owns the child
+
+    explicit Node(std::string n) : name(std::move(n)) {
+        std::cout << "  Node ctor " << name << "\n";
+    }
+    ~Node() { std::cout << "  Node dtor " << name << "\n"; }
+};
+
+int main() {
+    auto root  = std::make_shared<Node>("root");
+    auto leaf  = std::make_shared<Node>("leaf");
+
+    root->child  = leaf;        // root owns leaf  (shared_ptr)
+    leaf->parent = root;        // leaf observes root (weak_ptr) — no cycle
+
+    if (auto p = leaf->parent.lock()) {
+        std::cout << "  leaf's parent is alive: " << p->name << "\n";
+    }
+
+    std::cout << "  use_counts before reset:  root=" << root.use_count()
+              << "  leaf=" << leaf.use_count() << "\n";
+
+    root.reset();               // root destroyed → leaf->parent now expired
+
+    if (leaf->parent.expired())
+        std::cout << "  leaf's weak parent has expired (no leak — cycle was avoided)\n";
+}
+</script>
+<script type="text/plain" data-cppfile="14a_function_template.cpp">// Concept: a FUNCTION TEMPLATE generates a family of functions, one per type.
+//
+// vs C: in C the closest tool is a macro:
+//     #define MAX(a,b) ((a) > (b) ? (a) : (b))
+//   Macros do textual substitution → no type checking, weird precedence,
+//   double evaluation of arguments, no overloading.
+//   A C++ template is type-checked, has the right precedence and exactly-one
+//   evaluation per argument, and the compiler INSTANTIATES one real function
+//   per type used at the call site.
+#include <iostream>
+#include <string>
+
+template <typename T>
+T max_of(T a, T b) {
+    return (a > b) ? a : b;
+}
+
+// Multiple template parameters
+template <typename A, typename B>
+auto plus_promoted(A a, B b) -> decltype(a + b) {
+    return a + b;
+}
+
+int main() {
+    std::cout << "max_of(3, 7)         = " << max_of(3, 7)         << "\n";
+    std::cout << "max_of(2.5, 1.5)     = " << max_of(2.5, 1.5)     << "\n";
+    std::cout << "max_of('a', 'z')     = " << max_of('a', 'z')     << "\n";
+    std::cout << "max_of<\"hi\",\"abc\")= "
+              << max_of<std::string>("hi", "abc") << "\n";
+
+    // The compiler can usually deduce T from the arguments.
+    // If you want to force the type, write it explicitly: max_of<double>(3, 4.5).
+    std::cout << "max_of<double>(3, 4.5) = " << max_of<double>(3, 4.5) << "\n";
+
+    // Mixed types — the deduced return type is whatever 'a + b' would be.
+    auto x = plus_promoted(1, 2.5);   // int + double → double
+    std::cout << "plus_promoted(1, 2.5) = " << x << "  (auto deduced double)\n";
+}
+</script>
+<script type="text/plain" data-cppfile="14b_class_template.cpp">// Concept: a CLASS TEMPLATE generates a family of classes, one per type
+// (or per combination of template arguments).
+//
+// vs C: in C you'd implement separate Stack_int, Stack_double, Stack_str
+// types, each with its own functions. C++ templates let you write the data
+// structure ONCE for any element type — std::vector, std::map, std::set
+// are all class templates.
+#include <iostream>
+#include <stdexcept>
+#include <string>
+#include <vector>
+
+template <typename T>
+class Stack {
+public:
+    void push(const T& v) { data_.push_back(v); }
+    void pop() {
+        if (data_.empty()) throw std::out_of_range("pop on empty stack");
+        data_.pop_back();
+    }
+    const T& top() const  {
+        if (data_.empty()) throw std::out_of_range("top on empty stack");
+        return data_.back();
+    }
+    bool empty() const { return data_.empty(); }
+    size_t size() const { return data_.size(); }
+
+private:
+    std::vector<T> data_;     // reuse std::vector — itself a class template!
+};
+
+int main() {
+    Stack<int> ints;
+    ints.push(1); ints.push(2); ints.push(3);
+    std::cout << "Stack<int> top    = " << ints.top()    << "  size = " << ints.size() << "\n";
+
+    Stack<std::string> words;
+    words.push("hello"); words.push("world");
+    std::cout << "Stack<string> top = " << words.top()   << "  size = " << words.size() << "\n";
+
+    // Each instantiation is a DIFFERENT type — Stack<int> ≠ Stack<double>.
+    Stack<double> doubles;
+    doubles.push(3.14);
+    std::cout << "Stack<double> top = " << doubles.top() << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="14c_non_type_template_param.cpp">// Concept: NON-TYPE template parameters — an integral CONSTANT (or pointer,
+// reference, enum, …) baked into the type at compile time.
+//
+// std::array<T, N> is the canonical example: the size N is part of the type,
+// not a runtime field.
+//
+// vs C: a "fixed-size array struct" in C requires either a macro or a wrapped
+// type per size. C++ lets the COMPILER bake the constant into the type.
+#include <array>
+#include <iostream>
+
+template <typename T, size_t N>          // N is a non-type template param
+class FixedBuffer {
+public:
+    constexpr size_t capacity() const { return N; }
+    T& operator[](size_t i)           { return data_[i]; }
+    const T& operator[](size_t i) const { return data_[i]; }
+
+private:
+    T data_[N];        // size known at compile time → can live on the stack
+};
+
+int main() {
+    FixedBuffer<int, 4> small;
+    for (size_t i = 0; i < small.capacity(); ++i) small[i] = static_cast<int>(i * 10);
+
+    std::cout << "FixedBuffer<int, 4> capacity = " << small.capacity() << "\n";
+    std::cout << "small[2] = " << small[2] << "\n";
+
+    // Different N → different TYPE.
+    FixedBuffer<int, 8> bigger;
+    std::cout << "FixedBuffer<int, 8> capacity = " << bigger.capacity() << "\n";
+
+    // std::array is just a polished version of the above.
+    std::array<double, 3> arr{1.0, 2.5, 3.5};
+    std::cout << "std::array<double, 3>[1] = " << arr[1] << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="14d_template_specialization.cpp">// Concept: TEMPLATE SPECIALISATION — provide a custom implementation for a
+// specific type (FULL specialisation) or a narrower family of types (PARTIAL).
+//
+// The general template is the fallback; specialisations win when they match.
+//
+// Common use: optimise / customise behaviour for a particular T (e.g. give
+// a different printer for bool to write "true"/"false" instead of 1/0).
+#include <iostream>
+#include <string>
+
+// ── Primary template ───────────────────────────────────────
+template <typename T>
+struct Printer {
+    static void print(const T& v) {
+        std::cout << "  generic: " << v << "\n";
+    }
+};
+
+// ── Full specialisation for bool ──────────────────────────
+template <>
+struct Printer<bool> {
+    static void print(bool v) {
+        std::cout << "  bool   : " << (v ? "true" : "false") << "\n";
+    }
+};
+
+// ── Full specialisation for std::string ───────────────────
+template <>
+struct Printer<std::string> {
+    static void print(const std::string& v) {
+        std::cout << "  string : \"" << v << "\"\n";
+    }
+};
+
+// ── Partial specialisation: T* (any pointer) ──────────────
+template <typename T>
+struct Printer<T*> {
+    static void print(const T* p) {
+        if (!p) {
+            std::cout << "  pointer: nullptr\n";
+            return;
+        }
+        std::cout << "  pointer →";
+        Printer<T>::print(*p);
+    }
+};
+
+int main() {
+    int n = 42;
+    Printer<int>::print(n);
+    Printer<bool>::print(true);
+    Printer<std::string>::print(std::string("hi"));
+    Printer<int*>::print(&n);          // partial specialisation T*
+    Printer<double>::print(3.14);      // falls through to the primary
+}
+</script>
+<script type="text/plain" data-cppfile="14e_default_template_args.cpp">// Concept: default values for template parameters.
+//
+// Like default function arguments, but at the type level. Saves callers from
+// spelling out the boilerplate type when the default is what they want.
+//
+// std::vector<T, Alloc = std::allocator<T>> is a real example — the second
+// parameter has a default, which is why we just write std::vector<int>.
+#include <functional>     // std::less, std::greater
+#include <iostream>
+#include <set>
+
+// MyVec<T, Cap=16> — capacity defaults to 16 if not specified.
+template <typename T, size_t Cap = 16>
+class MyVec {
+public:
+    constexpr size_t capacity() const { return Cap; }
+};
+
+int main() {
+    MyVec<int>      a;          // T=int, Cap=16 (default)
+    MyVec<int, 64>  b;          // T=int, Cap=64
+    std::cout << "default cap = " << a.capacity() << "\n";
+    std::cout << "custom  cap = " << b.capacity() << "\n";
+
+    // std::set takes <Key, Compare = std::less<Key>>:
+    std::set<int> ascending{3, 1, 2};                       // default less
+    std::set<int, std::greater<int>> descending{3, 1, 2};   // override
+
+    std::cout << "asc :";  for (int x : ascending)  std::cout << " " << x; std::cout << "\n";
+    std::cout << "desc:";  for (int x : descending) std::cout << " " << x; std::cout << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="14f_variadic_templates.cpp">// Concept: VARIADIC TEMPLATES — accept any number of arguments of any types
+// (a "parameter pack"). Introduced in C++11.
+//
+// vs C: in C you'd reach for the unsafe printf-style va_list. Variadic
+// templates are TYPE-SAFE: the compiler knows each pack element's type and
+// generates code accordingly.
+//
+// C++17 added FOLD EXPRESSIONS — a clean way to apply a binary operator
+// across the pack: (args + ...), (... + args), etc.
+#include <iostream>
+#include <string>
+
+// Fold expression — sum any number of values
+template <typename... Ts>
+auto sum(Ts... args) {
+    return (args + ...);                  // unary right fold over '+'
+}
+
+// Print all arguments separated by spaces
+template <typename... Ts>
+void print_all(const Ts&... args) {
+    ((std::cout << args << " "), ...);    // fold over the comma operator
+    std::cout << "\n";
+}
+
+// sizeof... gives the pack size at compile time
+template <typename... Ts>
+constexpr size_t arg_count(Ts...) {
+    return sizeof...(Ts);
+}
+
+int main() {
+    std::cout << "sum(1,2,3,4)               = " << sum(1, 2, 3, 4) << "\n";
+    std::cout << "sum(1.5, 2.5, 3.0)         = " << sum(1.5, 2.5, 3.0) << "\n";
+
+    print_all(1, "hello", 3.14, std::string("world"));
+
+    std::cout << "arg_count(1, 'a', 3.14)    = "
+              << arg_count(1, 'a', 3.14) << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="14g_if_constexpr.cpp">// Concept: 'if constexpr' (C++17) — compile-time branching INSIDE a template.
+//
+// Inside a template, plain 'if' would still compile both branches even if
+// only one is reachable for a given T — and that "unreachable" branch can
+// fail to compile if it uses operations T doesn't support.
+// 'if constexpr' DISCARDS the untaken branch at compile time, so it doesn't
+// need to be valid for the current T.
+//
+// vs C: no analogue at all — closest is preprocessor #if, but that has no
+// access to types or the C++ type system.
+#include <iostream>
+#include <string>
+#include <type_traits>
+
+template <typename T>
+void describe(const T& v) {
+    if constexpr (std::is_integral_v<T>) {
+        std::cout << "  integral: " << v << "  (×2 = " << (v * 2) << ")\n";
+    } else if constexpr (std::is_floating_point_v<T>) {
+        std::cout << "  floating: " << v << "  (square = " << (v * v) << ")\n";
+    } else if constexpr (std::is_same_v<T, std::string>) {
+        std::cout << "  string  : '" << v << "'  (length = " << v.size() << ")\n";
+    } else {
+        std::cout << "  other   : " << v << "\n";
+    }
+}
+
+int main() {
+    describe(42);                  // integral branch — only this branch is compiled
+    describe(3.14);                // floating branch
+    describe(std::string("hi"));   // string branch
+    describe('A');                 // char is integral → integral branch
+    // Each call instantiates one specialisation that contains ONLY the matching branch.
+    // Branches that wouldn't compile for the chosen T (e.g. v.size() on int) are
+    // discarded → no error.
+}
+</script>
+<script type="text/plain" data-cppfile="15a_throw_catch.cpp">// Concept: structured exception handling — throw / try / catch.
+//
+// vs C: in C, errors flow through return codes, errno, or longjmp.
+//   - Every caller has to remember to check the return value.
+//   - Cleanup of allocated resources between the failure site and the
+//     handler is your responsibility.
+// In C++ the language unwinds the stack for you between 'throw' and 'catch',
+// running destructors as it goes (this is what makes RAII work — see file 15c).
+//
+// Throw any object you like; usually a class derived from std::exception.
+#include <iostream>
+#include <stdexcept>     // std::runtime_error, std::out_of_range, std::logic_error
+#include <string>
+
+double safe_divide(double a, double b) {
+    if (b == 0) throw std::runtime_error("division by zero");
+    return a / b;
+}
+
+int main() {
+    // ── one try, multiple catch handlers ────────────────────
+    try {
+        std::cout << "  10 / 2 = " << safe_divide(10, 2) << "\n";
+        std::cout << "  10 / 0 = " << safe_divide(10, 0) << "\n";   // throws here
+        std::cout << "  this line never runs\n";
+    } catch (const std::runtime_error& e) {
+        std::cout << "  caught runtime_error: " << e.what() << "\n";
+    } catch (const std::exception& e) {
+        std::cout << "  caught any std::exception: " << e.what() << "\n";
+    } catch (...) {
+        std::cout << "  caught anything else\n";
+    }
+
+    // ── catch by const reference to avoid slicing the exception ──
+    // Catching by VALUE would slice an std::out_of_range down to std::exception.
+    try {
+        throw std::out_of_range("oob");
+    } catch (const std::exception& e) {
+        std::cout << "  caught: " << e.what() << "\n";
+    }
+
+    std::cout << "  program continues normally after a handled exception\n";
+}
+</script>
+<script type="text/plain" data-cppfile="15b_std_exception_hierarchy.cpp">// Concept: the std::exception hierarchy.
+//
+// All standard exceptions inherit from std::exception, which exposes a single
+// virtual member: const char* what() const noexcept.
+//
+//   std::exception
+//   ├── std::logic_error      (programmer's fault — should not happen)
+//   │   ├── std::invalid_argument
+//   │   ├── std::domain_error
+//   │   ├── std::length_error
+//   │   └── std::out_of_range
+//   └── std::runtime_error    (something the program could not predict)
+//       ├── std::range_error
+//       ├── std::overflow_error
+//       └── std::underflow_error
+//
+// Define your OWN exception types by deriving from std::exception (or, more
+// commonly, std::runtime_error) and providing a constructor that takes a
+// string message.
+#include <iostream>
+#include <stdexcept>
+#include <string>
+
+class FileError : public std::runtime_error {
+public:
+    explicit FileError(const std::string& path)
+        : std::runtime_error("FileError: cannot open '" + path + "'") {}
+};
+
+int main() {
+    try {
+        // std::stoi throws on garbage input
+        int n = std::stoi("hello");
+        std::cout << "got " << n << "\n";
+    } catch (const std::invalid_argument& e) {
+        std::cout << "  invalid_argument: " << e.what() << "\n";
+    }
+
+    try {
+        // std::vector::at performs bounds checking
+        std::string s = "abc";
+        char c = s.at(99);
+        std::cout << "got " << c << "\n";
+    } catch (const std::out_of_range& e) {
+        std::cout << "  out_of_range:     " << e.what() << "\n";
+    }
+
+    // Custom exception type — re-uses the standard hierarchy
+    try {
+        throw FileError("/etc/missing");
+    } catch (const std::exception& e) {     // catches FileError too
+        std::cout << "  custom:           " << e.what() << "\n";
+    }
+}
+</script>
+<script type="text/plain" data-cppfile="15c_raii_cleanup.cpp">// Concept: RAII — Resource Acquisition Is Initialisation.
+// In C++, cleanup is the destructor's job, not a finally block.
+//
+// vs C: in C you'd write
+//
+//     FILE* f = fopen(...); if (!f) goto err1;
+//     int* buf = malloc(...); if (!buf) goto err2;
+//     /* work */
+//     err2: free(buf);
+//     err1: fclose(f);
+//
+// Every error path has to remember every resource. With RAII, the destructor
+// of each owning object runs automatically when the scope exits — INCLUDING
+// when the exit is caused by an exception. There is no 'finally' in C++
+// because RAII makes one unnecessary.
+#include <iostream>
+#include <stdexcept>
+
+class Tag {
+public:
+    explicit Tag(const char* name) : name_(name) {
+        std::cout << "  [" << name_ << "] acquired\n";
+    }
+    ~Tag() {
+        std::cout << "  [" << name_ << "] released  (destructor — runs on exception too)\n";
+    }
+private:
+    const char* name_;
+};
+
+void risky() {
+    Tag a("A");
+    Tag b("B");
+    Tag c("C");
+    throw std::runtime_error("something failed");
+    // Even though the exception propagates out, ~C, ~B, ~A run in reverse order
+    // automatically as the stack unwinds — no try/finally, no goto.
+}
+
+int main() {
+    try {
+        risky();
+    } catch (const std::exception& e) {
+        std::cout << "  caught: " << e.what() << "\n";
+    }
+    std::cout << "  back in main — note all destructors ran on the way out\n";
+}
+</script>
+<script type="text/plain" data-cppfile="15d_noexcept.cpp">// Concept: 'noexcept' — a promise that a function will NOT throw.
+//
+//   void f() noexcept;
+//
+// If a noexcept function ever DOES throw, the program calls std::terminate
+// immediately — there's no propagation up the stack.
+//
+// Why mark functions noexcept?
+//   - The compiler can sometimes generate better code (no unwind tables needed).
+//   - STL containers prefer move ctors / move assignments that are noexcept;
+//     std::vector reallocation will COPY instead of MOVE if the move can throw,
+//     because it must leave a valid container if a move halfway through fails.
+//
+// Always mark MOVE constructors and MOVE assignments noexcept (see
+// cpp-oop-tutorial/step10_rule_of_five for the full Rule of 5 treatment).
+#include <iostream>
+#include <utility>
+#include <vector>
+
+class Buffer {
+public:
+    Buffer() : data_(new int[64]) {}
+    ~Buffer() { delete[] data_; }
+
+    // Move constructor — marked noexcept so std::vector's grow path will
+    // MOVE existing elements instead of copying them.
+    Buffer(Buffer&& o) noexcept : data_(o.data_) { o.data_ = nullptr; }
+    Buffer& operator=(Buffer&& o) noexcept {
+        delete[] data_;
+        data_ = o.data_; o.data_ = nullptr;
+        return *this;
+    }
+
+    Buffer(const Buffer&)            = delete;
+    Buffer& operator=(const Buffer&) = delete;
+private:
+    int* data_;
+};
+
+// Compile-time test: is_nothrow_move_constructible
+#include <type_traits>
+
+int main() {
+    static_assert(std::is_nothrow_move_constructible_v<Buffer>,
+                  "Buffer's move constructor must be noexcept");
+
+    std::vector<Buffer> v;
+    v.reserve(4);
+    v.emplace_back();
+    v.emplace_back();
+    v.emplace_back();
+    v.emplace_back();
+    // When the vector grows, it will move (not copy) Buffers because the
+    // move ctor is noexcept. If the noexcept were missing, vector would have
+    // to fall back to deep-copying — for a delete-only-copy class like Buffer
+    // that would be a compile error.
+
+    std::cout << "vector grew successfully — moves used the noexcept ctor\n";
+}
+</script>
+<script type="text/plain" data-cppfile="16a_lambda_basics.cpp">// Concept: a lambda is an INLINE, ANONYMOUS function expression.
+//
+//   [captures](parameters) -> return_type { body }
+//
+// vs C: C has function pointers. To pass behaviour into a function (for
+// callbacks, comparators, etc.) you wrote a separate named function and
+// passed its address. C++ lambdas let you write that one-line behaviour
+// EXACTLY where it's used, with access to the surrounding scope (via captures
+// — see file 16b).
+//
+// Most parts are optional:
+//   - the return type ('->' arrow) is usually deduced
+//   - the parameter list can be empty: []{ ... }
+//   - the captures can be empty: []
+#include <algorithm>
+#include <iostream>
+#include <vector>
+
+int main() {
+    // Trivial lambda
+    auto greet = []{ std::cout << "  hello\n"; };
+    greet();
+
+    // Lambda with parameters and an explicit return type
+    auto add = [](int a, int b) -> int { return a + b; };
+    std::cout << "  add(3, 4) = " << add(3, 4) << "\n";
+
+    // The compiler usually deduces the return type — the arrow is optional:
+    auto mul = [](int a, int b) { return a * b; };
+    std::cout << "  mul(3, 4) = " << mul(3, 4) << "\n";
+
+    // Lambda passed inline as an algorithm argument — the typical use:
+    std::vector<int> v{5, 2, 8, 1, 9, 3};
+    std::sort(v.begin(), v.end(),
+              [](int a, int b){ return a > b; });          // sort descending
+    std::cout << "  sorted desc:";
+    for (int x : v) std::cout << " " << x;
+    std::cout << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="16b_lambda_captures.cpp">// Concept: lambda CAPTURE clauses — what surrounding state the lambda sees.
+//
+//   []        capture nothing
+//   [=]       capture every used local BY VALUE
+//   [&]       capture every used local BY REFERENCE
+//   [x]       capture x by value
+//   [&x]      capture x by reference
+//   [=, &x]   default by value, but x by reference
+//   [x = expr]  init capture (C++14) — store a fresh member with a value
+//
+// 'mutable' (after the parameter list) lets the body modify by-value captures.
+// Without 'mutable', the lambda's operator() is implicitly const — so you
+// can't write through copy captures.
+#include <iostream>
+
+int main() {
+    int factor = 10;
+
+    // Capture by value — the lambda holds its own copy of 'factor'.
+    auto by_value = [factor](int x){ return x * factor; };
+    factor = 999;                       // doesn't affect the captured copy
+    std::cout << "  by value (factor was 10): " << by_value(3) << "\n";
+
+    // Capture by reference — the lambda sees the LIVE 'factor'.
+    int total = 0;
+    auto add_to_total = [&total](int x){ total += x; };
+    add_to_total(7); add_to_total(8);
+    std::cout << "  by reference total      : " << total << "\n";
+
+    // Mutable + by-value capture — copy is mutable inside the body
+    auto counter = [n = 0]() mutable { return ++n; };
+    std::cout << "  counter: " << counter()
+              << ", " << counter()
+              << ", " << counter() << "\n";
+
+    // Mixed: default by value, but capture 'total' by reference
+    int x = 100;
+    auto mix = [=, &total](int extra){ total += x + extra; };
+    mix(5);
+    std::cout << "  mixed: total = " << total << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="16c_lambdas_with_algorithms.cpp">// Concept: lambdas + STL algorithms — the canonical pairing.
+//
+// Most STL algorithms accept any "callable" as their predicate or transform
+// argument: free functions, function objects, std::function, OR lambdas.
+// Lambdas win for ad-hoc one-liners that don't deserve a name.
+#include <algorithm>
+#include <iostream>
+#include <iterator>
+#include <numeric>
+#include <vector>
+
+int main() {
+    std::vector<int> v{1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+
+    // count_if + lambda
+    int evens = std::count_if(v.begin(), v.end(),
+                              [](int x){ return x % 2 == 0; });
+    std::cout << "  even count          : " << evens << "\n";
+
+    // find_if + lambda
+    auto big = std::find_if(v.begin(), v.end(),
+                            [](int x){ return x > 7; });
+    std::cout << "  first > 7           : " << *big << "\n";
+
+    // transform — square each element into a new vector
+    std::vector<int> squared;
+    std::transform(v.begin(), v.end(), std::back_inserter(squared),
+                   [](int x){ return x * x; });
+    std::cout << "  squared             :";
+    for (int x : squared) std::cout << " " << x;
+    std::cout << "\n";
+
+    // accumulate with a custom binary op (here: product)
+    int product = std::accumulate(v.begin(), v.end(), 1,
+                                  [](int acc, int x){ return acc * x; });
+    std::cout << "  10! via accumulate  : " << product << "\n";
+
+    // sort by absolute distance to a target
+    int target = 5;
+    std::sort(v.begin(), v.end(),
+              [target](int a, int b){
+                  return std::abs(a - target) < std::abs(b - target);
+              });
+    std::cout << "  sorted by |x - 5|   :";
+    for (int x : v) std::cout << " " << x;
+    std::cout << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="16d_lambda_internals.cpp">// Concept: a lambda is SUGAR for an anonymous functor class.
+//
+// The compiler turns
+//   auto add = [factor](int x){ return x * factor; };
+// into roughly
+//   class __lambda {
+//       int factor_;
+//   public:
+//       __lambda(int f) : factor_(f) {}
+//       auto operator()(int x) const { return x * factor_; }
+//   };
+//   __lambda add{factor};
+//
+// Because each lambda has its OWN unique unnamed type, you usually store it
+// in `auto`. To hold any compatible callable in a single variable, use
+// std::function<R(Args...)> — but that pays a small heap cost.
+#include <functional>
+#include <iostream>
+
+int main() {
+    // Each lambda has a unique anonymous type — the compiler lets you see
+    // them via decltype, but you cannot spell the type name.
+    auto a = [](int x){ return x + 1; };
+    auto b = [](int x){ return x + 1; };   // SAME body, but different TYPE.
+    static_assert(!std::is_same_v<decltype(a), decltype(b)>,
+                  "every lambda has a unique type");
+
+    std::cout << "  a(10) = " << a(10) << "  b(10) = " << b(10) << "\n";
+
+    // std::function erases the type so you can store ANY compatible callable:
+    std::function<int(int)> any_callable = a;
+    any_callable = b;                                // works
+    any_callable = [](int x){ return x * x; };        // also works
+    std::cout << "  via std::function:    " << any_callable(5) << "\n";
+
+    // Captureless lambdas decay to a plain function pointer — useful for
+    // legacy C APIs that take a function-pointer callback:
+    int (*fp)(int) = [](int x){ return x + 100; };
+    std::cout << "  via function pointer: " << fp(5) << "\n";
+
+    // (A lambda WITH captures cannot decay to a function pointer — the closure
+    // has state that a bare function pointer cannot represent.)
+}
+</script>
+<script type="text/plain" data-cppfile="17a_static_cast.cpp">// Concept: static_cast<T>(x) — explicit, compile-time conversion.
+//
+// vs C: in C you wrote (T)x, which silently does ANY conversion the compiler
+// can think of: numeric, pointer, dropping const, … all in one. C++ splits
+// that into FOUR named casts so the intent is reviewable:
+//
+//   static_cast      explicit but reasonable conversions
+//   dynamic_cast     runtime-checked downcast (this lab's 17b)
+//   const_cast       strip const / volatile         (this lab's 17c)
+//   reinterpret_cast bit-level reinterpretation     (this lab's 17d, dangerous)
+//
+// Use static_cast for: numeric narrowing, void* ↔ T*, base→derived (when you
+// already know the dynamic type), enum ↔ integer, etc.
+#include <iostream>
+
+int main() {
+    // 1) Numeric — replaces the C-style (int)x
+    double d = 3.99;
+    int i = static_cast<int>(d);            // truncation
+    std::cout << "  int(3.99)   = " << i << "\n";
+
+    // 2) void* → T* — explicit, type-safe form of the C cast you'd write
+    //    after malloc.
+    int n = 42;
+    void* vp = &n;
+    int* ip = static_cast<int*>(vp);
+    std::cout << "  via void*  *ip = " << *ip << "\n";
+
+    // 3) enum ↔ int — strongly-typed enums need an explicit cast either way
+    enum class Color { Red, Green, Blue };
+    int code = static_cast<int>(Color::Green);
+    Color c  = static_cast<Color>(2);        // back to Color::Blue
+    std::cout << "  Color::Green code = " << code
+              << ", roundtrip = " << static_cast<int>(c) << "\n";
+
+    // 4) static_cast WILL refuse meaningless conversions at compile time.
+    //    e.g. int* → double* is illegal — for that you'd need reinterpret_cast.
+    // double* dp = static_cast<double*>(ip);   // ← compile error
+}
+</script>
+<script type="text/plain" data-cppfile="17b_dynamic_cast.cpp">// Concept: dynamic_cast<T*>(p) — runtime-checked downcast in a polymorphic
+// hierarchy.
+//
+//   - p must point to (or reference) a class that has at least one virtual
+//     function — i.e. a polymorphic class. Otherwise the cast is rejected
+//     at compile time.
+//   - For pointers: returns nullptr on mismatch (safe to test).
+//   - For references: throws std::bad_cast on mismatch.
+//
+// vs C: there is no equivalent — C has no runtime type info at all. The
+// closest tool is "tagged unions" (a struct with an enum kind + payload).
+#include <iostream>
+#include <typeinfo>
+
+class Animal {
+public:
+    virtual ~Animal() = default;     // makes Animal polymorphic
+    virtual const char* sound() const { return "<silence>"; }
+};
+
+class Dog : public Animal {
+public:
+    const char* sound() const override { return "Woof!"; }
+    void fetch() const { std::cout << "  Dog fetches\n"; }
+};
+
+class Cat : public Animal {
+public:
+    const char* sound() const override { return "Meow!"; }
+};
+
+int main() {
+    Animal* zoo[] = { new Dog(), new Cat(), new Dog() };
+
+    for (Animal* a : zoo) {
+        std::cout << "  " << a->sound();
+        if (Dog* d = dynamic_cast<Dog*>(a)) {     // safe downcast
+            std::cout << " (is a Dog) → ";
+            d->fetch();
+        } else {
+            std::cout << " (not a Dog)\n";
+        }
+    }
+
+    // Reference form throws on mismatch
+    Animal* a = new Cat();
+    try {
+        Dog& d = dynamic_cast<Dog&>(*a);          // ← throws std::bad_cast
+        d.fetch();
+    } catch (const std::bad_cast& e) {
+        std::cout << "  caught bad_cast: " << e.what() << "\n";
+    }
+
+    for (Animal* a : zoo) delete a;
+    delete a;
+}
+</script>
+<script type="text/plain" data-cppfile="17c_const_cast.cpp">// Concept: const_cast<T>(x) — add or strip 'const' / 'volatile'.
+//
+// Use cases (rare):
+//   - Calling a legacy C API that takes T* but doesn't actually modify it.
+//   - Implementing a non-const member function in terms of the const one
+//     (the "Meyers trick").
+//
+// ⚠ Modifying a TRULY const object via const_cast is undefined behaviour.
+//    The cast is for cases where the object is non-const but is REACHED
+//    through a const handle.
+#include <iostream>
+#include <string>
+
+// Imagine a legacy C function that takes char* but only reads from it.
+void legacy_print(char* msg) {
+    std::cout << "  legacy_print: " << msg << "\n";
+}
+
+// Meyers idiom: implement non-const operator[] in terms of the const one.
+class StringView {
+public:
+    explicit StringView(const std::string& s) : s_(s) {}
+
+    const char& operator[](size_t i) const { return s_[i]; }
+
+    // Cast away const ON THE RESULT, not on the underlying data.
+    char& operator[](size_t i) {
+        const auto& self = *this;
+        return const_cast<char&>(self[i]);
+    }
+
+private:
+    std::string s_;
+};
+
+int main() {
+    // 1) legacy C API
+    std::string s = "Hello";
+    legacy_print(const_cast<char*>(s.c_str()));   // safe: legacy_print never writes
+
+    // 2) Meyers idiom — one operator[] body shared between const and non-const
+    StringView sv(std::string("World"));
+    sv[0] = 'M';                                  // calls non-const operator[]
+    std::cout << "  sv[0] after write = " << sv[0] << "\n";
+
+    // 3) The dangerous case — DON'T do this:
+    //    const int x = 5;
+    //    *const_cast<int*>(&x) = 99;   // ← undefined behaviour
+    std::cout << "  (writing to a truly-const object via const_cast = UB)\n";
+}
+</script>
+<script type="text/plain" data-cppfile="17d_reinterpret_cast.cpp">// Concept: reinterpret_cast<T>(x) — bit-level reinterpretation between
+// otherwise-unrelated types. The MOST dangerous of the four C++ casts.
+//
+// Almost all uses are one of:
+//   - low-level systems code (drivers, hardware registers)
+//   - serialisation / deserialisation of bytes
+//   - inspecting raw bytes for debug printing
+//
+// When you reach for reinterpret_cast, ask whether static_cast or std::memcpy
+// would do the job correctly — they often do.
+//
+// ⚠ Many uses of reinterpret_cast violate the strict aliasing rule and lead
+//    to undefined behaviour. Prefer std::memcpy for type-punning.
+#include <cstdint>
+#include <cstring>
+#include <iostream>
+
+int main() {
+    // 1) Inspect the bytes of a float — typical type-punning use case.
+    //    The CORRECT way is std::memcpy; reinterpret_cast on a different
+    //    type is technically UB under strict aliasing.
+    float f = 3.14f;
+    std::uint32_t bits;
+    std::memcpy(&bits, &f, sizeof bits);                // ← preferred
+    std::cout << "  bits of " << f << " = 0x" << std::hex << bits << std::dec << "\n";
+
+    // 2) Pointer ↔ integer — sometimes used for hashing, debugging, mmaps.
+    int x = 42;
+    std::uintptr_t addr = reinterpret_cast<std::uintptr_t>(&x);
+    std::cout << "  &x as uintptr_t = " << std::hex << addr << std::dec << "\n";
+
+    // 3) Talking to a hardware register / arbitrary-address pointer:
+    //    volatile uint32_t* reg = reinterpret_cast<volatile uint32_t*>(0x40000000);
+    //    *reg = 1;
+    std::cout << "  (real hardware-register casts look like this in driver code)\n";
+
+    // Don't:
+    //    int* ip = ...;
+    //    double* dp = reinterpret_cast<double*>(ip);   // strict-aliasing UB on access
+    //    *dp = 1.0;
+}
+</script>
+
+<!-- =====================================================================
+     Embedded expected output for each demo.
+     ===================================================================== -->
+
+<script type="text/plain" data-outfile="01a_hello_world">Hello, C++!
+</script>
+<script type="text/plain" data-outfile="01b_printf_vs_cout">[printf] Ada is 42 years old, pi = 3.14
+[cout]   Ada is 42 years old, pi = 3.14159
+</script>
+<script type="text/plain" data-outfile="02a_variables_and_init">a=7  b=7  c=7  d=0  f(narrowed)=3
+</script>
+<script type="text/plain" data-outfile="02b_uniform_init_aggregate">p=(3,4)  arr[2]=3  v.size=3  names[2]=Bjarne
+</script>
+<script type="text/plain" data-outfile="02c_range_for_loop">C-style sum  = 100
+range-for arr= 100
+range-for v  = 15
+</script>
+<script type="text/plain" data-outfile="03a_cstring_vs_string">C string:    Hello, C!   length=9
+std::string: Hello, C++!  length=11  capacity=15
+as char*:    Hello, C++!
+</script>
+<script type="text/plain" data-outfile="03b_string_operations">s.size()           = 19
+s.substr(4, 5)     = 'quick'
+s.find("brown")   = 10
+'dog' not found    (npos == 18446744073709551615)
+a == b ? yes
+a <  c ? yes
+after replace:     the quick brown panda
+</script>
+<script type="text/plain" data-outfile="03c_string_conversions">to_string(int)    = '42'
+to_string(double) = '3.140000'
+stoi('123abc')    = 123
+stod('2.71xyz')   = 2.71
+stoi('hello')     → invalid_argument: stoi
+</script>
+<script type="text/plain" data-outfile="04a_bool_type">true  prints as: 1
+false prints as: 0
+3 < 5  →  1
+bool d = 42 →  1
+with boolalpha → true / false
+sizeof(bool) = 1 byte(s)
+</script>
+<script type="text/plain" data-outfile="05a_auto_basics">i=42  d=3.14  s=hi
+  alice has 3 entries
+  bob has 2 entries
+</script>
+<script type="text/plain" data-outfile="05b_auto_caveats">after 'auto x':       v[0]=1  (unchanged)
+after 'auto& x':      v[0]=10  (multiplied)
+sum via const auto&:  100
+x=99  y=77  n=77   (only y reached n)
+</script>
+<script type="text/plain" data-outfile="06a_cout_basics">Hello, World
+int:    5
+double: 1.5
+string: foo
+char:   A
+bool:   1  (use std::boolalpha for true/false)
+newline only 
+flush also  
+this goes to stderr
+</script>
+<script type="text/plain" data-outfile="06b_cin_basics">Reading: int double word ...
+  n=42  d=3.14  word='hello'
+</script>
+<script type="text/plain" data-outfile="06c_iomanip_formatting">default:                  3.14159
+setprecision(3):          3.14
+fixed setprecision(5):    3.14159
+setw(8) setfill('0'):     00000042
+dec/hex/oct of 255:       255  ff  377
+true / false:             true / false
+</script>
+<script type="text/plain" data-outfile="07a_function_overloading">  print(int)    7
+  print(double) 3.14
+  print(string) hello
+  mark(int&)
+  mark(const int&)
+</script>
+<script type="text/plain" data-outfile="07b_default_parameters">  Hello, World!
+  Hello, Alice!
+  Hello, Bob!
+  Hello, Bob!
+  Hello, Bob!
+</script>
+<script type="text/plain" data-outfile="08a_namespaces_basics">math::pi    = 3.14159
+physics::pi = 3.14  (coarser approximation)
+math::square(5)        = 25
+physics::force(2, 9.8) = 19.6
+</script>
+<script type="text/plain" data-outfile="08b_using_directives">  no more std::
+  ui::render()
+</script>
+<script type="text/plain" data-outfile="09a_references_intro">x  = 7  &x  = 0x7ffc807f3178
+r  = 7  &r  = 0x7ffc807f3178  (same address)
+after r = 42:  x = 42
+after r = y :  x = 99  (r still aliases x)
+</script>
+<script type="text/plain" data-outfile="09b_pointer_vs_reference">n after both = 12  (started at 10)
+via_pointer(nullptr) returned safely
+</script>
+<script type="text/plain" data-outfile="09c_pass_by_x">  read-only view: cref
+a=value  b=ptr!  c=ref!  d=cref
+(only a is unchanged — value pass made a copy)
+</script>
+<script type="text/plain" data-outfile="10a_const_qualifier">  read-only: 100
+max=100  x=11  *pc=7
+</script>
+<script type="text/plain" data-outfile="10b_constexpr">factorial(10) = 3628800
+arr length    = 24  (24)
+factorial(5)  = 120  (runtime)
+</script>
+<script type="text/plain" data-outfile="11a_lvalue_vs_rvalue">x=5  &x=0x7fff24654918
+lref=5  &lref=0x7fff24654918  (same as &x)
+clref=5  (bound to a temporary 5)
+rref=5  rref2=42
+x after alias_to(x)=99 → 99
+</script>
+<script type="text/plain" data-outfile="11b_rvalue_reference_and_move">  lvalue overload: alpha
+  rvalue overload: beta  (about to vanish)
+  rvalue overload: alpha  (about to vanish)
+  after move: a=''  b='alpha'
+</script>
+<script type="text/plain" data-outfile="12a_new_vs_malloc">malloc'd int = 42
+  Tag ctor widget
+  Tag dtor widget
+(if we'd called free(t) instead, ~Tag would NOT run → leak / UB)
+</script>
+<script type="text/plain" data-outfile="12b_new_array">array contents: 0 1 4 9 16
+</script>
+<script type="text/plain" data-outfile="12c_manual_memory_dangers">── leaky() — early return ──
+  Tag ctor #1
+  ⇧ ~Tag never ran → leak
+── exception_leak() ──
+  Tag ctor #2
+  caught — but Tag #2 was leaked
+Smart pointers (step 13) eliminate all four classes of bug above.
+</script>
+<script type="text/plain" data-outfile="13a_unique_ptr">  open  db://main
+  close db://main
+  open  db://aux
+  q is null (moved)
+  r is non-null
+  close db://aux
+</script>
+<script type="text/plain" data-outfile="13b_shared_ptr">  Resource ctor conn
+  use_count after make_shared: 1
+  use_count with 3 owners:    3
+  use_count after inner scope: 1
+  Resource dtor conn
+</script>
+<script type="text/plain" data-outfile="13c_weak_ptr">  Node ctor root
+  Node ctor leaf
+  leaf's parent is alive: root
+  use_counts before reset:  root=1  leaf=2
+  Node dtor root
+  leaf's weak parent has expired (no leak — cycle was avoided)
+  Node dtor leaf
+</script>
+<script type="text/plain" data-outfile="14a_function_template">max_of(3, 7)         = 7
+max_of(2.5, 1.5)     = 2.5
+max_of('a', 'z')     = z
+max_of<"hi","abc")= hi
+max_of<double>(3, 4.5) = 4.5
+plus_promoted(1, 2.5) = 3.5  (auto deduced double)
+</script>
+<script type="text/plain" data-outfile="14b_class_template">Stack<int> top    = 3  size = 3
+Stack<string> top = world  size = 2
+Stack<double> top = 3.14
+</script>
+<script type="text/plain" data-outfile="14c_non_type_template_param">FixedBuffer<int, 4> capacity = 4
+small[2] = 20
+FixedBuffer<int, 8> capacity = 8
+std::array<double, 3>[1] = 2.5
+</script>
+<script type="text/plain" data-outfile="14d_template_specialization">  generic: 42
+  bool   : true
+  string : "hi"
+  pointer →  generic: 42
+  generic: 3.14
+</script>
+<script type="text/plain" data-outfile="14e_default_template_args">default cap = 16
+custom  cap = 64
+asc : 1 2 3
+desc: 3 2 1
+</script>
+<script type="text/plain" data-outfile="14f_variadic_templates">sum(1,2,3,4)               = 10
+sum(1.5, 2.5, 3.0)         = 7
+1 hello 3.14 world 
+arg_count(1, 'a', 3.14)    = 3
+</script>
+<script type="text/plain" data-outfile="14g_if_constexpr">  integral: 42  (×2 = 84)
+  floating: 3.14  (square = 9.8596)
+  string  : 'hi'  (length = 2)
+  integral: A  (×2 = 130)
+</script>
+<script type="text/plain" data-outfile="15a_throw_catch">  10 / 2 = 5
+  10 / 0 =   caught runtime_error: division by zero
+  caught: oob
+  program continues normally after a handled exception
+</script>
+<script type="text/plain" data-outfile="15b_std_exception_hierarchy">  invalid_argument: stoi
+  out_of_range:     basic_string::at: __n (which is 99) >= this->size() (which is 3)
+  custom:           FileError: cannot open '/etc/missing'
+</script>
+<script type="text/plain" data-outfile="15c_raii_cleanup">  [A] acquired
+  [B] acquired
+  [C] acquired
+  [C] released  (destructor — runs on exception too)
+  [B] released  (destructor — runs on exception too)
+  [A] released  (destructor — runs on exception too)
+  caught: something failed
+  back in main — note all destructors ran on the way out
+</script>
+<script type="text/plain" data-outfile="15d_noexcept">vector grew successfully — moves used the noexcept ctor
+</script>
+<script type="text/plain" data-outfile="16a_lambda_basics">  hello
+  add(3, 4) = 7
+  mul(3, 4) = 12
+  sorted desc: 9 8 5 3 2 1
+</script>
+<script type="text/plain" data-outfile="16b_lambda_captures">  by value (factor was 10): 30
+  by reference total      : 15
+  counter: 1, 2, 3
+  mixed: total = 120
+</script>
+<script type="text/plain" data-outfile="16c_lambdas_with_algorithms">  even count          : 5
+  first > 7           : 8
+  squared             : 1 4 9 16 25 36 49 64 81 100
+  10! via accumulate  : 3628800
+  sorted by |x - 5|   : 5 4 6 3 7 2 8 1 9 10
+</script>
+<script type="text/plain" data-outfile="16d_lambda_internals">  a(10) = 11  b(10) = 11
+  via std::function:    25
+  via function pointer: 105
+</script>
+<script type="text/plain" data-outfile="17a_static_cast">  int(3.99)   = 3
+  via void*  *ip = 42
+  Color::Green code = 1, roundtrip = 2
+</script>
+<script type="text/plain" data-outfile="17b_dynamic_cast">  Woof! (is a Dog) →   Dog fetches
+  Meow! (not a Dog)
+  Woof! (is a Dog) →   Dog fetches
+  caught bad_cast: std::bad_cast
+</script>
+<script type="text/plain" data-outfile="17c_const_cast">  legacy_print: Hello
+  sv[0] after write = M
+  (writing to a truly-const object via const_cast = UB)
+</script>
+<script type="text/plain" data-outfile="17d_reinterpret_cast">  bits of 3.14 = 0x4048f5c3
+  &x as uintptr_t = 7ffca0fdd6cc
+  (real hardware-register casts look like this in driver code)
+</script>
+
+<script>
+const STEPS = [
+  {
+    "id": "01a_hello_world",
+    "label": "01a \u00b7 Hello World",
+    "group": "1 \u2014 Hello World",
+    "file": "01a_hello_world.cpp",
+    "path": "step1_hello_world/01a_hello_world.cpp"
+  },
+  {
+    "id": "01b_printf_vs_cout",
+    "label": "01b \u00b7 Printf Vs Cout",
+    "group": "1 \u2014 Hello World",
+    "file": "01b_printf_vs_cout.cpp",
+    "path": "step1_hello_world/01b_printf_vs_cout.cpp"
+  },
+  {
+    "id": "02a_variables_and_init",
+    "label": "02a \u00b7 Variables And Init",
+    "group": "2 \u2014 Syntax Basics",
+    "file": "02a_variables_and_init.cpp",
+    "path": "step2_syntax_basics/02a_variables_and_init.cpp"
+  },
+  {
+    "id": "02b_uniform_init_aggregate",
+    "label": "02b \u00b7 Uniform Init Aggregate",
+    "group": "2 \u2014 Syntax Basics",
+    "file": "02b_uniform_init_aggregate.cpp",
+    "path": "step2_syntax_basics/02b_uniform_init_aggregate.cpp"
+  },
+  {
+    "id": "02c_range_for_loop",
+    "label": "02c \u00b7 Range For Loop",
+    "group": "2 \u2014 Syntax Basics",
+    "file": "02c_range_for_loop.cpp",
+    "path": "step2_syntax_basics/02c_range_for_loop.cpp"
+  },
+  {
+    "id": "03a_cstring_vs_string",
+    "label": "03a \u00b7 Cstring Vs String",
+    "group": "3 \u2014 Strings",
+    "file": "03a_cstring_vs_string.cpp",
+    "path": "step3_strings/03a_cstring_vs_string.cpp"
+  },
+  {
+    "id": "03b_string_operations",
+    "label": "03b \u00b7 String Operations",
+    "group": "3 \u2014 Strings",
+    "file": "03b_string_operations.cpp",
+    "path": "step3_strings/03b_string_operations.cpp"
+  },
+  {
+    "id": "03c_string_conversions",
+    "label": "03c \u00b7 String Conversions",
+    "group": "3 \u2014 Strings",
+    "file": "03c_string_conversions.cpp",
+    "path": "step3_strings/03c_string_conversions.cpp"
+  },
+  {
+    "id": "04a_bool_type",
+    "label": "04a \u00b7 Bool Type",
+    "group": "4 \u2014 bool",
+    "file": "04a_bool_type.cpp",
+    "path": "step4_bool/04a_bool_type.cpp"
+  },
+  {
+    "id": "05a_auto_basics",
+    "label": "05a \u00b7 Auto Basics",
+    "group": "5 \u2014 auto",
+    "file": "05a_auto_basics.cpp",
+    "path": "step5_auto/05a_auto_basics.cpp"
+  },
+  {
+    "id": "05b_auto_caveats",
+    "label": "05b \u00b7 Auto Caveats",
+    "group": "5 \u2014 auto",
+    "file": "05b_auto_caveats.cpp",
+    "path": "step5_auto/05b_auto_caveats.cpp"
+  },
+  {
+    "id": "06a_cout_basics",
+    "label": "06a \u00b7 Cout Basics",
+    "group": "6 \u2014 cin / cout",
+    "file": "06a_cout_basics.cpp",
+    "path": "step6_iostream/06a_cout_basics.cpp"
+  },
+  {
+    "id": "06b_cin_basics",
+    "label": "06b \u00b7 Cin Basics",
+    "group": "6 \u2014 cin / cout",
+    "file": "06b_cin_basics.cpp",
+    "path": "step6_iostream/06b_cin_basics.cpp"
+  },
+  {
+    "id": "06c_iomanip_formatting",
+    "label": "06c \u00b7 Iomanip Formatting",
+    "group": "6 \u2014 cin / cout",
+    "file": "06c_iomanip_formatting.cpp",
+    "path": "step6_iostream/06c_iomanip_formatting.cpp"
+  },
+  {
+    "id": "07a_function_overloading",
+    "label": "07a \u00b7 Function Overloading",
+    "group": "7 \u2014 Overloading & Defaults",
+    "file": "07a_function_overloading.cpp",
+    "path": "step7_overloading_defaults/07a_function_overloading.cpp"
+  },
+  {
+    "id": "07b_default_parameters",
+    "label": "07b \u00b7 Default Parameters",
+    "group": "7 \u2014 Overloading & Defaults",
+    "file": "07b_default_parameters.cpp",
+    "path": "step7_overloading_defaults/07b_default_parameters.cpp"
+  },
+  {
+    "id": "08a_namespaces_basics",
+    "label": "08a \u00b7 Namespaces Basics",
+    "group": "8 \u2014 Namespaces",
+    "file": "08a_namespaces_basics.cpp",
+    "path": "step8_namespaces/08a_namespaces_basics.cpp"
+  },
+  {
+    "id": "08b_using_directives",
+    "label": "08b \u00b7 Using Directives",
+    "group": "8 \u2014 Namespaces",
+    "file": "08b_using_directives.cpp",
+    "path": "step8_namespaces/08b_using_directives.cpp"
+  },
+  {
+    "id": "09a_references_intro",
+    "label": "09a \u00b7 References Intro",
+    "group": "9 \u2014 Pointers vs References",
+    "file": "09a_references_intro.cpp",
+    "path": "step9_pointers_vs_references/09a_references_intro.cpp"
+  },
+  {
+    "id": "09b_pointer_vs_reference",
+    "label": "09b \u00b7 Pointer Vs Reference",
+    "group": "9 \u2014 Pointers vs References",
+    "file": "09b_pointer_vs_reference.cpp",
+    "path": "step9_pointers_vs_references/09b_pointer_vs_reference.cpp"
+  },
+  {
+    "id": "09c_pass_by_x",
+    "label": "09c \u00b7 Pass By X",
+    "group": "9 \u2014 Pointers vs References",
+    "file": "09c_pass_by_x.cpp",
+    "path": "step9_pointers_vs_references/09c_pass_by_x.cpp"
+  },
+  {
+    "id": "10a_const_qualifier",
+    "label": "10a \u00b7 Const Qualifier",
+    "group": "10 \u2014 Qualifiers",
+    "file": "10a_const_qualifier.cpp",
+    "path": "step10_qualifiers/10a_const_qualifier.cpp"
+  },
+  {
+    "id": "10b_constexpr",
+    "label": "10b \u00b7 Constexpr",
+    "group": "10 \u2014 Qualifiers",
+    "file": "10b_constexpr.cpp",
+    "path": "step10_qualifiers/10b_constexpr.cpp"
+  },
+  {
+    "id": "11a_lvalue_vs_rvalue",
+    "label": "11a \u00b7 Lvalue Vs Rvalue",
+    "group": "11 \u2014 Rvalue References",
+    "file": "11a_lvalue_vs_rvalue.cpp",
+    "path": "step11_rvalue_references/11a_lvalue_vs_rvalue.cpp"
+  },
+  {
+    "id": "11b_rvalue_reference_and_move",
+    "label": "11b \u00b7 Rvalue Reference And Move",
+    "group": "11 \u2014 Rvalue References",
+    "file": "11b_rvalue_reference_and_move.cpp",
+    "path": "step11_rvalue_references/11b_rvalue_reference_and_move.cpp"
+  },
+  {
+    "id": "12a_new_vs_malloc",
+    "label": "12a \u00b7 New Vs Malloc",
+    "group": "12 \u2014 Allocations",
+    "file": "12a_new_vs_malloc.cpp",
+    "path": "step12_allocations/12a_new_vs_malloc.cpp"
+  },
+  {
+    "id": "12b_new_array",
+    "label": "12b \u00b7 New Array",
+    "group": "12 \u2014 Allocations",
+    "file": "12b_new_array.cpp",
+    "path": "step12_allocations/12b_new_array.cpp"
+  },
+  {
+    "id": "12c_manual_memory_dangers",
+    "label": "12c \u00b7 Manual Memory Dangers",
+    "group": "12 \u2014 Allocations",
+    "file": "12c_manual_memory_dangers.cpp",
+    "path": "step12_allocations/12c_manual_memory_dangers.cpp"
+  },
+  {
+    "id": "13a_unique_ptr",
+    "label": "13a \u00b7 Unique Ptr",
+    "group": "13 \u2014 Smart Pointers",
+    "file": "13a_unique_ptr.cpp",
+    "path": "step13_smart_pointers/13a_unique_ptr.cpp"
+  },
+  {
+    "id": "13b_shared_ptr",
+    "label": "13b \u00b7 Shared Ptr",
+    "group": "13 \u2014 Smart Pointers",
+    "file": "13b_shared_ptr.cpp",
+    "path": "step13_smart_pointers/13b_shared_ptr.cpp"
+  },
+  {
+    "id": "13c_weak_ptr",
+    "label": "13c \u00b7 Weak Ptr",
+    "group": "13 \u2014 Smart Pointers",
+    "file": "13c_weak_ptr.cpp",
+    "path": "step13_smart_pointers/13c_weak_ptr.cpp"
+  },
+  {
+    "id": "14a_function_template",
+    "label": "14a \u00b7 Function Template",
+    "group": "14 \u2014 Templates",
+    "file": "14a_function_template.cpp",
+    "path": "step14_templates/14a_function_template.cpp"
+  },
+  {
+    "id": "14b_class_template",
+    "label": "14b \u00b7 Class Template",
+    "group": "14 \u2014 Templates",
+    "file": "14b_class_template.cpp",
+    "path": "step14_templates/14b_class_template.cpp"
+  },
+  {
+    "id": "14c_non_type_template_param",
+    "label": "14c \u00b7 Non Type Template Param",
+    "group": "14 \u2014 Templates",
+    "file": "14c_non_type_template_param.cpp",
+    "path": "step14_templates/14c_non_type_template_param.cpp"
+  },
+  {
+    "id": "14d_template_specialization",
+    "label": "14d \u00b7 Template Specialization",
+    "group": "14 \u2014 Templates",
+    "file": "14d_template_specialization.cpp",
+    "path": "step14_templates/14d_template_specialization.cpp"
+  },
+  {
+    "id": "14e_default_template_args",
+    "label": "14e \u00b7 Default Template Args",
+    "group": "14 \u2014 Templates",
+    "file": "14e_default_template_args.cpp",
+    "path": "step14_templates/14e_default_template_args.cpp"
+  },
+  {
+    "id": "14f_variadic_templates",
+    "label": "14f \u00b7 Variadic Templates",
+    "group": "14 \u2014 Templates",
+    "file": "14f_variadic_templates.cpp",
+    "path": "step14_templates/14f_variadic_templates.cpp"
+  },
+  {
+    "id": "14g_if_constexpr",
+    "label": "14g \u00b7 If Constexpr",
+    "group": "14 \u2014 Templates",
+    "file": "14g_if_constexpr.cpp",
+    "path": "step14_templates/14g_if_constexpr.cpp"
+  },
+  {
+    "id": "15a_throw_catch",
+    "label": "15a \u00b7 Throw Catch",
+    "group": "15 \u2014 Exceptions",
+    "file": "15a_throw_catch.cpp",
+    "path": "step15_exceptions/15a_throw_catch.cpp"
+  },
+  {
+    "id": "15b_std_exception_hierarchy",
+    "label": "15b \u00b7 Std Exception Hierarchy",
+    "group": "15 \u2014 Exceptions",
+    "file": "15b_std_exception_hierarchy.cpp",
+    "path": "step15_exceptions/15b_std_exception_hierarchy.cpp"
+  },
+  {
+    "id": "15c_raii_cleanup",
+    "label": "15c \u00b7 Raii Cleanup",
+    "group": "15 \u2014 Exceptions",
+    "file": "15c_raii_cleanup.cpp",
+    "path": "step15_exceptions/15c_raii_cleanup.cpp"
+  },
+  {
+    "id": "15d_noexcept",
+    "label": "15d \u00b7 Noexcept",
+    "group": "15 \u2014 Exceptions",
+    "file": "15d_noexcept.cpp",
+    "path": "step15_exceptions/15d_noexcept.cpp"
+  },
+  {
+    "id": "16a_lambda_basics",
+    "label": "16a \u00b7 Lambda Basics",
+    "group": "16 \u2014 Lambdas",
+    "file": "16a_lambda_basics.cpp",
+    "path": "step16_lambdas/16a_lambda_basics.cpp"
+  },
+  {
+    "id": "16b_lambda_captures",
+    "label": "16b \u00b7 Lambda Captures",
+    "group": "16 \u2014 Lambdas",
+    "file": "16b_lambda_captures.cpp",
+    "path": "step16_lambdas/16b_lambda_captures.cpp"
+  },
+  {
+    "id": "16c_lambdas_with_algorithms",
+    "label": "16c \u00b7 Lambdas With Algorithms",
+    "group": "16 \u2014 Lambdas",
+    "file": "16c_lambdas_with_algorithms.cpp",
+    "path": "step16_lambdas/16c_lambdas_with_algorithms.cpp"
+  },
+  {
+    "id": "16d_lambda_internals",
+    "label": "16d \u00b7 Lambda Internals",
+    "group": "16 \u2014 Lambdas",
+    "file": "16d_lambda_internals.cpp",
+    "path": "step16_lambdas/16d_lambda_internals.cpp"
+  },
+  {
+    "id": "17a_static_cast",
+    "label": "17a \u00b7 Static Cast",
+    "group": "17 \u2014 C++ Casts",
+    "file": "17a_static_cast.cpp",
+    "path": "step17_casts/17a_static_cast.cpp"
+  },
+  {
+    "id": "17b_dynamic_cast",
+    "label": "17b \u00b7 Dynamic Cast",
+    "group": "17 \u2014 C++ Casts",
+    "file": "17b_dynamic_cast.cpp",
+    "path": "step17_casts/17b_dynamic_cast.cpp"
+  },
+  {
+    "id": "17c_const_cast",
+    "label": "17c \u00b7 Const Cast",
+    "group": "17 \u2014 C++ Casts",
+    "file": "17c_const_cast.cpp",
+    "path": "step17_casts/17c_const_cast.cpp"
+  },
+  {
+    "id": "17d_reinterpret_cast",
+    "label": "17d \u00b7 Reinterpret Cast",
+    "group": "17 \u2014 C++ Casts",
+    "file": "17d_reinterpret_cast.cpp",
+    "path": "step17_casts/17d_reinterpret_cast.cpp"
+  }
+];
+
+/* ==========================================================
+   3D background — Three.js wireframes (green/lime palette)
+   ========================================================== */
+(function init3D(){
+  const canvas = document.getElementById('bg-3d');
+  if(!window.THREE){ return; }
+  const renderer = new THREE.WebGLRenderer({ canvas, alpha:true, antialias:true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 100);
+  camera.position.z = 7;
+  const group = new THREE.Group();
+  scene.add(group);
+  const palette = [0x22c55e, 0x4ade80, 0xa3e635, 0xbef264];
+  function addShape(geom, color, scale, position){
+    const mat = new THREE.LineBasicMaterial({ color, transparent:true, opacity:0.55 });
+    const wire = new THREE.WireframeGeometry(geom);
+    const line = new THREE.LineSegments(wire, mat);
+    line.scale.setScalar(scale);
+    line.position.set(position.x, position.y, position.z);
+    line.userData.spinSpeed = { x:(Math.random()-0.5)*0.004, y:(Math.random()-0.5)*0.004, z:(Math.random()-0.5)*0.0025 };
+    line.userData.float = { phase: Math.random()*Math.PI*2, amp: 0.3+Math.random()*0.4 };
+    group.add(line); return line;
+  }
+  addShape(new THREE.IcosahedronGeometry(1,0),         palette[0], 1.6, { x:-4.5, y: 1.6, z:-2 });
+  addShape(new THREE.TorusKnotGeometry(0.7,0.22,80,12),palette[1], 1.4, { x: 4.5, y:-1.8, z:-1 });
+  addShape(new THREE.OctahedronGeometry(1,0),          palette[2], 1.0, { x: 3.0, y: 2.2, z:-3 });
+  addShape(new THREE.TetrahedronGeometry(1,0),         palette[3], 0.9, { x:-3.2, y:-2.0, z:-2.5 });
+  addShape(new THREE.IcosahedronGeometry(1,0),         palette[1], 0.6, { x: 0.2, y: 0.0, z:-4 });
+  addShape(new THREE.DodecahedronGeometry(1,0),        palette[0], 0.7, { x:-1.6, y: 2.6, z:-3.5 });
+  addShape(new THREE.OctahedronGeometry(1,0),          palette[3], 0.55,{ x: 1.8, y:-2.6, z:-3.5 });
+  const pCount = 220, pGeom = new THREE.BufferGeometry();
+  const pPos = new Float32Array(pCount * 3);
+  for(let i=0;i<pCount;i++){ pPos[i*3]=(Math.random()-0.5)*18; pPos[i*3+1]=(Math.random()-0.5)*12; pPos[i*3+2]=(Math.random()-0.5)*10-2; }
+  pGeom.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+  scene.add(new THREE.Points(pGeom, new THREE.PointsMaterial({ color:0xffffff, size:0.025, transparent:true, opacity:0.65 })));
+  const target={x:0,y:0}, current={x:0,y:0};
+  window.addEventListener('mousemove', e => { target.x=(e.clientX/window.innerWidth-0.5)*0.6; target.y=(e.clientY/window.innerHeight-0.5)*0.4; });
+  function resize(){ const w=window.innerWidth,h=window.innerHeight; renderer.setSize(w,h,false); camera.aspect=w/h; camera.updateProjectionMatrix(); }
+  resize(); window.addEventListener('resize', resize);
+  let t=0; (function tick(){ t+=0.01; current.x+=(target.x-current.x)*0.05; current.y+=(target.y-current.y)*0.05;
+    group.children.forEach(m => { m.rotation.x+=m.userData.spinSpeed.x; m.rotation.y+=m.userData.spinSpeed.y; m.rotation.z+=m.userData.spinSpeed.z; m.position.y += Math.sin(t+m.userData.float.phase)*0.0025*m.userData.float.amp; });
+    group.rotation.y = current.x*0.4; group.rotation.x = -current.y*0.3;
+    renderer.render(scene, camera); requestAnimationFrame(tick); })();
+})();
+
+/* ==========================================================
+   CodeMirror — C++ mode
+   ========================================================== */
+const editor = CodeMirror.fromTextArea(document.getElementById('editor'), {
+  mode: 'text/x-c++src',
+  theme: 'dracula',
+  lineNumbers: true, matchBrackets: true, autoCloseBrackets: true,
+  styleActiveLine: true, indentUnit: 4, tabSize: 4,
+  smartIndent: true, lineWrapping: false,
+  extraKeys: {
+    'Cmd-Enter':  () => runStep(),
+    'Ctrl-Enter': () => runStep(),
+    'Cmd-/':  'toggleComment',
+    'Ctrl-/': 'toggleComment',
+  },
+});
+editor.setValue('// Loading…\n');
+
+/* ==========================================================
+   Embedded source loader + state
+   ========================================================== */
+const fileListEl  = document.getElementById('fileList');
+const fileNameEl  = document.getElementById('fileName');
+const fileSubEl   = document.getElementById('fileSub');
+const fileTabsEl  = document.getElementById('fileTabs');
+const searchEl    = document.getElementById('search');
+const statusLabel = document.getElementById('statusLabel');
+const statusInfo  = document.getElementById('statusInfo');
+const outBody     = document.getElementById('outBody');
+const toastEl     = document.getElementById('toast');
+
+const state = {
+  active: null,
+  originals: {},
+  buffers: {},
+  outputs: {},
+  loaded: {},
+};
+
+const STORAGE_PREFIX = 'cpp-lab:edit:';
+function hashShort(s){
+  let h = 5381;
+  for(let i=0; i<s.length; i++) h = ((h<<5) + h + s.charCodeAt(i)) | 0;
+  return (h >>> 0).toString(36);
+}
+function storageKeyFor(file){
+  const orig = state.originals[file] || '';
+  return STORAGE_PREFIX + file + ':v' + hashShort(orig);
+}
+function saveBuffer(file, value){ try{ localStorage.setItem(storageKeyFor(file), value); }catch{} }
+function loadBuffer(file){ try{ return localStorage.getItem(storageKeyFor(file)); }catch{ return null; } }
+function clearBuffer(file){ try{ localStorage.removeItem(storageKeyFor(file)); }catch{} }
+
+function readSource(file){
+  const node = document.querySelector('script[type="text/plain"][data-cppfile="' + CSS.escape(file) + '"]');
+  return node ? node.textContent : null;
+}
+function readOutput(stepId){
+  const step = STEPS.find(s => s.id === stepId);
+  if(!step) return null;
+  const key = step.file.replace(/\.cpp$/, '');
+  const node = document.querySelector('script[type="text/plain"][data-outfile="' + CSS.escape(key) + '"]');
+  return node ? node.textContent : null;
+}
+function ensureLoaded(file){
+  if(state.loaded[file]) return state.originals[file];
+  const text = readSource(file);
+  if(text == null){
+    const msg = '// missing embedded source for ' + file + '\n';
+    state.originals[file] = msg; state.buffers[file] = msg;
+  } else {
+    state.originals[file] = text;
+    const saved = loadBuffer(file);
+    state.buffers[file]   = saved != null ? saved : text;
+  }
+  state.loaded[file] = true;
+  return state.originals[file];
+}
+
+/* Sidebar */
+function stepButtonNode(entry){
+  const li = document.createElement('li');
+  const btn = document.createElement('button');
+  btn.className = 'file-btn';
+  btn.dataset.step = entry.id;
+  const lineCount = (state.originals[entry.file] || '').split('\n').length;
+  btn.innerHTML =
+    '<span class="ico">CPP</span>' +
+    '<span class="label">' + entry.label + '</span>' +
+    '<span class="lines">' + lineCount + 'L</span>';
+  btn.addEventListener('click', () => activate(entry.id));
+  li.appendChild(btn);
+  return li;
+}
+(function renderSteps(){
+  STEPS.forEach(s => ensureLoaded(s.file));
+  const groups = []; const seen = new Map();
+  STEPS.forEach(s => {
+    const g = s.group || 'Other';
+    if(!seen.has(g)){ seen.set(g, { name:g, items:[] }); groups.push(seen.get(g)); }
+    seen.get(g).items.push(s);
+  });
+  groups.forEach(g => {
+    const head = document.createElement('li');
+    head.className = 'file-group-head'; head.textContent = g.name;
+    fileListEl.appendChild(head);
+    g.items.forEach(p => fileListEl.appendChild(stepButtonNode(p)));
+  });
+})();
+searchEl.addEventListener('input', ()=>{
+  const q = searchEl.value.toLowerCase().trim();
+  document.querySelectorAll('.file-btn').forEach(b=>{
+    const id = b.dataset.step;
+    const step = STEPS.find(s=>s.id===id);
+    const hit = !q || step.label.toLowerCase().includes(q) || step.file.toLowerCase().includes(q);
+    b.style.display = hit ? '' : 'none';
+  });
+});
+
+function activeStep(){ return STEPS.find(s => s.id === state.active); }
+
+function activate(id){
+  const step = STEPS.find(s => s.id === id); if(!step) return;
+  state.active = id;
+  document.querySelectorAll('.file-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.step === id);
+  });
+  ensureLoaded(step.file);
+  editor.setOption('readOnly', false);
+  editor.setValue(state.buffers[step.file] || state.originals[step.file]);
+  editor.clearHistory();
+
+  const labelClean = step.label.replace(/^[\d]+[a-z]?\s*·\s*/, '');
+  fileNameEl.firstChild.nodeValue = labelClean;
+  fileSubEl.textContent = step.path;
+
+  // file tabs (single file per step)
+  fileTabsEl.innerHTML = '';
+  const tab = document.createElement('button');
+  tab.className = 'file-tab active';
+  tab.textContent = step.file;
+  fileTabsEl.appendChild(tab);
+
+  outBody.innerHTML = '<div class="empty">Press ▶ Run to see expected output for this demo.</div>';
+  setStatus('ready', 'Ready', step.path);
+  updateDirty();
+}
+
+function setStatus(kind, label, info){
+  statusLabel.className = 'status ' + (kind==='ready' ? '' : kind);
+  statusLabel.textContent = label;
+  statusInfo.textContent = info || '';
+}
+
+function updateDirty(){
+  const step = activeStep(); if(!step) return;
+  const cur = editor.getValue();
+  const dirty = cur !== state.originals[step.file];
+  fileNameEl.classList.toggle('dirty', dirty);
+  document.querySelector('.file-btn[data-step="' + step.id + '"]')?.classList.toggle('dirty', dirty);
+  document.querySelector('.file-tab')?.classList.toggle('dirty', dirty);
+}
+
+editor.on('change', () => {
+  const step = activeStep(); if(!step) return;
+  const cur = editor.getValue();
+  state.buffers[step.file] = cur;
+  if(cur === state.originals[step.file]) clearBuffer(step.file);
+  else saveBuffer(step.file, cur);
+  updateDirty();
+});
+
+/* Run — display the precomputed expected output */
+function escapeHtml(s){
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function runStep(){
+  const step = activeStep(); if(!step) return;
+  const out = readOutput(step.id);
+  if(out == null){
+    setStatus('err', 'No output', step.path);
+    outBody.innerHTML = '<div class="empty">No precomputed output found for this demo.</div>';
+    return;
+  }
+  setStatus('work', 'Running…', '');
+  // brief delay for the running animation feel
+  setTimeout(() => {
+    const cur = editor.getValue();
+    const isOriginal = cur === state.originals[step.file];
+    const banner = isOriginal
+      ? '<div class="ok-banner"><strong>Output</strong> — captured from <code>g++ -std=c++17 -o build/' + step.file.replace(/\.cpp$/,'') + ' ' + escapeHtml(step.path) + ' &amp;&amp; ./build/' + step.file.replace(/\.cpp$/,'') + '</code></div>'
+      : '<div class="info-banner"><strong>Note</strong> — you have unsaved edits. The output below is from the original source. Compile locally to see the effect of your changes.</div>';
+    outBody.innerHTML = banner + '<h4>stdout</h4><pre>' + escapeHtml(out) + '</pre>';
+    setStatus('ok', 'Done', step.path);
+  }, 110);
+}
+document.getElementById('runBtn').addEventListener('click', runStep);
+
+/* Reset — revert active file's buffer to original */
+document.getElementById('resetBtn').addEventListener('click', () => {
+  const step = activeStep(); if(!step) return;
+  state.buffers[step.file] = state.originals[step.file];
+  clearBuffer(step.file);
+  editor.setValue(state.originals[step.file]);
+  showToast('Reverted to original');
+});
+
+/* Copy — copy the precomputed output */
+document.getElementById('copyOutBtn').addEventListener('click', async () => {
+  const step = activeStep(); if(!step) return;
+  const out = readOutput(step.id);
+  if(out == null){ showToast('No output to copy', true); return; }
+  try{ await navigator.clipboard.writeText(out); showToast('Copied output'); }
+  catch{ showToast('Copy failed', true); }
+});
+
+/* Toast */
+let toastTimer = null;
+function showToast(msg, isError){
+  toastEl.textContent = msg;
+  toastEl.classList.toggle('error', !!isError);
+  toastEl.classList.add('show');
+  if(toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=> toastEl.classList.remove('show'), 1700);
+}
+
+/* Splitter — drag to resize editor vs preview */
+(function splitter(){
+  const root = document.querySelector('.editor-pane');
+  const handle = document.getElementById('splitter');
+  let dragging = false;
+  function setCols(p){
+    p = Math.max(0.18, Math.min(0.82, p));
+    root.style.setProperty('--col-1', p + 'fr');
+    root.style.setProperty('--col-2', (1 - p) + 'fr');
+  }
+  setCols(0.55);
+  handle.addEventListener('pointerdown', e => {
+    dragging = true; handle.classList.add('active');
+    handle.setPointerCapture(e.pointerId);
+  });
+  handle.addEventListener('pointermove', e => {
+    if(!dragging) return;
+    const r = root.getBoundingClientRect();
+    setCols((e.clientX - r.left - 22) / (r.width - 50));
+  });
+  function endDrag(){ dragging = false; handle.classList.remove('active'); }
+  handle.addEventListener('pointerup', endDrag);
+  handle.addEventListener('pointercancel', endDrag);
+})();
+
+/* Boot */
+activate(STEPS[0].id);
+</script>
+</body>
+</html>

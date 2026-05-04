@@ -1,0 +1,3947 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>C++ OOP Lab — Advanced Programming</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/theme/dracula.min.css">
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/clike/clike.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/edit/closebrackets.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/edit/matchbrackets.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/selection/active-line.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/comment/comment.min.js"></script>
+
+<style>
+:root{
+  --bg-0:#04070d;
+  --surface:rgba(255,255,255,0.04);
+  --surface-2:rgba(255,255,255,0.07);
+  --border:rgba(255,255,255,0.09);
+  --border-strong:rgba(255,255,255,0.18);
+  --text:#e8eef9;
+  --text-dim:#9aa5bd;
+  --text-faint:#5e6a86;
+  --cpp-blue:#3b82f6;
+  --cpp-blue-light:#60a5fa;
+  --cpp-blue-deep:#1d4ed8;
+  --cpp-cyan:#22d3ee;
+  --cpp-cyan-light:#67e8f9;
+  --cpp-glow:rgba(59,130,246,0.45);
+  --kw-color:#7dd3fc;
+  --type-color:#c4b5fd;
+  --string-color:#86efac;
+  --comment-color:#7c8cff;
+  --num-color:#fbbf24;
+  --success:#38d39f;
+  --warn:#ffb547;
+  --error:#ff5a7a;
+  --radius:18px;
+  --shadow-lg: 0 30px 80px -30px rgba(59,130,246,0.32), 0 10px 30px -15px rgba(0,0,0,0.6);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg-0);color:var(--text);font-family:'Inter',system-ui,sans-serif;height:100%;overflow:hidden}
+code,pre,textarea,.mono,.CodeMirror{font-family:'JetBrains Mono',ui-monospace,monospace}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+
+#bg-3d{
+  position:fixed; inset:0; z-index:-2; display:block;
+  background:
+    radial-gradient(1200px 700px at 8% -10%, rgba(59,130,246,0.30), transparent 60%),
+    radial-gradient(1000px 600px at 110% 0%,  rgba(34,211,238,0.18), transparent 60%),
+    radial-gradient(900px 600px at 50% 130%,  rgba(96,165,250,0.16), transparent 60%),
+    linear-gradient(180deg, #02060e 0%, #050811 50%, #02050a 100%);
+}
+body::after{
+  content:""; position:fixed; inset:0; z-index:-1; pointer-events:none; opacity:.32;
+  background-image:
+    radial-gradient(1px 1px at 20% 30%, #ffffff 100%, transparent),
+    radial-gradient(1px 1px at 70% 60%, #ffffff 100%, transparent),
+    radial-gradient(1.5px 1.5px at 40% 80%, #ffffff 100%, transparent),
+    radial-gradient(1px 1px at 85% 20%, #ffffff 100%, transparent),
+    radial-gradient(1px 1px at 15% 65%, #ffffff 100%, transparent);
+  background-size: 1200px 800px;
+  mask-image:linear-gradient(180deg,transparent,#000 20%,#000 80%,transparent);
+}
+
+.app{ display:grid; grid-template-columns: 320px 1fr; height:100vh }
+@media (max-width: 980px){
+  .app{ grid-template-columns: 1fr; height:auto; min-height:100vh; overflow:auto }
+  html,body{ overflow:auto; height:auto }
+}
+
+.sidebar{
+  padding:22px 16px; position:relative; z-index:5;
+  background:linear-gradient(180deg, rgba(10,15,30,0.85), rgba(6,10,22,0.85));
+  backdrop-filter: blur(22px) saturate(140%);
+  -webkit-backdrop-filter: blur(22px) saturate(140%);
+  border-right:1px solid var(--border);
+  overflow-y:auto; scrollbar-width:thin;
+}
+.sidebar::-webkit-scrollbar{width:6px}
+.sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.08);border-radius:6px}
+
+.brand{ display:flex;align-items:center;gap:12px;margin-bottom:18px;padding:6px 4px;border-radius:14px;user-select:none }
+.brand-cube{
+  width:46px;height:46px;border-radius:12px;position:relative;
+  background:linear-gradient(135deg, var(--cpp-blue-deep), var(--cpp-cyan-light));
+  box-shadow:
+    0 12px 30px -10px var(--cpp-glow),
+    inset 0 0 0 1px rgba(255,255,255,0.30),
+    inset 0 -10px 20px -8px rgba(0,0,0,0.35);
+  transform: rotate(-6deg);
+  display:flex;align-items:center;justify-content:center;
+  font-weight:800;font-size:14px;color:#fff;letter-spacing:0.3px;
+  animation: floatY 5s ease-in-out infinite;
+  text-shadow: 0 1px 0 rgba(0,0,0,0.18);
+}
+.brand-cube::after{
+  content:""; position:absolute; inset:auto -6px -6px auto;
+  width:100%;height:100%; border-radius:12px;
+  background:linear-gradient(135deg, rgba(59,130,246,0.5), rgba(34,211,238,0.4));
+  filter:blur(14px); z-index:-1;
+}
+@keyframes floatY{ 0%,100%{ transform: rotate(-6deg) translateY(0) } 50%{ transform: rotate(-2deg) translateY(-4px) } }
+.brand h1{margin:0;font-size:17px;font-weight:700;letter-spacing:-0.02em}
+.brand .sub{font-size:11px;color:var(--text-faint);letter-spacing:0.14em;text-transform:uppercase}
+
+.search-wrap{ position:relative; margin-bottom:14px }
+.search{
+  width:100%;padding:10px 14px 10px 34px;border-radius:12px;border:1px solid var(--border);
+  background:rgba(255,255,255,0.03);color:var(--text);font-size:13.5px;outline:none;
+  transition:border-color .2s, box-shadow .2s;
+}
+.search:focus{border-color:var(--cpp-blue);box-shadow:0 0 0 3px rgba(59,130,246,0.22)}
+.search-wrap::before{
+  content:"⌕"; position:absolute; left:11px; top:50%; transform:translateY(-50%);
+  color:var(--text-faint); font-size:14px; pointer-events:none;
+}
+
+.section-label{ font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:var(--text-faint); padding:14px 8px 6px }
+
+.file-list{ list-style:none; padding:0; margin:0 }
+.file-list li{ margin:2px 0 }
+.file-btn{
+  width:100%;display:flex;align-items:center;gap:10px;
+  background:transparent;color:var(--text-dim);
+  padding:10px 12px;border-radius:10px;font-size:13.5px;font-weight:500;text-align:left;
+  transition: background .15s, color .15s, transform .15s, box-shadow .2s;
+  border:1px solid transparent;
+}
+.file-btn:hover{ background:var(--surface); color:var(--text); transform:translateX(2px) }
+.file-btn.active{
+  background:linear-gradient(135deg,rgba(59,130,246,0.25),rgba(34,211,238,0.10));
+  color:#fff; border-color:rgba(59,130,246,0.32);
+  box-shadow: inset 0 0 0 1px rgba(59,130,246,0.18), 0 8px 24px -16px var(--cpp-glow);
+}
+.file-btn .ico{
+  width:24px; height:24px; flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  border-radius:6px;
+  background:linear-gradient(135deg, var(--cpp-blue-deep), var(--cpp-cyan-light));
+  color:#fff; font-weight:800; font-size:9.5px; letter-spacing:0.5px;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.2);
+  text-shadow:0 1px 0 rgba(0,0,0,0.2);
+}
+.file-btn .label{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+.file-btn .lines{
+  font-size:10.5px; color:var(--text-faint); padding:1px 6px; border-radius:20px;
+  background:rgba(255,255,255,0.04); flex-shrink:0;
+}
+.file-btn.active .lines{ background:rgba(59,130,246,0.20); color:#cfe1ff }
+.file-btn.dirty::before{
+  content:""; width:6px; height:6px; border-radius:50%;
+  background:var(--cpp-cyan-light); flex-shrink:0;
+  box-shadow: 0 0 8px var(--cpp-cyan-light);
+}
+.file-group-head{
+  list-style:none; padding:14px 12px 4px;
+  font-size:10.5px; letter-spacing:0.18em; text-transform:uppercase;
+  color:var(--text-faint); font-weight:600;
+}
+
+.back-link{
+  display:flex;align-items:center;gap:8px;
+  margin-top:18px; padding:10px 12px;border-radius:10px;
+  color:var(--text-dim); font-size:13px; text-decoration:none;
+  border:1px solid var(--border);
+  transition: background .15s, color .15s, border-color .15s;
+}
+.back-link:hover{ background:var(--surface); color:var(--text); border-color:var(--border-strong) }
+
+.editor-pane{
+  position:relative; padding:22px;
+  display:grid;
+  grid-template-columns: var(--col-1, 1fr) 6px var(--col-2, 1fr);
+  grid-template-rows: auto 1fr;
+  grid-template-areas:
+    "topbar  topbar  topbar"
+    "editor  split   preview";
+  gap:14px;
+  min-width:0; min-height:0; overflow:hidden;
+}
+.editor-pane > .top-bar     { grid-area: topbar }
+.editor-pane > .editor-card { grid-area: editor;  min-width: 0 }
+.editor-pane > .preview-card{ grid-area: preview; min-width: 0 }
+
+.splitter{
+  grid-area: split; cursor: col-resize; position: relative;
+  background: transparent; user-select: none; touch-action: none;
+}
+.splitter::before{
+  content: ""; position: absolute;
+  left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: 4px; height: 64px; border-radius: 2px;
+  background: var(--border-strong);
+  transition: background .18s, height .18s, box-shadow .18s;
+}
+.splitter:hover::before, .splitter.active::before{
+  background: linear-gradient(180deg, var(--cpp-blue-deep), var(--cpp-cyan-light));
+  height: 110px;
+  box-shadow: 0 0 16px -2px var(--cpp-glow);
+}
+
+@media (max-width: 980px){
+  .editor-pane{
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr 1fr;
+    grid-template-areas: "topbar" "editor" "preview";
+  }
+  .splitter{ display:none }
+}
+
+.top-bar{
+  display:flex;align-items:center;gap:14px; padding:14px 18px;
+  background: linear-gradient(135deg, rgba(15,25,55,0.7), rgba(10,15,40,0.7));
+  border:1px solid var(--border); border-radius: var(--radius);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  box-shadow: var(--shadow-lg);
+}
+.file-meta{ display:flex; align-items:center; gap:12px; min-width:0 }
+.file-icon{
+  width:36px;height:36px;border-radius:10px;
+  background:linear-gradient(135deg, var(--cpp-blue-deep), var(--cpp-cyan-light));
+  color:#fff; font-weight:800; font-size:13px; letter-spacing:0.5px;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow: 0 6px 18px -8px var(--cpp-glow), inset 0 0 0 1px rgba(255,255,255,0.30);
+  flex-shrink:0;
+  text-shadow: 0 1px 0 rgba(0,0,0,0.18);
+}
+.file-name{ font-size:15px; font-weight:600; letter-spacing:-0.01em }
+.file-name .dirty-mark{ color:var(--cpp-cyan-light); margin-left:6px; opacity:0; transition:opacity .15s }
+.file-name.dirty .dirty-mark{ opacity:1 }
+.file-sub{ font-size:11.5px; color:var(--text-faint); margin-top:1px; font-family:'JetBrains Mono',monospace }
+.spacer{ flex:1 }
+
+.action-btn{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:8px 14px; border-radius:10px;
+  border:1px solid var(--border); background:rgba(255,255,255,0.03);
+  color:var(--text-dim); font-size:13px; font-weight:600;
+  transition: background .15s, color .15s, border-color .15s, transform .15s;
+  text-decoration: none;
+}
+.action-btn:hover{ background:var(--surface-2); color:var(--text); border-color:var(--border-strong) }
+.action-btn:active{ transform:translateY(1px) }
+.action-btn .k{ font-family:'JetBrains Mono',monospace; font-size:10.5px; opacity:.6; padding:1px 5px; border-radius:5px; background:rgba(255,255,255,0.06) }
+.run-btn{
+  background:linear-gradient(135deg, var(--cpp-blue-deep), var(--cpp-cyan-light));
+  color:#fff; border-color:transparent; font-weight:700;
+  box-shadow: 0 10px 30px -12px var(--cpp-glow);
+  text-shadow: 0 1px 0 rgba(0,0,0,0.18);
+}
+.run-btn:hover{ filter:brightness(1.08); transform:translateY(-1px); border-color:transparent }
+
+.editor-card{
+  position:relative; min-height:0;
+  background: linear-gradient(180deg, rgba(15,22,45,0.65), rgba(8,12,24,0.65));
+  border:1px solid var(--border); border-radius: var(--radius);
+  overflow:hidden;
+  backdrop-filter: blur(22px) saturate(150%);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  box-shadow: var(--shadow-lg);
+}
+.editor-card::before{
+  content:""; position:absolute; inset:-1px; border-radius: calc(var(--radius) + 1px); pointer-events:none;
+  background: linear-gradient(135deg, rgba(59,130,246,0.45), rgba(34,211,238,0.0) 40%, rgba(96,165,250,0.30));
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  padding:1px; opacity:.55;
+}
+.editor-chrome{
+  display:flex; align-items:center; gap:10px; padding:9px 14px;
+  border-bottom:1px solid var(--border);
+  background: linear-gradient(180deg, rgba(255,255,255,0.025), transparent);
+}
+.dot{ width:11px; height:11px; border-radius:50% }
+.dot.r{ background:#ff5a7a; box-shadow:0 0 10px rgba(255,90,122,0.55) }
+.dot.y{ background:#ffb547; box-shadow:0 0 10px rgba(255,181,71,0.55) }
+.dot.g{ background:#38d39f; box-shadow:0 0 10px rgba(56,211,159,0.55) }
+
+.file-tabs{
+  display:flex; gap:4px; margin: 0 6px 0 6px;
+  flex:1; min-width:200px; overflow-x:auto; overflow-y:hidden;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(59,130,246,0.35) transparent;
+  mask-image: linear-gradient(to right, transparent 0, #000 18px, #000 calc(100% - 18px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 18px, #000 calc(100% - 18px), transparent 100%);
+  padding-bottom: 4px;
+}
+.file-tabs::-webkit-scrollbar{ height: 4px }
+.file-tabs::-webkit-scrollbar-track{ background: transparent }
+.file-tabs::-webkit-scrollbar-thumb{ background: rgba(59,130,246,0.35); border-radius: 4px }
+.file-tabs::-webkit-scrollbar-thumb:hover{ background: rgba(59,130,246,0.55) }
+.file-tab{
+  flex-shrink:0;
+  padding: 3px 11px; font-size:11.5px; border-radius:7px;
+  border:1px solid var(--border); background:rgba(255,255,255,0.025);
+  color:var(--text-dim); font-weight:500;
+  font-family:'JetBrains Mono', ui-monospace, monospace;
+  transition: background .15s, color .15s, border-color .15s;
+  white-space:nowrap;
+}
+.file-tab.active{
+  background:linear-gradient(135deg, rgba(59,130,246,0.40), rgba(34,211,238,0.20));
+  color:#fff; border-color:rgba(59,130,246,0.45);
+  box-shadow: 0 0 0 1px rgba(59,130,246,0.25), 0 6px 14px -8px var(--cpp-glow);
+}
+.editor-chrome .badge{
+  font-size:10.5px; letter-spacing:0.14em; text-transform:uppercase;
+  padding:3px 9px; border-radius:20px;
+  background:rgba(59,130,246,0.10); border:1px solid rgba(59,130,246,0.32);
+  color:#cfe1ff;
+}
+.cm-host{ position:relative; height:calc(100% - 41px) }
+.CodeMirror{
+  height:100% !important; background:transparent;
+  font-size:14px; line-height:1.55; padding: 6px 0;
+}
+.CodeMirror-gutters{ background:transparent; border-right:1px solid var(--border) }
+.CodeMirror-linenumber{ color:rgba(154,165,189,0.4) }
+.CodeMirror-cursor{ border-left-color:#fff }
+.CodeMirror-activeline-background{ background:rgba(59,130,246,0.05) !important }
+.CodeMirror-selected{ background:rgba(59,130,246,0.20) !important }
+.CodeMirror-matchingbracket{ color:var(--cpp-cyan-light) !important; text-shadow:0 0 8px var(--cpp-glow) }
+
+.preview-card{
+  background: linear-gradient(180deg, #060a14, #04060c);
+  border:1px solid var(--border); border-radius: var(--radius);
+  display:flex; flex-direction:column; min-height:0;
+  box-shadow: var(--shadow-lg);
+  overflow:hidden; position: relative;
+}
+.preview-card::before{
+  content:""; position: absolute; inset:-1px; border-radius: calc(var(--radius) + 1px); pointer-events:none;
+  background: linear-gradient(135deg, rgba(59,130,246,0.45), rgba(34,211,238,0) 40%, rgba(96,165,250,0.4));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude; padding: 1px;
+  opacity: .55;
+}
+.out-titlebar{
+  display:flex; align-items:center; gap:10px; padding:10px 14px;
+  background: linear-gradient(180deg, rgba(8,14,28,0.85), rgba(5,10,22,0.85));
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.out-titlebar .status{
+  display: flex; align-items: center; gap: 8px;
+  font-size: 11.5px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-dim);
+}
+.out-titlebar .status::before{
+  content:""; width:8px; height:8px; border-radius:50%; background: var(--text-faint);
+}
+.out-titlebar .status.ok::before{ background: var(--success); box-shadow: 0 0 10px rgba(56,211,159,0.7) }
+.out-titlebar .status.err::before{ background: var(--error); box-shadow: 0 0 10px rgba(255,90,122,0.7) }
+.out-titlebar .status.work::before{ background: var(--cpp-cyan-light); box-shadow: 0 0 10px var(--cpp-glow) }
+.out-titlebar .info{
+  font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-faint);
+}
+.out-titlebar .right{ margin-left: auto; display: flex; gap: 6px; align-items: center }
+.out-titlebar .icon-btn{
+  padding: 4px 10px; border-radius: 7px;
+  border: 1px solid var(--border); background: rgba(255,255,255,0.02);
+  color: var(--text-dim); font-size: 11.5px;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.out-titlebar .icon-btn:hover{ background: var(--surface-2); color: var(--text); border-color: var(--border-strong) }
+
+.out-body{
+  flex: 1; min-height: 0; overflow: auto;
+  padding: 14px 18px;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 13px; line-height: 1.55;
+  scrollbar-width: thin;
+}
+.out-body::-webkit-scrollbar{ width: 6px; height: 6px }
+.out-body::-webkit-scrollbar-thumb{ background: rgba(59,130,246,0.18); border-radius: 6px }
+.out-body::-webkit-scrollbar-thumb:hover{ background: rgba(59,130,246,0.40) }
+.out-body .empty{
+  color: var(--text-faint); text-align: center; padding: 40px 12px;
+  font-style: italic; font-family: 'Inter', sans-serif;
+}
+.out-body .ok-banner{
+  background: rgba(56,211,159,0.10);
+  border: 1px solid rgba(56,211,159,0.30);
+  color: #b6f0d2;
+  border-radius: 8px;
+  padding: 8px 14px; margin-bottom: 12px;
+  font-family: 'Inter', sans-serif; font-size: 12.5px;
+}
+.out-body .info-banner{
+  background: rgba(59,130,246,0.10);
+  border: 1px solid rgba(59,130,246,0.30);
+  color: #cfe1ff;
+  border-radius: 8px;
+  padding: 8px 14px; margin-bottom: 12px;
+  font-family: 'Inter', sans-serif; font-size: 12.5px;
+}
+.out-body h4{
+  margin: 14px 0 6px; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--cpp-cyan-light); font-weight: 600; font-family: 'Inter', sans-serif;
+}
+.out-body h4:first-child{ margin-top: 0 }
+.out-body pre{
+  white-space: pre;
+  color: var(--text);
+  font-size: 12.5px; line-height: 1.6;
+  margin: 0;
+}
+
+.ambient{
+  position:absolute; border-radius:50%; pointer-events:none; z-index:0;
+  filter: blur(60px); opacity:.5;
+}
+.ambient.a{ width:340px;height:340px; background:rgba(59,130,246,0.30); top:-80px; right:-100px; animation:floatA 14s ease-in-out infinite }
+.ambient.b{ width:280px;height:280px; background:rgba(34,211,238,0.28); bottom:-60px; left:8%; animation:floatB 18s ease-in-out infinite }
+@keyframes floatA{ 0%,100%{transform:translate(0,0)} 50%{transform:translate(-30px,20px)} }
+@keyframes floatB{ 0%,100%{transform:translate(0,0)} 50%{transform:translate(40px,-20px)} }
+
+.toast{
+  position:fixed; bottom:22px; right:22px; z-index:50;
+  padding:10px 14px; border-radius:12px; font-size:13px;
+  background:linear-gradient(135deg, var(--cpp-blue-deep), var(--cpp-cyan-light));
+  color:#fff; font-weight:700;
+  box-shadow: 0 18px 40px -18px var(--cpp-glow);
+  transform: translateY(20px); opacity:0;
+  transition: transform .25s ease, opacity .25s ease;
+}
+.toast.show{ transform: translateY(0); opacity:1 }
+.toast.error{ background:linear-gradient(135deg,#ff5a7a,#ff8c5a); color:#fff }
+</style>
+</head>
+<body>
+<canvas id="bg-3d"></canvas>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-cube">C++</div>
+      <div>
+        <h1>C++ OOP Lab</h1>
+        <div class="sub">classes · inherit · poly</div>
+      </div>
+    </div>
+
+    <div class="search-wrap">
+      <input class="search" id="search" placeholder="Filter steps…" />
+    </div>
+
+    <div class="section-label">Steps</div>
+    <ul class="file-list" id="fileList"></ul>
+
+    <a class="back-link" href="../index.html" style="margin-top:18px">⌂ Home</a>
+  </aside>
+
+  <main class="editor-pane">
+    <div class="ambient a"></div>
+    <div class="ambient b"></div>
+
+    <header class="top-bar">
+      <div class="file-meta">
+        <div class="file-icon">CPP</div>
+        <div style="min-width:0">
+          <div class="file-name" id="fileName">Loading…<span class="dirty-mark">●</span></div>
+          <div class="file-sub" id="fileSub"></div>
+        </div>
+      </div>
+      <div class="spacer"></div>
+      <button class="action-btn" id="resetBtn" title="Revert this file to the original">⟲ Reset</button>
+      <button class="action-btn run-btn" id="runBtn" title="Show expected output">▶ Run <span class="k">⌘↵</span></button>
+    </header>
+
+    <section class="editor-card">
+      <div class="editor-chrome">
+        <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <div class="file-tabs" id="fileTabs"></div>
+        <span class="badge">C++17</span>
+      </div>
+      <div class="cm-host">
+        <textarea id="editor"></textarea>
+      </div>
+    </section>
+
+    <div class="splitter" id="splitter" role="separator" aria-orientation="vertical" title="Drag to resize"></div>
+
+    <section class="preview-card">
+      <div class="out-titlebar">
+        <span class="status" id="statusLabel">Ready</span>
+        <span class="info" id="statusInfo"></span>
+        <div class="right">
+          <button class="icon-btn" id="copyOutBtn" title="Copy expected output to clipboard">⧉ Copy</button>
+        </div>
+      </div>
+      <div class="out-body" id="outBody">
+        <div class="empty">Press ▶ Run to see expected output for this demo.</div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- =====================================================================
+     Embedded lesson sources — every <script type="text/plain"
+     data-cppfile="…"> block is the verbatim source of one demo.
+     ===================================================================== -->
+
+<script type="text/plain" data-cppfile="01a_classes_access.cpp">// Concept: class with public / private / protected access modifiers.
+//   public    — accessible from anywhere
+//   protected — accessible inside the class and its derived classes
+//   private   — accessible only inside the class
+#include <iostream>
+#include <string>
+
+class BankAccount {
+public:
+    BankAccount(const std::string& owner, double balance)
+        : owner_(owner), balance_(balance) {}
+
+    double get_balance() const { return balance_; }
+    const std::string& owner() const { return owner_; }
+
+private:
+    std::string owner_;
+    double      balance_;   // private — outside code cannot do account.balance_ = 9999
+};
+
+int main() {
+    BankAccount acc("Alice", 1000.0);
+    std::cout << "owner   = " << acc.owner()       << "\n";
+    std::cout << "balance = " << acc.get_balance() << "\n";
+
+    // acc.balance_ = 9999;  // ← compile error: 'balance_' is private
+    std::cout << "(balance_ is private — direct assignment from outside would not compile)\n";
+}
+</script>
+<script type="text/plain" data-cppfile="01b_default_ctor.cpp">// Concept: default constructor (no arguments).
+// Called when an object is created without any arguments: Point p;
+#include <iostream>
+
+struct Point {
+    double x, y;
+    Point() : x(0.0), y(0.0) {                       // default ctor
+        std::cout << "  Point() default → (" << x << ", " << y << ")\n";
+    }
+};
+
+int main() {
+    Point p1;       // default ctor runs
+    Point p2{};     // value-initialisation also calls the default ctor
+    std::cout << "p1 = (" << p1.x << ", " << p1.y << ")\n";
+    std::cout << "p2 = (" << p2.x << ", " << p2.y << ")\n";
+}
+</script>
+<script type="text/plain" data-cppfile="01c_param_ctor.cpp">// Concept: parameterized constructor.
+// Initialises members from arguments. Multiple ctors can coexist (overloading).
+#include <iostream>
+
+struct Point {
+    double x, y;
+    Point(double px, double py) : x(px), y(py) {     // parameterized ctor
+        std::cout << "  Point(" << x << ", " << y << ") param ctor\n";
+    }
+};
+
+int main() {
+    Point a(3.0, 4.0);
+    Point b{1.5, -2.5};   // brace init also calls the parameterized ctor
+    std::cout << "a = (" << a.x << ", " << a.y << ")\n";
+    std::cout << "b = (" << b.x << ", " << b.y << ")\n";
+}
+</script>
+<script type="text/plain" data-cppfile="01d_member_init_list.cpp">// Concept: member initializer list — preferred over assignment in body.
+// Required for const and reference members (they cannot be assigned later).
+#include <iostream>
+#include <string>
+
+class Config {
+public:
+    // Initializer list runs BEFORE the body. const and reference members
+    // MUST be initialised here — assigning to them in the body would be illegal.
+    Config(const std::string& name, int& counter_ref)
+        : name_(name),
+          version_(1),       // const int — only the init list works
+          counter_(counter_ref)   // int& — must bind here, can't reseat later
+    {
+        std::cout << "  Config '" << name_ << "' v" << version_ << " ready\n";
+    }
+
+    void show() const {
+        std::cout << "  name=" << name_ << " version=" << version_
+                  << " counter=" << counter_ << "\n";
+    }
+
+private:
+    std::string name_;
+    const int   version_;     // const member — set once, immutable
+    int&        counter_;     // reference member — bound at construction
+};
+
+int main() {
+    int hits = 7;
+    Config cfg("prod", hits);
+    cfg.show();
+    hits = 42;            // changes via reference too
+    cfg.show();
+}
+</script>
+<script type="text/plain" data-cppfile="01e_destructor_order.cpp">// Concept: destructor — runs when an object goes out of scope.
+// Within a scope, destructors fire in REVERSE order of construction (LIFO).
+#include <iostream>
+
+struct Tag {
+    const char* name;
+    Tag(const char* n) : name(n) { std::cout << "  ctor " << name << "\n"; }
+    ~Tag()                       { std::cout << "  dtor " << name << "\n"; }
+};
+
+int main() {
+    std::cout << "── enter scope ──\n";
+    {
+        Tag a("A");
+        Tag b("B");
+        Tag c("C");
+        std::cout << "  (about to leave inner scope — dtors run C, B, A)\n";
+    }
+    std::cout << "── after scope ──\n";
+}
+</script>
+<script type="text/plain" data-cppfile="01f_copy_ctor.cpp">// Concept: copy constructor — builds a new object as a copy of an existing one.
+// Signature: ClassName(const ClassName& other);
+#include <iostream>
+#include <string>
+
+class Account {
+public:
+    Account(const std::string& owner, double balance)
+        : owner_(owner), balance_(balance)
+    {
+        std::cout << "  ctor       → " << owner_ << " $" << balance_ << "\n";
+    }
+
+    // Copy constructor — note the const reference parameter.
+    Account(const Account& other)
+        : owner_(other.owner_ + " (copy)"), balance_(other.balance_)
+    {
+        std::cout << "  copy ctor  → cloned to " << owner_ << "\n";
+    }
+
+    void show() const {
+        std::cout << "  Account[" << owner_ << "] $" << balance_ << "\n";
+    }
+
+private:
+    std::string owner_;
+    double      balance_;
+};
+
+int main() {
+    Account a("Alice", 1000.0);
+    Account b = a;       // copy ctor (NOT operator=) — same as Account b(a);
+    Account c(a);        // explicit copy
+    a.show(); b.show(); c.show();
+}
+</script>
+<script type="text/plain" data-cppfile="01g_static_members.cpp">// Concept: static data members — one shared variable across ALL instances.
+// Lives in static storage (NOT inside any object). Must be defined at file scope.
+#include <iostream>
+
+class Counter {
+public:
+    Counter()  { ++count_; std::cout << "  ctor (live=" << count_ << ")\n"; }
+    ~Counter() { --count_; std::cout << "  dtor (live=" << count_ << ")\n"; }
+
+    // Static member function — no 'this' pointer; can only touch static data.
+    static int live() { return count_; }
+
+private:
+    static int count_;     // declaration
+};
+int Counter::count_ = 0;   // definition — allocates the actual storage
+
+int main() {
+    std::cout << "live before: " << Counter::live() << "\n";
+    {
+        Counter a;
+        Counter b;
+        {
+            Counter c;
+            std::cout << "live inside inner scope: " << Counter::live() << "\n";
+        }
+        std::cout << "live after inner scope:  " << Counter::live() << "\n";
+    }
+    std::cout << "live after all scopes:    " << Counter::live() << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="01h_const_methods_and_this.cpp">// Concept: const member function + the 'this' pointer.
+//   const after the parameter list  → method promises not to modify the object
+//   'this' is a pointer to the current object; *this can be returned for chaining
+#include <iostream>
+#include <string>
+
+class Builder {
+public:
+    Builder& set_name(const std::string& s) { name_  = s; return *this; }
+    Builder& set_size(int n)                { size_  = n; return *this; }
+    Builder& set_color(const std::string& c){ color_ = c; return *this; }
+
+    // const method — cannot modify member variables; safe on const objects.
+    void show() const {
+        std::cout << "  Builder{" << name_ << ", " << size_ << ", " << color_ << "}\n";
+    }
+
+private:
+    std::string name_;
+    int         size_  = 0;
+    std::string color_;
+};
+
+int main() {
+    Builder b;
+    // method chaining — each setter returns *this, so calls flow left → right
+    b.set_name("widget").set_size(42).set_color("blue").show();
+
+    const Builder cb;
+    cb.show();   // OK — show() is const
+    // cb.set_name("x");  // ← compile error: setters are non-const
+}
+</script>
+<script type="text/plain" data-cppfile="02a_basic_inheritance.cpp">// Concept: public inheritance — Derived "is-a" Base.
+// Derived gains all public/protected members of Base.
+#include <iostream>
+#include <string>
+
+class Animal {
+public:
+    Animal(const std::string& name) : name_(name) {}
+    void breathe() const { std::cout << "  " << name_ << " breathes air\n"; }
+    std::string name() const { return name_; }
+protected:
+    std::string name_;
+};
+
+class Dog : public Animal {              // public inheritance
+public:
+    Dog(const std::string& name) : Animal(name) {}    // chain to base ctor
+    void bark() const { std::cout << "  " << name_ << ": Woof!\n"; }
+};
+
+int main() {
+    Dog rex("Rex");
+    rex.breathe();   // inherited from Animal
+    rex.bark();      // Dog's own method
+    std::cout << "name: " << rex.name() << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="02b_ctor_dtor_order.cpp">// Concept: construction & destruction order in single inheritance.
+//   Construction: BASE first, then DERIVED.
+//   Destruction:  DERIVED first, then BASE.   (LIFO)
+#include <iostream>
+
+class Base {
+public:
+    Base()  { std::cout << "  Base()  ctor\n"; }
+    ~Base() { std::cout << "  Base()  dtor\n"; }
+};
+
+class Derived : public Base {
+public:
+    Derived()  { std::cout << "  Derived() ctor\n"; }
+    ~Derived() { std::cout << "  Derived() dtor\n"; }
+};
+
+int main() {
+    std::cout << "── creating Derived ──\n";
+    {
+        Derived d;
+        std::cout << "  (about to leave scope)\n";
+    }
+    std::cout << "── after scope ──\n";
+}
+</script>
+<script type="text/plain" data-cppfile="02c_protected_members.cpp">// Concept: protected members — accessible in the class AND in derived classes,
+// but NOT from outside the hierarchy.
+#include <iostream>
+#include <string>
+
+class Animal {
+public:
+    Animal(const std::string& name) : name_(name) {}
+protected:
+    std::string name_;     // derived classes can read/write this directly
+};
+
+class Dog : public Animal {
+public:
+    Dog(const std::string& name) : Animal(name) {}
+    void rename(const std::string& new_name) {
+        name_ = new_name;       // OK — protected access from derived class
+        std::cout << "  Dog renamed to " << name_ << "\n";
+    }
+};
+
+int main() {
+    Dog d("Buddy");
+    d.rename("Max");
+    // d.name_ = "Rex";   // ← compile error: name_ is protected
+    std::cout << "(d.name_ is protected — direct access from outside is illegal)\n";
+}
+</script>
+<script type="text/plain" data-cppfile="02d_method_hiding.cpp">// Concept: method hiding — a non-virtual method in the derived class with the
+// same name does NOT override the base; a base pointer still calls the BASE.
+// (For true polymorphism, see step 3 — virtual functions.)
+#include <iostream>
+#include <string>
+
+class Animal {
+public:
+    std::string sound() const { return "<silence>"; }   // NOT virtual
+};
+
+class Dog : public Animal {
+public:
+    std::string sound() const { return "Woof!"; }       // hides, doesn't override
+};
+
+int main() {
+    Dog d;
+    std::cout << "Dog::sound() directly        = " << d.sound() << "\n";
+
+    Animal* p = &d;
+    std::cout << "Animal* → sound() (no virt) = " << p->sound()
+              << "   ← base version called\n";
+}
+</script>
+<script type="text/plain" data-cppfile="02e_multi_level.cpp">// Concept: multi-level inheritance.
+// Animal → Mammal → Dog.  Dog inherits everything from Animal AND Mammal.
+#include <iostream>
+#include <string>
+
+class Animal {
+public:
+    Animal(const std::string& n) : name_(n) {}
+    void breathe() const { std::cout << "  " << name_ << " breathes air\n"; }
+protected:
+    std::string name_;
+};
+
+class Mammal : public Animal {
+public:
+    Mammal(const std::string& n) : Animal(n) {}
+    void warm_blooded() const { std::cout << "  " << name_ << " is warm-blooded\n"; }
+};
+
+class Dog : public Mammal {
+public:
+    Dog(const std::string& n, const std::string& breed)
+        : Mammal(n), breed_(breed) {}
+    void fetch() const { std::cout << "  " << name_ << " (" << breed_ << ") fetches!\n"; }
+private:
+    std::string breed_;
+};
+
+int main() {
+    Dog luna("Luna", "Husky");
+    luna.breathe();        // from Animal
+    luna.warm_blooded();   // from Mammal
+    luna.fetch();          // from Dog
+}
+</script>
+<script type="text/plain" data-cppfile="02f_private_inheritance.cpp">// Concept: private inheritance — "implemented-in-terms-of", NOT "is-a".
+// All inherited members become private to Derived, so outside code cannot
+// treat a Derived as a Base.
+#include <iostream>
+
+class Engine {
+public:
+    void start() const { std::cout << "  Engine: vroom!\n"; }
+};
+
+class Car : private Engine {     // private inheritance
+public:
+    void drive() const {
+        start();                 // OK — Car CAN call Engine methods internally
+        std::cout << "  Car is moving\n";
+    }
+};
+
+int main() {
+    Car c;
+    c.drive();
+    // c.start();   // ← compile error: 'Engine::start' is inaccessible due to
+    //                  private inheritance. Outside code can't see Engine at all.
+    std::cout << "(c.start() from outside would be a compile error)\n";
+}
+</script>
+<script type="text/plain" data-cppfile="03a_abstract_class.cpp">// Concept: abstract class — has at least one pure virtual function (= 0).
+// Cannot be instantiated. Forces derived classes to implement the operation.
+#include <iostream>
+
+class Shape {
+public:
+    virtual ~Shape() = default;
+    virtual double area() const = 0;        // pure virtual → abstract
+};
+
+class Square : public Shape {
+public:
+    Square(double s) : side_(s) {}
+    double area() const override { return side_ * side_; }
+private:
+    double side_;
+};
+
+int main() {
+    // Shape s;            // ← compile error: cannot instantiate abstract class
+    // Shape* s = new Shape();  // same error
+    Square sq(4.0);
+    std::cout << "Square(4) area = " << sq.area() << "\n";
+    std::cout << "(Shape itself is abstract — direct instantiation would not compile)\n";
+}
+</script>
+<script type="text/plain" data-cppfile="03b_virtual_dispatch.cpp">// Concept: virtual functions enable RUNTIME dispatch via the vtable.
+// A base pointer to a derived object calls the DERIVED override.
+// 'override' (C++11) is a compile-time check — typos won't silently miss.
+#include <iostream>
+#include <string>
+
+class Animal {
+public:
+    virtual ~Animal() = default;
+    virtual std::string sound() const { return "<silence>"; }
+};
+
+class Dog : public Animal {
+public:
+    std::string sound() const override { return "Woof!"; }
+};
+
+class Cat : public Animal {
+public:
+    std::string sound() const override { return "Meow!"; }
+};
+
+int main() {
+    Dog d;  Cat c;  Animal a;
+    Animal* zoo[] = { &a, &d, &c };
+    for (Animal* p : zoo) {
+        std::cout << "  " << p->sound() << "   ← dispatched at runtime via vtable\n";
+    }
+}
+</script>
+<script type="text/plain" data-cppfile="03c_virtual_destructor.cpp">// Concept: virtual destructor — REQUIRED when deleting through a base pointer.
+// Without 'virtual', only ~Base runs → derived resources leak.
+#include <iostream>
+
+class Base {
+public:
+    virtual ~Base() { std::cout << "  ~Base\n"; }   // virtual!
+};
+
+class Derived : public Base {
+public:
+    Derived()  { std::cout << "  Derived ctor (allocated 256-byte buffer)\n"; }
+    ~Derived() { std::cout << "  ~Derived (freed buffer)\n"; }
+};
+
+int main() {
+    std::cout << "── delete via Base* with virtual dtor ──\n";
+    Base* p = new Derived();
+    delete p;     // ~Derived runs first (vtable), then ~Base. Correct.
+    std::cout << "── done ──\n";
+    std::cout << "(if ~Base were non-virtual, ~Derived would not run → leak)\n";
+}
+</script>
+<script type="text/plain" data-cppfile="03d_polymorphic_collection.cpp">// Concept: polymorphic collection.
+// A vector of unique_ptr<Base> owns derived objects; virtual dispatch routes
+// each call to the right override; unique_ptr cleans up via virtual dtor.
+#include <iostream>
+#include <memory>
+#include <vector>
+
+class Shape {
+public:
+    virtual ~Shape() = default;
+    virtual double area() const = 0;
+    virtual const char* name() const = 0;
+};
+
+class Circle : public Shape {
+public:
+    Circle(double r) : r_(r) {}
+    double area() const override { return 3.14159265 * r_ * r_; }
+    const char* name() const override { return "Circle"; }
+private:
+    double r_;
+};
+
+class Square : public Shape {
+public:
+    Square(double s) : s_(s) {}
+    double area() const override { return s_ * s_; }
+    const char* name() const override { return "Square"; }
+private:
+    double s_;
+};
+
+int main() {
+    std::vector<std::unique_ptr<Shape>> canvas;
+    canvas.push_back(std::make_unique<Circle>(2.0));
+    canvas.push_back(std::make_unique<Square>(3.0));
+    canvas.push_back(std::make_unique<Circle>(1.0));
+
+    double total = 0;
+    for (const auto& s : canvas) {
+        std::cout << "  " << s->name() << " area=" << s->area() << "\n";
+        total += s->area();
+    }
+    std::cout << "total area = " << total << "\n";
+    // unique_ptr destroys each shape at end of scope (virtual dtor in Shape)
+}
+</script>
+<script type="text/plain" data-cppfile="03e_covariant_return.cpp">// Concept: covariant return type — the override may return a derived pointer
+// where the base returned a base pointer.
+#include <iostream>
+
+class Shape {
+public:
+    virtual ~Shape() = default;
+    virtual Shape* clone() const = 0;        // base returns Shape*
+};
+
+class Circle : public Shape {
+public:
+    Circle(double r) : r_(r) {}
+    Circle* clone() const override {         // covariant: returns Circle*
+        return new Circle(r_);
+    }
+    double r() const { return r_; }
+private:
+    double r_;
+};
+
+int main() {
+    Circle c(5.0);
+
+    // through a base pointer → Shape*
+    Shape*  base_clone = static_cast<const Shape&>(c).clone();
+    std::cout << "via Shape*  → got a clone (cleanup via virtual dtor)\n";
+    delete base_clone;
+
+    // directly on Circle → Circle* (no cast needed to read r())
+    Circle* circle_clone = c.clone();
+    std::cout << "via Circle* → cloned r = " << circle_clone->r() << "\n";
+    delete circle_clone;
+}
+</script>
+<script type="text/plain" data-cppfile="03f_virtual_call_from_ctor.cpp">// Concept: virtual calls from a constructor do NOT dispatch to the derived
+// override — the derived part isn't constructed yet, so the base version runs.
+// Same caveat applies to destructors. (Full pitfalls walkthrough in step 7.)
+#include <iostream>
+
+class Base {
+public:
+    Base() {
+        std::cout << "  Base ctor — calling virtual greet()\n";
+        greet();           // dispatches to Base::greet, NOT Derived::greet
+    }
+    virtual ~Base() = default;
+    virtual void greet() const { std::cout << "  Base::greet\n"; }
+};
+
+class Derived : public Base {
+public:
+    Derived() { std::cout << "  Derived ctor\n"; }
+    void greet() const override { std::cout << "  Derived::greet\n"; }
+};
+
+int main() {
+    std::cout << "── constructing Derived ──\n";
+    Derived d;
+    std::cout << "── after construction, calling greet() ──\n";
+    d.greet();           // now dispatches to Derived::greet (object fully built)
+}
+</script>
+<script type="text/plain" data-cppfile="04a_basic_multiple.cpp">// Concept: multiple inheritance — a class can have more than one direct base.
+// Construction order follows the DECLARATION order of base classes,
+// destruction is the reverse.
+#include <iostream>
+
+class Flyable {
+public:
+    Flyable()  { std::cout << "  Flyable ctor\n"; }
+    ~Flyable() { std::cout << "  Flyable dtor\n"; }
+    void fly() const { std::cout << "  flying\n"; }
+};
+
+class Swimmable {
+public:
+    Swimmable()  { std::cout << "  Swimmable ctor\n"; }
+    ~Swimmable() { std::cout << "  Swimmable dtor\n"; }
+    void swim() const { std::cout << "  swimming\n"; }
+};
+
+class Duck : public Flyable, public Swimmable {     // ← multiple bases
+public:
+    Duck()  { std::cout << "  Duck ctor\n"; }
+    ~Duck() { std::cout << "  Duck dtor\n"; }
+    void quack() const { std::cout << "  Quack!\n"; }
+};
+
+int main() {
+    std::cout << "── creating Duck (ctor order: Flyable, Swimmable, Duck) ──\n";
+    Duck d;
+    d.fly();
+    d.swim();
+    d.quack();
+    std::cout << "── leaving scope (dtor order is reverse) ──\n";
+}
+</script>
+<script type="text/plain" data-cppfile="04b_name_ambiguity.cpp">// Concept: name ambiguity in multiple inheritance.
+// If both bases have a member with the same name, you must qualify it
+// using the class name and the scope-resolution operator (::).
+#include <iostream>
+
+class Flyable {
+public:
+    void describe() const { std::cout << "  Flyable describe\n"; }
+};
+
+class Swimmable {
+public:
+    void describe() const { std::cout << "  Swimmable describe\n"; }
+};
+
+class FlyingFish : public Flyable, public Swimmable {};
+
+int main() {
+    FlyingFish ff;
+    // ff.describe();          // ← ambiguous: which base's describe()?
+    ff.Flyable::describe();    // explicit qualification
+    ff.Swimmable::describe();
+    std::cout << "(unqualified ff.describe() would be a compile error)\n";
+}
+</script>
+<script type="text/plain" data-cppfile="04c_diamond_problem.cpp">// Concept: the diamond problem (without virtual inheritance).
+//
+//        Device
+//        /    \
+//   Printer  Scanner
+//        \    /
+//        AllInOne
+//
+// AllInOne ends up with TWO copies of Device — wasted memory AND ambiguous
+// access. The fix is virtual inheritance (see step 5).
+#include <iostream>
+
+class Device {
+public:
+    Device()  { std::cout << "  Device ctor @ " << this << "\n"; }
+    ~Device() { std::cout << "  Device dtor @ " << this << "\n"; }
+    void powerOn() const { std::cout << "  Device@" << this << " on\n"; }
+};
+
+class Printer : public Device {};
+class Scanner : public Device {};
+class AllInOne : public Printer, public Scanner {};
+
+int main() {
+    AllInOne aio;     // TWO Device sub-objects — watch the addresses
+    std::cout << "sizeof(Device)   = " << sizeof(Device)   << "\n";
+    std::cout << "sizeof(AllInOne) = " << sizeof(AllInOne) << "  ← contains 2 Device sub-objects\n";
+
+    // aio.powerOn();           // ← ambiguous (which Device?)
+    aio.Printer::powerOn();
+    aio.Scanner::powerOn();
+
+    Device* via_p = static_cast<Printer*>(&aio);
+    Device* via_s = static_cast<Scanner*>(&aio);
+    std::cout << "Device via Printer @ " << via_p << "\n";
+    std::cout << "Device via Scanner @ " << via_s << "\n";
+    std::cout << "Same object? " << (via_p == via_s ? "YES" : "NO — TWO COPIES") << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="05a_virtual_inheritance.cpp">// Concept: virtual inheritance solves the diamond problem.
+// Each "virtual" base appears EXACTLY ONCE in the most-derived object,
+// no matter how many paths point to it.
+#include <iostream>
+
+class Device {
+public:
+    Device()  { std::cout << "  Device ctor @ " << this << "\n"; }
+    ~Device() { std::cout << "  Device dtor @ " << this << "\n"; }
+    void powerOn() const { std::cout << "  Device@" << this << " on\n"; }
+};
+
+class Printer : public virtual Device {};   // virtual!
+class Scanner : public virtual Device {};   // virtual!
+class AllInOne : public Printer, public Scanner {};
+
+int main() {
+    AllInOne aio;     // ONE Device — note the constructor only fires once
+    aio.powerOn();    // no longer ambiguous
+
+    Device* via_p = static_cast<Printer*>(&aio);
+    Device* via_s = static_cast<Scanner*>(&aio);
+    std::cout << "Device via Printer @ " << via_p << "\n";
+    std::cout << "Device via Scanner @ " << via_s << "\n";
+    std::cout << "Same object? " << (via_p == via_s ? "YES — ONE COPY" : "NO") << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="05b_amphibious_vehicle.cpp">// Concept: with virtual inheritance, the MOST-DERIVED class is responsible
+// for initialising the virtual base directly (its mid-level base ctors are
+// ignored for that purpose).
+#include <iostream>
+
+class Vehicle {
+public:
+    Vehicle(int speed) : speed_(speed) {
+        std::cout << "  Vehicle ctor speed=" << speed_ << "\n";
+    }
+    int speed() const { return speed_; }
+protected:
+    int speed_;
+};
+
+class LandVehicle : public virtual Vehicle {
+public:
+    LandVehicle()  : Vehicle(0) { std::cout << "  LandVehicle ctor\n"; }
+};
+
+class WaterVehicle : public virtual Vehicle {
+public:
+    WaterVehicle() : Vehicle(0) { std::cout << "  WaterVehicle ctor\n"; }
+};
+
+class AmphibiousVehicle : public LandVehicle, public WaterVehicle {
+public:
+    // Most-derived class initialises the VIRTUAL base directly.
+    // The LandVehicle/WaterVehicle Vehicle(0) calls above are IGNORED here.
+    AmphibiousVehicle(int s) : Vehicle(s) {
+        std::cout << "  AmphibiousVehicle ctor (uses Vehicle(" << s << "))\n";
+    }
+};
+
+int main() {
+    AmphibiousVehicle av(90);
+    std::cout << "speed = " << av.speed() << " km/h\n";
+}
+</script>
+<script type="text/plain" data-cppfile="05c_dynamic_cast.cpp">// Concept: dynamic_cast — safe runtime downcast.
+//   - Returns the cast pointer if the object IS the requested type
+//   - Returns nullptr if it is NOT  (and so guards against bad casts)
+// Requires at least one virtual function in the base (a polymorphic class).
+#include <iostream>
+
+class Base {
+public:
+    virtual ~Base() = default;     // makes Base polymorphic
+};
+
+class Derived : public Base {
+public:
+    void only_in_derived() const { std::cout << "  Derived::only_in_derived\n"; }
+};
+
+class Other : public Base {};
+
+int main() {
+    Base* p1 = new Derived();
+    Base* p2 = new Other();
+
+    // Cast that should succeed
+    if (auto* d = dynamic_cast<Derived*>(p1)) {
+        std::cout << "p1 is Derived  — dynamic_cast succeeded\n";
+        d->only_in_derived();
+    }
+
+    // Cast that should fail → nullptr (no UB, no exception)
+    if (auto* d = dynamic_cast<Derived*>(p2)) {
+        d->only_in_derived();
+    } else {
+        std::cout << "p2 is NOT Derived — dynamic_cast returned nullptr (safe)\n";
+    }
+
+    delete p1; delete p2;
+}
+</script>
+<script type="text/plain" data-cppfile="05d_typeid_rtti.cpp">// Concept: typeid — runtime type information (RTTI).
+// For a polymorphic object accessed via a base pointer/reference, typeid
+// returns the type of the actual MOST-DERIVED object.
+#include <iostream>
+#include <typeinfo>
+
+class Animal { public: virtual ~Animal() = default; };
+class Dog : public Animal {};
+class Cat : public Animal {};
+
+int main() {
+    Dog d;
+    Animal& a = d;             // base reference, but actual object is Dog
+
+    std::cout << "typeid(d).name()  = " << typeid(d).name() << "\n";
+    std::cout << "typeid(a).name()  = " << typeid(a).name() << "  ← still Dog (polymorphic)\n";
+
+    Animal* p = new Cat();
+    std::cout << "typeid(*p).name() = " << typeid(*p).name() << "  ← Cat\n";
+    delete p;
+
+    std::cout << "Same type as Dog? "
+              << (typeid(a) == typeid(Dog) ? "YES" : "NO") << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="06a_interfaces.cpp">// Concept: an "interface" in C++ is just a class with only pure virtual
+// methods (and a virtual destructor). A concrete class can implement many.
+#include <iostream>
+#include <string>
+
+struct ISerializable {
+    virtual ~ISerializable() = default;
+    virtual std::string serialize() const = 0;
+};
+
+struct ILoggable {
+    virtual ~ILoggable() = default;
+    virtual void log() const = 0;
+};
+
+class User : public ISerializable, public ILoggable {
+public:
+    User(int id, std::string name) : id_(id), name_(std::move(name)) {}
+
+    std::string serialize() const override {
+        return "User{id=" + std::to_string(id_) + ",name=" + name_ + "}";
+    }
+    void log() const override {
+        std::cout << "  [LOG] User id=" << id_ << " name=" << name_ << "\n";
+    }
+private:
+    int id_;
+    std::string name_;
+};
+
+int main() {
+    User u(42, "Alice");
+    std::cout << "serialize: " << u.serialize() << "\n";
+    u.log();
+
+    ILoggable* lp = &u;     // can pass User where any ILoggable is wanted
+    lp->log();
+}
+</script>
+<script type="text/plain" data-cppfile="06b_mixins.cpp">// Concept: mixins — small reusable pieces of behaviour pulled in via
+// inheritance (or templates). Each mixin adds one orthogonal capability.
+#include <iostream>
+#include <string>
+#include <vector>
+
+class TimestampMixin {
+public:
+    void touch_created(const std::string& d) { created_ = d; }
+    void touch_updated(const std::string& d) { updated_ = d; }
+    void print_timestamps() const {
+        std::cout << "  Created: " << created_ << "  Updated: " << updated_ << "\n";
+    }
+protected:
+    std::string created_, updated_;
+};
+
+class TagsMixin {
+public:
+    void add_tag(const std::string& t) { tags_.push_back(t); }
+    void print_tags() const {
+        std::cout << "  Tags: [";
+        for (size_t i=0;i<tags_.size();++i) std::cout << (i? ", " : "") << tags_[i];
+        std::cout << "]\n";
+    }
+protected:
+    std::vector<std::string> tags_;
+};
+
+class Post : public TimestampMixin, public TagsMixin {
+public:
+    Post(std::string title) : title_(std::move(title)) {}
+    void show() const {
+        std::cout << "Post \"" << title_ << "\"\n";
+        print_timestamps();
+        print_tags();
+    }
+private:
+    std::string title_;
+};
+
+int main() {
+    Post p("Hello World");
+    p.touch_created("2024-01-15");
+    p.touch_updated("2024-03-22");
+    p.add_tag("C++"); p.add_tag("OOP");
+    p.show();
+}
+</script>
+<script type="text/plain" data-cppfile="06c_final_keyword.cpp">// Concept: 'final' (C++11)
+//   - on a method:  cannot be overridden in further-derived classes
+//   - on a class:   cannot be derived from at all
+#include <iostream>
+
+class Base {
+public:
+    virtual ~Base() = default;
+    virtual void go() { std::cout << "  Base::go\n"; }
+};
+
+class Middle : public Base {
+public:
+    void go() final { std::cout << "  Middle::go (final)\n"; }   // sealed override
+};
+
+// Anyone trying to override go() in a class derived from Middle will fail to compile.
+class Child : public Middle {
+public:
+    // void go() override { ... }   // ← compile error: 'go' is final in Middle
+};
+
+class Sealed final {           // class itself is final → cannot be a base
+public:
+    void show() const { std::cout << "  Sealed::show\n"; }
+};
+
+// class TrySubclass : public Sealed {};   // ← compile error: 'Sealed' is final
+
+int main() {
+    Child c; c.go();
+    Sealed s; s.show();
+    std::cout << "(further override of Middle::go, or deriving from Sealed, is illegal)\n";
+}
+</script>
+<script type="text/plain" data-cppfile="06d_crtp.cpp">// Concept: CRTP — Curiously Recurring Template Pattern.
+// A class derives from a TEMPLATE base parameterised on itself.
+// Achieves polymorphism with NO virtual calls (resolved at compile time).
+#include <iostream>
+
+template <typename Derived>
+class Printable {
+public:
+    void print() const {
+        // Static cast to derived → calls derived's print_impl(), no vtable.
+        static_cast<const Derived*>(this)->print_impl();
+    }
+};
+
+class Hello : public Printable<Hello> {
+public:
+    void print_impl() const { std::cout << "  Hello!\n"; }
+};
+
+class Bye : public Printable<Bye> {
+public:
+    void print_impl() const { std::cout << "  Goodbye!\n"; }
+};
+
+int main() {
+    Hello h;  Bye b;
+    h.print();   // resolved at compile time → Hello::print_impl
+    b.print();   // resolved at compile time → Bye::print_impl
+    std::cout << "(no virtual calls — zero runtime overhead)\n";
+}
+</script>
+<script type="text/plain" data-cppfile="06e_singleton.cpp">// Concept: singleton pattern — exactly one instance, accessed via instance().
+// Uses a static local (Meyers' singleton) — thread-safe initialisation in C++11+.
+#include <iostream>
+#include <map>
+#include <string>
+
+class AppConfig {
+public:
+    // Disallow copy and move so callers cannot duplicate the singleton.
+    AppConfig(const AppConfig&)            = delete;
+    AppConfig& operator=(const AppConfig&) = delete;
+
+    static AppConfig& instance() {
+        static AppConfig the_one;     // constructed on first call
+        return the_one;
+    }
+
+    void set(const std::string& k, const std::string& v) { data_[k] = v; }
+    void show() const {
+        std::cout << "  AppConfig:\n";
+        for (auto& [k, v] : data_) std::cout << "    " << k << " = " << v << "\n";
+    }
+
+private:
+    AppConfig() { std::cout << "  AppConfig constructed\n"; }
+    std::map<std::string, std::string> data_;
+};
+
+int main() {
+    AppConfig& a = AppConfig::instance();
+    AppConfig& b = AppConfig::instance();
+
+    a.set("theme", "dark");
+    a.set("language", "en");
+
+    std::cout << "&a == &b? " << (&a == &b ? "YES — same instance" : "NO") << "\n";
+    b.show();    // sees what a set
+}
+</script>
+<script type="text/plain" data-cppfile="07a_object_slicing.cpp">// Pitfall 1: object slicing.
+// Passing/copying a polymorphic object BY VALUE truncates it down to the base
+// part — the derived data and vtable info are LOST.
+// Rule: pass polymorphic objects by reference or pointer, never by value.
+#include <iostream>
+#include <string>
+
+class Animal {
+public:
+    virtual ~Animal() = default;
+    virtual std::string sound() const { return "<silence>"; }
+};
+
+class Dog : public Animal {
+public:
+    std::string sound() const override { return "Woof!"; }
+};
+
+void by_value(Animal a)        { std::cout << "  by value:     " << a.sound() << "  ← sliced!\n"; }
+void by_reference(const Animal& a) { std::cout << "  by reference: " << a.sound() << "\n"; }
+void by_pointer(const Animal* a)   { std::cout << "  by pointer:   " << a->sound() << "\n"; }
+
+int main() {
+    Dog d;
+    by_value(d);       // SLICED — only the Animal part is copied
+    by_reference(d);   // OK — vtable intact
+    by_pointer(&d);    // OK — vtable intact
+}
+</script>
+<script type="text/plain" data-cppfile="07b_non_virtual_dtor.cpp">// Pitfall 2: non-virtual destructor leaks derived resources when deleting
+// through a base pointer. ~Base alone runs; ~Derived is NEVER called.
+#include <iostream>
+
+class LeakyBase {                      // ⚠ no virtual dtor
+public:
+    ~LeakyBase() { std::cout << "  ~LeakyBase (non-virtual)\n"; }
+};
+
+class LeakyDerived : public LeakyBase {
+public:
+    LeakyDerived()  { std::cout << "  LeakyDerived ctor — allocated 256 bytes\n"; }
+    ~LeakyDerived() { std::cout << "  ~LeakyDerived — freed buffer\n"; }
+};
+
+int main() {
+    std::cout << "── delete LeakyDerived through LeakyBase* (non-virtual dtor) ──\n";
+    LeakyBase* p = new LeakyDerived();
+    delete p;       // ~LeakyDerived NEVER runs → buffer leaked
+    std::cout << "  ⇧ ~LeakyDerived was skipped — leak!\n";
+    std::cout << "Rule: declare the base destructor virtual when deleting via base*.\n";
+}
+</script>
+<script type="text/plain" data-cppfile="07c_hiding_vs_overriding.cpp">// Pitfall 3: hiding vs overriding.
+// Without 'virtual', a same-named method in the derived class HIDES rather than
+// overrides — the dispatch via base pointer goes to the BASE.
+// 'override' (C++11) tells the compiler "this MUST override a virtual" — typos
+// are caught at compile time.
+#include <iostream>
+
+class Base {
+public:
+    void hidden() const           { std::cout << "  Base::hidden\n"; }      // not virtual
+    virtual void overridden() const { std::cout << "  Base::overridden\n"; }
+    virtual ~Base() = default;
+};
+
+class Derived : public Base {
+public:
+    void hidden() const           { std::cout << "  Derived::hidden\n"; }            // hides
+    void overridden() const override { std::cout << "  Derived::overridden\n"; }     // overrides
+};
+
+int main() {
+    Derived d;
+    Base* p = &d;
+    std::cout << "via Derived directly:\n";
+    d.hidden(); d.overridden();
+    std::cout << "via Base*:\n";
+    p->hidden();      // Base version  ← hidden, not overridden
+    p->overridden();  // Derived version ← virtual → polymorphic
+}
+</script>
+<script type="text/plain" data-cppfile="07d_range_for_copy.cpp">// Pitfall 4: accidental copies in range-for.
+// 'for (auto x : container)' COPIES each element. Use 'const auto&' to read
+// without copying, or 'auto&' to mutate in place.
+#include <iostream>
+#include <string>
+#include <vector>
+
+struct Widget {
+    int id; std::string label;
+    Widget(int i, std::string l) : id(i), label(std::move(l)) {
+        std::cout << "  ctor   #" << id << "\n";
+    }
+    Widget(const Widget& other) : id(other.id), label(other.label) {
+        std::cout << "  copy   #" << id << "\n";
+    }
+};
+
+int main() {
+    std::vector<Widget> ws;
+    ws.reserve(2);
+    ws.emplace_back(1, "one");
+    ws.emplace_back(2, "two");
+
+    std::cout << "── for (auto w : ws) — each element COPIED ──\n";
+    for (auto w : ws) { (void)w; }
+
+    std::cout << "── for (const auto& w : ws) — no copies ──\n";
+    for (const auto& w : ws) std::cout << "  read #" << w.id << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="07e_virtual_call_from_ctor.cpp">// Pitfall 5: virtual calls from a constructor (or destructor) do NOT dispatch
+// to the derived override. The derived part isn't (or no longer is) valid at
+// that point, so the BASE version runs.
+#include <iostream>
+#include <string>
+
+class Parent {
+public:
+    Parent() {
+        std::cout << "  Parent ctor — calling virtual greet()\n";
+        greet();           // dispatches to Parent::greet
+    }
+    virtual ~Parent() = default;
+    virtual void greet() const { std::cout << "  Parent::greet\n"; }
+};
+
+class Child : public Parent {
+public:
+    Child() : data_("child_data") {
+        std::cout << "  Child ctor — now calling greet()\n";
+        greet();           // dispatches to Child::greet (data_ is now valid)
+    }
+    void greet() const override {
+        std::cout << "  Child::greet (data=" << data_ << ")\n";
+    }
+private:
+    std::string data_;
+};
+
+int main() {
+    Child c;
+    std::cout << "── after construction ──\n";
+    c.greet();
+    std::cout << "Rule: never call virtual functions from a constructor or destructor.\n";
+}
+</script>
+<script type="text/plain" data-cppfile="08a_const_methods.cpp">// Concept: const member functions.
+// 'const' after the parameter list promises the method does not modify
+// observable object state. A const method may NOT call non-const methods.
+#include <iostream>
+
+class Temperature {
+public:
+    Temperature(double c) : celsius_(c) {}
+
+    double celsius()    const { return celsius_; }                  // const — read only
+    double fahrenheit() const { return celsius_ * 9.0/5.0 + 32.0; } // const — read only
+
+    void set_celsius(double c) { celsius_ = c; }                    // NOT const — mutates
+
+private:
+    double celsius_;
+};
+
+int main() {
+    Temperature t(20);
+    std::cout << "celsius    = " << t.celsius()    << "\n";
+    std::cout << "fahrenheit = " << t.fahrenheit() << "\n";
+    t.set_celsius(100);
+    std::cout << "celsius    = " << t.celsius()    << " (after set)\n";
+}
+</script>
+<script type="text/plain" data-cppfile="08b_const_objects.cpp">// Concept: const objects may only call CONST methods.
+// The compiler refuses any call that could mutate a const object.
+#include <iostream>
+
+class Counter {
+public:
+    int  value() const  { return n_; }      // const — OK on const objects
+    void inc()          { ++n_; }            // non-const — only on mutable objects
+private:
+    int n_ = 0;
+};
+
+int main() {
+    Counter c;
+    c.inc(); c.inc();
+    std::cout << "c (mutable)  value = " << c.value() << "\n";
+
+    const Counter& cc = c;
+    std::cout << "cc (const)   value = " << cc.value() << "\n";
+    // cc.inc();   // ← compile error: passing 'const Counter' as 'this' discards const
+    std::cout << "(cc.inc() would not compile)\n";
+}
+</script>
+<script type="text/plain" data-cppfile="08c_const_pointers_refs.cpp">// Concept: where the 'const' keyword goes determines what is read-only.
+//   const T*      — pointer to const data        (cannot modify *p, can reseat p)
+//   T* const      — const pointer to data        (cannot reseat p, can modify *p)
+//   const T* const — const pointer to const data (neither)
+#include <iostream>
+
+int main() {
+    int x = 10, y = 20;
+
+    const int* pc = &x;          // pointer-to-const
+    pc = &y;                     // OK — reseating allowed
+    // *pc = 30;                 // ← error: target is read-only
+    std::cout << "pc points to " << *pc << "\n";
+
+    int* const cp = &x;          // const pointer
+    *cp = 42;                    // OK — value mutable
+    // cp = &y;                  // ← error: pointer is fixed
+    std::cout << "x via cp = " << *cp << "\n";
+
+    const int* const cpc = &x;   // const pointer to const
+    // *cpc = 0;  // error
+    // cpc = &y; // error
+    std::cout << "*cpc = " << *cpc << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="08d_mutable.cpp">// Concept: 'mutable' lets a member be modified even from a const method.
+// Useful for caches, lazy evaluation, or thread-sync primitives — internal
+// state changes that don't affect the object's logical/observable value.
+#include <cmath>
+#include <iostream>
+
+class Sqrt {
+public:
+    Sqrt(double x) : x_(x) {}
+
+    // const method — but it updates the cache. The cache is mutable.
+    double get() const {
+        if (!cached_) {
+            std::cout << "  [computing sqrt of " << x_ << "...]\n";
+            value_  = std::sqrt(x_);
+            cached_ = true;
+        }
+        return value_;
+    }
+private:
+    double x_;
+    mutable double value_  = 0;
+    mutable bool   cached_ = false;
+};
+
+int main() {
+    const Sqrt s(49);            // const object — but get() can still cache
+    std::cout << "first  call: " << s.get() << "\n";
+    std::cout << "second call: " << s.get() << "  (cached — no recompute)\n";
+}
+</script>
+<script type="text/plain" data-cppfile="08e_const_cast.cpp">// Concept: const_cast strips constness. Useful only for legacy interfaces
+// that take T* but don't actually mutate.
+// ⚠ WARNING — modifying a truly const object via const_cast is UNDEFINED BEHAVIOUR.
+#include <iostream>
+#include <string>
+
+// Imagine a legacy C function that takes char*; in practice it only reads.
+void legacy_print(char* msg) { std::cout << "  legacy_print: " << msg << "\n"; }
+
+int main() {
+    std::string s = "Hello";
+    // legacy_print(s.data());     // OK in C++17+, but suppose we have a const char*:
+    const char* msg = s.c_str();
+    legacy_print(const_cast<char*>(msg));   // safe: legacy_print never writes
+
+    // ⚠ DON'T:
+    //   const int x = 5;
+    //   *const_cast<int*>(&x) = 99;   // UB — x might live in read-only memory
+    std::cout << "(const_cast on a truly const object = undefined behaviour — never do that)\n";
+}
+</script>
+<script type="text/plain" data-cppfile="08f_const_in_inheritance.cpp">// Concept: const-correctness flows through inheritance.
+// A const Shape* can only call const methods — derived overrides must keep
+// the same const-ness for the override to count.
+#include <iostream>
+
+class Shape {
+public:
+    virtual ~Shape() = default;
+    virtual double area() const = 0;        // const — read-only operation
+    virtual void   describe() const {       // const default behaviour
+        std::cout << "  Shape area=" << area() << "\n";
+    }
+};
+
+class Circle : public Shape {
+public:
+    Circle(double r) : r_(r) {}
+    double area() const override { return 3.14159265 * r_ * r_; }
+    // If we wrote 'double area() override' (no const), it would NOT override.
+private:
+    double r_;
+};
+
+void show(const Shape& s) { s.describe(); }   // works because describe() is const
+
+int main() {
+    Circle c(5);
+    show(c);
+}
+</script>
+<script type="text/plain" data-cppfile="08g_constexpr.cpp">// Concept: 'constexpr' — evaluated at COMPILE time when possible.
+// Stronger than const: const just means "don't modify this name", whereas
+// constexpr means "computed at compile time, usable in compile-time contexts".
+#include <iostream>
+
+constexpr long factorial(int n) {
+    return n <= 1 ? 1 : n * factorial(n - 1);
+}
+
+constexpr double area_circle(double r) {
+    return 3.14159265 * r * r;
+}
+
+int main() {
+    constexpr long f5 = factorial(5);            // computed at compile time
+    constexpr double a = area_circle(10);        // computed at compile time
+
+    int sz[factorial(4)];                        // 24 ints — array bound is constexpr
+    static_assert(factorial(6) == 720);          // checked at compile time
+
+    std::cout << "factorial(5) = " << f5 << "\n";
+    std::cout << "area(r=10)   = " << a  << "\n";
+    std::cout << "sizeof(sz)   = " << sizeof(sz) / sizeof(int) << " ints\n";
+}
+</script>
+<script type="text/plain" data-cppfile="09a_friend_function.cpp">// Concept: friend function — a free function granted access to a class's
+// private/protected members. The friendship is declared INSIDE the class.
+#include <iostream>
+
+class Vector2D {
+public:
+    Vector2D(double x, double y) : x_(x), y_(y) {}
+
+    // Free function gets private access — declared as a friend.
+    friend double dot(const Vector2D& a, const Vector2D& b);
+
+private:
+    double x_, y_;
+};
+
+// Definition is OUTSIDE the class — it is NOT a member function.
+// But because of the friend declaration, it may read private fields directly.
+double dot(const Vector2D& a, const Vector2D& b) {
+    return a.x_ * b.x_ + a.y_ * b.y_;
+}
+
+int main() {
+    Vector2D a(3, 0), b(0, 4);
+    std::cout << "dot(a, b) = " << dot(a, b) << "  (read private x_/y_ directly)\n";
+}
+</script>
+<script type="text/plain" data-cppfile="09b_friend_class.cpp">// Concept: friend class — every member of the friend class gets private
+// access to the class declaring the friendship.
+#include <iostream>
+
+class Vector2D;     // forward declaration
+
+class Matrix {
+public:
+    Matrix(double a, double b, double c, double d) : a_(a), b_(b), c_(c), d_(d) {}
+    Vector2D rotate(const Vector2D& v) const;     // touches Vector2D's privates
+
+private:
+    double a_, b_, c_, d_;
+};
+
+class Vector2D {
+public:
+    Vector2D(double x, double y) : x_(x), y_(y) {}
+    double x() const { return x_; }
+    double y() const { return y_; }
+
+    friend class Matrix;     // every Matrix method may touch Vector2D's privates
+
+private:
+    double x_, y_;
+};
+
+Vector2D Matrix::rotate(const Vector2D& v) const {
+    return Vector2D(a_ * v.x_ + b_ * v.y_,        // direct private access
+                    c_ * v.x_ + d_ * v.y_);
+}
+
+int main() {
+    Vector2D v(1, 0);
+    Matrix rot90(0, -1,
+                 1,  0);
+    Vector2D r = rot90.rotate(v);
+    std::cout << "rotated (1,0) by 90° → (" << r.x() << ", " << r.y() << ")\n";
+}
+</script>
+<script type="text/plain" data-cppfile="09c_friend_operators.cpp">// Concept: a common use of friend — defining operators that need private
+// access AND can't be member functions (e.g. operator<< on std::ostream).
+#include <iostream>
+#include <string>
+
+class Account {
+public:
+    Account(std::string owner, double balance)
+        : owner_(std::move(owner)), balance_(balance) {}
+
+    friend std::ostream& operator<<(std::ostream& os, const Account& a);
+    friend bool operator<(const Account& l, const Account& r);
+
+private:
+    std::string owner_;
+    double      balance_;
+};
+
+std::ostream& operator<<(std::ostream& os, const Account& a) {
+    return os << "Account[" << a.owner_ << "] $" << a.balance_;
+}
+bool operator<(const Account& l, const Account& r) { return l.balance_ < r.balance_; }
+
+int main() {
+    Account alice("Alice", 2000), bob("Bob", 2300);
+    std::cout << alice << "\n" << bob << "\n";
+    std::cout << "alice < bob? " << (alice < bob ? "yes" : "no") << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="09d_mutual_friends.cpp">// Concept: two classes can be mutual friends — each grants the other private
+// access. Useful for tightly-coupled pairs (here Celsius ↔ Fahrenheit).
+#include <iostream>
+
+class Fahrenheit;     // forward declaration
+
+class Celsius {
+public:
+    explicit Celsius(double c) : c_(c) {}
+    double value() const { return c_; }
+    friend class Fahrenheit;
+private:
+    double c_;
+};
+
+class Fahrenheit {
+public:
+    explicit Fahrenheit(const Celsius& c) : f_(c.c_ * 9.0/5.0 + 32.0) {}
+    double value() const { return f_; }
+    Celsius to_celsius() const { return Celsius((f_ - 32.0) * 5.0/9.0); }
+    friend class Celsius;
+private:
+    double f_;
+};
+
+int main() {
+    Celsius    c(100);
+    Fahrenheit f(c);
+    Celsius    back = f.to_celsius();
+    std::cout << c.value() << " °C → " << f.value() << " °F → "
+              << back.value() << " °C\n";
+}
+</script>
+<script type="text/plain" data-cppfile="09e_friendship_not_inherited.cpp">// Concept: friendship is NOT inherited. A friend of Base is NOT automatically
+// a friend of Derived — the derived class must grant friendship explicitly.
+#include <iostream>
+
+class SecretBase {
+public:
+    SecretBase() : secret_(42) {}
+    friend class Inspector;     // Inspector is friend of SecretBase only
+private:
+    int secret_;
+};
+
+class SecretDerived : public SecretBase {
+public:
+    SecretDerived() : derived_secret_(99) {}
+private:
+    int derived_secret_;        // Inspector is NOT a friend of SecretDerived
+};
+
+class Inspector {
+public:
+    void peek(const SecretBase& b) {
+        std::cout << "  SecretBase::secret_ = " << b.secret_ << "\n";
+    }
+    void peek_derived(const SecretDerived& d) {
+        // Inspector still sees the inherited Base part:
+        std::cout << "  SecretBase part of SecretDerived, secret_ = " << d.secret_ << "\n";
+        // ❌ d.derived_secret_  ← would not compile: friendship not inherited
+    }
+};
+
+int main() {
+    Inspector i;
+    SecretBase    b;       i.peek(b);
+    SecretDerived d;       i.peek_derived(d);
+    std::cout << "(d.derived_secret_ is NOT visible to Inspector)\n";
+}
+</script>
+<script type="text/plain" data-cppfile="09f_friendship_not_transitive.cpp">// Concept: friendship is NOT transitive. If A is friend of B and B is friend
+// of C, A still cannot see C's privates.
+#include <iostream>
+
+class C {
+public:
+    C() : data_(7) {}
+    friend class B;     // only B can see C's privates
+private:
+    int data_;
+};
+
+class B {
+public:
+    B() : b_data_(3) {}
+    int read_C(const C& c) { return c.data_; }   // OK — B is friend of C
+    friend class A;
+private:
+    int b_data_;
+};
+
+class A {
+public:
+    int read_B(B& b)       { return b.b_data_; }     // OK — A is friend of B
+    // int read_C(const C& c) { return c.data_; }    // ← compile error:
+    //   friendship not transitive — A is NOT a friend of C
+};
+
+int main() {
+    A a;  B b;  C c;
+    std::cout << "B reads C::data_   = " << b.read_C(c) << "\n";
+    std::cout << "A reads B::b_data_ = " << a.read_B(b) << "\n";
+    std::cout << "A CANNOT read C::data_ directly (friend not transitive)\n";
+}
+</script>
+<script type="text/plain" data-cppfile="09g_friend_vs_getter.cpp">// Concept: when do you reach for friend instead of a public getter?
+// Use a getter when ANY caller might want the value.  Use friend when ONLY
+// a specific helper needs raw access — keeping the data otherwise hidden.
+#include <iostream>
+
+class Sensor {
+public:
+    Sensor(double raw) : raw_(raw) {}
+
+    // Calibration helper needs the raw, uncalibrated reading.
+    // Other callers should NEVER see raw_.
+    friend double calibrate(const Sensor& s, double offset);
+
+private:
+    double raw_;
+};
+
+double calibrate(const Sensor& s, double offset) {
+    return s.raw_ + offset;       // raw_ stays private to everyone else
+}
+
+int main() {
+    Sensor s(36.4);
+    std::cout << "calibrated reading = " << calibrate(s, 0.4) << "\n";
+    std::cout << "(raw_ has no public getter — only calibrate() can read it)\n";
+}
+</script>
+<script type="text/plain" data-cppfile="10a_default_members.cpp">// Concept: the FIVE special member functions and what the compiler generates.
+//   1. destructor              ~T()
+//   2. copy constructor        T(const T&)
+//   3. copy assignment         T& operator=(const T&)
+//   4. move constructor        T(T&&)              [C++11]
+//   5. move assignment         T& operator=(T&&)   [C++11]
+// If you don't write them, the compiler synthesises shallow / member-wise
+// versions for you. You can also force them with '= default' or remove them
+// with '= delete'.
+#include <iostream>
+#include <string>
+
+class Plain {
+    // No special members written → the compiler generates all 5,
+    // each one performing member-wise copy / move on data_.
+    std::string data_;
+public:
+    Plain(std::string d) : data_(std::move(d)) {}
+    const std::string& data() const { return data_; }
+};
+
+class Explicit {
+    std::string data_;
+public:
+    Explicit(std::string d) : data_(std::move(d)) {}
+    const std::string& data() const { return data_; }
+
+    // '= default' → ask the compiler for the standard implementation.
+    ~Explicit()                          = default;
+    Explicit(const Explicit&)            = default;
+    Explicit& operator=(const Explicit&) = default;
+    Explicit(Explicit&&) noexcept        = default;
+    Explicit& operator=(Explicit&&)      = default;
+};
+
+class NonCopyable {
+    int n_;
+public:
+    NonCopyable(int n) : n_(n) {}
+    // '= delete' → forbid the operation. Trying to copy will not compile.
+    NonCopyable(const NonCopyable&)            = delete;
+    NonCopyable& operator=(const NonCopyable&) = delete;
+    int n() const { return n_; }
+};
+
+int main() {
+    Plain a("hello"), b = a;                  // copy ctor (compiler-generated)
+    Explicit x("world"), y = std::move(x);    // move ctor (= default)
+    NonCopyable nc(7);
+    // NonCopyable nc2 = nc;   // ← compile error: deleted copy ctor
+    std::cout << "Plain    a=" << a.data() << "  b=" << b.data() << "\n";
+    std::cout << "Explicit y=" << y.data() << "\n";
+    std::cout << "NonCopyable.n() = " << nc.n() << "  (copy was = delete)\n";
+}
+</script>
+<script type="text/plain" data-cppfile="10b_rule_of_three.cpp">// Concept: Rule of 3 — if a class manages a raw resource (heap buffer, file
+// handle, mutex …) and you write ANY of these, you almost certainly need all
+// three:
+//     destructor, copy constructor, copy assignment.
+// Without them, the compiler-generated SHALLOW copy gives two objects pointing
+// at the same buffer → double-free / UB at scope exit.
+#include <cstddef>
+#include <cstring>
+#include <iostream>
+
+class Buffer {
+public:
+    explicit Buffer(std::size_t n) : n_(n), data_(new int[n]) {
+        for (std::size_t i = 0; i < n_; ++i) data_[i] = 0;
+        std::cout << "  ctor  buffer of " << n_ << " ints\n";
+    }
+
+    // 1. destructor — release the resource
+    ~Buffer() {
+        std::cout << "  dtor  releasing " << n_ << " ints\n";
+        delete[] data_;
+    }
+
+    // 2. copy constructor — DEEP copy: allocate a fresh buffer
+    Buffer(const Buffer& o) : n_(o.n_), data_(new int[o.n_]) {
+        std::memcpy(data_, o.data_, n_ * sizeof(int));
+        std::cout << "  copy ctor (deep)\n";
+    }
+
+    // 3. copy assignment — release old, deep-copy new
+    Buffer& operator=(const Buffer& o) {
+        if (this == &o) return *this;             // self-assignment guard
+        delete[] data_;
+        n_    = o.n_;
+        data_ = new int[o.n_];
+        std::memcpy(data_, o.data_, n_ * sizeof(int));
+        std::cout << "  copy assign (deep)\n";
+        return *this;
+    }
+
+    void set(std::size_t i, int v) { data_[i] = v; }
+    int  get(std::size_t i) const  { return data_[i]; }
+
+private:
+    std::size_t n_;
+    int*        data_;
+};
+
+int main() {
+    Buffer a(4); a.set(0, 42);
+    Buffer b = a;                  // copy ctor
+    Buffer c(2); c = a;            // copy assign
+    std::cout << "a[0]=" << a.get(0)
+              << "  b[0]=" << b.get(0)
+              << "  c[0]=" << c.get(0)
+              << "  (each owns its own buffer — no double free)\n";
+}
+</script>
+<script type="text/plain" data-cppfile="10c_move_semantics.cpp">// Concept: lvalue vs rvalue, std::move, and why move semantics exist.
+//   lvalue — has a name, has an address (e.g. a variable)
+//   rvalue — temporary / about to die (e.g. function return value)
+// std::move is just a CAST: it converts an lvalue to an rvalue reference,
+// telling the next operation "feel free to STEAL the resources from this".
+// It does not move anything by itself.
+#include <iostream>
+#include <string>
+#include <utility>     // std::move
+
+void take_lvalue(const std::string& s) { std::cout << "  by lvalue ref: " << s << "\n"; }
+void take_rvalue(std::string&& s)      { std::cout << "  by rvalue ref: " << s << " (about to be moved)\n"; }
+
+int main() {
+    std::string a = "Hello";
+
+    take_lvalue(a);                       // a is an lvalue → bound to const&
+    take_rvalue(std::string("World"));    // unnamed temporary → bound to &&
+
+    // std::move is JUST A CAST — by itself it doesn't move anything.
+    // Passing the result to a function that expects && does not consume 'a'.
+    take_rvalue(std::move(a));
+    std::cout << "  after take_rvalue(std::move(a)), a = '" << a
+              << "'   ← std::move alone does NOT move\n";
+
+    // The move actually happens here: std::string's MOVE CONSTRUCTOR is invoked.
+    // It steals 'a's heap buffer and leaves 'a' in a valid-but-unspecified state.
+    std::string b = std::move(a);
+    std::cout << "  after string b = std::move(a):\n"
+              << "    a = '" << a << "'   ← moved-from (typically empty)\n"
+              << "    b = '" << b << "'   ← stole the buffer\n";
+}
+</script>
+<script type="text/plain" data-cppfile="10d_move_constructor.cpp">// Concept: move constructor — T(T&& other).
+// Steal 'other's resources, leave 'other' in a valid empty state.
+// Mark it 'noexcept' so std::vector and friends pick the move path.
+#include <cstddef>
+#include <cstring>
+#include <iostream>
+
+class Buffer {
+public:
+    explicit Buffer(std::size_t n) : n_(n), data_(new int[n]) {
+        std::cout << "  ctor       n=" << n_ << "\n";
+    }
+    ~Buffer() {
+        std::cout << "  dtor       n=" << n_ << "  data=" << static_cast<void*>(data_) << "\n";
+        delete[] data_;
+    }
+
+    // Copy ctor — deep copy
+    Buffer(const Buffer& o) : n_(o.n_), data_(new int[o.n_]) {
+        std::memcpy(data_, o.data_, n_ * sizeof(int));
+        std::cout << "  copy ctor  n=" << n_ << "\n";
+    }
+
+    // Move ctor — STEAL the pointer, NULL the source.
+    // 'noexcept' lets STL containers prefer move over copy on reallocation.
+    Buffer(Buffer&& o) noexcept
+        : n_(o.n_), data_(o.data_)
+    {
+        o.n_    = 0;
+        o.data_ = nullptr;        // ← critical: avoid double-free
+        std::cout << "  move ctor  stole " << n_ << " ints\n";
+    }
+
+    std::size_t size() const { return n_; }
+
+private:
+    std::size_t n_;
+    int*        data_;
+};
+
+int main() {
+    Buffer a(8);
+    Buffer b = std::move(a);   // move ctor — a is now empty
+    std::cout << "after move: a.size=" << a.size() << "  b.size=" << b.size() << "\n";
+    // 'a' is destroyed safely because data_ was nulled in the move.
+}
+</script>
+<script type="text/plain" data-cppfile="10e_move_assignment.cpp">// Concept: move assignment — T& operator=(T&& other) noexcept.
+// Steps: guard against self-move, release current resource, steal from other,
+// null the source, return *this.
+#include <cstddef>
+#include <cstring>
+#include <iostream>
+
+class Buffer {
+public:
+    explicit Buffer(std::size_t n) : n_(n), data_(new int[n]) {
+        std::cout << "  ctor   n=" << n_ << "\n";
+    }
+    ~Buffer() {
+        if (data_) std::cout << "  dtor   n=" << n_ << "\n";
+        else        std::cout << "  dtor   (moved-from, nothing to release)\n";
+        delete[] data_;
+    }
+
+    // Move assignment
+    Buffer& operator=(Buffer&& o) noexcept {
+        if (this == &o) return *this;        // self-move guard
+        delete[] data_;                      // release current resource
+        n_      = o.n_;                      // steal
+        data_   = o.data_;
+        o.n_    = 0;                         // null the source
+        o.data_ = nullptr;
+        std::cout << "  move=  now hold n=" << n_ << "\n";
+        return *this;
+    }
+
+    // (We rely on the compiler-generated copy ops here for brevity — a real
+    // class with the move= above also needs a deep copy ctor and copy=,
+    // see step10_rule_of_five/10f for the complete Rule of 5.)
+    Buffer(const Buffer&)            = delete;
+    Buffer& operator=(const Buffer&) = delete;
+
+    Buffer(Buffer&& o) noexcept : n_(o.n_), data_(o.data_) {
+        o.n_ = 0; o.data_ = nullptr;
+    }
+
+    std::size_t size() const { return n_; }
+
+private:
+    std::size_t n_;
+    int*        data_;
+};
+
+int main() {
+    Buffer a(4), b(8);
+    std::cout << "before: a.size=" << a.size() << "  b.size=" << b.size() << "\n";
+    a = std::move(b);     // move assignment
+    std::cout << "after : a.size=" << a.size() << "  b.size=" << b.size() << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="10f_rule_of_five.cpp">// Concept: Rule of 5 — for a class that owns a raw resource, define ALL FIVE
+// special member functions:
+//     1. destructor
+//     2. copy constructor      (deep copy)
+//     3. copy assignment       (release + deep copy + return *this)
+//     4. move constructor      (steal + null source) noexcept
+//     5. move assignment       (release + steal + null source) noexcept
+#include <cstddef>
+#include <cstring>
+#include <iostream>
+
+class Buffer {
+public:
+    explicit Buffer(std::size_t n) : n_(n), data_(new int[n]) {
+        std::cout << "  ctor       n=" << n_ << "\n";
+    }
+
+    // 1. destructor
+    ~Buffer() {
+        std::cout << "  dtor       n=" << n_
+                  << (data_ ? "" : "  (moved-from)") << "\n";
+        delete[] data_;
+    }
+
+    // 2. copy constructor
+    Buffer(const Buffer& o) : n_(o.n_), data_(new int[o.n_]) {
+        std::memcpy(data_, o.data_, n_ * sizeof(int));
+        std::cout << "  copy ctor  n=" << n_ << "\n";
+    }
+
+    // 3. copy assignment
+    Buffer& operator=(const Buffer& o) {
+        if (this == &o) return *this;
+        delete[] data_;
+        n_    = o.n_;
+        data_ = new int[o.n_];
+        std::memcpy(data_, o.data_, n_ * sizeof(int));
+        std::cout << "  copy=      n=" << n_ << "\n";
+        return *this;
+    }
+
+    // 4. move constructor
+    Buffer(Buffer&& o) noexcept : n_(o.n_), data_(o.data_) {
+        o.n_ = 0; o.data_ = nullptr;
+        std::cout << "  move ctor  stole n=" << n_ << "\n";
+    }
+
+    // 5. move assignment
+    Buffer& operator=(Buffer&& o) noexcept {
+        if (this == &o) return *this;
+        delete[] data_;
+        n_      = o.n_;    data_   = o.data_;
+        o.n_    = 0;       o.data_ = nullptr;
+        std::cout << "  move=      now hold n=" << n_ << "\n";
+        return *this;
+    }
+
+    std::size_t size() const { return n_; }
+
+private:
+    std::size_t n_;
+    int*        data_;
+};
+
+int main() {
+    Buffer a(4);
+    Buffer b = a;              // copy ctor
+    Buffer c(2); c = a;        // copy assignment
+    Buffer d = std::move(a);   // move ctor   (a is now empty)
+    Buffer e(1); e = std::move(b);   // move assignment (b is now empty)
+    std::cout << "sizes  a=" << a.size() << "  b=" << b.size()
+              << "  c=" << c.size() << "  d=" << d.size()
+              << "  e=" << e.size() << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="10g_rule_of_zero.cpp">// Concept: Rule of 0 — prefer to write NONE of the five special members.
+// Compose your class out of types that already manage their own resources
+// (std::string, std::vector, std::unique_ptr, std::shared_ptr, ...).
+// The compiler-synthesised members will then do the right thing for free.
+#include <iostream>
+#include <memory>
+#include <string>
+#include <vector>
+
+class Document {
+public:
+    Document(std::string title, std::vector<std::string> lines)
+        : title_(std::move(title)), lines_(std::move(lines)) {}
+
+    void show() const {
+        std::cout << "  " << title_ << "  (" << lines_.size() << " lines)\n";
+    }
+
+    // No destructor, no copy ctor, no copy=, no move ctor, no move= written.
+    // string and vector each handle their own resource → all 5 are correctly
+    // synthesised by the compiler. This is the safest, most maintainable form.
+
+private:
+    std::string              title_;
+    std::vector<std::string> lines_;
+};
+
+class Tree {
+public:
+    Tree(int v) : value_(v) {}
+    void add_left(int v)  { left_  = std::make_unique<Tree>(v); }
+    void add_right(int v) { right_ = std::make_unique<Tree>(v); }
+    void show(int depth = 0) const {
+        for (int i=0;i<depth;++i) std::cout << "  ";
+        std::cout << "  Tree(" << value_ << ")\n";
+        if (left_)  left_ ->show(depth + 1);
+        if (right_) right_->show(depth + 1);
+    }
+
+    // unique_ptr destroys child trees automatically — no destructor needed.
+    // unique_ptr is move-only, so Tree becomes move-only too. Free of charge.
+
+private:
+    int                   value_;
+    std::unique_ptr<Tree> left_, right_;
+};
+
+int main() {
+    Document d("Notes", {"first line", "second", "third"});
+    d.show();
+    Document e = d;       // compiler-generated copy — string + vector deep-copy
+    e.show();
+
+    Tree t(1); t.add_left(2); t.add_right(3);
+    Tree u = std::move(t);   // unique_ptr is move-only → Tree is move-only
+    u.show();
+}
+</script>
+<script type="text/plain" data-cppfile="11a_arithmetic_operators.cpp">// Concept: arithmetic operators — binary +, -, *, /.
+//
+// Two ways to overload an arithmetic operator:
+//   - As a NON-MEMBER (free) function       T operator+(const T&, const T&);
+//   - As a MEMBER function                  T T::operator+(const T&) const;
+//
+// Prefer NON-MEMBER for binary operators where both sides should symmetrically
+// participate in implicit conversions (e.g. 2 + v works as well as v + 2).
+//
+// Conventions:
+//   - take operands by const reference
+//   - return BY VALUE (a fresh result)
+//   - mark as 'const' if a member
+//
+// We use the well-known idiom of implementing '+' in terms of '+=' (next file)
+// to avoid duplicating logic.
+#include <iostream>
+
+class Vec2 {
+public:
+    Vec2(double x, double y) : x_(x), y_(y) {}
+
+    Vec2& operator+=(const Vec2& r) { x_ += r.x_; y_ += r.y_; return *this; }
+    Vec2& operator-=(const Vec2& r) { x_ -= r.x_; y_ -= r.y_; return *this; }
+    Vec2& operator*=(double k)      { x_ *= k;    y_ *= k;    return *this; }
+
+    double x() const { return x_; }
+    double y() const { return y_; }
+private:
+    double x_, y_;
+};
+
+// Non-member binary operators implemented in terms of the compound forms.
+// Note: take 'lhs' by VALUE so we already have a local copy to mutate.
+Vec2 operator+(Vec2 lhs, const Vec2& rhs) { lhs += rhs; return lhs; }
+Vec2 operator-(Vec2 lhs, const Vec2& rhs) { lhs -= rhs; return lhs; }
+
+// Allow both 'v * 2' and '2 * v' by providing two non-member overloads.
+Vec2 operator*(Vec2 lhs, double k)        { lhs *= k; return lhs; }
+Vec2 operator*(double k, Vec2 rhs)        { rhs *= k; return rhs; }
+
+void show(const char* tag, const Vec2& v) {
+    std::cout << "  " << tag << " = (" << v.x() << ", " << v.y() << ")\n";
+}
+
+int main() {
+    Vec2 a(3, 4), b(1, 2);
+    show("a", a);
+    show("b", b);
+    show("a + b   ", a + b);
+    show("a - b   ", a - b);
+    show("a * 2   ", a * 2);
+    show("3 * b   ", 3 * b);     // works because of the symmetric overload
+    show("a + b - b", a + b - b);  // chained — operator+/- compose left-to-right
+}
+</script>
+<script type="text/plain" data-cppfile="11b_compound_assignment.cpp">// Concept: compound assignment — +=, -=, *=, /=, %=.
+//
+// Rules:
+//   - Always MEMBERS (the left side is always 'this').
+//   - Mutate *this; return *this BY REFERENCE so they chain like normal '='.
+//   - Signature: T& operator+=(const T& rhs);
+//
+// Idiom: implement the binary operator (e.g. '+') in terms of '+=' so the
+// real arithmetic lives in one place. (See file 11a.)
+#include <iostream>
+
+class Money {
+public:
+    explicit Money(long cents) : cents_(cents) {}
+
+    // Compound assignment — mutates self, returns self.
+    Money& operator+=(const Money& rhs) { cents_ += rhs.cents_; return *this; }
+    Money& operator-=(const Money& rhs) { cents_ -= rhs.cents_; return *this; }
+    Money& operator*=(int k)            { cents_ *= k;          return *this; }
+
+    long cents() const { return cents_; }
+private:
+    long cents_;
+};
+
+// Free '+' built on top of '+='. lhs taken BY VALUE so we already own a copy.
+Money operator+(Money lhs, const Money& rhs) { return lhs += rhs; }
+
+void show(const char* tag, const Money& m) {
+    std::cout << "  " << tag << " = " << m.cents() << " cents\n";
+}
+
+int main() {
+    Money a(100), b(250);
+    show("a", a);
+    show("b", b);
+
+    a += b;                         // 100 → 350
+    show("after a += b", a);
+
+    Money c = a + b;                // builds on a + b → += chain
+    show("c = a + b   ", c);
+
+    a *= 2;
+    show("after a *= 2", a);
+
+    // Chain multiple compound ops in one expression — each returns *this:
+    a -= Money(50);
+    a -= Money(50);
+    show("after two -=", a);
+}
+</script>
+<script type="text/plain" data-cppfile="11c_comparison_operators.cpp">// Concept: comparison operators — ==, !=, <, >, <=, >=.
+//
+// Conventions (pre-C++20):
+//   - implement '==' and '<' (the "primitives")
+//   - express the rest in terms of those
+//   - prefer non-member symmetric forms; mark them 'const' if members
+//
+// C++20 added the SPACESHIP operator '<=>' which lets you write ONE function
+// and the compiler synthesises ==, !=, <, <=, >, >=. (Brief mention; we stick
+// to C++17-compatible code here.)
+#include <iostream>
+#include <string>
+
+class Version {
+public:
+    Version(int major, int minor, int patch)
+        : a_(major), b_(minor), c_(patch) {}
+
+    // Primitives
+    friend bool operator==(const Version& l, const Version& r) {
+        return l.a_ == r.a_ && l.b_ == r.b_ && l.c_ == r.c_;
+    }
+    friend bool operator<(const Version& l, const Version& r) {
+        if (l.a_ != r.a_) return l.a_ < r.a_;
+        if (l.b_ != r.b_) return l.b_ < r.b_;
+        return l.c_ < r.c_;
+    }
+
+    // Derived — implement once in terms of the primitives.
+    friend bool operator!=(const Version& l, const Version& r) { return !(l == r); }
+    friend bool operator>(const Version& l, const Version& r)  { return r < l;     }
+    friend bool operator<=(const Version& l, const Version& r) { return !(r < l);  }
+    friend bool operator>=(const Version& l, const Version& r) { return !(l < r);  }
+
+    std::string str() const {
+        return std::to_string(a_) + "." + std::to_string(b_) + "." + std::to_string(c_);
+    }
+
+private:
+    int a_, b_, c_;
+};
+
+int main() {
+    Version v1(1, 2, 3), v2(1, 2, 3), v3(1, 3, 0);
+
+    std::cout << v1.str() << " == " << v2.str() << " ? " << (v1 == v2) << "\n";
+    std::cout << v1.str() << " == " << v3.str() << " ? " << (v1 == v3) << "\n";
+    std::cout << v1.str() << " <  " << v3.str() << " ? " << (v1 <  v3) << "\n";
+    std::cout << v3.str() << " >= " << v1.str() << " ? " << (v3 >= v1) << "\n";
+
+    // Now any STL algorithm or container that needs <, == works:
+    //   std::sort(versions...)            uses <
+    //   std::set<Version>                 uses <
+    //   std::find(... , v1)               uses ==
+}
+</script>
+<script type="text/plain" data-cppfile="11d_increment_decrement.cpp">// Concept: increment ++ and decrement --.
+//
+// Two flavours each:
+//   PREFIX  ++c    — modify + return reference: T& operator++();
+//   POSTFIX c++    — modify + return OLD value: T operator++(int);
+//                    The 'int' parameter is a marker — never used.
+//
+// Prefer prefix when the old value isn't needed: it returns by reference and
+// avoids a copy.
+#include <iostream>
+
+class Counter {
+public:
+    Counter() : n_(0) {}
+
+    // Prefix ++   — increment, return reference to *this
+    Counter& operator++() {
+        ++n_;
+        return *this;
+    }
+
+    // Postfix ++  — return the OLD value (a copy), then increment
+    Counter operator++(int /*unused*/) {
+        Counter old = *this;
+        ++n_;
+        return old;
+    }
+
+    // Mirror for --
+    Counter& operator--()        { --n_; return *this; }
+    Counter  operator--(int)     { Counter old = *this; --n_; return old; }
+
+    int value() const { return n_; }
+private:
+    int n_;
+};
+
+int main() {
+    Counter c;
+    std::cout << "  c = " << c.value() << "\n";
+
+    ++c;                 // prefix
+    std::cout << "  ++c    → c = " << c.value() << "\n";
+
+    Counter d = c++;     // postfix — d gets the OLD value, then c increments
+    std::cout << "  c++    → c = " << c.value() << "  d = " << d.value() << "\n";
+
+    --c;
+    std::cout << "  --c    → c = " << c.value() << "\n";
+
+    // Prefer prefix when you don't need the old value (no unnecessary copy):
+    for (int i = 0; i < 3; ++i) ++c;
+    std::cout << "  three ++c → c = " << c.value() << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="11e_subscript_and_call.cpp">// Concept: operator[] and operator().
+//
+// operator[] — element access. Provide TWO overloads:
+//   T&        operator[](size_t i);          // for non-const objects (writable)
+//   const T&  operator[](size_t i) const;    // for const objects (read-only)
+//
+// operator() — function-call syntax on an object (a "callable" / functor).
+// Same idea you saw in cpp-stl-tutorial/step14_functors. You may overload it
+// with any number of parameter lists.
+#include <iostream>
+#include <vector>
+
+class Grid {
+public:
+    Grid(int w, int h) : w_(w), h_(h), data_(w * h, 0) {}
+
+    // Non-const subscript — caller may write
+    int& operator[](int i)             { return data_[i]; }
+    // Const subscript — read-only view
+    const int& operator[](int i) const { return data_[i]; }
+
+    // 2D access via operator() — multiple parameter lists let you do this naturally
+    int&       operator()(int x, int y)       { return data_[y * w_ + x]; }
+    const int& operator()(int x, int y) const { return data_[y * w_ + x]; }
+
+    int width()  const { return w_; }
+    int height() const { return h_; }
+
+private:
+    int w_, h_;
+    std::vector<int> data_;
+};
+
+void readonly_dump(const Grid& g) {
+    // const Grid& only lets us call the const overloads of [] and ()
+    std::cout << "  read-only g(1,1) = " << g(1, 1) << "\n";
+    std::cout << "  read-only g[0]   = " << g[0]    << "\n";
+}
+
+int main() {
+    Grid g(3, 3);
+
+    // Mutating writes — non-const overloads selected
+    g[0]      = 10;
+    g(1, 1)   = 99;
+    g(2, 2)   = 7;
+
+    std::cout << "  g[0]    = " << g[0]    << "\n";
+    std::cout << "  g(1,1)  = " << g(1,1)  << "\n";
+
+    readonly_dump(g);
+}
+</script>
+<script type="text/plain" data-cppfile="11f_stream_io.cpp">// Concept: operator<< and operator>> — connect your type to std::cout/cin.
+//
+// MUST be free functions (not members) — the LEFT operand is std::ostream/
+// std::istream which you don't own. Often need 'friend' access to read or
+// write private members.
+//
+//   std::ostream& operator<<(std::ostream& os, const T& v);
+//   std::istream& operator>>(std::istream& is,       T& v);   // mutates v
+//
+// Always return the stream BY REFERENCE so insertions/extractions can chain:
+//   std::cout << a << b << c;
+#include <iostream>
+#include <sstream>
+#include <string>
+
+class Date {
+public:
+    Date() = default;
+    Date(int y, int m, int d) : y_(y), m_(m), d_(d) {}
+
+    friend std::ostream& operator<<(std::ostream& os, const Date& v) {
+        return os << v.y_ << "-" << (v.m_ < 10 ? "0" : "") << v.m_
+                  << "-" << (v.d_ < 10 ? "0" : "") << v.d_;
+    }
+    friend std::istream& operator>>(std::istream& is, Date& v) {
+        char dash1, dash2;
+        is >> v.y_ >> dash1 >> v.m_ >> dash2 >> v.d_;
+        if (dash1 != '-' || dash2 != '-') is.setstate(std::ios::failbit);
+        return is;
+    }
+
+private:
+    int y_ = 0, m_ = 0, d_ = 0;
+};
+
+int main() {
+    Date d(2024, 7, 14);
+    std::cout << "  cout << d → " << d << "\n";
+
+    // operator>> from a string — useful for parsing config / files / CSV
+    std::istringstream in("2025-01-09");
+    Date parsed;
+    in >> parsed;
+    std::cout << "  parsed    → " << parsed << "\n";
+
+    // Chained insertions — each returns the stream
+    std::cout << "  chain     → " << d << " | " << parsed << "\n";
+}
+</script>
+<script type="text/plain" data-cppfile="11g_conversion_operators.cpp">// Concept: user-defined conversion operators.
+//
+//   operator T() const;            implicit conversion to T
+//   explicit operator T() const;   convertible only via static_cast<T>(...) or
+//                                   in conditions where bool is expected
+//
+// Rule of thumb: use 'explicit' UNLESS the conversion is genuinely lossless
+// and unsurprising. Implicit conversions can fire in unexpected places and
+// quietly change overload resolution.
+//
+// The classic safe-bool idiom uses 'explicit operator bool()' so that
+//   if (obj) { ... }
+// works, but
+//   int x = obj + 5;        // ← compile error
+// does not.
+#include <iostream>
+#include <string>
+
+class FilePointer {
+public:
+    explicit FilePointer(const std::string& path)
+        : path_(path), valid_(!path.empty() && path != "BAD") {}
+
+    // explicit conversion to bool — used by `if (fp)` but NOT by accidental
+    // arithmetic mixing.
+    explicit operator bool() const { return valid_; }
+
+    // implicit conversion to std::string — risky, but illustrative
+    operator std::string() const { return "FilePointer(" + path_ + ")"; }
+
+private:
+    std::string path_;
+    bool        valid_;
+};
+
+int main() {
+    FilePointer ok ("data.txt");
+    FilePointer bad("BAD");
+
+    if (ok)  std::cout << "  ok  is truthy (operator bool)\n";
+    if (!bad) std::cout << "  bad is falsy\n";
+
+    // explicit means this would be illegal:
+    //   bool b = ok;          // ← compile error: explicit conversion required
+    bool b = static_cast<bool>(ok);
+    std::cout << "  static_cast<bool>(ok) = " << b << "\n";
+
+    // implicit conversion to std::string fires in contexts that expect a string:
+    std::string s = ok;        // ← OK because operator string() is implicit
+    std::cout << "  implicit to string: " << s << "\n";
+}
+</script>
+
+<!-- =====================================================================
+     Embedded expected output for each demo.
+     ===================================================================== -->
+
+<script type="text/plain" data-outfile="01a_classes_access">owner   = Alice
+balance = 1000
+(balance_ is private — direct assignment from outside would not compile)
+</script>
+<script type="text/plain" data-outfile="01b_default_ctor">  Point() default → (0, 0)
+  Point() default → (0, 0)
+p1 = (0, 0)
+p2 = (0, 0)
+</script>
+<script type="text/plain" data-outfile="01c_param_ctor">  Point(3, 4) param ctor
+  Point(1.5, -2.5) param ctor
+a = (3, 4)
+b = (1.5, -2.5)
+</script>
+<script type="text/plain" data-outfile="01d_member_init_list">  Config 'prod' v1 ready
+  name=prod version=1 counter=7
+  name=prod version=1 counter=42
+</script>
+<script type="text/plain" data-outfile="01e_destructor_order">── enter scope ──
+  ctor A
+  ctor B
+  ctor C
+  (about to leave inner scope — dtors run C, B, A)
+  dtor C
+  dtor B
+  dtor A
+── after scope ──
+</script>
+<script type="text/plain" data-outfile="01f_copy_ctor">  ctor       → Alice $1000
+  copy ctor  → cloned to Alice (copy)
+  copy ctor  → cloned to Alice (copy)
+  Account[Alice] $1000
+  Account[Alice (copy)] $1000
+  Account[Alice (copy)] $1000
+</script>
+<script type="text/plain" data-outfile="01g_static_members">live before: 0
+  ctor (live=1)
+  ctor (live=2)
+  ctor (live=3)
+live inside inner scope: 3
+  dtor (live=2)
+live after inner scope:  2
+  dtor (live=1)
+  dtor (live=0)
+live after all scopes:    0
+</script>
+<script type="text/plain" data-outfile="01h_const_methods_and_this">  Builder{widget, 42, blue}
+  Builder{, 0, }
+</script>
+<script type="text/plain" data-outfile="02a_basic_inheritance">  Rex breathes air
+  Rex: Woof!
+name: Rex
+</script>
+<script type="text/plain" data-outfile="02b_ctor_dtor_order">── creating Derived ──
+  Base()  ctor
+  Derived() ctor
+  (about to leave scope)
+  Derived() dtor
+  Base()  dtor
+── after scope ──
+</script>
+<script type="text/plain" data-outfile="02c_protected_members">  Dog renamed to Max
+(d.name_ is protected — direct access from outside is illegal)
+</script>
+<script type="text/plain" data-outfile="02d_method_hiding">Dog::sound() directly        = Woof!
+Animal* → sound() (no virt) = <silence>   ← base version called
+</script>
+<script type="text/plain" data-outfile="02e_multi_level">  Luna breathes air
+  Luna is warm-blooded
+  Luna (Husky) fetches!
+</script>
+<script type="text/plain" data-outfile="02f_private_inheritance">  Engine: vroom!
+  Car is moving
+(c.start() from outside would be a compile error)
+</script>
+<script type="text/plain" data-outfile="03a_abstract_class">Square(4) area = 16
+(Shape itself is abstract — direct instantiation would not compile)
+</script>
+<script type="text/plain" data-outfile="03b_virtual_dispatch">  <silence>   ← dispatched at runtime via vtable
+  Woof!   ← dispatched at runtime via vtable
+  Meow!   ← dispatched at runtime via vtable
+</script>
+<script type="text/plain" data-outfile="03c_virtual_destructor">── delete via Base* with virtual dtor ──
+  Derived ctor (allocated 256-byte buffer)
+  ~Derived (freed buffer)
+  ~Base
+── done ──
+(if ~Base were non-virtual, ~Derived would not run → leak)
+</script>
+<script type="text/plain" data-outfile="03d_polymorphic_collection">  Circle area=12.5664
+  Square area=9
+  Circle area=3.14159
+total area = 24.708
+</script>
+<script type="text/plain" data-outfile="03e_covariant_return">via Shape*  → got a clone (cleanup via virtual dtor)
+via Circle* → cloned r = 5
+</script>
+<script type="text/plain" data-outfile="03f_virtual_call_from_ctor">── constructing Derived ──
+  Base ctor — calling virtual greet()
+  Base::greet
+  Derived ctor
+── after construction, calling greet() ──
+  Derived::greet
+</script>
+<script type="text/plain" data-outfile="04a_basic_multiple">── creating Duck (ctor order: Flyable, Swimmable, Duck) ──
+  Flyable ctor
+  Swimmable ctor
+  Duck ctor
+  flying
+  swimming
+  Quack!
+── leaving scope (dtor order is reverse) ──
+  Duck dtor
+  Swimmable dtor
+  Flyable dtor
+</script>
+<script type="text/plain" data-outfile="04b_name_ambiguity">  Flyable describe
+  Swimmable describe
+(unqualified ff.describe() would be a compile error)
+</script>
+<script type="text/plain" data-outfile="04c_diamond_problem">  Device ctor @ 0x7ffe38418436
+  Device ctor @ 0x7ffe38418437
+sizeof(Device)   = 1
+sizeof(AllInOne) = 2  ← contains 2 Device sub-objects
+  Device@0x7ffe38418436 on
+  Device@0x7ffe38418437 on
+Device via Printer @ 0x7ffe38418436
+Device via Scanner @ 0x7ffe38418437
+Same object? NO — TWO COPIES
+  Device dtor @ 0x7ffe38418437
+  Device dtor @ 0x7ffe38418436
+</script>
+<script type="text/plain" data-outfile="05a_virtual_inheritance">  Device ctor @ 0x7fff16a03810
+  Device@0x7fff16a03810 on
+Device via Printer @ 0x7fff16a03810
+Device via Scanner @ 0x7fff16a03810
+Same object? YES — ONE COPY
+  Device dtor @ 0x7fff16a03810
+</script>
+<script type="text/plain" data-outfile="05b_amphibious_vehicle">  Vehicle ctor speed=90
+  LandVehicle ctor
+  WaterVehicle ctor
+  AmphibiousVehicle ctor (uses Vehicle(90))
+speed = 90 km/h
+</script>
+<script type="text/plain" data-outfile="05c_dynamic_cast">p1 is Derived  — dynamic_cast succeeded
+  Derived::only_in_derived
+p2 is NOT Derived — dynamic_cast returned nullptr (safe)
+</script>
+<script type="text/plain" data-outfile="05d_typeid_rtti">typeid(d).name()  = 3Dog
+typeid(a).name()  = 3Dog  ← still Dog (polymorphic)
+typeid(*p).name() = 3Cat  ← Cat
+Same type as Dog? YES
+</script>
+<script type="text/plain" data-outfile="06a_interfaces">serialize: User{id=42,name=Alice}
+  [LOG] User id=42 name=Alice
+  [LOG] User id=42 name=Alice
+</script>
+<script type="text/plain" data-outfile="06b_mixins">Post "Hello World"
+  Created: 2024-01-15  Updated: 2024-03-22
+  Tags: [C++, OOP]
+</script>
+<script type="text/plain" data-outfile="06c_final_keyword">  Middle::go (final)
+  Sealed::show
+(further override of Middle::go, or deriving from Sealed, is illegal)
+</script>
+<script type="text/plain" data-outfile="06d_crtp">  Hello!
+  Goodbye!
+(no virtual calls — zero runtime overhead)
+</script>
+<script type="text/plain" data-outfile="06e_singleton">  AppConfig constructed
+&a == &b? YES — same instance
+  AppConfig:
+    language = en
+    theme = dark
+</script>
+<script type="text/plain" data-outfile="07a_object_slicing">  by value:     <silence>  ← sliced!
+  by reference: Woof!
+  by pointer:   Woof!
+</script>
+<script type="text/plain" data-outfile="07b_non_virtual_dtor">── delete LeakyDerived through LeakyBase* (non-virtual dtor) ──
+  LeakyDerived ctor — allocated 256 bytes
+  ~LeakyBase (non-virtual)
+  ⇧ ~LeakyDerived was skipped — leak!
+Rule: declare the base destructor virtual when deleting via base*.
+</script>
+<script type="text/plain" data-outfile="07c_hiding_vs_overriding">via Derived directly:
+  Derived::hidden
+  Derived::overridden
+via Base*:
+  Base::hidden
+  Derived::overridden
+</script>
+<script type="text/plain" data-outfile="07d_range_for_copy">  ctor   #1
+  ctor   #2
+── for (auto w : ws) — each element COPIED ──
+  copy   #1
+  copy   #2
+── for (const auto& w : ws) — no copies ──
+  read #1
+  read #2
+</script>
+<script type="text/plain" data-outfile="07e_virtual_call_from_ctor">  Parent ctor — calling virtual greet()
+  Parent::greet
+  Child ctor — now calling greet()
+  Child::greet (data=child_data)
+── after construction ──
+  Child::greet (data=child_data)
+Rule: never call virtual functions from a constructor or destructor.
+</script>
+<script type="text/plain" data-outfile="08a_const_methods">celsius    = 20
+fahrenheit = 68
+celsius    = 100 (after set)
+</script>
+<script type="text/plain" data-outfile="08b_const_objects">c (mutable)  value = 2
+cc (const)   value = 2
+(cc.inc() would not compile)
+</script>
+<script type="text/plain" data-outfile="08c_const_pointers_refs">pc points to 20
+x via cp = 42
+*cpc = 42
+</script>
+<script type="text/plain" data-outfile="08d_mutable">first  call:   [computing sqrt of 49...]
+7
+second call: 7  (cached — no recompute)
+</script>
+<script type="text/plain" data-outfile="08e_const_cast">  legacy_print: Hello
+(const_cast on a truly const object = undefined behaviour — never do that)
+</script>
+<script type="text/plain" data-outfile="08f_const_in_inheritance">  Shape area=78.5398
+</script>
+<script type="text/plain" data-outfile="08g_constexpr">factorial(5) = 120
+area(r=10)   = 314.159
+sizeof(sz)   = 24 ints
+</script>
+<script type="text/plain" data-outfile="09a_friend_function">dot(a, b) = 0  (read private x_/y_ directly)
+</script>
+<script type="text/plain" data-outfile="09b_friend_class">rotated (1,0) by 90° → (0, 1)
+</script>
+<script type="text/plain" data-outfile="09c_friend_operators">Account[Alice] $2000
+Account[Bob] $2300
+alice < bob? yes
+</script>
+<script type="text/plain" data-outfile="09d_mutual_friends">100 °C → 212 °F → 100 °C
+</script>
+<script type="text/plain" data-outfile="09e_friendship_not_inherited">  SecretBase::secret_ = 42
+  SecretBase part of SecretDerived, secret_ = 42
+(d.derived_secret_ is NOT visible to Inspector)
+</script>
+<script type="text/plain" data-outfile="09f_friendship_not_transitive">B reads C::data_   = 7
+A reads B::b_data_ = 3
+A CANNOT read C::data_ directly (friend not transitive)
+</script>
+<script type="text/plain" data-outfile="09g_friend_vs_getter">calibrated reading = 36.8
+(raw_ has no public getter — only calibrate() can read it)
+</script>
+<script type="text/plain" data-outfile="10a_default_members">Plain    a=hello  b=hello
+Explicit y=world
+NonCopyable.n() = 7  (copy was = delete)
+</script>
+<script type="text/plain" data-outfile="10b_rule_of_three">  ctor  buffer of 4 ints
+  copy ctor (deep)
+  ctor  buffer of 2 ints
+  copy assign (deep)
+a[0]=42  b[0]=42  c[0]=42  (each owns its own buffer — no double free)
+  dtor  releasing 4 ints
+  dtor  releasing 4 ints
+  dtor  releasing 4 ints
+</script>
+<script type="text/plain" data-outfile="10c_move_semantics">  by lvalue ref: Hello
+  by rvalue ref: World (about to be moved)
+  by rvalue ref: Hello (about to be moved)
+  after take_rvalue(std::move(a)), a = 'Hello'   ← std::move alone does NOT move
+  after string b = std::move(a):
+    a = ''   ← moved-from (typically empty)
+    b = 'Hello'   ← stole the buffer
+</script>
+<script type="text/plain" data-outfile="10d_move_constructor">  ctor       n=8
+  move ctor  stole 8 ints
+after move: a.size=0  b.size=8
+  dtor       n=8  data=0x55b1c8e57eb0
+  dtor       n=0  data=0
+</script>
+<script type="text/plain" data-outfile="10e_move_assignment">  ctor   n=4
+  ctor   n=8
+before: a.size=4  b.size=8
+  move=  now hold n=8
+after : a.size=8  b.size=0
+  dtor   (moved-from, nothing to release)
+  dtor   n=8
+</script>
+<script type="text/plain" data-outfile="10f_rule_of_five">  ctor       n=4
+  copy ctor  n=4
+  ctor       n=2
+  copy=      n=4
+  move ctor  stole n=4
+  ctor       n=1
+  move=      now hold n=4
+sizes  a=0  b=0  c=4  d=4  e=4
+  dtor       n=4
+  dtor       n=4
+  dtor       n=4
+  dtor       n=0  (moved-from)
+  dtor       n=0  (moved-from)
+</script>
+<script type="text/plain" data-outfile="10g_rule_of_zero">  Notes  (3 lines)
+  Notes  (3 lines)
+  Tree(1)
+    Tree(2)
+    Tree(3)
+</script>
+<script type="text/plain" data-outfile="11a_arithmetic_operators">  a = (3, 4)
+  b = (1, 2)
+  a + b    = (4, 6)
+  a - b    = (2, 2)
+  a * 2    = (6, 8)
+  3 * b    = (3, 6)
+  a + b - b = (3, 4)
+</script>
+<script type="text/plain" data-outfile="11b_compound_assignment">  a = 100 cents
+  b = 250 cents
+  after a += b = 350 cents
+  c = a + b    = 600 cents
+  after a *= 2 = 700 cents
+  after two -= = 600 cents
+</script>
+<script type="text/plain" data-outfile="11c_comparison_operators">1.2.3 == 1.2.3 ? 1
+1.2.3 == 1.3.0 ? 0
+1.2.3 <  1.3.0 ? 1
+1.3.0 >= 1.2.3 ? 1
+</script>
+<script type="text/plain" data-outfile="11d_increment_decrement">  c = 0
+  ++c    → c = 1
+  c++    → c = 2  d = 1
+  --c    → c = 1
+  three ++c → c = 4
+</script>
+<script type="text/plain" data-outfile="11e_subscript_and_call">  g[0]    = 10
+  g(1,1)  = 99
+  read-only g(1,1) = 99
+  read-only g[0]   = 10
+</script>
+<script type="text/plain" data-outfile="11f_stream_io">  cout << d → 2024-07-14
+  parsed    → 2025-01-09
+  chain     → 2024-07-14 | 2025-01-09
+</script>
+<script type="text/plain" data-outfile="11g_conversion_operators">  ok  is truthy (operator bool)
+  bad is falsy
+  static_cast<bool>(ok) = 1
+  implicit to string: FilePointer(data.txt)
+</script>
+
+<script>
+const STEPS = [
+  {
+    "id": "01a_classes_access",
+    "label": "01a \u00b7 Classes Access",
+    "group": "1 \u2014 Basics",
+    "file": "01a_classes_access.cpp",
+    "path": "step1_basics/01a_classes_access.cpp"
+  },
+  {
+    "id": "01b_default_ctor",
+    "label": "01b \u00b7 Default Ctor",
+    "group": "1 \u2014 Basics",
+    "file": "01b_default_ctor.cpp",
+    "path": "step1_basics/01b_default_ctor.cpp"
+  },
+  {
+    "id": "01c_param_ctor",
+    "label": "01c \u00b7 Param Ctor",
+    "group": "1 \u2014 Basics",
+    "file": "01c_param_ctor.cpp",
+    "path": "step1_basics/01c_param_ctor.cpp"
+  },
+  {
+    "id": "01d_member_init_list",
+    "label": "01d \u00b7 Member Init List",
+    "group": "1 \u2014 Basics",
+    "file": "01d_member_init_list.cpp",
+    "path": "step1_basics/01d_member_init_list.cpp"
+  },
+  {
+    "id": "01e_destructor_order",
+    "label": "01e \u00b7 Destructor Order",
+    "group": "1 \u2014 Basics",
+    "file": "01e_destructor_order.cpp",
+    "path": "step1_basics/01e_destructor_order.cpp"
+  },
+  {
+    "id": "01f_copy_ctor",
+    "label": "01f \u00b7 Copy Ctor",
+    "group": "1 \u2014 Basics",
+    "file": "01f_copy_ctor.cpp",
+    "path": "step1_basics/01f_copy_ctor.cpp"
+  },
+  {
+    "id": "01g_static_members",
+    "label": "01g \u00b7 Static Members",
+    "group": "1 \u2014 Basics",
+    "file": "01g_static_members.cpp",
+    "path": "step1_basics/01g_static_members.cpp"
+  },
+  {
+    "id": "01h_const_methods_and_this",
+    "label": "01h \u00b7 Const Methods And This",
+    "group": "1 \u2014 Basics",
+    "file": "01h_const_methods_and_this.cpp",
+    "path": "step1_basics/01h_const_methods_and_this.cpp"
+  },
+  {
+    "id": "02a_basic_inheritance",
+    "label": "02a \u00b7 Basic Inheritance",
+    "group": "2 \u2014 Inheritance",
+    "file": "02a_basic_inheritance.cpp",
+    "path": "step2_inheritance/02a_basic_inheritance.cpp"
+  },
+  {
+    "id": "02b_ctor_dtor_order",
+    "label": "02b \u00b7 Ctor Dtor Order",
+    "group": "2 \u2014 Inheritance",
+    "file": "02b_ctor_dtor_order.cpp",
+    "path": "step2_inheritance/02b_ctor_dtor_order.cpp"
+  },
+  {
+    "id": "02c_protected_members",
+    "label": "02c \u00b7 Protected Members",
+    "group": "2 \u2014 Inheritance",
+    "file": "02c_protected_members.cpp",
+    "path": "step2_inheritance/02c_protected_members.cpp"
+  },
+  {
+    "id": "02d_method_hiding",
+    "label": "02d \u00b7 Method Hiding",
+    "group": "2 \u2014 Inheritance",
+    "file": "02d_method_hiding.cpp",
+    "path": "step2_inheritance/02d_method_hiding.cpp"
+  },
+  {
+    "id": "02e_multi_level",
+    "label": "02e \u00b7 Multi Level",
+    "group": "2 \u2014 Inheritance",
+    "file": "02e_multi_level.cpp",
+    "path": "step2_inheritance/02e_multi_level.cpp"
+  },
+  {
+    "id": "02f_private_inheritance",
+    "label": "02f \u00b7 Private Inheritance",
+    "group": "2 \u2014 Inheritance",
+    "file": "02f_private_inheritance.cpp",
+    "path": "step2_inheritance/02f_private_inheritance.cpp"
+  },
+  {
+    "id": "03a_abstract_class",
+    "label": "03a \u00b7 Abstract Class",
+    "group": "3 \u2014 Polymorphism",
+    "file": "03a_abstract_class.cpp",
+    "path": "step3_polymorphism/03a_abstract_class.cpp"
+  },
+  {
+    "id": "03b_virtual_dispatch",
+    "label": "03b \u00b7 Virtual Dispatch",
+    "group": "3 \u2014 Polymorphism",
+    "file": "03b_virtual_dispatch.cpp",
+    "path": "step3_polymorphism/03b_virtual_dispatch.cpp"
+  },
+  {
+    "id": "03c_virtual_destructor",
+    "label": "03c \u00b7 Virtual Destructor",
+    "group": "3 \u2014 Polymorphism",
+    "file": "03c_virtual_destructor.cpp",
+    "path": "step3_polymorphism/03c_virtual_destructor.cpp"
+  },
+  {
+    "id": "03d_polymorphic_collection",
+    "label": "03d \u00b7 Polymorphic Collection",
+    "group": "3 \u2014 Polymorphism",
+    "file": "03d_polymorphic_collection.cpp",
+    "path": "step3_polymorphism/03d_polymorphic_collection.cpp"
+  },
+  {
+    "id": "03e_covariant_return",
+    "label": "03e \u00b7 Covariant Return",
+    "group": "3 \u2014 Polymorphism",
+    "file": "03e_covariant_return.cpp",
+    "path": "step3_polymorphism/03e_covariant_return.cpp"
+  },
+  {
+    "id": "03f_virtual_call_from_ctor",
+    "label": "03f \u00b7 Virtual Call From Ctor",
+    "group": "3 \u2014 Polymorphism",
+    "file": "03f_virtual_call_from_ctor.cpp",
+    "path": "step3_polymorphism/03f_virtual_call_from_ctor.cpp"
+  },
+  {
+    "id": "04a_basic_multiple",
+    "label": "04a \u00b7 Basic Multiple",
+    "group": "4 \u2014 Multiple Inheritance",
+    "file": "04a_basic_multiple.cpp",
+    "path": "step4_multiple_inheritance/04a_basic_multiple.cpp"
+  },
+  {
+    "id": "04b_name_ambiguity",
+    "label": "04b \u00b7 Name Ambiguity",
+    "group": "4 \u2014 Multiple Inheritance",
+    "file": "04b_name_ambiguity.cpp",
+    "path": "step4_multiple_inheritance/04b_name_ambiguity.cpp"
+  },
+  {
+    "id": "04c_diamond_problem",
+    "label": "04c \u00b7 Diamond Problem",
+    "group": "4 \u2014 Multiple Inheritance",
+    "file": "04c_diamond_problem.cpp",
+    "path": "step4_multiple_inheritance/04c_diamond_problem.cpp"
+  },
+  {
+    "id": "05a_virtual_inheritance",
+    "label": "05a \u00b7 Virtual Inheritance",
+    "group": "5 \u2014 Virtual Inheritance",
+    "file": "05a_virtual_inheritance.cpp",
+    "path": "step5_virtual_inheritance/05a_virtual_inheritance.cpp"
+  },
+  {
+    "id": "05b_amphibious_vehicle",
+    "label": "05b \u00b7 Amphibious Vehicle",
+    "group": "5 \u2014 Virtual Inheritance",
+    "file": "05b_amphibious_vehicle.cpp",
+    "path": "step5_virtual_inheritance/05b_amphibious_vehicle.cpp"
+  },
+  {
+    "id": "05c_dynamic_cast",
+    "label": "05c \u00b7 Dynamic Cast",
+    "group": "5 \u2014 Virtual Inheritance",
+    "file": "05c_dynamic_cast.cpp",
+    "path": "step5_virtual_inheritance/05c_dynamic_cast.cpp"
+  },
+  {
+    "id": "05d_typeid_rtti",
+    "label": "05d \u00b7 Typeid Rtti",
+    "group": "5 \u2014 Virtual Inheritance",
+    "file": "05d_typeid_rtti.cpp",
+    "path": "step5_virtual_inheritance/05d_typeid_rtti.cpp"
+  },
+  {
+    "id": "06a_interfaces",
+    "label": "06a \u00b7 Interfaces",
+    "group": "6 \u2014 Advanced OOP",
+    "file": "06a_interfaces.cpp",
+    "path": "step6_advanced/06a_interfaces.cpp"
+  },
+  {
+    "id": "06b_mixins",
+    "label": "06b \u00b7 Mixins",
+    "group": "6 \u2014 Advanced OOP",
+    "file": "06b_mixins.cpp",
+    "path": "step6_advanced/06b_mixins.cpp"
+  },
+  {
+    "id": "06c_final_keyword",
+    "label": "06c \u00b7 Final Keyword",
+    "group": "6 \u2014 Advanced OOP",
+    "file": "06c_final_keyword.cpp",
+    "path": "step6_advanced/06c_final_keyword.cpp"
+  },
+  {
+    "id": "06d_crtp",
+    "label": "06d \u00b7 Crtp",
+    "group": "6 \u2014 Advanced OOP",
+    "file": "06d_crtp.cpp",
+    "path": "step6_advanced/06d_crtp.cpp"
+  },
+  {
+    "id": "06e_singleton",
+    "label": "06e \u00b7 Singleton",
+    "group": "6 \u2014 Advanced OOP",
+    "file": "06e_singleton.cpp",
+    "path": "step6_advanced/06e_singleton.cpp"
+  },
+  {
+    "id": "07a_object_slicing",
+    "label": "07a \u00b7 Object Slicing",
+    "group": "7 \u2014 Pitfalls",
+    "file": "07a_object_slicing.cpp",
+    "path": "step7_pitfalls/07a_object_slicing.cpp"
+  },
+  {
+    "id": "07b_non_virtual_dtor",
+    "label": "07b \u00b7 Non Virtual Dtor",
+    "group": "7 \u2014 Pitfalls",
+    "file": "07b_non_virtual_dtor.cpp",
+    "path": "step7_pitfalls/07b_non_virtual_dtor.cpp"
+  },
+  {
+    "id": "07c_hiding_vs_overriding",
+    "label": "07c \u00b7 Hiding Vs Overriding",
+    "group": "7 \u2014 Pitfalls",
+    "file": "07c_hiding_vs_overriding.cpp",
+    "path": "step7_pitfalls/07c_hiding_vs_overriding.cpp"
+  },
+  {
+    "id": "07d_range_for_copy",
+    "label": "07d \u00b7 Range For Copy",
+    "group": "7 \u2014 Pitfalls",
+    "file": "07d_range_for_copy.cpp",
+    "path": "step7_pitfalls/07d_range_for_copy.cpp"
+  },
+  {
+    "id": "07e_virtual_call_from_ctor",
+    "label": "07e \u00b7 Virtual Call From Ctor",
+    "group": "7 \u2014 Pitfalls",
+    "file": "07e_virtual_call_from_ctor.cpp",
+    "path": "step7_pitfalls/07e_virtual_call_from_ctor.cpp"
+  },
+  {
+    "id": "08a_const_methods",
+    "label": "08a \u00b7 Const Methods",
+    "group": "8 \u2014 const Correctness",
+    "file": "08a_const_methods.cpp",
+    "path": "step8_const_correctness/08a_const_methods.cpp"
+  },
+  {
+    "id": "08b_const_objects",
+    "label": "08b \u00b7 Const Objects",
+    "group": "8 \u2014 const Correctness",
+    "file": "08b_const_objects.cpp",
+    "path": "step8_const_correctness/08b_const_objects.cpp"
+  },
+  {
+    "id": "08c_const_pointers_refs",
+    "label": "08c \u00b7 Const Pointers Refs",
+    "group": "8 \u2014 const Correctness",
+    "file": "08c_const_pointers_refs.cpp",
+    "path": "step8_const_correctness/08c_const_pointers_refs.cpp"
+  },
+  {
+    "id": "08d_mutable",
+    "label": "08d \u00b7 Mutable",
+    "group": "8 \u2014 const Correctness",
+    "file": "08d_mutable.cpp",
+    "path": "step8_const_correctness/08d_mutable.cpp"
+  },
+  {
+    "id": "08e_const_cast",
+    "label": "08e \u00b7 Const Cast",
+    "group": "8 \u2014 const Correctness",
+    "file": "08e_const_cast.cpp",
+    "path": "step8_const_correctness/08e_const_cast.cpp"
+  },
+  {
+    "id": "08f_const_in_inheritance",
+    "label": "08f \u00b7 Const In Inheritance",
+    "group": "8 \u2014 const Correctness",
+    "file": "08f_const_in_inheritance.cpp",
+    "path": "step8_const_correctness/08f_const_in_inheritance.cpp"
+  },
+  {
+    "id": "08g_constexpr",
+    "label": "08g \u00b7 Constexpr",
+    "group": "8 \u2014 const Correctness",
+    "file": "08g_constexpr.cpp",
+    "path": "step8_const_correctness/08g_constexpr.cpp"
+  },
+  {
+    "id": "09a_friend_function",
+    "label": "09a \u00b7 Friend Function",
+    "group": "9 \u2014 friend",
+    "file": "09a_friend_function.cpp",
+    "path": "step9_friend/09a_friend_function.cpp"
+  },
+  {
+    "id": "09b_friend_class",
+    "label": "09b \u00b7 Friend Class",
+    "group": "9 \u2014 friend",
+    "file": "09b_friend_class.cpp",
+    "path": "step9_friend/09b_friend_class.cpp"
+  },
+  {
+    "id": "09c_friend_operators",
+    "label": "09c \u00b7 Friend Operators",
+    "group": "9 \u2014 friend",
+    "file": "09c_friend_operators.cpp",
+    "path": "step9_friend/09c_friend_operators.cpp"
+  },
+  {
+    "id": "09d_mutual_friends",
+    "label": "09d \u00b7 Mutual Friends",
+    "group": "9 \u2014 friend",
+    "file": "09d_mutual_friends.cpp",
+    "path": "step9_friend/09d_mutual_friends.cpp"
+  },
+  {
+    "id": "09e_friendship_not_inherited",
+    "label": "09e \u00b7 Friendship Not Inherited",
+    "group": "9 \u2014 friend",
+    "file": "09e_friendship_not_inherited.cpp",
+    "path": "step9_friend/09e_friendship_not_inherited.cpp"
+  },
+  {
+    "id": "09f_friendship_not_transitive",
+    "label": "09f \u00b7 Friendship Not Transitive",
+    "group": "9 \u2014 friend",
+    "file": "09f_friendship_not_transitive.cpp",
+    "path": "step9_friend/09f_friendship_not_transitive.cpp"
+  },
+  {
+    "id": "09g_friend_vs_getter",
+    "label": "09g \u00b7 Friend Vs Getter",
+    "group": "9 \u2014 friend",
+    "file": "09g_friend_vs_getter.cpp",
+    "path": "step9_friend/09g_friend_vs_getter.cpp"
+  },
+  {
+    "id": "10a_default_members",
+    "label": "10a \u00b7 Default Members",
+    "group": "10 \u2014 Rule of Five",
+    "file": "10a_default_members.cpp",
+    "path": "step10_rule_of_five/10a_default_members.cpp"
+  },
+  {
+    "id": "10b_rule_of_three",
+    "label": "10b \u00b7 Rule Of Three",
+    "group": "10 \u2014 Rule of Five",
+    "file": "10b_rule_of_three.cpp",
+    "path": "step10_rule_of_five/10b_rule_of_three.cpp"
+  },
+  {
+    "id": "10c_move_semantics",
+    "label": "10c \u00b7 Move Semantics",
+    "group": "10 \u2014 Rule of Five",
+    "file": "10c_move_semantics.cpp",
+    "path": "step10_rule_of_five/10c_move_semantics.cpp"
+  },
+  {
+    "id": "10d_move_constructor",
+    "label": "10d \u00b7 Move Constructor",
+    "group": "10 \u2014 Rule of Five",
+    "file": "10d_move_constructor.cpp",
+    "path": "step10_rule_of_five/10d_move_constructor.cpp"
+  },
+  {
+    "id": "10e_move_assignment",
+    "label": "10e \u00b7 Move Assignment",
+    "group": "10 \u2014 Rule of Five",
+    "file": "10e_move_assignment.cpp",
+    "path": "step10_rule_of_five/10e_move_assignment.cpp"
+  },
+  {
+    "id": "10f_rule_of_five",
+    "label": "10f \u00b7 Rule Of Five",
+    "group": "10 \u2014 Rule of Five",
+    "file": "10f_rule_of_five.cpp",
+    "path": "step10_rule_of_five/10f_rule_of_five.cpp"
+  },
+  {
+    "id": "10g_rule_of_zero",
+    "label": "10g \u00b7 Rule Of Zero",
+    "group": "10 \u2014 Rule of Five",
+    "file": "10g_rule_of_zero.cpp",
+    "path": "step10_rule_of_five/10g_rule_of_zero.cpp"
+  },
+  {
+    "id": "11a_arithmetic_operators",
+    "label": "11a \u00b7 Arithmetic Operators",
+    "group": "11 \u2014 Operator Overloading",
+    "file": "11a_arithmetic_operators.cpp",
+    "path": "step11_operator_overloading/11a_arithmetic_operators.cpp"
+  },
+  {
+    "id": "11b_compound_assignment",
+    "label": "11b \u00b7 Compound Assignment",
+    "group": "11 \u2014 Operator Overloading",
+    "file": "11b_compound_assignment.cpp",
+    "path": "step11_operator_overloading/11b_compound_assignment.cpp"
+  },
+  {
+    "id": "11c_comparison_operators",
+    "label": "11c \u00b7 Comparison Operators",
+    "group": "11 \u2014 Operator Overloading",
+    "file": "11c_comparison_operators.cpp",
+    "path": "step11_operator_overloading/11c_comparison_operators.cpp"
+  },
+  {
+    "id": "11d_increment_decrement",
+    "label": "11d \u00b7 Increment Decrement",
+    "group": "11 \u2014 Operator Overloading",
+    "file": "11d_increment_decrement.cpp",
+    "path": "step11_operator_overloading/11d_increment_decrement.cpp"
+  },
+  {
+    "id": "11e_subscript_and_call",
+    "label": "11e \u00b7 Subscript And Call",
+    "group": "11 \u2014 Operator Overloading",
+    "file": "11e_subscript_and_call.cpp",
+    "path": "step11_operator_overloading/11e_subscript_and_call.cpp"
+  },
+  {
+    "id": "11f_stream_io",
+    "label": "11f \u00b7 Stream Io",
+    "group": "11 \u2014 Operator Overloading",
+    "file": "11f_stream_io.cpp",
+    "path": "step11_operator_overloading/11f_stream_io.cpp"
+  },
+  {
+    "id": "11g_conversion_operators",
+    "label": "11g \u00b7 Conversion Operators",
+    "group": "11 \u2014 Operator Overloading",
+    "file": "11g_conversion_operators.cpp",
+    "path": "step11_operator_overloading/11g_conversion_operators.cpp"
+  }
+];
+
+/* ==========================================================
+   3D background — Three.js wireframes (cyan/blue palette)
+   ========================================================== */
+(function init3D(){
+  const canvas = document.getElementById('bg-3d');
+  if(!window.THREE){ return; }
+  const renderer = new THREE.WebGLRenderer({ canvas, alpha:true, antialias:true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 100);
+  camera.position.z = 7;
+  const group = new THREE.Group();
+  scene.add(group);
+  const palette = [0x3b82f6, 0x60a5fa, 0x22d3ee, 0x67e8f9];
+  function addShape(geom, color, scale, position){
+    const mat = new THREE.LineBasicMaterial({ color, transparent:true, opacity:0.55 });
+    const wire = new THREE.WireframeGeometry(geom);
+    const line = new THREE.LineSegments(wire, mat);
+    line.scale.setScalar(scale);
+    line.position.set(position.x, position.y, position.z);
+    line.userData.spinSpeed = { x:(Math.random()-0.5)*0.004, y:(Math.random()-0.5)*0.004, z:(Math.random()-0.5)*0.0025 };
+    line.userData.float = { phase: Math.random()*Math.PI*2, amp: 0.3+Math.random()*0.4 };
+    group.add(line); return line;
+  }
+  addShape(new THREE.IcosahedronGeometry(1,0),         palette[0], 1.6, { x:-4.5, y: 1.6, z:-2 });
+  addShape(new THREE.TorusKnotGeometry(0.7,0.22,80,12),palette[1], 1.4, { x: 4.5, y:-1.8, z:-1 });
+  addShape(new THREE.OctahedronGeometry(1,0),          palette[2], 1.0, { x: 3.0, y: 2.2, z:-3 });
+  addShape(new THREE.TetrahedronGeometry(1,0),         palette[3], 0.9, { x:-3.2, y:-2.0, z:-2.5 });
+  addShape(new THREE.IcosahedronGeometry(1,0),         palette[1], 0.6, { x: 0.2, y: 0.0, z:-4 });
+  addShape(new THREE.DodecahedronGeometry(1,0),        palette[0], 0.7, { x:-1.6, y: 2.6, z:-3.5 });
+  addShape(new THREE.OctahedronGeometry(1,0),          palette[3], 0.55,{ x: 1.8, y:-2.6, z:-3.5 });
+  const pCount = 220, pGeom = new THREE.BufferGeometry();
+  const pPos = new Float32Array(pCount * 3);
+  for(let i=0;i<pCount;i++){ pPos[i*3]=(Math.random()-0.5)*18; pPos[i*3+1]=(Math.random()-0.5)*12; pPos[i*3+2]=(Math.random()-0.5)*10-2; }
+  pGeom.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+  scene.add(new THREE.Points(pGeom, new THREE.PointsMaterial({ color:0xffffff, size:0.025, transparent:true, opacity:0.65 })));
+  const target={x:0,y:0}, current={x:0,y:0};
+  window.addEventListener('mousemove', e => { target.x=(e.clientX/window.innerWidth-0.5)*0.6; target.y=(e.clientY/window.innerHeight-0.5)*0.4; });
+  function resize(){ const w=window.innerWidth,h=window.innerHeight; renderer.setSize(w,h,false); camera.aspect=w/h; camera.updateProjectionMatrix(); }
+  resize(); window.addEventListener('resize', resize);
+  let t=0; (function tick(){ t+=0.01; current.x+=(target.x-current.x)*0.05; current.y+=(target.y-current.y)*0.05;
+    group.children.forEach(m => { m.rotation.x+=m.userData.spinSpeed.x; m.rotation.y+=m.userData.spinSpeed.y; m.rotation.z+=m.userData.spinSpeed.z; m.position.y += Math.sin(t+m.userData.float.phase)*0.0025*m.userData.float.amp; });
+    group.rotation.y = current.x*0.4; group.rotation.x = -current.y*0.3;
+    renderer.render(scene, camera); requestAnimationFrame(tick); })();
+})();
+
+/* ==========================================================
+   CodeMirror — C++ mode
+   ========================================================== */
+const editor = CodeMirror.fromTextArea(document.getElementById('editor'), {
+  mode: 'text/x-c++src',
+  theme: 'dracula',
+  lineNumbers: true, matchBrackets: true, autoCloseBrackets: true,
+  styleActiveLine: true, indentUnit: 4, tabSize: 4,
+  smartIndent: true, lineWrapping: false,
+  extraKeys: {
+    'Cmd-Enter':  () => runStep(),
+    'Ctrl-Enter': () => runStep(),
+    'Cmd-/':  'toggleComment',
+    'Ctrl-/': 'toggleComment',
+  },
+});
+editor.setValue('// Loading…\n');
+
+/* ==========================================================
+   Embedded source loader + state
+   ========================================================== */
+const fileListEl  = document.getElementById('fileList');
+const fileNameEl  = document.getElementById('fileName');
+const fileSubEl   = document.getElementById('fileSub');
+const fileTabsEl  = document.getElementById('fileTabs');
+const searchEl    = document.getElementById('search');
+const statusLabel = document.getElementById('statusLabel');
+const statusInfo  = document.getElementById('statusInfo');
+const outBody     = document.getElementById('outBody');
+const toastEl     = document.getElementById('toast');
+
+const state = {
+  active: null,
+  originals: {},
+  buffers: {},
+  outputs: {},
+  loaded: {},
+};
+
+const STORAGE_PREFIX = 'cpp-lab:edit:';
+function hashShort(s){
+  let h = 5381;
+  for(let i=0; i<s.length; i++) h = ((h<<5) + h + s.charCodeAt(i)) | 0;
+  return (h >>> 0).toString(36);
+}
+function storageKeyFor(file){
+  const orig = state.originals[file] || '';
+  return STORAGE_PREFIX + file + ':v' + hashShort(orig);
+}
+function saveBuffer(file, value){ try{ localStorage.setItem(storageKeyFor(file), value); }catch{} }
+function loadBuffer(file){ try{ return localStorage.getItem(storageKeyFor(file)); }catch{ return null; } }
+function clearBuffer(file){ try{ localStorage.removeItem(storageKeyFor(file)); }catch{} }
+
+function readSource(file){
+  const node = document.querySelector('script[type="text/plain"][data-cppfile="' + CSS.escape(file) + '"]');
+  return node ? node.textContent : null;
+}
+function readOutput(stepId){
+  const step = STEPS.find(s => s.id === stepId);
+  if(!step) return null;
+  const key = step.file.replace(/\.cpp$/, '');
+  const node = document.querySelector('script[type="text/plain"][data-outfile="' + CSS.escape(key) + '"]');
+  return node ? node.textContent : null;
+}
+function ensureLoaded(file){
+  if(state.loaded[file]) return state.originals[file];
+  const text = readSource(file);
+  if(text == null){
+    const msg = '// missing embedded source for ' + file + '\n';
+    state.originals[file] = msg; state.buffers[file] = msg;
+  } else {
+    state.originals[file] = text;
+    const saved = loadBuffer(file);
+    state.buffers[file]   = saved != null ? saved : text;
+  }
+  state.loaded[file] = true;
+  return state.originals[file];
+}
+
+/* Sidebar */
+function stepButtonNode(entry){
+  const li = document.createElement('li');
+  const btn = document.createElement('button');
+  btn.className = 'file-btn';
+  btn.dataset.step = entry.id;
+  const lineCount = (state.originals[entry.file] || '').split('\n').length;
+  btn.innerHTML =
+    '<span class="ico">CPP</span>' +
+    '<span class="label">' + entry.label + '</span>' +
+    '<span class="lines">' + lineCount + 'L</span>';
+  btn.addEventListener('click', () => activate(entry.id));
+  li.appendChild(btn);
+  return li;
+}
+(function renderSteps(){
+  STEPS.forEach(s => ensureLoaded(s.file));
+  const groups = []; const seen = new Map();
+  STEPS.forEach(s => {
+    const g = s.group || 'Other';
+    if(!seen.has(g)){ seen.set(g, { name:g, items:[] }); groups.push(seen.get(g)); }
+    seen.get(g).items.push(s);
+  });
+  groups.forEach(g => {
+    const head = document.createElement('li');
+    head.className = 'file-group-head'; head.textContent = g.name;
+    fileListEl.appendChild(head);
+    g.items.forEach(p => fileListEl.appendChild(stepButtonNode(p)));
+  });
+})();
+searchEl.addEventListener('input', ()=>{
+  const q = searchEl.value.toLowerCase().trim();
+  document.querySelectorAll('.file-btn').forEach(b=>{
+    const id = b.dataset.step;
+    const step = STEPS.find(s=>s.id===id);
+    const hit = !q || step.label.toLowerCase().includes(q) || step.file.toLowerCase().includes(q);
+    b.style.display = hit ? '' : 'none';
+  });
+});
+
+function activeStep(){ return STEPS.find(s => s.id === state.active); }
+
+function activate(id){
+  const step = STEPS.find(s => s.id === id); if(!step) return;
+  state.active = id;
+  document.querySelectorAll('.file-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.step === id);
+  });
+  ensureLoaded(step.file);
+  editor.setOption('readOnly', false);
+  editor.setValue(state.buffers[step.file] || state.originals[step.file]);
+  editor.clearHistory();
+
+  const labelClean = step.label.replace(/^[\d]+[a-z]?\s*·\s*/, '');
+  fileNameEl.firstChild.nodeValue = labelClean;
+  fileSubEl.textContent = step.path;
+
+  // file tabs (single file per step)
+  fileTabsEl.innerHTML = '';
+  const tab = document.createElement('button');
+  tab.className = 'file-tab active';
+  tab.textContent = step.file;
+  fileTabsEl.appendChild(tab);
+
+  outBody.innerHTML = '<div class="empty">Press ▶ Run to see expected output for this demo.</div>';
+  setStatus('ready', 'Ready', step.path);
+  updateDirty();
+}
+
+function setStatus(kind, label, info){
+  statusLabel.className = 'status ' + (kind==='ready' ? '' : kind);
+  statusLabel.textContent = label;
+  statusInfo.textContent = info || '';
+}
+
+function updateDirty(){
+  const step = activeStep(); if(!step) return;
+  const cur = editor.getValue();
+  const dirty = cur !== state.originals[step.file];
+  fileNameEl.classList.toggle('dirty', dirty);
+  document.querySelector('.file-btn[data-step="' + step.id + '"]')?.classList.toggle('dirty', dirty);
+  document.querySelector('.file-tab')?.classList.toggle('dirty', dirty);
+}
+
+editor.on('change', () => {
+  const step = activeStep(); if(!step) return;
+  const cur = editor.getValue();
+  state.buffers[step.file] = cur;
+  if(cur === state.originals[step.file]) clearBuffer(step.file);
+  else saveBuffer(step.file, cur);
+  updateDirty();
+});
+
+/* Run — display the precomputed expected output */
+function escapeHtml(s){
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function runStep(){
+  const step = activeStep(); if(!step) return;
+  const out = readOutput(step.id);
+  if(out == null){
+    setStatus('err', 'No output', step.path);
+    outBody.innerHTML = '<div class="empty">No precomputed output found for this demo.</div>';
+    return;
+  }
+  setStatus('work', 'Running…', '');
+  // brief delay for the running animation feel
+  setTimeout(() => {
+    const cur = editor.getValue();
+    const isOriginal = cur === state.originals[step.file];
+    const banner = isOriginal
+      ? '<div class="ok-banner"><strong>Output</strong> — captured from <code>g++ -std=c++17 -o build/' + step.file.replace(/\.cpp$/,'') + ' ' + escapeHtml(step.path) + ' &amp;&amp; ./build/' + step.file.replace(/\.cpp$/,'') + '</code></div>'
+      : '<div class="info-banner"><strong>Note</strong> — you have unsaved edits. The output below is from the original source. Compile locally to see the effect of your changes.</div>';
+    outBody.innerHTML = banner + '<h4>stdout</h4><pre>' + escapeHtml(out) + '</pre>';
+    setStatus('ok', 'Done', step.path);
+  }, 110);
+}
+document.getElementById('runBtn').addEventListener('click', runStep);
+
+/* Reset — revert active file's buffer to original */
+document.getElementById('resetBtn').addEventListener('click', () => {
+  const step = activeStep(); if(!step) return;
+  state.buffers[step.file] = state.originals[step.file];
+  clearBuffer(step.file);
+  editor.setValue(state.originals[step.file]);
+  showToast('Reverted to original');
+});
+
+/* Copy — copy the precomputed output */
+document.getElementById('copyOutBtn').addEventListener('click', async () => {
+  const step = activeStep(); if(!step) return;
+  const out = readOutput(step.id);
+  if(out == null){ showToast('No output to copy', true); return; }
+  try{ await navigator.clipboard.writeText(out); showToast('Copied output'); }
+  catch{ showToast('Copy failed', true); }
+});
+
+/* Toast */
+let toastTimer = null;
+function showToast(msg, isError){
+  toastEl.textContent = msg;
+  toastEl.classList.toggle('error', !!isError);
+  toastEl.classList.add('show');
+  if(toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=> toastEl.classList.remove('show'), 1700);
+}
+
+/* Splitter — drag to resize editor vs preview */
+(function splitter(){
+  const root = document.querySelector('.editor-pane');
+  const handle = document.getElementById('splitter');
+  let dragging = false;
+  function setCols(p){
+    p = Math.max(0.18, Math.min(0.82, p));
+    root.style.setProperty('--col-1', p + 'fr');
+    root.style.setProperty('--col-2', (1 - p) + 'fr');
+  }
+  setCols(0.55);
+  handle.addEventListener('pointerdown', e => {
+    dragging = true; handle.classList.add('active');
+    handle.setPointerCapture(e.pointerId);
+  });
+  handle.addEventListener('pointermove', e => {
+    if(!dragging) return;
+    const r = root.getBoundingClientRect();
+    setCols((e.clientX - r.left - 22) / (r.width - 50));
+  });
+  function endDrag(){ dragging = false; handle.classList.remove('active'); }
+  handle.addEventListener('pointerup', endDrag);
+  handle.addEventListener('pointercancel', endDrag);
+})();
+
+/* Boot */
+activate(STEPS[0].id);
+</script>
+</body>
+</html>
