@@ -197,6 +197,20 @@ body::after{
   .about-icon{width:54px;height:54px;font-size:24px}
 }
 
+/* Click-to-copy toast */
+.home-toast{
+  position:fixed;bottom:30px;left:50%;
+  transform:translateX(-50%) translateY(18px);
+  padding:12px 22px;border-radius:999px;
+  background:linear-gradient(135deg,rgba(124,92,255,0.96),rgba(53,208,255,0.96));
+  color:#fff;font-weight:700;font-size:14px;letter-spacing:.02em;
+  font-family:'Inter',system-ui,sans-serif;
+  box-shadow:0 18px 38px -14px rgba(124,92,255,0.65), inset 0 1px 0 rgba(255,255,255,0.2);
+  pointer-events:none;opacity:0;z-index:99999;
+  transition:opacity .25s ease, transform .25s ease;
+}
+.home-toast.visible{opacity:1;transform:translateX(-50%) translateY(0)}
+
 /* Publications */
 .pubs{display:flex;flex-direction:column;gap:14px}
 .pub{
@@ -285,7 +299,7 @@ footer .sep{opacity:.5}
           My research focuses on <span class="hi">Automated Reasoning &amp; Logic</span> &mdash; SAT/SMT solvers and parametric bit-vectors.
         </p>
         <div class="about-contacts">
-          <a class="about-pill" href="mailto:zvbe10@gmail.com" aria-label="Email"><span>&#9993;</span>&nbsp;zvbe10@gmail.com</a>
+          <a class="about-pill" href="mailto:zvbe10@gmail.com" data-copy-email="zvbe10@gmail.com" title="Click to copy email" aria-label="Copy email"><span>&#9993;</span>&nbsp;zvbe10@gmail.com</a>
           <a class="about-pill" href="https://github.com/BergerZvika" target="_blank" rel="noopener" aria-label="GitHub"><span>&#10070;</span>&nbsp;github.com/BergerZvika</a>
           <a class="about-pill" href="https://www.youtube.com/@zvikaberger" target="_blank" rel="noopener" aria-label="YouTube"><span>&#9654;</span>&nbsp;@zvikaberger</a>
         </div>
@@ -380,7 +394,7 @@ footer .sep{opacity:.5}
       <span class="sep">·</span>
       <a href="https://www.youtube.com/@zvikaberger" target="_blank" rel="noopener">YouTube</a>
     </div>
-    <div class="email">✉ <a href="mailto:zvbe10@gmail.com">zvbe10@gmail.com</a></div>
+    <div class="email">✉ <a href="mailto:zvbe10@gmail.com" data-copy-email="zvbe10@gmail.com" title="Click to copy email">zvbe10@gmail.com</a></div>
   </footer>
 </div>
 
@@ -850,6 +864,49 @@ footer .sep{opacity:.5}
       c.style.setProperty('--mx', ((e.clientX - r.left) / r.width  * 100) + '%');
       c.style.setProperty('--my', ((e.clientY - r.top)  / r.height * 100) + '%');
     });
+  });
+
+  /* ---------- click-to-copy email with toast ---------- */
+  let _toastEl = null;
+  let _toastT = null;
+  function showToast(msg){
+    if (!_toastEl){
+      _toastEl = document.createElement('div');
+      _toastEl.className = 'home-toast';
+      document.body.appendChild(_toastEl);
+    }
+    _toastEl.textContent = msg;
+    requestAnimationFrame(() => _toastEl.classList.add('visible'));
+    clearTimeout(_toastT);
+    _toastT = setTimeout(() => _toastEl.classList.remove('visible'), 1700);
+  }
+  function copyText(text){
+    if (navigator.clipboard && window.isSecureContext){
+      return navigator.clipboard.writeText(text);
+    }
+    return new Promise((resolve, reject) => {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.top = '-1000px';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy') ? resolve() : reject(); }
+      catch (e) { reject(e); }
+      document.body.removeChild(ta);
+    });
+  }
+  document.addEventListener('click', (e) => {
+    const el = e.target.closest('[data-copy-email]');
+    if (!el) return;
+    e.preventDefault();
+    const email = el.dataset.copyEmail;
+    copyText(email).then(
+      () => showToast('Email copied: ' + email),
+      () => showToast('Press Ctrl+C to copy: ' + email)
+    );
   });
 })();
 </script>
