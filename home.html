@@ -333,10 +333,6 @@ footer .sep{opacity:.5}
     {t: "<Route path=/>",     c: "#35d0ff"},
     {t: "V(s) = max R+γV(s')",c: "#7eebbe"},
     {t: "OR 1=1; --",         c: "#a82ad6"},
-    {t: "σ(Wx + b)",          c: "#ff6ec7"},
-    {t: "tree.left.right",    c: "#4ce0a3"},
-    {t: "head → next → ⊥",    c: "#5be0ff"},
-    {t: "arr[i] = a[j]",      c: "#f7df1e"},
   ];
 
   function makeCodeSprite(text, color){
@@ -398,6 +394,187 @@ footer .sep{opacity:.5}
       pulse: Math.random() * Math.PI * 2
     });
   }
+
+  /* ---------- visual data-structure diagrams (canvas → sprite) ---------- */
+  function drawLinkedList(ctx, w, h){
+    const nodeW = 60, nodeH = 50, gap = 40;
+    const totalW = nodeW * 4 + gap * 3;
+    const startX = (w - totalW) / 2;
+    const y = h / 2;
+    const colors = ['#5be0ff','#7c5cff','#ff6ec7','#4ce0a3'];
+    const labels = ['A','B','C','⊥'];
+    for (let i = 0; i < 4; i++){
+      const x = startX + i * (nodeW + gap);
+      ctx.shadowColor = colors[i]; ctx.shadowBlur = 18;
+      ctx.fillStyle = 'rgba(18,18,32,0.78)';
+      ctx.fillRect(x, y - nodeH/2, nodeW, nodeH);
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = colors[i]; ctx.lineWidth = 3;
+      ctx.strokeRect(x, y - nodeH/2, nodeW, nodeH);
+      ctx.fillStyle = '#fff';
+      ctx.font = '700 28px "JetBrains Mono", monospace';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(labels[i], x + nodeW/2, y);
+      if (i < 3){
+        const fromX = x + nodeW, toX = x + nodeW + gap;
+        ctx.strokeStyle = '#cbd2ff'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(fromX, y); ctx.lineTo(toX - 2, y); ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(toX, y);
+        ctx.lineTo(toX - 12, y - 7);
+        ctx.lineTo(toX - 12, y + 7);
+        ctx.closePath();
+        ctx.fillStyle = '#cbd2ff'; ctx.fill();
+      }
+    }
+  }
+
+  function drawArray(ctx, w, h){
+    const cellW = 52, cellH = 52;
+    const totalW = cellW * 8;
+    const startX = (w - totalW) / 2;
+    const y = h / 2 + 10;
+    const values = [3,1,4,1,5,9,2,6];
+    ctx.shadowColor = '#f7df1e'; ctx.shadowBlur = 20;
+    ctx.fillStyle = 'rgba(18,18,32,0.78)';
+    ctx.fillRect(startX, y - cellH/2, totalW, cellH);
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = '#f7df1e'; ctx.lineWidth = 3;
+    for (let i = 0; i <= 8; i++){
+      const x = startX + i * cellW;
+      ctx.beginPath();
+      ctx.moveTo(x, y - cellH/2);
+      ctx.lineTo(x, y + cellH/2);
+      ctx.stroke();
+    }
+    ctx.beginPath();
+    ctx.moveTo(startX, y - cellH/2); ctx.lineTo(startX + totalW, y - cellH/2);
+    ctx.moveTo(startX, y + cellH/2); ctx.lineTo(startX + totalW, y + cellH/2);
+    ctx.stroke();
+    ctx.fillStyle = '#fff';
+    ctx.font = '700 26px "JetBrains Mono", monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    for (let i = 0; i < 8; i++) ctx.fillText(values[i], startX + i*cellW + cellW/2, y);
+    ctx.fillStyle = '#9a9ab0';
+    ctx.font = '500 14px "JetBrains Mono", monospace';
+    for (let i = 0; i < 8; i++) ctx.fillText(i, startX + i*cellW + cellW/2, y - cellH/2 - 16);
+  }
+
+  function drawBinaryTree(ctx, w, h){
+    const nodeR = 22;
+    const cx = w / 2;
+    const cy1 = 38, cy2 = 110, cy3 = 182;
+    const root = {x: cx, y: cy1};
+    const left = {x: cx - 90, y: cy2};
+    const right = {x: cx + 90, y: cy2};
+    const leaves = [
+      {x: cx - 130, y: cy3}, {x: cx - 50,  y: cy3},
+      {x: cx + 50,  y: cy3}, {x: cx + 130, y: cy3},
+    ];
+    ctx.strokeStyle = '#cbd2ff'; ctx.lineWidth = 2.5;
+    function edge(a, b){ ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke(); }
+    edge(root,left); edge(root,right);
+    edge(left,leaves[0]); edge(left,leaves[1]);
+    edge(right,leaves[2]); edge(right,leaves[3]);
+    function node(p, color, label){
+      ctx.shadowColor = color; ctx.shadowBlur = 18;
+      ctx.fillStyle = 'rgba(18,18,32,0.85)';
+      ctx.beginPath(); ctx.arc(p.x,p.y,nodeR,0,Math.PI*2); ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = color; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(p.x,p.y,nodeR,0,Math.PI*2); ctx.stroke();
+      ctx.fillStyle = '#fff';
+      ctx.font = '700 18px "JetBrains Mono", monospace';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(label, p.x, p.y);
+    }
+    node(root, '#7c5cff', '5');
+    node(left, '#35d0ff', '3');
+    node(right, '#35d0ff', '8');
+    node(leaves[0], '#ff6ec7', '1');
+    node(leaves[1], '#ff6ec7', '4');
+    node(leaves[2], '#ff6ec7', '7');
+    node(leaves[3], '#ff6ec7', '9');
+  }
+
+  function drawNeuralNetwork(ctx, w, h){
+    const cols = [
+      {n: 3, x: 52},
+      {n: 4, x: w / 2},
+      {n: 2, x: w - 52},
+    ];
+    const colors = ['#5be0ff','#7c5cff','#ff6ec7'];
+    const r = 14;
+    const positions = cols.map(col => {
+      const spacing = (h - 40) / (col.n + 1);
+      return Array.from({length: col.n}, (_, i) => ({x: col.x, y: 20 + (i + 1) * spacing}));
+    });
+    ctx.strokeStyle = 'rgba(124,92,255,0.5)'; ctx.lineWidth = 1.5;
+    for (let l = 0; l < cols.length - 1; l++){
+      for (const a of positions[l]){
+        for (const b of positions[l + 1]){
+          ctx.beginPath();
+          ctx.moveTo(a.x, a.y);
+          ctx.lineTo(b.x, b.y);
+          ctx.stroke();
+        }
+      }
+    }
+    positions.forEach((layer, li) => {
+      layer.forEach(p => {
+        ctx.shadowColor = colors[li]; ctx.shadowBlur = 14;
+        ctx.fillStyle = 'rgba(18,18,32,0.9)';
+        ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI*2); ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = colors[li]; ctx.lineWidth = 2.5;
+        ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI*2); ctx.stroke();
+      });
+    });
+  }
+
+  function makeVisualSprite(drawFn, canvasW, canvasH){
+    const cnv = document.createElement('canvas');
+    cnv.width = canvasW; cnv.height = canvasH;
+    const ctx = cnv.getContext('2d');
+    drawFn(ctx, canvasW, canvasH);
+    const tex = new THREE.CanvasTexture(cnv);
+    tex.minFilter = THREE.LinearFilter;
+    tex.magFilter = THREE.LinearFilter;
+    const mat = new THREE.SpriteMaterial({
+      map: tex, transparent: true,
+      blending: THREE.NormalBlending, depthWrite: false
+    });
+    const sprite = new THREE.Sprite(mat);
+    const baseH = 1.05;
+    sprite.scale.set(baseH * (canvasW / canvasH), baseH, 1);
+    return sprite;
+  }
+
+  const VISUALS = [
+    {draw: drawLinkedList,    w: 520, h: 110, count: 3},
+    {draw: drawArray,         w: 500, h: 130, count: 3},
+    {draw: drawBinaryTree,    w: 360, h: 220, count: 3},
+    {draw: drawNeuralNetwork, w: 340, h: 220, count: 3},
+  ];
+
+  VISUALS.forEach(v => {
+    for (let i = 0; i < v.count; i++){
+      const sprite = makeVisualSprite(v.draw, v.w, v.h);
+      sprite.position.set(
+        (Math.random() - 0.5) * 16,
+        (Math.random() - 0.5) * 10,
+        (Math.random() - 0.5) * 14 - 1
+      );
+      scene.add(sprite);
+      codeSprites.push({
+        sprite,
+        vx: (Math.random() - 0.5) * 0.9,
+        vy: (Math.random() - 0.5) * 0.5,
+        vz: (Math.random() - 0.5) * 1.1,
+        pulse: Math.random() * Math.PI * 2
+      });
+    }
+  });
 
   /* ---------- galaxy spiral particles ---------- */
   const G_N = 2600;
