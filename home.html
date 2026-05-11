@@ -34,7 +34,11 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 
 /* 3D canvas — fixed full-viewport, behind everything, but not negative z (which can be hidden by some browsers behind body background) */
 #bg3d{
-  position:fixed; inset:0; z-index:0; display:block; pointer-events:none;
+  position:fixed;
+  top:0; right:0; bottom:0; left:0;
+  inset:0;
+  width:100vw; height:100vh;
+  z-index:0; display:block; pointer-events:none;
   background:
     radial-gradient(1300px 750px at 8% -10%, rgba(124,92,255,0.32), transparent 60%),
     radial-gradient(1100px 650px at 110% 0%,  rgba(53,208,255,0.24), transparent 60%),
@@ -479,11 +483,17 @@ footer .sep{opacity:.5}
   function resize(){
     const w = window.innerWidth, h = window.innerHeight;
     renderer.setSize(w, h, false);
+    // also enforce CSS size so the canvas always fills the viewport,
+    // even if a host environment somehow drops the inset:0 rule.
+    canvas.style.width  = w + 'px';
+    canvas.style.height = h + 'px';
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
   }
   resize();
   window.addEventListener('resize', resize);
+  window.addEventListener('orientationchange', resize);
+  window.addEventListener('scroll', () => { /* canvas is fixed; no-op but keeps some mobile browsers from collapsing the chrome */ }, {passive:true});
 
   const t0 = performance.now();
   let prevT = 0;
