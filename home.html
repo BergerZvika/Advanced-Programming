@@ -197,6 +197,36 @@ body::after{
   .about-icon{width:54px;height:54px;font-size:24px}
 }
 
+/* Talks & poster */
+.talks{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px}
+.talk{
+  display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:var(--radius);
+  background:linear-gradient(180deg,rgba(18,18,32,0.86),rgba(12,12,22,0.82));
+  border:1px solid rgba(255,255,255,0.16);
+  backdrop-filter:blur(8px) saturate(120%);
+  -webkit-backdrop-filter:blur(8px) saturate(120%);
+  box-shadow:0 12px 28px -16px rgba(0,0,0,0.55);
+  transition:transform .25s ease,border-color .25s ease,box-shadow .25s ease;
+}
+.talk:hover{transform:translateY(-3px);border-color:rgba(124,92,255,0.45);box-shadow:0 20px 38px -22px rgba(124,92,255,0.5)}
+.talk-badge{
+  flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-width:68px;border-radius:10px;padding:10px 8px;
+  background:linear-gradient(135deg,rgba(124,92,255,0.22),rgba(53,208,255,0.14));
+  border:1px solid rgba(124,92,255,0.42);
+}
+.talk-venue{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;font-weight:700;letter-spacing:.10em;color:#fff;text-transform:uppercase;line-height:1.1}
+.talk-year{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:14px;font-weight:700;color:var(--accent-2);margin-top:3px;line-height:1.1}
+.talk-body{flex:1;min-width:0}
+.talk-name{margin:0;font-size:15px;font-weight:700;color:#fff;letter-spacing:-0.005em;line-height:1.35}
+.talk-meta{margin:3px 0 0;font-size:12px;color:var(--text-faint);font-family:'JetBrains Mono',ui-monospace,monospace;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.talk-cta{flex:none;display:inline-flex;align-items:center;gap:6px;padding:7px 11px;border-radius:9px;
+  background:rgba(124,92,255,0.16);border:1px solid rgba(124,92,255,0.35);
+  color:#cbd2ff;font-weight:700;font-size:11px;letter-spacing:.10em;text-transform:uppercase;
+  transition:background .2s ease,border-color .2s ease,color .2s ease,transform .2s ease;
+}
+.talk:hover .talk-cta{background:rgba(124,92,255,0.32);border-color:rgba(124,92,255,0.65);color:#fff;transform:translateX(2px)}
+
 /* Click-to-copy toast */
 .home-toast{
   position:fixed;bottom:30px;left:50%;
@@ -385,6 +415,65 @@ footer .sep{opacity:.5}
         <span>PDF</span>
         <span class="arrow">&#8599;</span>
       </div>
+    </a>
+  </div>
+
+  <div class="section-title">
+    <h2>Selected Talks</h2>
+    <span class="line"></span>
+    <span class="count">04</span>
+  </div>
+  <div class="talks">
+    <a class="talk" href="src/pbv-sat25.pdf" target="_blank" rel="noopener">
+      <div class="talk-badge"><span class="talk-venue">SAT</span><span class="talk-year">2025</span></div>
+      <div class="talk-body">
+        <h3 class="talk-name">SAT 2025 &mdash; Conference Talk</h3>
+        <p class="talk-meta">Bit-Precise Reasoning with Parametric Bit-Vectors</p>
+      </div>
+      <div class="talk-cta"><span>PDF</span>&nbsp;<span>&#8599;</span></div>
+    </a>
+
+    <a class="talk" href="src/main.pdf" target="_blank" rel="noopener">
+      <div class="talk-badge"><span class="talk-venue">IVD</span><span class="talk-year">2026</span></div>
+      <div class="talk-body">
+        <h3 class="talk-name">IVD 2026 &mdash; Workshop Talk</h3>
+        <p class="talk-meta">Israeli Verification Day</p>
+      </div>
+      <div class="talk-cta"><span>PDF</span>&nbsp;<span>&#8599;</span></div>
+    </a>
+
+    <a class="talk" href="src/cvc5%20summit.pdf" target="_blank" rel="noopener">
+      <div class="talk-badge"><span class="talk-venue">cvc5</span><span class="talk-year">2025</span></div>
+      <div class="talk-body">
+        <h3 class="talk-name">cvc5 Summit 2025</h3>
+        <p class="talk-meta">Parametric Bit-Vectors in cvc5</p>
+      </div>
+      <div class="talk-cta"><span>PDF</span>&nbsp;<span>&#8599;</span></div>
+    </a>
+
+    <a class="talk" href="src/pbv-defend-thesis.pdf" target="_blank" rel="noopener">
+      <div class="talk-badge"><span class="talk-venue">M.Sc.</span><span class="talk-year">2025</span></div>
+      <div class="talk-body">
+        <h3 class="talk-name">M.Sc. Thesis Defense</h3>
+        <p class="talk-meta">Bar-Ilan University &middot; 2025</p>
+      </div>
+      <div class="talk-cta"><span>PDF</span>&nbsp;<span>&#8599;</span></div>
+    </a>
+  </div>
+
+  <div class="section-title">
+    <h2>Poster</h2>
+    <span class="line"></span>
+    <span class="count">01</span>
+  </div>
+  <div class="talks">
+    <a class="talk" href="src/pbv_poster%20.pdf" target="_blank" rel="noopener">
+      <div class="talk-badge"><span class="talk-venue">&#9733;</span><span class="talk-year">Poster</span></div>
+      <div class="talk-body">
+        <h3 class="talk-name">PBV Research Poster</h3>
+        <p class="talk-meta">Parametric Bit-Vectors &middot; visual abstract</p>
+      </div>
+      <div class="talk-cta"><span>PDF</span>&nbsp;<span>&#8599;</span></div>
     </a>
   </div>
 
