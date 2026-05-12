@@ -99,10 +99,27 @@ body::after{
 .badge.live::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:#7eebbe;margin-right:8px;box-shadow:0 0 12px #7eebbe;vertical-align:middle}
 
 /* Section heading */
-.section-title{display:flex;align-items:baseline;gap:14px;margin:48px 0 22px}
-.section-title h2{font-size:22px;font-weight:700;margin:0;letter-spacing:-0.01em}
+.section{margin:0}
+.section > summary{list-style:none;outline:none}
+.section > summary::-webkit-details-marker{display:none}
+.section > summary::marker{content:""}
+.section-title{display:flex;align-items:center;gap:14px;margin:48px 0 22px;cursor:pointer;user-select:none}
+.section-title h2{font-size:22px;font-weight:700;margin:0;letter-spacing:-0.01em;transition:color .2s ease}
 .section-title .line{flex:1;height:1px;background:linear-gradient(90deg,var(--border-strong),transparent)}
 .section-title .count{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-faint)}
+.section-title:hover h2{color:var(--accent-2)}
+.section-chevron{
+  display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;
+  border-radius:9px;background:rgba(124,92,255,0.16);border:1px solid rgba(124,92,255,0.35);
+  color:#cbd2ff;font-size:13px;font-weight:700;flex:none;
+  transition:transform .3s ease, background .2s ease, border-color .2s ease, color .2s ease;
+}
+.section-title:hover .section-chevron{background:rgba(124,92,255,0.30);border-color:rgba(124,92,255,0.60);color:#fff}
+details.section[open] > .section-title > .section-chevron{transform:rotate(180deg)}
+@keyframes sectionReveal{from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)}}
+details.section[open] > .grid,
+details.section[open] > .pubs,
+details.section[open] > .talks{animation:sectionReveal .3s ease-out}
 
 /* Cards */
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px}
@@ -341,11 +358,13 @@ footer .sep{opacity:.5}
     </div>
   </section>
 
-  <div class="section-title">
+  <details class="section" open>
+  <summary class="section-title">
     <h2>Toolbox</h2>
     <span class="line"></span>
     <span class="count">01</span>
-  </div>
+    <span class="section-chevron">&#9662;</span>
+  </summary>
   <div class="grid">
     <a class="card featured" data-accent="g" href="tools.html">
       <div class="icon">⌬</div>
@@ -355,11 +374,15 @@ footer .sep{opacity:.5}
     </a>
   </div>
 
-  <div class="section-title">
+  </details>
+
+  <details class="section" open>
+  <summary class="section-title">
     <h2>Labs &amp; experiments</h2>
     <span class="line"></span>
     <span class="count">06</span>
-  </div>
+    <span class="section-chevron">&#9662;</span>
+  </summary>
   <div class="grid">
     <a class="card" data-accent="a" href="https://bergerzvika.github.io/Automated-Reasoning-Course/index.html" target="_blank" rel="noopener">
       <div class="icon">∀∃</div>
@@ -399,11 +422,15 @@ footer .sep{opacity:.5}
     </a>
   </div>
 
-  <div class="section-title">
+  </details>
+
+  <details class="section" open>
+  <summary class="section-title">
     <h2>Publications</h2>
     <span class="line"></span>
     <span class="count">01</span>
-  </div>
+    <span class="section-chevron">&#9662;</span>
+  </summary>
   <div class="pubs">
     <div class="pub">
       <div class="pub-badge">
@@ -428,11 +455,15 @@ footer .sep{opacity:.5}
     </div>
   </div>
 
-  <div class="section-title">
+  </details>
+
+  <details class="section" open>
+  <summary class="section-title">
     <h2>Thesis</h2>
     <span class="line"></span>
     <span class="count">01</span>
-  </div>
+    <span class="section-chevron">&#9662;</span>
+  </summary>
   <div class="pubs">
     <div class="pub">
       <div class="pub-badge">
@@ -453,11 +484,15 @@ footer .sep{opacity:.5}
     </div>
   </div>
 
-  <div class="section-title">
+  </details>
+
+  <details class="section" open>
+  <summary class="section-title">
     <h2>Selected Talks</h2>
     <span class="line"></span>
     <span class="count">04</span>
-  </div>
+    <span class="section-chevron">&#9662;</span>
+  </summary>
   <div class="talks">
     <a class="talk" href="src/main.pdf" target="_blank" rel="noopener">
       <div class="talk-badge"><span class="talk-venue">IVD</span><span class="talk-year">2026</span></div>
@@ -496,11 +531,15 @@ footer .sep{opacity:.5}
     </a>
   </div>
 
-  <div class="section-title">
+  </details>
+
+  <details class="section" open>
+  <summary class="section-title">
     <h2>Poster</h2>
     <span class="line"></span>
     <span class="count">01</span>
-  </div>
+    <span class="section-chevron">&#9662;</span>
+  </summary>
   <div class="talks">
     <a class="talk" href="src/pbv_poster%20.pdf" target="_blank" rel="noopener">
       <div class="talk-badge"><span class="talk-venue">&#9733;</span><span class="talk-year">Poster</span></div>
@@ -511,6 +550,7 @@ footer .sep{opacity:.5}
       <div class="talk-cta"><span>PDF</span>&nbsp;<span>&#8599;</span></div>
     </a>
   </div>
+  </details>
 
   <footer>
     <div class="left">
