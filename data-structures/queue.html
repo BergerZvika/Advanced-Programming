@@ -448,20 +448,25 @@ const {scene} = createScene({mount:stage, camera:{pos:[0, 3, 14], lookAt:[0, 0, 
 function makeBlock(value){
   const grp = new THREE.Group();
   const body = new THREE.Mesh(
-    new THREE.BoxGeometry(1.4, 1.0, 1.2),
+    new THREE.BoxGeometry(1.6, 1.1, 1.4),
     new THREE.MeshPhysicalMaterial({color:0x152040, metalness:0.55, roughness:0.22, emissive:0x0a1e30, emissiveIntensity:0.7, clearcoat:0.6})
   );
   grp.add(body);
   const edges = new THREE.LineSegments(new THREE.EdgesGeometry(body.geometry),
-    new THREE.LineBasicMaterial({color:0x35d0ff, transparent:true, opacity:0.75}));
+    new THREE.LineBasicMaterial({color:0x35d0ff, transparent:true, opacity:0.85}));
   grp.add(edges);
-  const c = document.createElement('canvas'); c.width=128; c.height=128;
+  // big always-on-top number
+  const c = document.createElement('canvas'); c.width=256; c.height=256;
   const ctx = c.getContext('2d');
-  ctx.fillStyle='#fff'; ctx.font='700 56px IBM Plex Mono, monospace';
-  ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(String(value), 64, 64);
+  ctx.fillStyle = 'rgba(255,255,255,0.97)';
+  ctx.font='800 140px IBM Plex Mono, monospace';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 18;
+  ctx.fillText(String(value), 128, 134);
   const tex = new THREE.CanvasTexture(c); tex.minFilter=THREE.LinearFilter;
-  const spr = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true}));
-  spr.position.set(0, 0, 0.62); spr.scale.set(1.1, 0.85, 1);
+  const spr = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true, depthTest:false}));
+  spr.renderOrder = 10;
+  spr.scale.set(1.5, 1.0, 1);
   grp.add(spr);
   grp.scale.setScalar(0.001);
   scene.add(grp);
@@ -469,8 +474,30 @@ function makeBlock(value){
 }
 
 const queue = [];   // front = index 0
-const Y = 0, DX = 1.55;
+const Y = 0, DX = 1.75;
 function colX(i, n){ return (i - (n-1)/2) * DX; }
+
+/* ─── enqueue / dequeue indicators that follow the front and back ─── */
+function makeArrowSprite(text, color){
+  const c = document.createElement('canvas'); c.width=640; c.height=192;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = color;
+  ctx.font = '800 86px IBM Plex Mono, monospace';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 14;
+  ctx.fillText(text, 320, 96);
+  const tex = new THREE.CanvasTexture(c); tex.minFilter = THREE.LinearFilter;
+  const spr = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true, depthTest:false}));
+  spr.renderOrder = 11;
+  spr.scale.set(3.0, 0.9, 1);
+  scene.add(spr);
+  return spr;
+}
+const arrDeq = makeArrowSprite('◀ DEQUEUE', '#ff5c70');  // red:  leaving from head
+const arrEnq = makeArrowSprite('ENQUEUE ▶', '#5cffb4');  // green: arriving at tail
+const arrFront = makeArrowSprite('FRONT',  '#ffb454');
+const arrBack  = makeArrowSprite('BACK',   '#ffb454');
+[arrFront, arrBack].forEach(s => s.scale.set(1.6, 0.7, 1));
 
 async function relayout(animate=true){
   const tasks = [];
@@ -479,6 +506,15 @@ async function relayout(animate=true){
     tasks.push(tweenVec(queue[i].grp.scale, new THREE.Vector3(1,1,1), animate?320:0));
   }
   await Promise.all(tasks);
+  const n = queue.length;
+  const frontX = n ? colX(0,   n) : 0;
+  const backX  = n ? colX(n-1, n) : 0;
+  arrDeq.position.set(frontX - 2.4, Y, 0);
+  arrEnq.position.set(backX  + 2.4, Y, 0);
+  arrFront.position.set(frontX, Y + 1.4, 0);
+  arrBack .position.set(backX,  Y + 1.4, 0);
+  // hide front/back markers when the queue is empty
+  arrFront.visible = arrBack.visible = n > 0;
   refreshHUD();
 }
 function refreshHUD(){
@@ -566,21 +602,6 @@ const opHandlers = {
 };
 for (const k in opHandlers) $('#op-'+k).addEventListener('click', opHandlers[k]);
 $('#b-rand').addEventListener('click', () => $('#in-val').value = randomInt(1,99));
-
-/* axis labels */
-function makeLabel(text, x, y){
-  const c = document.createElement('canvas'); c.width=384; c.height=96;
-  const ctx = c.getContext('2d');
-  ctx.fillStyle = '#8b93b8'; ctx.font='600 32px Unbounded, sans-serif';
-  ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.fillText(text, 192, 48);
-  const tex = new THREE.CanvasTexture(c); tex.minFilter=THREE.LinearFilter;
-  const spr = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true}));
-  spr.position.set(x, y, 0); spr.scale.set(3, 0.8, 1);
-  scene.add(spr);
-}
-makeLabel('← dequeue (head)', -5.5, -1.6);
-makeLabel('enqueue (tail) →',  5.5, -1.6);
 
 /* seed */
 (async () => {
