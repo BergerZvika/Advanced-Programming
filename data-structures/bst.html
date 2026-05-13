@@ -413,6 +413,7 @@ function randomInt(a, b){ return a + Math.floor(Math.random()*(b-a+1)); }
 
 mountTopbar({title:'Binary Search Tree', sub:'lab 09 · unbalanced'});
 const log = createLog('#log');
+mountPlayer({mount: $('#player-mount'), onBack: () => $('#op-undo')?.click()});
 const cx  = createComplexityPanel($('#cx-mount'), [
   {key:'insert / find / delete (avg)', val:'O(log n)'},
   {key:'insert / find / delete (worst)', val:'O(n)'},

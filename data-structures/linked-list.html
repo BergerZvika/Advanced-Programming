@@ -433,6 +433,7 @@ function randomInt(a, b){ return a + Math.floor(Math.random()*(b-a+1)); }
 
 mountTopbar({title:'Linked List', sub:'lab 00 · singly linked'});
 const log = createLog('#log');
+mountPlayer({mount: $('#player-mount'), onBack: () => $('#op-undo')?.click()});
 const cx  = createComplexityPanel($('#cx-mount'), [
   {key:'access / find',  val:'O(n)'},
   {key:'insert head/tail', val:'O(1)'},

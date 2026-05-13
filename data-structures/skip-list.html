@@ -413,6 +413,7 @@ function randomInt(a, b){ return a + Math.floor(Math.random()*(b-a+1)); }
 
 mountTopbar({title:'Skip List', sub:'lab 07 · probabilistic levels'});
 const log = createLog('#log');
+mountPlayer({mount: $('#player-mount'), onBack: () => $('#op-undo')?.click()});
 const cx  = createComplexityPanel($('#cx-mount'), [
   {key:'find / insert / delete', val:'E[O(log n)]'},
   {key:'find / insert / delete (worst)', val:'O(n)'},

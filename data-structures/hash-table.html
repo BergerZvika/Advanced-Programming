@@ -414,6 +414,7 @@ function randomInt(a, b){ return a + Math.floor(Math.random()*(b-a+1)); }
 
 mountTopbar({title:'Hash Table', sub:'lab 05 · chained'});
 const log = createLog('#log');
+mountPlayer({mount: $('#player-mount'), onBack: () => $('#op-undo')?.click()});
 const cx  = createComplexityPanel($('#cx-mount'), [
   {key:'insert / find / delete (avg)', val:'O(1)'},
   {key:'insert / find / delete (worst)', val:'O(n)'},

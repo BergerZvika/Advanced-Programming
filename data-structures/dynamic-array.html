@@ -422,6 +422,7 @@ function randomInt(a, b){ return a + Math.floor(Math.random()*(b-a+1)); }
 
 mountTopbar({title:'Dynamic Array', sub:'lab 01 · amortized growth'});
 const log = createLog('#log');
+mountPlayer({mount: $('#player-mount'), onBack: () => $('#op-undo')?.click()});
 const cx  = createComplexityPanel($('#cx-mount'), [
   {key:'random access', val:'O(1)'},
   {key:'push (amortized)', val:'O(1)'},

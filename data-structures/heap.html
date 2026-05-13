@@ -428,6 +428,7 @@ function randomInt(a, b){ return a + Math.floor(Math.random()*(b-a+1)); }
 
 mountTopbar({title:'Binary Heap', sub:'lab 04 · pyramid layout'});
 const log = createLog('#log');
+mountPlayer({mount: $('#player-mount'), onBack: () => $('#op-undo')?.click()});
 const cx  = createComplexityPanel($('#cx-mount'), [
   {key:'insert / extract', val:'O(log n)'},
   {key:'peek', val:'O(1)'},

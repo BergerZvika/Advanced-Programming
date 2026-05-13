@@ -412,6 +412,7 @@ function randomInt(a, b){ return a + Math.floor(Math.random()*(b-a+1)); }
 
 mountTopbar({title:'Union-Find', sub:'lab 06 · disjoint forest'});
 const log = createLog('#log');
+mountPlayer({mount: $('#player-mount'), onBack: () => $('#op-undo')?.click()});
 const cx  = createComplexityPanel($('#cx-mount'), [
   {key:'makeSet', val:'O(1)'},
   {key:'find · with compression', val:'O(α(n))'},

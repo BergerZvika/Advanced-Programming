@@ -415,6 +415,7 @@ function randomInt(a, b){ return a + Math.floor(Math.random()*(b-a+1)); }
 
 mountTopbar({title:'AVL Tree', sub:'lab 02 · self-balancing BST'});
 const log = createLog('#log');
+mountPlayer({mount: $('#player-mount'), onBack: () => $('#op-undo')?.click()});
 const cx  = createComplexityPanel($('#cx-mount'), [
   {key:'insert', val:'O(log n)'},
   {key:'delete', val:'O(log n)'},
