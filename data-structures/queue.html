@@ -562,6 +562,25 @@ function syncQueueLabels(){
   while (queueLabels.length > queues.length){ const lbl = queueLabels.pop(); scene.remove(lbl); }
 }
 
+/* ─── small FRONT / BACK tags that hover above the active queue ─── */
+function makeTag(text, color){
+  const c = document.createElement('canvas'); c.width=384; c.height=128;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = color;
+  ctx.font = '800 64px IBM Plex Mono, monospace';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 14;
+  ctx.fillText(text, 192, 72);
+  const tex = new THREE.CanvasTexture(c); tex.minFilter = THREE.LinearFilter;
+  const spr = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true, depthTest:false}));
+  spr.renderOrder = 12;
+  spr.scale.set(1.6, 0.55, 1);
+  scene.add(spr);
+  return spr;
+}
+const tagFront = makeTag('FRONT', '#5cffb4');  // green
+const tagBack  = makeTag('BACK',  '#ffb454');  // amber
+
 async function relayout(animate=true){
   const n = queues.length;
   syncQueueLabels();
@@ -581,6 +600,24 @@ async function relayout(animate=true){
   }
   await Promise.all(tasks);
   clampActive();
+  // position FRONT / BACK tags above the active queue's end blocks
+  const aq = queues[activeIdx] || [];
+  const ay = queueY(activeIdx, n);
+  if (aq.length === 0){
+    tagFront.visible = tagBack.visible = false;
+  } else {
+    tagFront.visible = tagBack.visible = true;
+    const frontX = blockX(0,           aq.length);
+    const backX  = blockX(aq.length-1, aq.length);
+    const tagY = ay + 0.95;
+    tagFront.position.set(frontX, tagY, 0);
+    tagBack .position.set(backX,  tagY, 0);
+    // single-block queue: front and back are the same cell — fan the tags apart
+    if (aq.length === 1){
+      tagFront.position.x -= 0.55;
+      tagBack .position.x += 0.55;
+    }
+  }
   refreshHUD();
 }
 function refreshHUD(){
