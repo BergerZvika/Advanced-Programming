@@ -524,8 +524,8 @@ async function relayout(animate=true){
   ensureMeshes();
   const depthMap = {};
   gather(root, 0, depthMap);
-  const tasks = [];
   const positions = new Map();
+  // 1. raw layout
   for (const d in depthMap){
     const layer = depthMap[d];
     const total = layer.reduce((a,n) => a + n.mesh.grp.userData.width + 0.6, 0);
@@ -536,9 +536,31 @@ async function relayout(animate=true){
       cursor += w + 0.6;
       const y = -d * 2.4 + 3.0;
       positions.set(n, {x, y});
-      tasks.push(tweenVec(n.mesh.grp.position, new THREE.Vector3(x, y, 0), animate?420:0));
-      tasks.push(tweenVec(n.mesh.grp.scale, new THREE.Vector3(1,1,1), animate?320:0));
     }
+  }
+  // 2. fit-to-viewport — scale tree so it fits inside the canvas
+  const FOV = 45 * Math.PI/180;
+  const camZ = 21;
+  const viewH = 2 * camZ * Math.tan(FOV/2);
+  const aspect = stage.clientWidth / Math.max(1, stage.clientHeight);
+  const viewW = viewH * aspect;
+  const targetW = viewW * 0.42, targetH = viewH * 0.38;
+  let maxX = 0.001, minY = 3.0;
+  for (const p of positions.values()){
+    maxX = Math.max(maxX, Math.abs(p.x));
+    minY = Math.min(minY, p.y);
+  }
+  // include node widths in maxX
+  for (const [n, p] of positions){ maxX = Math.max(maxX, Math.abs(p.x) + n.mesh.grp.userData.width/2); }
+  const usedH = 3.0 - minY;
+  const s = Math.min(1, targetW / maxX, usedH > 0 ? targetH / usedH : 1);
+  if (s < 1) for (const p of positions.values()){ p.x *= s; p.y = 3.0 + (p.y - 3.0) * s; }
+
+  // 3. animate
+  const tasks = [];
+  for (const [n, p] of positions){
+    tasks.push(tweenVec(n.mesh.grp.position, new THREE.Vector3(p.x, p.y, 0), animate?420:0));
+    tasks.push(tweenVec(n.mesh.grp.scale, new THREE.Vector3(s, s, s), animate?320:0));
   }
   // edges
   function walk(n, parent){

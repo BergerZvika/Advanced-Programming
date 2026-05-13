@@ -398,6 +398,18 @@ function computeLayout(){
   const n = st.k;
   const map = new Map();
   (function walk(node, d){ if(!node) return; const x = (idx[node.value] - (n-1)/2) * Math.max(1.7, 5 - 0.3*d); const y = -d*2.2 + 2.8; map.set(node, {x,y}); walk(node.left, d+1); walk(node.right, d+1); })(root, 0);
+  if (map.size === 0) return map;
+  // fit-to-viewport — BST can degenerate; rescale if it overflows
+  const FOV = 45 * Math.PI/180;
+  const viewH = 2 * 18 * Math.tan(FOV/2);
+  const aspect = stage.clientWidth / stage.clientHeight;
+  const viewW = viewH * aspect;
+  const targetW = viewW * 0.42, targetH = viewH * 0.38;
+  const maxX = Math.max(0.001, ...[...map.values()].map(p => Math.abs(p.x)));
+  const minY = Math.min(...[...map.values()].map(p => p.y));
+  const usedH = (2.8 - minY);
+  const s = Math.min(1, targetW / maxX, targetH / usedH);
+  if (s < 1) for (const p of map.values()){ p.x *= s; p.y = 2.8 + (p.y - 2.8) * s; }
   return map;
 }
 

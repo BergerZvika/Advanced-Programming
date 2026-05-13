@@ -415,6 +415,22 @@ function computeLayout(){
     walk(node.left, d+1); walk(node.right, d+1);
   }
   walk(root, 0);
+  // fit to the visible viewport at z = 0 (stage canvas)
+  const H = depth(root);
+  const maxX = Math.max(0.001, ...[...map.values()].map(p => Math.abs(p.x)));
+  const minY = Math.min(...[...map.values()].map(p => p.y));
+  // visible half-width / half-height at z=0 given camera at (0, 5.5, 18) looking near origin
+  const FOV = 45 * Math.PI/180;
+  const viewH = 2 * 18 * Math.tan(FOV/2);
+  const aspect = stage.clientWidth / stage.clientHeight;
+  const viewW = viewH * aspect;
+  const targetW = viewW * 0.42;   // ~84% of width usable, halved for ±x
+  const targetH = viewH * 0.38;   // leave headroom for labels
+  const usedH = (2.6 - minY);     // distance from top of tree (y≈2.6) to lowest node
+  const s = Math.min(1, targetW / maxX, targetH / usedH);
+  if (s < 1){
+    for (const p of map.values()){ p.x *= s; p.y = 2.6 + (p.y - 2.6) * s; }
+  }
   return map;
 }
 
