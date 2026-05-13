@@ -600,20 +600,22 @@ async function relayout(animate=true){
   }
   await Promise.all(tasks);
   clampActive();
-  // position FRONT / BACK tags above the active queue's end blocks
-  const aq = queues[activeIdx] || [];
-  const ay = queueY(activeIdx, n);
-  if (aq.length === 0){
-    tagFront.visible = tagBack.visible = false;
+  // FRONT / BACK tags are always anchored to queue 0 (the top row),
+  // regardless of which queue is active. They stay visible even when queue 0
+  // is empty so the user can always see where head and tail will be.
+  const q0 = queues[0] || [];
+  const q0y = queueY(0, n);
+  const tagY = q0y + 0.95;
+  tagFront.visible = tagBack.visible = true;
+  if (q0.length === 0){
+    tagFront.position.set(-0.7, tagY, 0);
+    tagBack .position.set( 0.7, tagY, 0);
   } else {
-    tagFront.visible = tagBack.visible = true;
-    const frontX = blockX(0,           aq.length);
-    const backX  = blockX(aq.length-1, aq.length);
-    const tagY = ay + 0.95;
+    const frontX = blockX(0,           q0.length);
+    const backX  = blockX(q0.length-1, q0.length);
     tagFront.position.set(frontX, tagY, 0);
     tagBack .position.set(backX,  tagY, 0);
-    // single-block queue: front and back are the same cell — fan the tags apart
-    if (aq.length === 1){
+    if (q0.length === 1){
       tagFront.position.x -= 0.55;
       tagBack .position.x += 0.55;
     }
