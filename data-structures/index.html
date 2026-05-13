@@ -69,8 +69,9 @@
       <span class="pill"><b>05</b> · hash table · O(1)</span>
       <span class="pill"><b>06</b> · union-find · O(α(n))</span>
       <span class="pill"><b>07</b> · skip list · O(log n)</span>
-      <span class="pill"><b>08</b> · stack/queue · O(1)</span>
-      <span class="pill"><b>09</b> · BST · O(log n)*</span>
+      <span class="pill"><b>08</b> · stack · O(1)</span>
+      <span class="pill"><b>09</b> · queue · O(1)</span>
+      <span class="pill"><b>10</b> · BST · O(log n)*</span>
     </footer>
   </div>
 
@@ -135,14 +136,24 @@
         <circle cx='44' cy='80' r='3'/><circle cx='44' cy='60' r='3'/>
         <circle cx='66' cy='80' r='3'/><circle cx='66' cy='60' r='3'/><circle cx='66' cy='40' r='3'/>
         <circle cx='86' cy='80' r='3'/></g></svg>`},
-    {idx:"08", name:"Stack & Queue", href:"stack-queue.html", accent:"magenta",
-      desc:"LIFO and FIFO side by side. Watch push/pop on a stack tower while a queue conveyor carries items left to right.",
-      big:"O(1) · all ops",
+    {idx:"08", name:"Stack", href:"stack.html", accent:"magenta",
+      desc:"LIFO tower. Push lands a block on top, pop lifts it off — top moves like a piston. O(1) for every operation.",
+      big:"O(1) · push / pop / peek",
       glyph:`<svg viewBox='0 0 100 100'><g fill='none' stroke='currentColor' stroke-width='1.5'>
-        <rect x='14' y='66' width='28' height='12'/><rect x='14' y='52' width='28' height='12'/><rect x='14' y='38' width='28' height='12'/>
-        <rect x='56' y='52' width='12' height='14'/><rect x='70' y='52' width='12' height='14'/><rect x='84' y='52' width='12' height='14'/>
-        <path d='M50 52 L50 66' stroke-dasharray='2 2'/></g></svg>`},
-    {idx:"09", name:"BST (unbalanced)", href:"bst.html", accent:"lime",
+        <rect x='30' y='72' width='40' height='12'/><rect x='30' y='58' width='40' height='12'/><rect x='30' y='44' width='40' height='12'/>
+        <rect x='30' y='28' width='40' height='12' stroke-dasharray='3 3'/>
+        <path d='M50 26 L50 12' marker-end='url(#h1)'/></g>
+        <defs><marker id='h1' viewBox='0 0 10 10' refX='6' refY='5' markerWidth='6' markerHeight='6' orient='auto'><path d='M0 0 L10 5 L0 10 z' fill='currentColor'/></marker></defs></svg>`},
+    {idx:"09", name:"Queue", href:"queue.html", accent:"cyan",
+      desc:"FIFO conveyor. Items enqueue on the right, dequeue from the left. Watch front and back travel through the tape.",
+      big:"O(1) · enqueue / dequeue / peek",
+      glyph:`<svg viewBox='0 0 100 100'><g fill='none' stroke='currentColor' stroke-width='1.5'>
+        <rect x='14' y='42' width='14' height='16'/><rect x='30' y='42' width='14' height='16'/><rect x='46' y='42' width='14' height='16'/><rect x='62' y='42' width='14' height='16'/>
+        <rect x='78' y='42' width='14' height='16' stroke-dasharray='3 3'/>
+        <path d='M10 50 L4 50' marker-end='url(#h2)'/><path d='M92 50 L98 50' marker-start='url(#h3)'/></g>
+        <defs><marker id='h2' viewBox='0 0 10 10' refX='6' refY='5' markerWidth='5' markerHeight='5' orient='auto-start-reverse'><path d='M0 0 L10 5 L0 10 z' fill='currentColor'/></marker>
+        <marker id='h3' viewBox='0 0 10 10' refX='4' refY='5' markerWidth='5' markerHeight='5' orient='auto'><path d='M0 0 L10 5 L0 10 z' fill='currentColor'/></marker></defs></svg>`},
+    {idx:"10", name:"BST (unbalanced)", href:"bst.html", accent:"lime",
       desc:"A plain binary search tree — for contrast with the AVL lab. Insert sequences in different orders and watch the tree degenerate.",
       big:"avg O(log n) · worst O(n)",
       glyph:`<svg viewBox='0 0 100 100'><g fill='none' stroke='currentColor' stroke-width='1.5'>

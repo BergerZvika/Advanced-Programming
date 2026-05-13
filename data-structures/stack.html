@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Linked List — Data Structures Lab</title>
+<title>Stack — Data Structures Lab</title>
 <link rel="stylesheet" href="lab.css" />
 </head>
 <body>
@@ -11,7 +11,6 @@
     <header id="topbar" class="topbar"><a class="btn-back" href="index.html" style="text-decoration:none"><span class="arrow">&#8592;</span> labs</a></header>
 
     <div class="lab-shell">
-
       <div class="stage" id="stage">
         <div class="stage-corner tl"></div><div class="stage-corner tr"></div>
         <div class="stage-corner bl"></div><div class="stage-corner br"></div>
@@ -19,12 +18,11 @@
 
         <div class="stage-overlay">
           <div class="row">
-            <div class="stage-tag"><b>head</b>&nbsp; <span id="t-head">∅</span></div>
-            <div class="stage-tag"><b>tail</b>&nbsp; <span id="t-tail">∅</span></div>
             <div class="stage-tag"><b>size</b>&nbsp; <span id="t-size">0</span></div>
+            <div class="stage-tag"><b>top</b>&nbsp; <span id="t-top">∅</span></div>
           </div>
           <div class="row">
-            <div class="stage-tag">singly linked &middot; O(n) traversal</div>
+            <div class="stage-tag">LIFO &middot; push/pop/peek &middot; O(1) every op</div>
           </div>
         </div>
       </div>
@@ -35,40 +33,20 @@
 
         <div class="label">Value</div>
         <div class="input-row">
-          <input id="in-val" placeholder="number or word (e.g. 42)" autocomplete="off" />
-          <button class="ghost" id="b-rand" title="random number">RND</button>
+          <input id="in-val" placeholder="e.g. 7" autocomplete="off" />
+          <button class="ghost" id="b-rand">RND</button>
         </div>
 
-        <div class="label mt-8">Index (for insertAt / removeAt)</div>
-        <div class="input-row">
-          <input id="in-idx" placeholder="0..size" autocomplete="off" />
-        </div>
-
-                <div class="label">Player</div>
+        <div class="label">Player</div>
         <div id="player-mount"></div>
 
-        <div class="label mt-12">Operations</div>
+        <div class="label mt-12">Stack · LIFO</div>
         <div class="op-grid">
-          <button class="op" data-color="cyan"    id="op-prepend">
-            <span class="name"><span class="dot"></span> insert head</span><span class="cx">O(1)</span></button>
-          <button class="op" data-color="cyan"    id="op-append">
-            <span class="name"><span class="dot"></span> insert tail</span><span class="cx">O(1)</span></button>
-          <button class="op" data-color="amber"   id="op-insertAt">
-            <span class="name"><span class="dot"></span> insert @ i</span><span class="cx">O(n)</span></button>
-          <button class="op" data-color="amber"   id="op-find">
-            <span class="name"><span class="dot"></span> find</span><span class="cx">O(n)</span></button>
-          <button class="op" data-color="magenta" id="op-removeHead">
-            <span class="name"><span class="dot"></span> remove head</span><span class="cx">O(1)</span></button>
-          <button class="op" data-color="magenta" id="op-removeTail">
-            <span class="name"><span class="dot"></span> remove tail</span><span class="cx">O(n)</span></button>
-          <button class="op" data-color="magenta" id="op-removeAt">
-            <span class="name"><span class="dot"></span> remove @ i</span><span class="cx">O(n)</span></button>
-          <button class="op" data-color="violet"  id="op-reverse">
-            <span class="name"><span class="dot"></span> reverse</span><span class="cx">O(n)</span></button>
-          <button class="op full" data-color="lime" id="op-undo">
-            <span class="name"><span class="dot"></span> undo · last op</span><span class="cx" id="undo-depth">0</span></button>
-          <button class="op full" data-color="amber" id="op-clear">
-            <span class="name"><span class="dot"></span> clear</span><span class="cx">reset</span></button>
+          <button class="op" data-color="magenta" id="op-push"><span class="name"><span class="dot"></span> push</span><span class="cx">O(1)</span></button>
+          <button class="op" data-color="magenta" id="op-pop"><span class="name"><span class="dot"></span> pop</span><span class="cx">O(1)</span></button>
+          <button class="op" data-color="amber"   id="op-peek"><span class="name"><span class="dot"></span> peek</span><span class="cx">O(1)</span></button>
+          <button class="op full" data-color="lime"  id="op-undo"><span class="name"><span class="dot"></span> undo · last op</span><span class="cx" id="undo-depth">0</span></button>
+          <button class="op full" data-color="amber" id="op-clear"><span class="name"><span class="dot"></span> clear</span><span class="cx">reset</span></button>
         </div>
 
         <div class="label mt-12">Complexity</div>
@@ -79,7 +57,7 @@
     </div>
 
     <footer class="statusbar">
-      <span class="pill"><b>lab</b>&nbsp; 00 · linked-list</span>
+      <span class="pill"><b>lab</b>&nbsp; 08 · stack</span>
       <span class="pill"><b>renderer</b>&nbsp; three.js · WebGL</span>
       <span class="pill"><b>history</b>&nbsp; <span id="hist-pill">0</span></span>
     </footer>
@@ -446,376 +424,163 @@ function parseList(str){
 function randomInt(a, b){ return a + Math.floor(Math.random()*(b-a+1)); }
 /* ─── end runtime ─── */
 
-
-mountTopbar({title:'Linked List', sub:'lab 00 · singly linked'});
+mountTopbar({title:'Stack', sub:'lab 08 · LIFO tower'});
 const log = createLog('#log');
 mountPlayer({mount: $('#player-mount'), onBack: () => $('#op-undo')?.click()});
 const cx  = createComplexityPanel($('#cx-mount'), [
-  {key:'access / find',  val:'O(n)'},
-  {key:'insert head/tail', val:'O(1)'},
-  {key:'insert @ index',  val:'O(n)'},
-  {key:'remove head',    val:'O(1)'},
-  {key:'remove tail / @i', val:'O(n)'},
-  {key:'space',          val:'O(n)'},
+  {key:'push / pop / peek', val:'O(1)'},
+  {key:'space', val:'O(n)'},
+  {key:'discipline', val:'LIFO'},
+  {key:'top reference', val:'last index'},
 ]);
 const history = createHistory();
 
 const stage = $('#stage');
-const {scene} = createScene({mount:stage, camera:{pos:[0, 3.6, 18], lookAt:[0,0,0]}});
+const {scene} = createScene({mount:stage, camera:{pos:[0, 4, 14], lookAt:[0, 0, 0]}});
 
-/* ─── linked-list scene ─── */
-
-const GAP = 3.0;       // distance between nodes (x)
-const NODE_R = 0.9;    // sphere radius
-const Y = 0;
-
-const list = []; // [{value, mesh, label, edgeOut}]
-
-function makeNode(value){
+function makeBlock(value){
   const grp = new THREE.Group();
-
-  // glow halo
-  const halo = new THREE.Mesh(
-    new THREE.SphereGeometry(NODE_R*1.55, 32, 24),
-    new THREE.MeshBasicMaterial({color:0x35d0ff, transparent:true, opacity:0.10, depthWrite:false})
-  );
-  grp.add(halo);
-
-  // body
   const body = new THREE.Mesh(
-    new THREE.IcosahedronGeometry(NODE_R, 1),
-    new THREE.MeshPhysicalMaterial({
-      color:0x162035, metalness:0.6, roughness:0.18,
-      clearcoat:0.6, clearcoatRoughness:0.2,
-      emissive:0x0a1428, emissiveIntensity:0.6,
-    })
+    new THREE.BoxGeometry(1.6, 1.0, 1.2),
+    new THREE.MeshPhysicalMaterial({color:0x1a2548, metalness:0.55, roughness:0.22, emissive:0x2a0e1f, emissiveIntensity:0.7, clearcoat:0.6})
   );
   grp.add(body);
-
-  // wire overlay
-  const wire = new THREE.Mesh(
-    new THREE.IcosahedronGeometry(NODE_R*1.005, 1),
-    new THREE.MeshBasicMaterial({color:0x35d0ff, wireframe:true, transparent:true, opacity:0.45})
-  );
-  grp.add(wire);
-
-  // sprite label
-  const c = document.createElement('canvas'); c.width = 256; c.height = 128;
+  const edges = new THREE.LineSegments(new THREE.EdgesGeometry(body.geometry),
+    new THREE.LineBasicMaterial({color:0xff5cab, transparent:true, opacity:0.75}));
+  grp.add(edges);
+  const c = document.createElement('canvas'); c.width=128; c.height=128;
   const ctx = c.getContext('2d');
-  function paint(text){
-    ctx.clearRect(0,0,256,128);
-    ctx.fillStyle = 'rgba(8,10,18,0.85)';
-    ctx.fillRect(48,30,160,68);
-    ctx.strokeStyle = '#35d0ff'; ctx.lineWidth = 2;
-    ctx.strokeRect(48,30,160,68);
-    ctx.fillStyle = '#ffffff';
-    ctx.font = '600 38px IBM Plex Mono, monospace';
-    ctx.textAlign = 'center'; ctx.textBaseline='middle';
-    ctx.fillText(String(text), 128, 66);
-  }
-  paint(value);
-  const tex = new THREE.CanvasTexture(c); tex.minFilter = THREE.LinearFilter;
+  ctx.fillStyle='#fff'; ctx.font='700 56px IBM Plex Mono, monospace';
+  ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(String(value), 64, 64);
+  const tex = new THREE.CanvasTexture(c); tex.minFilter=THREE.LinearFilter;
   const spr = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true}));
-  spr.position.set(0, NODE_R + 1.3, 0); spr.scale.set(2.6, 1.3, 1);
+  spr.position.set(0, 0, 0.62); spr.scale.set(1.2, 0.9, 1);
   grp.add(spr);
-
-  return {grp, body, wire, halo, label:{paint, tex}};
+  grp.scale.setScalar(0.001);
+  scene.add(grp);
+  return {grp, body, value};
 }
 
-function makeArrow(){
-  const g = new THREE.Group();
-  const shaft = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.06, 0.06, 1, 16),
-    new THREE.MeshBasicMaterial({color:0x35d0ff, transparent:true, opacity:0.85})
-  );
-  shaft.rotation.z = Math.PI/2;
-  g.add(shaft);
-  const head = new THREE.Mesh(
-    new THREE.ConeGeometry(0.18, 0.42, 18),
-    new THREE.MeshBasicMaterial({color:0x35d0ff})
-  );
-  head.rotation.z = -Math.PI/2;
-  g.add(head);
-  g.userData = {shaft, head};
-  return g;
-}
-
-function setArrow(arrow, fromX, toX){
-  const len = toX - fromX - NODE_R*2 - 0.1;
-  const mid = (fromX + toX)/2;
-  arrow.position.set(mid, Y, 0);
-  arrow.userData.shaft.scale.y = Math.max(0.01, len);
-  arrow.userData.head.position.x = len/2 + 0.06;
-}
-
-function targetX(i){
-  const n = list.length;
-  return (i - (n-1)/2) * GAP;
-}
+const stack = [];   // top = last
+const BASE_Y = -3.0, DY = 1.05;
 
 async function relayout(animate=true){
-  // re-center all nodes & set arrows
-  const ms = animate ? 380 : 0;
-  await Promise.all(list.map((node, i) => {
-    return tweenVec(node.grp.position, new THREE.Vector3(targetX(i), Y, 0), ms);
-  }));
-  // arrows
-  list.forEach((node, i) => {
-    if (!node.edge) return;
-    if (i === list.length - 1){
-      node.edge.visible = false;
-    } else {
-      node.edge.visible = true;
-      const fromX = targetX(i), toX = targetX(i+1);
-      setArrow(node.edge, fromX, toX);
-    }
-  });
+  const tasks = [];
+  for (let i=0;i<stack.length;i++){
+    tasks.push(tweenVec(stack[i].grp.position, new THREE.Vector3(0, BASE_Y + i*DY, 0), animate?420:0));
+    tasks.push(tweenVec(stack[i].grp.scale, new THREE.Vector3(1,1,1), animate?320:0));
+  }
+  await Promise.all(tasks);
   refreshHUD();
 }
-
 function refreshHUD(){
-  $('#t-head').textContent = list.length ? list[0].value : '∅';
-  $('#t-tail').textContent = list.length ? list[list.length-1].value : '∅';
-  $('#t-size').textContent = list.length;
+  $('#t-size').textContent = stack.length;
+  $('#t-top').textContent = stack.length ? stack[stack.length-1].value : '∅';
   $('#undo-depth').textContent = history.size();
   $('#hist-pill').textContent = history.size();
 }
-
-/* ─── ops ─── */
+async function pulse(block, color=0x5cffb4, ms=240){
+  if (!block) return;
+  const m = block.body.material;
+  const eOld = m.emissive.clone(), iOld = m.emissiveIntensity;
+  m.emissive.setHex(color); m.emissiveIntensity = 1.3;
+  await sleep(ms);
+  m.emissive.copy(eOld); m.emissiveIntensity = iOld;
+}
 
 let busy = false;
-function lock(fn){
-  return async (...a) => {
-    if (busy) return; busy = true;
-    try { await fn(...a); } finally { busy = false; refreshHUD(); }
-  };
-}
-
-async function flash(node, color=0xb9ff5c, ms=520){
-  const m = node.body.material;
-  const old = m.emissive.clone(); const oldI = m.emissiveIntensity;
-  m.emissive.setHex(color); m.emissiveIntensity = 1.2;
-  node.halo.material.color.setHex(color);
-  await sleep(ms);
-  m.emissive.copy(old); m.emissiveIntensity = oldI;
-  node.halo.material.color.setHex(0x35d0ff);
-}
-
-async function spawnAt(value, idx){
-  const node = makeNode(value);
-  node.grp.position.set(targetX(idx), Y + 6, -3);
-  node.grp.scale.setScalar(0.001);
-  scene.add(node.grp);
-  // arrow (we always allocate one; toggle visibility on relayout)
-  const edge = makeArrow();
-  edge.visible = false;
-  scene.add(edge);
-
-  const record = {value, grp:node.grp, body:node.body, wire:node.wire, halo:node.halo, label:node.label, edge};
-  list.splice(idx, 0, record);
-
-  // grow
-  await tweenVec(node.grp.scale, new THREE.Vector3(1,1,1), 360);
-  await relayout(true);
-  await flash(record);
-  await stepperCheckpoint();
-  return record;
-}
-
-async function dropAt(idx){
-  const node = list[idx];
-  if (!node) return null;
-  // lift & fade
-  await flash(node, 0xff5c70, 180);
-  await stepperCheckpoint();
-  await Promise.all([
-    tweenVec(node.grp.position, new THREE.Vector3(node.grp.position.x, Y+5, 2), 420),
-    tweenVec(node.grp.scale, new THREE.Vector3(0.001,0.001,0.001), 420),
-  ]);
-  scene.remove(node.grp);
-  if (node.edge) scene.remove(node.edge);
-  list.splice(idx, 1);
-  await relayout(true);
-  return node;
-}
-
-async function traverseTo(idx, {color=0xffb454}={}){
-  for (let i=0;i<=idx;i++){
-    if (!list[i]) break;
-    await flash(list[i], color, 200);
-    await stepperCheckpoint();
-  }
+function lock(fn){ return async (...a) => { if (busy) return; busy=true; try{ await fn(...a); } finally{ busy=false; refreshHUD(); } }; }
+function readVal(allowAuto=true){
+  const raw = $('#in-val').value.trim();
+  if (raw === ''){ if (!allowAuto) return null; const v = randomInt(1,99); $('#in-val').value = v; return v; }
+  const n = Number(raw); return Number.isFinite(n) ? n : raw;
 }
 
 const opHandlers = {
-  prepend: lock(async () => {
-    const v = readValue(true); if (v === null) return;
-    history.push({type:'remove', idx:0});
-    await spawnAt(v, 0);
-    cx.set('insert head', 'O(1)');
-    log.say(`<span class="k">prepend</span> ${esc(v)} → head`);
-  }),
-  append: lock(async () => {
-    const v = readValue(true); if (v === null) return;
-    history.push({type:'remove', idx:list.length});
-    await spawnAt(v, list.length);
-    cx.set('insert tail', 'O(1)');
-    log.say(`<span class="k">append</span> ${esc(v)} → tail`);
-  }),
-  insertAt: lock(async () => {
-    const v = readValue(true); if (v === null) return;
-    const i = parseNum($('#in-idx').value, null);
-    if (i === null || i < 0 || i > list.length){
-      log.say(`<span class="kx">err</span> index out of range (0..${list.length})`);
-      return;
-    }
-    history.push({type:'remove', idx:i});
-    cx.set('insert @ index — traversing', 'O(n)');
-    // animate traversal up to insertion point
-    for (let k=0; k<i; k++){
-      cx.set(`step ${k} · idx ${k}`, 'O(n)');
-      await flash(list[k], 0xffb454, 140);
-      await stepperCheckpoint();
-    }
-    cx.set(`place ${v} @ idx ${i}`, 'O(n)');
-    await spawnAt(v, i);
-    log.say(`<span class="k">insertAt</span>(<span class="km">${i}</span>, ${esc(v)})`);
-  }),
-  find: lock(async () => {
-    const v = readValue(false); if (v === null) return;
-    cx.set('find — scanning', 'O(n)');
-    let found = -1;
-    for (let i=0;i<list.length;i++){
-      cx.set(`probe idx ${i} · val ${list[i].value}`, 'O(n)');
-      await flash(list[i], 0xffb454, 180);
-      await stepperCheckpoint();
-      if (String(list[i].value) === String(v)){ found = i; break; }
-    }
-    if (found >= 0){
-      await flash(list[found], 0x5cffb4, 700);
-      await stepperCheckpoint();
-      log.say(`<span class="k">find</span>(${esc(v)}) → idx <span class="km">${found}</span>`);
-    } else {
-      log.say(`<span class="kx">find</span>(${esc(v)}) → not found`);
-    }
-    cx.set('find', 'O(n)');
-  }),
-  removeHead: lock(async () => {
-    if (!list.length){ log.say(`<span class="kx">err</span> empty list`); return; }
-    const v = list[0].value;
-    history.push({type:'insert', idx:0, value:v});
-    await dropAt(0);
-    cx.set('remove head', 'O(1)');
-    log.say(`<span class="ko">removeHead</span> → ${esc(v)}`);
-  }),
-  removeTail: lock(async () => {
-    if (!list.length){ log.say(`<span class="kx">err</span> empty list`); return; }
-    cx.set('remove tail — traversing', 'O(n)');
-    for (let k=0;k<list.length-1;k++){
-      cx.set(`step ${k} · idx ${k}`, 'O(n)');
-      await flash(list[k], 0xffb454, 140);
-      await stepperCheckpoint();
-    }
-    const idx = list.length-1;
-    const v = list[idx].value;
-    history.push({type:'insert', idx, value:v});
-    cx.set(`drop tail · ${v}`, 'O(1) drop');
-    await dropAt(idx);
-    log.say(`<span class="ko">removeTail</span> → ${esc(v)}`);
-  }),
-  removeAt: lock(async () => {
-    const i = parseNum($('#in-idx').value, null);
-    if (i === null || i < 0 || i >= list.length){
-      log.say(`<span class="kx">err</span> index out of range (0..${list.length-1})`);
-      return;
-    }
-    cx.set('remove @ index — traversing', 'O(n)');
-    for (let k=0;k<i;k++){
-      cx.set(`step ${k} · idx ${k}`, 'O(n)');
-      await flash(list[k], 0xffb454, 140);
-      await stepperCheckpoint();
-    }
-    const v = list[i].value;
-    history.push({type:'insert', idx:i, value:v});
-    await dropAt(i);
-    cx.set('remove @ index', 'O(n)');
-    log.say(`<span class="ko">removeAt</span>(<span class="km">${i}</span>) → ${esc(v)}`);
-  }),
-  reverse: lock(async () => {
-    if (list.length < 2){ log.say(`<span class="kx">err</span> nothing to reverse`); return; }
-    history.push({type:'reverse'});
-    cx.set('reverse — in place', 'O(n)');
-    list.reverse();
+  push: lock(async () => {
+    const v = readVal(); if (v === null) return;
+    history.push({type:'pop'});
+    cx.set(`push ${v}`, 'O(1)');
+    const blk = makeBlock(v);
+    blk.grp.position.set(0, BASE_Y + 6 + stack.length*DY, -2);
+    stack.push(blk);
     await relayout(true);
-    for (const n of list) flash(n, 0x7c5cff, 220);
-    log.say(`<span class="k">reverse</span> · in place`);
+    await pulse(blk, 0xff5cab);
+    await stepperCheckpoint();
+    log.say(`<span class="k">push</span> ${v}`);
+  }),
+  pop: lock(async () => {
+    if (!stack.length){ log.say(`<span class="kx">err</span> stack empty`); return; }
+    const blk = stack.pop();
+    history.push({type:'push', value: blk.value});
+    cx.set(`pop · ${blk.value}`, 'O(1)');
+    await pulse(blk, 0xff5c70);
+    await stepperCheckpoint();
+    await tweenVec(blk.grp.position, new THREE.Vector3(blk.grp.position.x, blk.grp.position.y + 4, 2), 380);
+    await tweenVec(blk.grp.scale, new THREE.Vector3(0.001,0.001,0.001), 220);
+    scene.remove(blk.grp);
+    await relayout(true);
+    log.say(`<span class="ko">pop</span> → ${blk.value}`);
+  }),
+  peek: lock(async () => {
+    if (!stack.length){ log.say(`<span class="kx">err</span> stack empty`); return; }
+    cx.set(`peek · top = ${stack[stack.length-1].value}`, 'O(1)');
+    await pulse(stack[stack.length-1], 0xffb454, 520);
+    await stepperCheckpoint();
+    log.say(`<span class="k">peek</span> → ${stack[stack.length-1].value}`);
   }),
   undo: lock(async () => {
-    const op = history.pop();
-    if (!op){ log.say(`<span class="kx">undo</span> history empty`); return; }
-    cx.set(`undo · ${op.type}`, '—');
-    if (op.type === 'remove'){
-      // we previously inserted at op.idx, so remove there to undo
-      await dropAt(op.idx);
-      log.say(`<span class="ko">undo</span> insert @ ${op.idx}`);
-    } else if (op.type === 'insert'){
-      // we previously removed; reinsert
-      await spawnAt(op.value, op.idx);
-      log.say(`<span class="ko">undo</span> remove · re-inserted ${esc(op.value)} @ ${op.idx}`);
-    } else if (op.type === 'reverse'){
-      list.reverse();
-      await relayout(true);
-      log.say(`<span class="ko">undo</span> reverse`);
-    } else if (op.type === 'clear'){
-      for (const v of op.values) await spawnAt(v, list.length);
-      log.say(`<span class="ko">undo</span> clear · restored ${op.values.length} nodes`);
+    const op = history.pop(); if (!op){ log.say(`<span class="kx">undo</span> empty`); return; }
+    if (op.type === 'pop'){
+      const blk = stack.pop();
+      if (blk){ await tweenVec(blk.grp.scale, new THREE.Vector3(0.001,0.001,0.001), 220); scene.remove(blk.grp); }
+    } else if (op.type === 'push'){
+      const blk = makeBlock(op.value);
+      blk.grp.position.set(0, BASE_Y + 6 + stack.length*DY, -2);
+      stack.push(blk);
+    } else if (op.type === 'snapshot'){
+      for (const b of stack) scene.remove(b.grp);
+      stack.length = 0;
+      for (const v of op.values){ stack.push(makeBlock(v)); }
     }
+    await relayout(true);
+    cx.set('undo', '—');
+    log.say(`<span class="ko">undo</span>`);
   }),
   clear: lock(async () => {
-    if (!list.length) return;
-    history.push({type:'clear', values:list.map(n => n.value)});
-    while (list.length){ await dropAt(0); }
-    cx.set('clear', 'O(n)');
+    history.push({type:'snapshot', values: stack.map(b=>b.value)});
+    for (const b of stack) scene.remove(b.grp);
+    stack.length = 0;
+    await relayout(false);
     log.say(`<span class="ko">clear</span>`);
   }),
 };
+for (const k in opHandlers) $('#op-'+k).addEventListener('click', opHandlers[k]);
+$('#b-rand').addEventListener('click', () => $('#in-val').value = randomInt(1,99));
 
-for (const k in opHandlers){
-  $('#op-'+k).addEventListener('click', opHandlers[k]);
-}
-$('#b-rand').addEventListener('click', () => {
-  $('#in-val').value = randomInt(1, 99);
-});
-
-function readValue(allowAuto){
-  const raw = $('#in-val').value.trim();
-  if (raw === ''){
-    if (!allowAuto) return null;
-    const v = randomInt(1,99); $('#in-val').value = v; return v;
-  }
-  const n = Number(raw);
-  return Number.isFinite(n) ? n : raw;
+/* axis label */
+{
+  const c = document.createElement('canvas'); c.width=512; c.height=128;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#8b93b8'; ctx.font='600 36px Unbounded, sans-serif';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('LIFO · top ↑', 256, 64);
+  const tex = new THREE.CanvasTexture(c); tex.minFilter=THREE.LinearFilter;
+  const spr = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true}));
+  spr.position.set(0, BASE_Y - 1.4, 0); spr.scale.set(4, 1, 1);
+  scene.add(spr);
 }
 
-function esc(s){ return String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
-
-/* ─── seed a starter list ─── */
+/* seed */
 (async () => {
-  for (const v of [12, 34, 56, 78]) await spawnAt(v, list.length);
+  for (const v of [5, 12, 8]){
+    const blk = makeBlock(v); stack.push(blk);
+  }
+  await relayout(false);
   history.clear(); refreshHUD();
-  log.say(`<span class="k">init</span> seeded 4 nodes`);
+  log.say(`<span class="k">init</span> stack:3`);
   cx.set('idle', '—');
 })();
-
-/* keyboard shortcuts */
-window.addEventListener('keydown', e => {
-  if (e.target.tagName === 'INPUT') return;
-  if (e.key === 'z' || e.key === 'Z') $('#op-undo').click();
-  if (e.key === 'a' || e.key === 'A') $('#op-append').click();
-  if (e.key === 'p' || e.key === 'P') $('#op-prepend').click();
-  if (e.key === 'f' || e.key === 'F') $('#op-find').click();
-  if (e.key === 'r' || e.key === 'R') $('#op-reverse').click();
-});
 </script>
 </body>
 </html>

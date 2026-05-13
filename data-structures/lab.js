@@ -3,6 +3,7 @@
    ───────────────────────────────────────────────────────────── */
 
 import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
+import { OrbitControls } from 'https://unpkg.com/three@0.160.0/examples/jsm/controls/OrbitControls.js';
 
 export const PALETTE = {
   void:    0x05060d,
@@ -94,15 +95,23 @@ export function createScene({mount, camera = {pos:[0,4,18], lookAt:[0,0,0]}}){
     scene.add(grid);
   }
 
-  // camera drift
-  const drift = {t:0, base: cam.position.clone(), enabled:true};
+  // orbit / pan / zoom controls
+  const controls = new OrbitControls(cam, renderer.domElement);
+  controls.enableDamping  = true;
+  controls.dampingFactor  = 0.08;
+  controls.target.set(...camera.lookAt);
+  controls.minDistance    = 4;
+  controls.maxDistance    = 90;
+  controls.maxPolarAngle  = Math.PI * 0.92;  // don't let user look from underneath the grid
+  controls.zoomSpeed      = 0.9;
+  controls.rotateSpeed    = 0.75;
+  controls.panSpeed       = 0.75;
+  controls.screenSpacePanning = true;
+  controls.update();
+
+  // render loop
   function tick(){
-    drift.t += 0.0035;
-    if (drift.enabled){
-      cam.position.x = drift.base.x + Math.sin(drift.t*0.7)*0.55;
-      cam.position.y = drift.base.y + Math.cos(drift.t*0.5)*0.25;
-      cam.lookAt(0, camera.lookAt[1], camera.lookAt[2]);
-    }
+    controls.update();
     renderer.render(scene, cam);
     requestAnimationFrame(tick);
   }
@@ -116,7 +125,7 @@ export function createScene({mount, camera = {pos:[0,4,18], lookAt:[0,0,0]}}){
   };
   window.addEventListener('resize', onResize);
 
-  return {scene, cam, renderer, drift};
+  return {scene, cam, renderer, controls};
 }
 
 /* ─── stepper · pause/play/fast-forward ─── */
