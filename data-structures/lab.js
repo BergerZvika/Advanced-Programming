@@ -301,62 +301,42 @@ export function mountTopbar({title, sub, back='index.html'}){
 //   up:    rotation.x = Math.PI  (or rotation.z = Math.PI)
 //   left:  rotation.z =  Math.PI/2
 //   right: rotation.z = -Math.PI/2
-export function makeArrow3D({color = 0x5cffb4, label = '', length = 2.0, labelSide = 'top'} = {}){
+export function makeArrow3D({color = 0x5cffb4, label = '', length = 1.5, labelSide = 'top'} = {}){
   const grp = new THREE.Group();
 
   const mat = new THREE.MeshPhysicalMaterial({
-    color, emissive:color, emissiveIntensity:0.55,
-    metalness:0.45, roughness:0.22, clearcoat:0.65, clearcoatRoughness:0.2
+    color, emissive:color, emissiveIntensity:0.45,
+    metalness:0.5, roughness:0.25, clearcoat:0.5
   });
 
-  const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, length, 20), mat);
+  const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.085, length, 18), mat);
   shaft.position.y = -length/2;
   grp.add(shaft);
 
-  const tip = new THREE.Mesh(new THREE.ConeGeometry(0.30, 0.66, 24), mat);
+  const tip = new THREE.Mesh(new THREE.ConeGeometry(0.24, 0.5, 22), mat);
   tip.rotation.x = Math.PI;            // apex toward -Y
-  tip.position.y = -length - 0.33;
+  tip.position.y = -length - 0.25;
   grp.add(tip);
 
-  const halo = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.24, 0.24, length + 0.66, 20),
-    new THREE.MeshBasicMaterial({color, transparent:true, opacity:0.18, depthWrite:false})
-  );
-  halo.position.y = -length/2 - 0.18;
-  halo.renderOrder = 0;
-  grp.add(halo);
-
-  const haloTip = new THREE.Mesh(
-    new THREE.ConeGeometry(0.46, 0.86, 24),
-    new THREE.MeshBasicMaterial({color, transparent:true, opacity:0.18, depthWrite:false})
-  );
-  haloTip.rotation.x = Math.PI;
-  haloTip.position.y = -length - 0.43;
-  grp.add(haloTip);
-
   if (label){
-    const c = document.createElement('canvas'); c.width = 640; c.height = 192;
+    const c = document.createElement('canvas'); c.width = 512; c.height = 160;
     const ctx = c.getContext('2d');
     ctx.fillStyle = '#' + color.toString(16).padStart(6, '0');
-    ctx.font = '800 92px IBM Plex Mono, monospace';
+    ctx.font = '800 78px IBM Plex Mono, monospace';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 16;
-    ctx.fillText(label, 320, 96);
+    ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 14;
+    ctx.fillText(label, 256, 80);
     const tex = new THREE.CanvasTexture(c); tex.minFilter = THREE.LinearFilter;
     const spr = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true, depthTest:false}));
     spr.renderOrder = 12;
-    spr.scale.set(2.4, 0.72, 1);
-    // perched at the tail of the shaft (above for down-arrows; the parent group's rotation carries it)
-    if (labelSide === 'top')    spr.position.set(0,  0.55, 0);
-    if (labelSide === 'bottom') spr.position.set(0, -length - 0.95, 0);
+    spr.scale.set(1.9, 0.6, 1);
+    if (labelSide === 'top')    spr.position.set(0,  0.45, 0);
+    if (labelSide === 'bottom') spr.position.set(0, -length - 0.75, 0);
     grp.add(spr);
   }
 
-  return {group: grp, shaft, tip, halo, haloTip,
-          setColor(c){
-            mat.color.setHex(c); mat.emissive.setHex(c);
-            halo.material.color.setHex(c); haloTip.material.color.setHex(c);
-          }};
+  return {group: grp, shaft, tip,
+          setColor(c){ mat.color.setHex(c); mat.emissive.setHex(c); }};
 }
 
 /* ─── player UI · play/pause/back/forward ─── */
