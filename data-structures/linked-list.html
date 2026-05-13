@@ -559,6 +559,25 @@ function targetX(i){
   return (i - (n-1)/2) * GAP;
 }
 
+/* ─── head / tail pointer sprites that follow the ends of the list ─── */
+function makePointerSprite(text, color){
+  const c = document.createElement('canvas'); c.width=512; c.height=192;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = color;
+  ctx.font = '800 100px IBM Plex Mono, monospace';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 16;
+  ctx.fillText(text, 256, 96);
+  const tex = new THREE.CanvasTexture(c); tex.minFilter = THREE.LinearFilter;
+  const spr = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true, depthTest:false}));
+  spr.renderOrder = 11;
+  spr.scale.set(2.4, 0.9, 1);
+  scene.add(spr);
+  return spr;
+}
+const ptrHead = makePointerSprite('HEAD ↓', '#5cffb4');
+const ptrTail = makePointerSprite('↓ TAIL', '#ffb454');
+
 async function relayout(animate=true){
   // re-center all nodes & set arrows
   const ms = animate ? 380 : 0;
@@ -576,6 +595,22 @@ async function relayout(animate=true){
       setArrow(node.edge, fromX, toX);
     }
   });
+  // head / tail pointers — hover above the ends; hide when list is empty
+  const n = list.length;
+  if (n === 0){
+    ptrHead.visible = ptrTail.visible = false;
+  } else {
+    ptrHead.visible = ptrTail.visible = true;
+    const headX = targetX(0), tailX = targetX(n-1);
+    const ptrY = Y + NODE_R + 2.6;
+    ptrHead.position.set(headX, ptrY, 0);
+    ptrTail.position.set(tailX, ptrY, 0);
+    // when the list collapses to one node, fan them out so they don't overlap
+    if (n === 1){
+      ptrHead.position.x -= 1.2;
+      ptrTail.position.x += 1.2;
+    }
+  }
   refreshHUD();
 }
 
