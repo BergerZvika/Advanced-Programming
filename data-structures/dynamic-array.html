@@ -1,0 +1,386 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Dynamic Array — Data Structures Lab</title>
+<link rel="stylesheet" href="lab.css" />
+</head>
+<body>
+  <div class="frame">
+    <header id="topbar" class="topbar"></header>
+
+    <div class="lab-shell">
+      <div class="stage" id="stage">
+        <div class="stage-corner tl"></div><div class="stage-corner tr"></div>
+        <div class="stage-corner bl"></div><div class="stage-corner br"></div>
+        <div class="stage-overlay">
+          <div class="row">
+            <div class="stage-tag"><b>size</b>&nbsp; <span id="t-size">0</span></div>
+            <div class="stage-tag"><b>cap</b>&nbsp; <span id="t-cap">0</span></div>
+            <div class="stage-tag"><b>load</b>&nbsp; <span id="t-load">0%</span></div>
+          </div>
+          <div class="row">
+            <div class="stage-tag">contiguous · capacity doubles on overflow</div>
+          </div>
+        </div>
+      </div>
+
+      <aside class="panel">
+        <h2>Controls</h2>
+        <div class="section-rule"></div>
+
+        <div class="label">Value</div>
+        <div class="input-row">
+          <input id="in-val" placeholder="number (e.g. 7)" autocomplete="off" />
+          <button class="ghost" id="b-rand">RND</button>
+        </div>
+
+        <div class="label mt-8">Index</div>
+        <div class="input-row">
+          <input id="in-idx" placeholder="0..size" autocomplete="off" />
+        </div>
+
+        <div class="label mt-12">Operations</div>
+        <div class="op-grid">
+          <button class="op" data-color="cyan"    id="op-push"><span class="name"><span class="dot"></span> push</span><span class="cx">O(1)*</span></button>
+          <button class="op" data-color="magenta" id="op-pop"><span class="name"><span class="dot"></span> pop</span><span class="cx">O(1)</span></button>
+          <button class="op" data-color="amber"   id="op-insertAt"><span class="name"><span class="dot"></span> insert @ i</span><span class="cx">O(n)</span></button>
+          <button class="op" data-color="magenta" id="op-removeAt"><span class="name"><span class="dot"></span> remove @ i</span><span class="cx">O(n)</span></button>
+          <button class="op" data-color="cyan"    id="op-get"><span class="name"><span class="dot"></span> get @ i</span><span class="cx">O(1)</span></button>
+          <button class="op" data-color="cyan"    id="op-set"><span class="name"><span class="dot"></span> set @ i</span><span class="cx">O(1)</span></button>
+          <button class="op" data-color="violet"  id="op-reserve"><span class="name"><span class="dot"></span> reserve</span><span class="cx">O(n)</span></button>
+          <button class="op" data-color="amber"   id="op-shrink"><span class="name"><span class="dot"></span> shrink-fit</span><span class="cx">O(n)</span></button>
+          <button class="op full" data-color="lime" id="op-undo"><span class="name"><span class="dot"></span> undo · last op</span><span class="cx" id="undo-depth">0</span></button>
+          <button class="op full" data-color="amber" id="op-clear"><span class="name"><span class="dot"></span> clear</span><span class="cx">reset</span></button>
+        </div>
+
+        <div class="label mt-12">Complexity</div>
+        <div id="cx-mount"></div>
+      </aside>
+
+      <div class="log" id="log"></div>
+    </div>
+
+    <footer class="statusbar">
+      <span class="pill"><b>lab</b>&nbsp; 01 · dynamic-array</span>
+      <span class="pill"><b>renderer</b>&nbsp; three.js · WebGL</span>
+      <span class="pill"><b>history</b>&nbsp; <span id="hist-pill">0</span></span>
+    </footer>
+  </div>
+
+<script type="module">
+import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
+import {PALETTE, $, createScene, createLog, createComplexityPanel, mountTopbar, createHistory,
+        tween, tweenVec, sleep, parseNum, randomInt} from './lab.js';
+
+mountTopbar({title:'Dynamic Array', sub:'lab 01 · amortized growth'});
+const log = createLog('#log');
+const cx  = createComplexityPanel($('#cx-mount'), [
+  {key:'random access', val:'O(1)'},
+  {key:'push (amortized)', val:'O(1)'},
+  {key:'push (worst)', val:'O(n) on resize'},
+  {key:'insert @ index', val:'O(n)'},
+  {key:'remove @ index', val:'O(n)'},
+  {key:'space', val:'O(n)'},
+]);
+const history = createHistory();
+
+const stage = $('#stage');
+const {scene} = createScene({mount:stage, camera:{pos:[0, 5, 16], lookAt:[0, 0, 0]}});
+
+const CELL_W = 1.55, CELL_H = 1.55, CELL_D = 1.55, GAP = 0.15, Y = 0;
+let capacity = 0;
+const cells = [];  // {value|null, mesh, label}
+const slots = [];  // visualisation: empty cells when capacity > size
+
+function targetX(i, n){
+  return (i - (n-1)/2) * (CELL_W + GAP);
+}
+
+function makeCell(value, filled){
+  const grp = new THREE.Group();
+  const mat = new THREE.MeshPhysicalMaterial({
+    color: filled ? 0x1e2540 : 0x0d1226,
+    metalness: 0.55, roughness: 0.25,
+    emissive: filled ? 0x0c1830 : 0x080a14, emissiveIntensity: filled ? 0.7 : 0.2,
+  });
+  const body = new THREE.Mesh(new THREE.BoxGeometry(CELL_W, CELL_H, CELL_D, 1,1,1), mat);
+  grp.add(body);
+
+  // outline
+  const edges = new THREE.LineSegments(
+    new THREE.EdgesGeometry(body.geometry),
+    new THREE.LineBasicMaterial({color: filled ? 0x35d0ff : 0x2a3a60, transparent:true, opacity: filled ? 0.85 : 0.55})
+  );
+  grp.add(edges);
+
+  // sprite
+  const c = document.createElement('canvas'); c.width=256; c.height=128;
+  const ctx = c.getContext('2d');
+  function paint(v, idx){
+    ctx.clearRect(0,0,256,128);
+    if (v != null){
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '700 56px IBM Plex Mono, monospace';
+      ctx.textAlign = 'center'; ctx.textBaseline='middle';
+      ctx.fillText(String(v), 128, 56);
+    }
+    ctx.fillStyle = '#8b93b8';
+    ctx.font = '500 22px IBM Plex Mono, monospace';
+    ctx.textAlign='center';
+    ctx.fillText('['+idx+']', 128, 104);
+  }
+  paint(value, 0);
+  const tex = new THREE.CanvasTexture(c); tex.minFilter = THREE.LinearFilter;
+  const spr = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true}));
+  spr.position.set(0, CELL_H/2 + 0.9, 0); spr.scale.set(2.4, 1.2, 1);
+  grp.add(spr);
+
+  return {grp, body, mat, edges, label:{paint, tex, c, ctx}};
+}
+
+function setCellValue(cell, value, idx){
+  cell.value = value;
+  const filled = value != null;
+  cell.label.paint(value, idx);
+  cell.label.tex.needsUpdate = true;
+  cell.mat.color.setHex(filled ? 0x1e2540 : 0x0d1226);
+  cell.mat.emissive.setHex(filled ? 0x0c1830 : 0x080a14);
+  cell.mat.emissiveIntensity = filled ? 0.7 : 0.2;
+  cell.edges.material.color.setHex(filled ? 0x35d0ff : 0x2a3a60);
+  cell.edges.material.opacity = filled ? 0.85 : 0.55;
+}
+
+function refreshHUD(){
+  const sz = cells.length;
+  $('#t-size').textContent = sz;
+  $('#t-cap').textContent = capacity;
+  $('#t-load').textContent = capacity ? Math.round(100*sz/capacity)+'%' : '0%';
+  $('#undo-depth').textContent = history.size();
+  $('#hist-pill').textContent = history.size();
+  // relabel indices in case
+  for (let i=0;i<cells.length;i++){ cells[i].label.paint(cells[i].value, i); cells[i].label.tex.needsUpdate=true; }
+  for (let i=0;i<slots.length;i++){ slots[i].label.paint(null, cells.length + i); slots[i].label.tex.needsUpdate=true; }
+}
+
+async function relayout(animate=true){
+  const total = capacity;
+  const all = cells.concat(slots);
+  await Promise.all(all.map((c, i) => {
+    return tweenVec(c.grp.position, new THREE.Vector3(targetX(i, total), Y, 0), animate?420:0);
+  }));
+  refreshHUD();
+}
+
+async function ensureCapacity(min){
+  if (capacity >= min) return false;
+  // capacity doubling
+  const newCap = Math.max(4, capacity*2 || 4, min);
+  cx.set('resize · copy', `O(n) · cap ${capacity}→${newCap}`);
+  log.say(`<span class="km">resize</span> capacity ${capacity} → ${newCap}`);
+
+  // add empty slots to current array, then re-center
+  const added = newCap - capacity;
+  for (let i=0;i<added;i++){
+    const c = makeCell(null, false);
+    c.value = null;
+    c.grp.position.set(targetX(capacity + slots.length, newCap), Y + 4, -3);
+    c.grp.scale.setScalar(0.01);
+    scene.add(c.grp);
+    slots.push(c);
+  }
+  capacity = newCap;
+  // grow new slots in
+  await Promise.all(slots.slice(-added).map(s => tweenVec(s.grp.scale, new THREE.Vector3(1,1,1), 380)));
+  await relayout(true);
+  return true;
+}
+
+let busy = false;
+function lock(fn){ return async (...a) => { if (busy) return; busy=true; try{ await fn(...a); } finally{ busy=false; refreshHUD(); } }; }
+
+async function pulse(cell, color=0xb9ff5c){
+  cell.mat.emissive.setHex(color); cell.mat.emissiveIntensity = 1.3;
+  await sleep(220);
+  cell.mat.emissiveIntensity = cell.value != null ? 0.7 : 0.2;
+  cell.mat.emissive.setHex(cell.value != null ? 0x0c1830 : 0x080a14);
+}
+
+async function pushBack(value){
+  if (cells.length >= capacity){
+    await ensureCapacity(cells.length + 1);
+  }
+  // promote first slot into cells
+  const slot = slots.shift();
+  setCellValue(slot, value, cells.length);
+  cells.push(slot);
+  await relayout(true);
+  await pulse(slot, 0x35d0ff);
+}
+
+async function popBack(){
+  if (!cells.length) return null;
+  const cell = cells.pop();
+  const value = cell.value;
+  // animate up & fade then convert to empty slot
+  await pulse(cell, 0xff5c70);
+  setCellValue(cell, null, cells.length);
+  // append to slot list at the appropriate position (capacity unchanged)
+  slots.unshift(cell);
+  await relayout(true);
+  return value;
+}
+
+async function insertAt(idx, value){
+  if (cells.length >= capacity){ await ensureCapacity(cells.length + 1); }
+  // shift right: animate values rightward by 1 (re-label) while sliding cells visually
+  for (let i = cells.length; i > idx; i--){
+    // we'll move cell[i-1] to position i, then make a new "empty" cell at idx
+  }
+  // simpler: introduce a fresh cell from above into pos idx; the old cell at idx moves to idx+1 by re-layout
+  const slot = slots.shift();
+  setCellValue(slot, value, idx);
+  cells.splice(idx, 0, slot);
+  // visually slot starts above; drop in
+  slot.grp.position.set(targetX(idx, capacity), Y + 4, -3);
+  slot.grp.scale.setScalar(0.01);
+  await tweenVec(slot.grp.scale, new THREE.Vector3(1,1,1), 320);
+  await relayout(true);
+  await pulse(slot, 0xffb454);
+}
+
+async function removeAt(idx){
+  if (idx < 0 || idx >= cells.length) return null;
+  const cell = cells[idx];
+  const v = cell.value;
+  await pulse(cell, 0xff5c70);
+  cells.splice(idx, 1);
+  setCellValue(cell, null, cells.length);
+  slots.unshift(cell);
+  await relayout(true);
+  return v;
+}
+
+async function reserveCap(target){
+  if (target <= capacity){ log.say(`<span class="kx">reserve</span> already ≥ ${target}`); return; }
+  await ensureCapacity(target);
+}
+
+async function shrinkFit(){
+  if (slots.length === 0) return;
+  log.say(`<span class="km">shrink-fit</span> cap ${capacity} → ${cells.length}`);
+  // animate slots up and out
+  await Promise.all(slots.map(s => tweenVec(s.grp.scale, new THREE.Vector3(0.01,0.01,0.01), 380)));
+  for (const s of slots) scene.remove(s.grp);
+  slots.length = 0;
+  capacity = cells.length;
+  await relayout(true);
+}
+
+const opHandlers = {
+  push: lock(async () => {
+    const v = readNum(true); if (v === null) return;
+    const before = {cap: capacity, size: cells.length};
+    history.push({type:'pop', preCap: before.cap});
+    cx.set('push', 'O(1) amortized');
+    await pushBack(v);
+    log.say(`<span class="k">push</span> ${v}`);
+  }),
+  pop: lock(async () => {
+    if (!cells.length){ log.say(`<span class="kx">err</span> empty`); return; }
+    history.push({type:'push', value: cells[cells.length-1].value});
+    const v = await popBack();
+    cx.set('pop', 'O(1)');
+    log.say(`<span class="ko">pop</span> → ${v}`);
+  }),
+  insertAt: lock(async () => {
+    const v = readNum(true); if (v === null) return;
+    const i = parseNum($('#in-idx').value, null);
+    if (i === null || i < 0 || i > cells.length){ log.say(`<span class="kx">err</span> index out of range`); return; }
+    history.push({type:'removeAt', idx:i});
+    cx.set('insert @ index', 'O(n) shift');
+    await insertAt(i, v);
+    log.say(`<span class="k">insertAt</span>(<span class="km">${i}</span>, ${v})`);
+  }),
+  removeAt: lock(async () => {
+    const i = parseNum($('#in-idx').value, null);
+    if (i === null || i < 0 || i >= cells.length){ log.say(`<span class="kx">err</span> index out of range`); return; }
+    history.push({type:'insertAt', idx:i, value: cells[i].value});
+    cx.set('remove @ index', 'O(n) shift');
+    const v = await removeAt(i);
+    log.say(`<span class="ko">removeAt</span>(<span class="km">${i}</span>) → ${v}`);
+  }),
+  get: lock(async () => {
+    const i = parseNum($('#in-idx').value, null);
+    if (i === null || i < 0 || i >= cells.length){ log.say(`<span class="kx">err</span> index out of range`); return; }
+    cx.set('get @ index', 'O(1)');
+    await pulse(cells[i], 0x5cffb4);
+    log.say(`<span class="k">get</span>(${i}) → <span class="km">${cells[i].value}</span>`);
+  }),
+  set: lock(async () => {
+    const v = readNum(true); if (v === null) return;
+    const i = parseNum($('#in-idx').value, null);
+    if (i === null || i < 0 || i >= cells.length){ log.say(`<span class="kx">err</span> index out of range`); return; }
+    history.push({type:'set', idx:i, value: cells[i].value});
+    cx.set('set @ index', 'O(1)');
+    setCellValue(cells[i], v, i);
+    await pulse(cells[i], 0x35d0ff);
+    log.say(`<span class="k">set</span>(${i}, ${v})`);
+  }),
+  reserve: lock(async () => {
+    const v = parseNum($('#in-val').value, null);
+    if (v === null || v < 0){ log.say(`<span class="kx">err</span> reserve needs a positive number in the Value field`); return; }
+    history.push({type:'reserve', preCap: capacity});
+    cx.set('reserve', 'O(n)');
+    await reserveCap(v);
+    log.say(`<span class="k">reserve</span>(${v})`);
+  }),
+  shrink: lock(async () => {
+    history.push({type:'shrink', preCap: capacity});
+    cx.set('shrink-fit', 'O(n)');
+    await shrinkFit();
+  }),
+  undo: lock(async () => {
+    const op = history.pop();
+    if (!op){ log.say(`<span class="kx">undo</span> history empty`); return; }
+    cx.set(`undo · ${op.type}`, '—');
+    if (op.type === 'pop'){ await popBack(); }
+    else if (op.type === 'push'){ await pushBack(op.value); }
+    else if (op.type === 'removeAt'){ await removeAt(op.idx); }
+    else if (op.type === 'insertAt'){ await insertAt(op.idx, op.value); }
+    else if (op.type === 'set'){ setCellValue(cells[op.idx], op.value, op.idx); refreshHUD(); }
+    else if (op.type === 'reserve'){ /* cannot truly shrink mid-resize; leave cap */ log.say(`<span class="ko">undo</span> reserve · cap kept`); }
+    else if (op.type === 'shrink'){ /* cannot un-shrink without history */ }
+    else if (op.type === 'clear'){ for (const v of op.values) await pushBack(v); }
+    log.say(`<span class="ko">undo</span> ${op.type}`);
+  }),
+  clear: lock(async () => {
+    if (!cells.length) return;
+    history.push({type:'clear', values: cells.map(c=>c.value)});
+    while (cells.length) await popBack();
+    cx.set('clear', 'O(n)');
+    log.say(`<span class="ko">clear</span>`);
+  }),
+};
+for (const k in opHandlers) $('#op-'+k).addEventListener('click', opHandlers[k]);
+$('#b-rand').addEventListener('click', () => $('#in-val').value = randomInt(1,99));
+
+function readNum(allowAuto){
+  const raw = $('#in-val').value.trim();
+  if (raw === ''){ if (!allowAuto) return null; const v = randomInt(1,99); $('#in-val').value = v; return v; }
+  const n = Number(raw); return Number.isFinite(n) ? n : null;
+}
+
+/* seed */
+(async () => {
+  await ensureCapacity(4);
+  for (const v of [3, 7, 9]) await pushBack(v);
+  history.clear();
+  refreshHUD();
+  log.say(`<span class="k">init</span> cap=4 size=3`);
+  cx.set('idle', '—');
+})();
+</script>
+</body>
+</html>

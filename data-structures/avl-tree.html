@@ -1,0 +1,427 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>AVL Tree — Data Structures Lab</title>
+<link rel="stylesheet" href="lab.css" />
+</head>
+<body>
+  <div class="frame">
+    <header id="topbar" class="topbar"></header>
+
+    <div class="lab-shell">
+      <div class="stage" id="stage">
+        <div class="stage-corner tl"></div><div class="stage-corner tr"></div>
+        <div class="stage-corner bl"></div><div class="stage-corner br"></div>
+        <div class="stage-overlay">
+          <div class="row">
+            <div class="stage-tag"><b>root</b>&nbsp; <span id="t-root">∅</span></div>
+            <div class="stage-tag"><b>size</b>&nbsp; <span id="t-size">0</span></div>
+            <div class="stage-tag"><b>height</b>&nbsp; <span id="t-height">0</span></div>
+          </div>
+          <div class="row">
+            <div class="stage-tag">self-balancing · |bf| ≤ 1 invariant</div>
+          </div>
+        </div>
+      </div>
+
+      <aside class="panel">
+        <h2>Controls</h2>
+        <div class="section-rule"></div>
+
+        <div class="label">Value(s) — comma- or space-separated</div>
+        <div class="input-row">
+          <input id="in-val" placeholder="e.g. 10  or  10,20,30" autocomplete="off" />
+          <button class="ghost" id="b-rand">RND</button>
+        </div>
+
+        <div class="label mt-12">Operations</div>
+        <div class="op-grid">
+          <button class="op" data-color="cyan"    id="op-insert"><span class="name"><span class="dot"></span> insert</span><span class="cx">O(log n)</span></button>
+          <button class="op" data-color="magenta" id="op-delete"><span class="name"><span class="dot"></span> delete</span><span class="cx">O(log n)</span></button>
+          <button class="op" data-color="amber"   id="op-find"><span class="name"><span class="dot"></span> find</span><span class="cx">O(log n)</span></button>
+          <button class="op" data-color="violet"  id="op-min"><span class="name"><span class="dot"></span> min</span><span class="cx">O(log n)</span></button>
+          <button class="op" data-color="violet"  id="op-max"><span class="name"><span class="dot"></span> max</span><span class="cx">O(log n)</span></button>
+          <button class="op" data-color="cyan"    id="op-inorder"><span class="name"><span class="dot"></span> in-order walk</span><span class="cx">O(n)</span></button>
+          <button class="op full" data-color="lime"  id="op-undo"><span class="name"><span class="dot"></span> undo · last op</span><span class="cx" id="undo-depth">0</span></button>
+          <button class="op full" data-color="amber" id="op-clear"><span class="name"><span class="dot"></span> clear</span><span class="cx">reset</span></button>
+        </div>
+
+        <div class="label mt-12">Complexity</div>
+        <div id="cx-mount"></div>
+      </aside>
+
+      <div class="log" id="log"></div>
+    </div>
+
+    <footer class="statusbar">
+      <span class="pill"><b>lab</b>&nbsp; 02 · avl-tree</span>
+      <span class="pill"><b>renderer</b>&nbsp; three.js · WebGL</span>
+      <span class="pill"><b>history</b>&nbsp; <span id="hist-pill">0</span></span>
+    </footer>
+  </div>
+
+<script type="module">
+import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
+import {$, createScene, createLog, createComplexityPanel, mountTopbar, createHistory,
+        tween, tweenVec, sleep, parseNum, parseList, randomInt} from './lab.js';
+
+mountTopbar({title:'AVL Tree', sub:'lab 02 · self-balancing BST'});
+const log = createLog('#log');
+const cx  = createComplexityPanel($('#cx-mount'), [
+  {key:'insert', val:'O(log n)'},
+  {key:'delete', val:'O(log n)'},
+  {key:'find / min / max', val:'O(log n)'},
+  {key:'in-order traversal', val:'O(n)'},
+  {key:'space', val:'O(n)'},
+  {key:'invariant', val:'|bf| ≤ 1'},
+]);
+const history = createHistory();
+
+const stage = $('#stage');
+const {scene} = createScene({mount:stage, camera:{pos:[0, 5.5, 18], lookAt:[0, 1, 0]}});
+
+/* ─── AVL ─── */
+
+let root = null;
+let size = 0;
+
+function newNode(value){
+  return {value, left:null, right:null, h:1, mesh:null, edgeUp:null};
+}
+function H(n){ return n ? n.h : 0; }
+function BF(n){ return n ? H(n.left) - H(n.right) : 0; }
+function upd(n){ n.h = 1 + Math.max(H(n.left), H(n.right)); }
+
+function rotR(y){
+  const x = y.left, T2 = x.right;
+  x.right = y; y.left = T2;
+  upd(y); upd(x);
+  return x;
+}
+function rotL(x){
+  const y = x.right, T2 = y.left;
+  y.left = x; x.right = T2;
+  upd(x); upd(y);
+  return y;
+}
+
+function insert(n, v, trail){
+  if (!n){ size++; const fresh = newNode(v); trail.push({type:'visit', node:fresh, fresh:true}); return fresh; }
+  trail.push({type:'visit', node:n});
+  if (v < n.value)      n.left  = insert(n.left, v, trail);
+  else if (v > n.value) n.right = insert(n.right, v, trail);
+  else { trail.push({type:'dup', node:n}); return n; }
+  upd(n);
+  const bf = BF(n);
+  if (bf > 1 && v < n.left.value)  { trail.push({type:'rot', kind:'LL', at:n.value}); return rotR(n); }
+  if (bf < -1 && v > n.right.value){ trail.push({type:'rot', kind:'RR', at:n.value}); return rotL(n); }
+  if (bf > 1 && v > n.left.value)  { trail.push({type:'rot', kind:'LR', at:n.value}); n.left = rotL(n.left); return rotR(n); }
+  if (bf < -1 && v < n.right.value){ trail.push({type:'rot', kind:'RL', at:n.value}); n.right = rotR(n.right); return rotL(n); }
+  return n;
+}
+
+function minNode(n){ while (n.left) n = n.left; return n; }
+
+function del(n, v, trail){
+  if (!n) return null;
+  trail.push({type:'visit', node:n});
+  if (v < n.value) n.left = del(n.left, v, trail);
+  else if (v > n.value) n.right = del(n.right, v, trail);
+  else {
+    if (!n.left || !n.right){
+      const child = n.left || n.right;
+      trail.push({type:'remove', node:n});
+      n = child;
+      size--;
+    } else {
+      const succ = minNode(n.right);
+      trail.push({type:'replace', node:n, withValue:succ.value});
+      n.value = succ.value;
+      n.right = del(n.right, succ.value, trail);
+    }
+  }
+  if (!n) return null;
+  upd(n);
+  const bf = BF(n);
+  if (bf > 1 && BF(n.left) >= 0)  { trail.push({type:'rot', kind:'LL', at:n.value}); return rotR(n); }
+  if (bf > 1 && BF(n.left) < 0)   { trail.push({type:'rot', kind:'LR', at:n.value}); n.left = rotL(n.left); return rotR(n); }
+  if (bf < -1 && BF(n.right) <= 0){ trail.push({type:'rot', kind:'RR', at:n.value}); return rotL(n); }
+  if (bf < -1 && BF(n.right) > 0) { trail.push({type:'rot', kind:'RL', at:n.value}); n.right = rotR(n.right); return rotL(n); }
+  return n;
+}
+
+function depth(n){ return n ? 1 + Math.max(depth(n.left), depth(n.right)) : 0; }
+
+/* ─── layout ─── */
+// Use in-order index for x, depth for y
+function layoutInOrder(n, acc){ if (!n) return; layoutInOrder(n.left, acc); acc.idx[n.value] = acc.k++; layoutInOrder(n.right, acc); }
+function computeLayout(){
+  const acc = {k:0, idx:{}};
+  layoutInOrder(root, acc);
+  const n = acc.k;
+  if (n === 0) return new Map();
+  const map = new Map();
+  function walk(node, d){
+    if (!node) return;
+    const x = (acc.idx[node.value] - (n-1)/2) * Math.max(1.7, 5 - 0.3*d);
+    const y = -d * 2.4 + 2.6;
+    map.set(node, {x, y});
+    walk(node.left, d+1); walk(node.right, d+1);
+  }
+  walk(root, 0);
+  return map;
+}
+
+/* ─── visuals ─── */
+
+function makeNodeMesh(value){
+  const grp = new THREE.Group();
+  const body = new THREE.Mesh(
+    new THREE.SphereGeometry(0.65, 32, 24),
+    new THREE.MeshPhysicalMaterial({color:0x1a2440, metalness:0.55, roughness:0.18, emissive:0x0c1e3a, emissiveIntensity:0.7, clearcoat:0.6})
+  );
+  grp.add(body);
+  const wire = new THREE.Mesh(
+    new THREE.SphereGeometry(0.66, 16, 12),
+    new THREE.MeshBasicMaterial({color:0x7c5cff, wireframe:true, transparent:true, opacity:0.45})
+  );
+  grp.add(wire);
+
+  const c = document.createElement('canvas'); c.width=256; c.height=128;
+  const ctx = c.getContext('2d');
+  function paint(v, bf){
+    ctx.clearRect(0,0,256,128);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '700 48px IBM Plex Mono, monospace';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(String(v), 128, 50);
+    if (bf !== undefined){
+      const c2 = bf>1||bf<-1 ? '#ff5c70' : (bf===0?'#5cffb4':'#ffb454');
+      ctx.fillStyle = c2;
+      ctx.font = '500 24px IBM Plex Mono, monospace';
+      ctx.fillText('bf '+(bf>=0?'+':'')+bf, 128, 96);
+    }
+  }
+  paint(value, 0);
+  const tex = new THREE.CanvasTexture(c); tex.minFilter = THREE.LinearFilter;
+  const spr = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true}));
+  spr.position.set(0, 1.4, 0); spr.scale.set(2.2, 1.1, 1);
+  grp.add(spr);
+
+  return {grp, body, wire, label:{paint, tex}};
+}
+
+function makeEdge(){
+  const m = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.04, 0.04, 1, 12),
+    new THREE.MeshBasicMaterial({color:0x35d0ff, transparent:true, opacity:0.5})
+  );
+  return m;
+}
+
+function placeEdge(edge, ax, ay, bx, by){
+  const dx = bx - ax, dy = by - ay;
+  const len = Math.sqrt(dx*dx + dy*dy);
+  edge.position.set((ax+bx)/2, (ay+by)/2, 0);
+  edge.scale.y = len;
+  edge.rotation.z = Math.atan2(dx, -dy);  // align to vector
+}
+
+function ensureMeshes(n){
+  if (!n) return;
+  if (!n.mesh){
+    const m = makeNodeMesh(n.value);
+    n.mesh = m;
+    n.edgeUp = makeEdge();
+    n.edgeUp.visible = false;
+    n.mesh.grp.scale.setScalar(0.001);
+    scene.add(n.mesh.grp);
+    scene.add(n.edgeUp);
+  }
+  ensureMeshes(n.left); ensureMeshes(n.right);
+}
+
+async function relayout(animate=true){
+  ensureMeshes(root);
+  const map = computeLayout();
+  // hide edges of nodes not in map
+  const seen = new Set();
+  const tasks = [];
+  function walk(n, parent){
+    if (!n) return;
+    seen.add(n);
+    const p = map.get(n);
+    if (p){
+      tasks.push(tweenVec(n.mesh.grp.position, new THREE.Vector3(p.x, p.y, 0), animate?420:0));
+      tasks.push(tweenVec(n.mesh.grp.scale, new THREE.Vector3(1,1,1), animate?320:0));
+      // BF label
+      n.mesh.label.paint(n.value, BF(n));
+      n.mesh.label.tex.needsUpdate = true;
+      if (parent){
+        const pp = map.get(parent);
+        n.edgeUp.visible = true;
+        placeEdge(n.edgeUp, pp.x, pp.y, p.x, p.y);
+      } else {
+        n.edgeUp.visible = false;
+      }
+    }
+    walk(n.left, n); walk(n.right, n);
+  }
+  walk(root, null);
+  await Promise.all(tasks);
+  refreshHUD();
+}
+
+function refreshHUD(){
+  $('#t-root').textContent = root ? root.value : '∅';
+  $('#t-size').textContent = size;
+  $('#t-height').textContent = depth(root);
+  $('#undo-depth').textContent = history.size();
+  $('#hist-pill').textContent = history.size();
+}
+
+async function pulse(node, color=0xb9ff5c, ms=240){
+  if (!node || !node.mesh) return;
+  const m = node.mesh.body.material;
+  const eOld = m.emissive.clone(), iOld = m.emissiveIntensity;
+  m.emissive.setHex(color); m.emissiveIntensity = 1.3;
+  await sleep(ms);
+  m.emissive.copy(eOld); m.emissiveIntensity = iOld;
+}
+
+async function animateTrail(trail){
+  for (const e of trail){
+    if (e.type === 'visit' && e.node && e.node.mesh){
+      await pulse(e.node, 0xffb454, 160);
+    } else if (e.type === 'rot'){
+      log.say(`<span class="km">rot</span> ${e.kind} @ ${e.at}`);
+    } else if (e.type === 'dup'){
+      log.say(`<span class="kx">dup</span> ${e.node.value} skipped`);
+    } else if (e.type === 'remove'){
+      // deletion already handled in tree; just visual flash
+    } else if (e.type === 'replace'){
+      log.say(`<span class="km">replace</span> ${e.node.value} ← successor ${e.withValue}`);
+    }
+  }
+}
+
+/* ─── ops ─── */
+let busy = false;
+function lock(fn){ return async (...a) => { if (busy) return; busy=true; try{ await fn(...a); } finally{ busy=false; refreshHUD(); } }; }
+
+function readVals(){
+  const list = parseList($('#in-val').value);
+  if (list.length === 0){
+    const v = randomInt(1, 99); $('#in-val').value = v; return [v];
+  }
+  return list;
+}
+function readVal(){
+  const v = parseNum($('#in-val').value, null);
+  if (v === null){ log.say(`<span class="kx">err</span> number required`); return null; }
+  return v;
+}
+
+function snapshotValues(){
+  const out = [];
+  (function walk(n){ if (!n) return; walk(n.left); out.push(n.value); walk(n.right); })(root);
+  return out;
+}
+
+async function rebuildFrom(values){
+  // clear current scene state then re-insert
+  function purge(n){ if (!n) return; if (n.mesh){ scene.remove(n.mesh.grp); scene.remove(n.edgeUp); } purge(n.left); purge(n.right); }
+  purge(root); root = null; size = 0;
+  for (const v of values){
+    const t = []; root = insert(root, v, t);
+  }
+  await relayout(false);
+}
+
+const opHandlers = {
+  insert: lock(async () => {
+    const vals = readVals();
+    history.push({type:'snapshot', values: snapshotValues()});
+    cx.set('insert', 'O(log n)');
+    for (const v of vals){
+      const trail = [];
+      root = insert(root, v, trail);
+      await relayout(true);
+      await animateTrail(trail);
+      log.say(`<span class="k">insert</span> ${v} · ${trail.filter(e=>e.type==='rot').length||0} rot`);
+    }
+  }),
+  delete: lock(async () => {
+    const v = readVal(); if (v === null) return;
+    history.push({type:'snapshot', values: snapshotValues()});
+    cx.set('delete', 'O(log n)');
+    const trail = [];
+    root = del(root, v, trail);
+    await relayout(true);
+    await animateTrail(trail);
+    log.say(`<span class="ko">delete</span> ${v}`);
+  }),
+  find: lock(async () => {
+    const v = readVal(); if (v === null) return;
+    cx.set('find — descending', 'O(log n)');
+    let n = root, found = null;
+    while (n){
+      await pulse(n, 0xffb454, 200);
+      if (v === n.value){ found = n; break; }
+      n = v < n.value ? n.left : n.right;
+    }
+    if (found){ await pulse(found, 0x5cffb4, 700); log.say(`<span class="k">find</span>(${v}) → hit`); }
+    else log.say(`<span class="kx">find</span>(${v}) → miss`);
+    cx.set('find', 'O(log n)');
+  }),
+  min: lock(async () => {
+    if (!root){ log.say(`<span class="kx">err</span> empty`); return; }
+    cx.set('min', 'O(log n)');
+    let n = root; while (n){ await pulse(n, 0x7c5cff, 200); if (!n.left) break; n = n.left; }
+    log.say(`<span class="k">min</span> → ${n.value}`);
+  }),
+  max: lock(async () => {
+    if (!root){ log.say(`<span class="kx">err</span> empty`); return; }
+    cx.set('max', 'O(log n)');
+    let n = root; while (n){ await pulse(n, 0x7c5cff, 200); if (!n.right) break; n = n.right; }
+    log.say(`<span class="k">max</span> → ${n.value}`);
+  }),
+  inorder: lock(async () => {
+    cx.set('in-order walk', 'O(n)');
+    const out = [];
+    async function walk(n){ if (!n) return; await walk(n.left); await pulse(n, 0x35d0ff, 160); out.push(n.value); await walk(n.right); }
+    await walk(root);
+    log.say(`<span class="k">in-order</span> [ ${out.join(', ')} ]`);
+  }),
+  undo: lock(async () => {
+    const op = history.pop();
+    if (!op){ log.say(`<span class="kx">undo</span> empty`); return; }
+    cx.set('undo · snapshot', '—');
+    await rebuildFrom(op.values);
+    log.say(`<span class="ko">undo</span> · restored ${op.values.length} keys`);
+  }),
+  clear: lock(async () => {
+    history.push({type:'snapshot', values: snapshotValues()});
+    await rebuildFrom([]);
+    cx.set('clear', 'O(n)');
+    log.say(`<span class="ko">clear</span>`);
+  }),
+};
+for (const k in opHandlers) $('#op-'+k).addEventListener('click', opHandlers[k]);
+$('#b-rand').addEventListener('click', () => $('#in-val').value = randomInt(1,99));
+
+/* seed */
+(async () => {
+  for (const v of [40, 20, 60, 10, 30, 50, 70, 5, 15]){
+    const t=[]; root = insert(root, v, t);
+  }
+  await relayout(false);
+  history.clear(); refreshHUD();
+  log.say(`<span class="k">init</span> ${size} keys`);
+  cx.set('idle', '—');
+})();
+</script>
+</body>
+</html>

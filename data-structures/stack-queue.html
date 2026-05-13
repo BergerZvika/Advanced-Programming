@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Stack & Queue — Data Structures Lab</title>
+<link rel="stylesheet" href="lab.css" />
+</head>
+<body>
+  <div class="frame">
+    <header id="topbar" class="topbar"></header>
+
+    <div class="lab-shell">
+      <div class="stage" id="stage">
+        <div class="stage-corner tl"></div><div class="stage-corner tr"></div>
+        <div class="stage-corner bl"></div><div class="stage-corner br"></div>
+        <div class="stage-overlay">
+          <div class="row">
+            <div class="stage-tag"><b>stack</b>&nbsp; <span id="t-stack-size">0</span></div>
+            <div class="stage-tag"><b>queue</b>&nbsp; <span id="t-queue-size">0</span></div>
+          </div>
+          <div class="row">
+            <div class="stage-tag">LIFO &middot; FIFO &middot; O(1) every op</div>
+          </div>
+        </div>
+      </div>
+
+      <aside class="panel">
+        <h2>Controls</h2>
+        <div class="section-rule"></div>
+
+        <div class="label">Value</div>
+        <div class="input-row">
+          <input id="in-val" placeholder="e.g. 7" autocomplete="off" />
+          <button class="ghost" id="b-rand">RND</button>
+        </div>
+
+        <div class="label mt-12">Stack · LIFO</div>
+        <div class="op-grid">
+          <button class="op" data-color="magenta" id="op-push"><span class="name"><span class="dot"></span> push</span><span class="cx">O(1)</span></button>
+          <button class="op" data-color="magenta" id="op-pop"><span class="name"><span class="dot"></span> pop</span><span class="cx">O(1)</span></button>
+          <button class="op" data-color="amber"   id="op-speek"><span class="name"><span class="dot"></span> peek</span><span class="cx">O(1)</span></button>
+        </div>
+
+        <div class="label mt-12">Queue · FIFO</div>
+        <div class="op-grid">
+          <button class="op" data-color="cyan"  id="op-enq"><span class="name"><span class="dot"></span> enqueue</span><span class="cx">O(1)</span></button>
+          <button class="op" data-color="cyan"  id="op-deq"><span class="name"><span class="dot"></span> dequeue</span><span class="cx">O(1)</span></button>
+          <button class="op" data-color="amber" id="op-qpeek"><span class="name"><span class="dot"></span> peek front</span><span class="cx">O(1)</span></button>
+        </div>
+
+        <div class="op-grid mt-12">
+          <button class="op full" data-color="lime"  id="op-undo"><span class="name"><span class="dot"></span> undo · last op</span><span class="cx" id="undo-depth">0</span></button>
+          <button class="op full" data-color="amber" id="op-clear"><span class="name"><span class="dot"></span> clear both</span><span class="cx">reset</span></button>
+        </div>
+
+        <div class="label mt-12">Complexity</div>
+        <div id="cx-mount"></div>
+      </aside>
+
+      <div class="log" id="log"></div>
+    </div>
+
+    <footer class="statusbar">
+      <span class="pill"><b>lab</b>&nbsp; 08 · stack + queue</span>
+      <span class="pill"><b>renderer</b>&nbsp; three.js · WebGL</span>
+      <span class="pill"><b>history</b>&nbsp; <span id="hist-pill">0</span></span>
+    </footer>
+  </div>
+
+<script type="module">
+import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
+import {$, createScene, createLog, createComplexityPanel, mountTopbar, createHistory,
+        tween, tweenVec, sleep, parseNum, randomInt} from './lab.js';
+
+mountTopbar({title:'Stack & Queue', sub:'lab 08 · LIFO + FIFO'});
+const log = createLog('#log');
+const cx  = createComplexityPanel($('#cx-mount'), [
+  {key:'stack: push/pop/peek', val:'O(1)'},
+  {key:'queue: enqueue/dequeue/peek', val:'O(1)'},
+  {key:'space', val:'O(n)'},
+  {key:'discipline', val:'LIFO / FIFO'},
+]);
+const history = createHistory();
+
+const stage = $('#stage');
+const {scene} = createScene({mount:stage, camera:{pos:[0, 4, 17], lookAt:[0, 0, 0]}});
+
+/* Stack on left (x<0), tower along Y. Queue on right (x>0), horizontal */
+
+function makeBlock(value, palette=0xff5cab){
+  const grp = new THREE.Group();
+  const body = new THREE.Mesh(
+    new THREE.BoxGeometry(1.4, 1.0, 1.0),
+    new THREE.MeshPhysicalMaterial({color:0x152040, metalness:0.55, roughness:0.22, emissive: palette === 0xff5cab ? 0x2a0e1f : 0x0a1e30, emissiveIntensity:0.65, clearcoat:0.5})
+  );
+  grp.add(body);
+  const edges = new THREE.LineSegments(
+    new THREE.EdgesGeometry(body.geometry),
+    new THREE.LineBasicMaterial({color: palette, transparent:true, opacity:0.7})
+  );
+  grp.add(edges);
+  const c = document.createElement('canvas'); c.width=128; c.height=128;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle='#fff'; ctx.font='700 56px IBM Plex Mono, monospace';
+  ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(String(value), 64, 64);
+  const tex = new THREE.CanvasTexture(c); tex.minFilter=THREE.LinearFilter;
+  const spr = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true}));
+  spr.position.set(0, 0, 0.55); spr.scale.set(1.1, 0.85, 1);
+  grp.add(spr);
+  grp.scale.setScalar(0.001);
+  scene.add(grp);
+  return {grp, body, value};
+}
+
+const stack = [];   // top of stack is end of array
+const queue = [];   // front of queue is index 0
+
+const STACK_X = -4.5, STACK_BASE_Y = -3.0, STACK_DY = 1.05;
+const QUEUE_Y = 0,    QUEUE_START_X = 1, QUEUE_DX = 1.5;
+
+async function relayout(animate=true){
+  const tasks = [];
+  for (let i=0;i<stack.length;i++){
+    tasks.push(tweenVec(stack[i].grp.position, new THREE.Vector3(STACK_X, STACK_BASE_Y + i*STACK_DY, 0), animate?420:0));
+    tasks.push(tweenVec(stack[i].grp.scale, new THREE.Vector3(1,1,1), animate?320:0));
+  }
+  for (let i=0;i<queue.length;i++){
+    tasks.push(tweenVec(queue[i].grp.position, new THREE.Vector3(QUEUE_START_X + i*QUEUE_DX, QUEUE_Y, 0), animate?420:0));
+    tasks.push(tweenVec(queue[i].grp.scale, new THREE.Vector3(1,1,1), animate?320:0));
+  }
+  await Promise.all(tasks);
+  refreshHUD();
+}
+
+function refreshHUD(){
+  $('#t-stack-size').textContent = stack.length;
+  $('#t-queue-size').textContent = queue.length;
+  $('#undo-depth').textContent = history.size();
+  $('#hist-pill').textContent = history.size();
+}
+
+async function pulse(block, color=0x5cffb4, ms=240){
+  if (!block) return;
+  const m = block.body.material;
+  const eOld = m.emissive.clone(), iOld = m.emissiveIntensity;
+  m.emissive.setHex(color); m.emissiveIntensity = 1.3;
+  await sleep(ms);
+  m.emissive.copy(eOld); m.emissiveIntensity = iOld;
+}
+
+let busy = false;
+function lock(fn){ return async (...a) => { if (busy) return; busy=true; try{ await fn(...a); } finally{ busy=false; refreshHUD(); } }; }
+
+function readVal(allowAuto=true){
+  const raw = $('#in-val').value.trim();
+  if (raw === ''){ if (!allowAuto) return null; const v = randomInt(1,99); $('#in-val').value = v; return v; }
+  const n = Number(raw); return Number.isFinite(n) ? n : raw;
+}
+
+const opHandlers = {
+  push: lock(async () => {
+    const v = readVal(); if (v === null) return;
+    history.push({type:'pop-stack'});
+    const blk = makeBlock(v, 0xff5cab);
+    blk.grp.position.set(STACK_X, STACK_BASE_Y + 6 + stack.length*STACK_DY, -2);
+    stack.push(blk);
+    await relayout(true);
+    await pulse(blk, 0xff5cab);
+    cx.set('stack.push', 'O(1)');
+    log.say(`<span class="k">push</span> ${v}`);
+  }),
+  pop: lock(async () => {
+    if (!stack.length){ log.say(`<span class="kx">err</span> stack empty`); return; }
+    const blk = stack.pop();
+    history.push({type:'push-stack', value: blk.value});
+    await pulse(blk, 0xff5c70);
+    await tweenVec(blk.grp.position, new THREE.Vector3(blk.grp.position.x, blk.grp.position.y + 4, 2), 380);
+    await tweenVec(blk.grp.scale, new THREE.Vector3(0.001,0.001,0.001), 220);
+    scene.remove(blk.grp);
+    await relayout(true);
+    cx.set('stack.pop', 'O(1)');
+    log.say(`<span class="ko">pop</span> → ${blk.value}`);
+  }),
+  speek: lock(async () => {
+    if (!stack.length){ log.say(`<span class="kx">err</span> stack empty`); return; }
+    await pulse(stack[stack.length-1], 0xffb454, 520);
+    cx.set('stack.peek', 'O(1)');
+    log.say(`<span class="k">peek</span> → ${stack[stack.length-1].value}`);
+  }),
+  enq: lock(async () => {
+    const v = readVal(); if (v === null) return;
+    history.push({type:'deq'});
+    const blk = makeBlock(v, 0x35d0ff);
+    blk.grp.position.set(QUEUE_START_X + queue.length*QUEUE_DX + 4, QUEUE_Y, -2);
+    queue.push(blk);
+    await relayout(true);
+    await pulse(blk, 0x35d0ff);
+    cx.set('queue.enqueue', 'O(1)');
+    log.say(`<span class="k">enqueue</span> ${v}`);
+  }),
+  deq: lock(async () => {
+    if (!queue.length){ log.say(`<span class="kx">err</span> queue empty`); return; }
+    const blk = queue.shift();
+    history.push({type:'unshift', value: blk.value});
+    await pulse(blk, 0xff5c70);
+    await tweenVec(blk.grp.position, new THREE.Vector3(blk.grp.position.x - 4, blk.grp.position.y, 2), 380);
+    await tweenVec(blk.grp.scale, new THREE.Vector3(0.001,0.001,0.001), 220);
+    scene.remove(blk.grp);
+    await relayout(true);
+    cx.set('queue.dequeue', 'O(1)');
+    log.say(`<span class="ko">dequeue</span> → ${blk.value}`);
+  }),
+  qpeek: lock(async () => {
+    if (!queue.length){ log.say(`<span class="kx">err</span> queue empty`); return; }
+    await pulse(queue[0], 0xffb454, 520);
+    cx.set('queue.peek', 'O(1)');
+    log.say(`<span class="k">peek front</span> → ${queue[0].value}`);
+  }),
+  undo: lock(async () => {
+    const op = history.pop(); if (!op){ log.say(`<span class="kx">undo</span> empty`); return; }
+    if (op.type === 'pop-stack'){ const blk = stack.pop(); if (blk){ await tweenVec(blk.grp.scale, new THREE.Vector3(0.001,0.001,0.001), 220); scene.remove(blk.grp); } }
+    else if (op.type === 'push-stack'){
+      const blk = makeBlock(op.value, 0xff5cab); blk.grp.position.set(STACK_X, STACK_BASE_Y + 6 + stack.length*STACK_DY, -2); stack.push(blk);
+    }
+    else if (op.type === 'deq'){ const blk = queue.pop(); if (blk){ await tweenVec(blk.grp.scale, new THREE.Vector3(0.001,0.001,0.001), 220); scene.remove(blk.grp); } }
+    else if (op.type === 'unshift'){
+      const blk = makeBlock(op.value, 0x35d0ff); blk.grp.position.set(QUEUE_START_X - 4, QUEUE_Y, -2); queue.unshift(blk);
+    }
+    await relayout(true);
+    cx.set('undo', '—');
+    log.say(`<span class="ko">undo</span>`);
+  }),
+  clear: lock(async () => {
+    history.push({type:'snapshot', stack: stack.map(b=>b.value), queue: queue.map(b=>b.value)});
+    for (const b of stack) scene.remove(b.grp);
+    for (const b of queue) scene.remove(b.grp);
+    stack.length = 0; queue.length = 0;
+    await relayout(false);
+    log.say(`<span class="ko">clear</span>`);
+  }),
+};
+for (const k in opHandlers) $('#op-'+k).addEventListener('click', opHandlers[k]);
+$('#b-rand').addEventListener('click', () => $('#in-val').value = randomInt(1,99));
+
+/* labels for stack/queue */
+function makeLabel(text, x, y){
+  const c = document.createElement('canvas'); c.width=512; c.height=128;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#8b93b8'; ctx.font='600 36px Unbounded, sans-serif';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(text, 256, 64);
+  const tex = new THREE.CanvasTexture(c); tex.minFilter=THREE.LinearFilter;
+  const spr = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true}));
+  spr.position.set(x, y, 0); spr.scale.set(4, 1, 1);
+  scene.add(spr);
+}
+makeLabel('STACK · LIFO', STACK_X, STACK_BASE_Y - 1.4);
+makeLabel('QUEUE · FIFO',   3.5,    -3);
+
+/* seed */
+(async () => {
+  for (const v of [5, 12, 8]){
+    const blk = makeBlock(v, 0xff5cab); stack.push(blk);
+  }
+  for (const v of [2, 4, 6, 9]){
+    const blk = makeBlock(v, 0x35d0ff); queue.push(blk);
+  }
+  await relayout(false);
+  history.clear(); refreshHUD();
+  log.say(`<span class="k">init</span> stack:3 queue:4`);
+  cx.set('idle', '—');
+})();
+</script>
+</body>
+</html>

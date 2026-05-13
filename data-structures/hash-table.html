@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Hash Table — Data Structures Lab</title>
+<link rel="stylesheet" href="lab.css" />
+</head>
+<body>
+  <div class="frame">
+    <header id="topbar" class="topbar"></header>
+
+    <div class="lab-shell">
+      <div class="stage" id="stage">
+        <div class="stage-corner tl"></div><div class="stage-corner tr"></div>
+        <div class="stage-corner bl"></div><div class="stage-corner br"></div>
+        <div class="stage-overlay">
+          <div class="row">
+            <div class="stage-tag"><b>buckets</b>&nbsp; <span id="t-cap">8</span></div>
+            <div class="stage-tag"><b>n</b>&nbsp; <span id="t-size">0</span></div>
+            <div class="stage-tag"><b>load α</b>&nbsp; <span id="t-load">0.00</span></div>
+            <div class="stage-tag"><b>h(k)</b>&nbsp; k mod m</div>
+          </div>
+          <div class="row">
+            <div class="stage-tag">separate chaining · resize when α ≥ 0.75</div>
+          </div>
+        </div>
+      </div>
+
+      <aside class="panel">
+        <h2>Controls</h2>
+        <div class="section-rule"></div>
+
+        <div class="label">Key (number)</div>
+        <div class="input-row">
+          <input id="in-val" placeholder="e.g. 17  or  17,33,42" autocomplete="off" />
+          <button class="ghost" id="b-rand">RND</button>
+        </div>
+
+        <div class="label mt-12">Operations</div>
+        <div class="op-grid">
+          <button class="op" data-color="cyan"    id="op-insert"><span class="name"><span class="dot"></span> insert</span><span class="cx">avg O(1)</span></button>
+          <button class="op" data-color="amber"   id="op-find"><span class="name"><span class="dot"></span> find</span><span class="cx">avg O(1)</span></button>
+          <button class="op" data-color="magenta" id="op-delete"><span class="name"><span class="dot"></span> delete</span><span class="cx">avg O(1)</span></button>
+          <button class="op" data-color="violet"  id="op-rehash"><span class="name"><span class="dot"></span> rehash · 2×</span><span class="cx">O(n)</span></button>
+          <button class="op full" data-color="lime"  id="op-undo"><span class="name"><span class="dot"></span> undo · last op</span><span class="cx" id="undo-depth">0</span></button>
+          <button class="op full" data-color="amber" id="op-clear"><span class="name"><span class="dot"></span> clear</span><span class="cx">reset</span></button>
+        </div>
+
+        <div class="label mt-12">Complexity</div>
+        <div id="cx-mount"></div>
+      </aside>
+
+      <div class="log" id="log"></div>
+    </div>
+
+    <footer class="statusbar">
+      <span class="pill"><b>lab</b>&nbsp; 05 · hash-table</span>
+      <span class="pill"><b>renderer</b>&nbsp; three.js · WebGL</span>
+      <span class="pill"><b>history</b>&nbsp; <span id="hist-pill">0</span></span>
+    </footer>
+  </div>
+
+<script type="module">
+import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
+import {$, createScene, createLog, createComplexityPanel, mountTopbar, createHistory,
+        tween, tweenVec, sleep, parseNum, parseList, randomInt} from './lab.js';
+
+mountTopbar({title:'Hash Table', sub:'lab 05 · chained'});
+const log = createLog('#log');
+const cx  = createComplexityPanel($('#cx-mount'), [
+  {key:'insert / find / delete (avg)', val:'O(1)'},
+  {key:'insert / find / delete (worst)', val:'O(n)'},
+  {key:'resize · rehash', val:'O(n)'},
+  {key:'space', val:'O(n + m)'},
+]);
+const history = createHistory();
+
+const stage = $('#stage');
+const {scene} = createScene({mount:stage, camera:{pos:[2, 4, 18], lookAt:[2, 0, 0]}});
+
+let M = 8;
+let table = Array.from({length:M}, () => []);
+let size = 0;
+
+const bucketMeshes = [];
+const nodeMeshes = new Map();  // key -> {grp, body, label}
+const linkMeshes = [];
+
+const BUCKET_W = 1.6, BUCKET_H = 0.9, BUCKET_Z = 0.5;
+const BUCKET_GAP_Y = 1.05;
+const CHAIN_GAP_X  = 1.6;
+
+function bucketPos(i){
+  return {x: -7, y: -(i * BUCKET_GAP_Y) + (M-1)*BUCKET_GAP_Y/2};
+}
+function nodePos(b, k){
+  const p = bucketPos(b);
+  return {x: p.x + 1.8 + k * CHAIN_GAP_X, y: p.y};
+}
+
+function makeBucketMesh(i){
+  const grp = new THREE.Group();
+  const body = new THREE.Mesh(
+    new THREE.BoxGeometry(BUCKET_W, BUCKET_H, BUCKET_Z),
+    new THREE.MeshPhysicalMaterial({color:0x10182c, metalness:0.6, roughness:0.25, emissive:0x0c1230, emissiveIntensity:0.55})
+  );
+  grp.add(body);
+  const edges = new THREE.LineSegments(
+    new THREE.EdgesGeometry(body.geometry),
+    new THREE.LineBasicMaterial({color:0x35d0ff, transparent:true, opacity:0.65})
+  );
+  grp.add(edges);
+  // label
+  const c = document.createElement('canvas'); c.width=256; c.height=128;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#35d0ff'; ctx.font='600 30px IBM Plex Mono, monospace';
+  ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(`bucket ${i}`, 128, 64);
+  const tex = new THREE.CanvasTexture(c); tex.minFilter=THREE.LinearFilter;
+  const spr = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true}));
+  spr.position.set(0, 0, 0.3); spr.scale.set(BUCKET_W*0.92, BUCKET_H*0.92, 1);
+  grp.add(spr);
+  const p = bucketPos(i);
+  grp.position.set(p.x, p.y, 0);
+  scene.add(grp);
+  return {grp, body};
+}
+
+function makeNodeMesh(key){
+  const grp = new THREE.Group();
+  const body = new THREE.Mesh(
+    new THREE.SphereGeometry(0.46, 24, 18),
+    new THREE.MeshPhysicalMaterial({color:0x182240, metalness:0.55, roughness:0.18, emissive:0x081428, emissiveIntensity:0.7, clearcoat:0.6})
+  );
+  grp.add(body);
+  const wire = new THREE.Mesh(
+    new THREE.SphereGeometry(0.47, 12, 8),
+    new THREE.MeshBasicMaterial({color:0xff5cab, wireframe:true, transparent:true, opacity:0.45})
+  );
+  grp.add(wire);
+  // label
+  const c = document.createElement('canvas'); c.width=128; c.height=128;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#fff'; ctx.font='700 56px IBM Plex Mono, monospace';
+  ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(String(key), 64, 64);
+  const tex = new THREE.CanvasTexture(c); tex.minFilter=THREE.LinearFilter;
+  const spr = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true}));
+  spr.position.set(0, 0, 0.5); spr.scale.set(0.9, 0.9, 1);
+  grp.add(spr);
+
+  grp.scale.setScalar(0.001);
+  scene.add(grp);
+  return {grp, body};
+}
+
+function makeLink(){
+  const m = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.03, 0.03, 1, 12),
+    new THREE.MeshBasicMaterial({color:0xff5cab, transparent:true, opacity:0.55})
+  );
+  m.visible = false; scene.add(m);
+  return m;
+}
+function placeLink(link, ax, ay, bx, by){
+  const dx=bx-ax, dy=by-ay; const len=Math.sqrt(dx*dx+dy*dy);
+  link.position.set((ax+bx)/2, (ay+by)/2, 0);
+  link.scale.y = len; link.rotation.z = Math.atan2(dx, -dy);
+}
+
+function rebuildBuckets(){
+  for (const b of bucketMeshes) scene.remove(b.grp);
+  bucketMeshes.length = 0;
+  for (let i=0;i<M;i++) bucketMeshes.push(makeBucketMesh(i));
+}
+
+async function relayout(animate=true){
+  // ensure node meshes for keys present
+  const tasks = [];
+  // remove orphan node meshes
+  const liveKeys = new Set();
+  for (const chain of table) for (const k of chain) liveKeys.add(k);
+  for (const [k, m] of nodeMeshes){
+    if (!liveKeys.has(k)){ scene.remove(m.grp); nodeMeshes.delete(k); }
+  }
+  // ensure existing
+  for (const chain of table) for (const k of chain){
+    if (!nodeMeshes.has(k)) nodeMeshes.set(k, makeNodeMesh(k));
+  }
+  // pool links
+  while (linkMeshes.length < 64) linkMeshes.push(makeLink());
+  for (const l of linkMeshes) l.visible = false;
+
+  let linkI = 0;
+  for (let i=0;i<M;i++){
+    const chain = table[i];
+    for (let k=0;k<chain.length;k++){
+      const mesh = nodeMeshes.get(chain[k]);
+      const p = nodePos(i, k);
+      tasks.push(tweenVec(mesh.grp.position, new THREE.Vector3(p.x, p.y, 0), animate?420:0));
+      tasks.push(tweenVec(mesh.grp.scale, new THREE.Vector3(1,1,1), animate?320:0));
+      // link
+      const bp = bucketPos(i);
+      const prevX = k === 0 ? bp.x + BUCKET_W/2 : nodePos(i, k-1).x + 0.46;
+      const ay = bp.y;
+      const link = linkMeshes[linkI++]; link.visible = true;
+      placeLink(link, prevX + 0.1, ay, p.x - 0.46, ay);
+    }
+  }
+  await Promise.all(tasks);
+  refreshHUD();
+}
+
+function refreshHUD(){
+  $('#t-cap').textContent = M;
+  $('#t-size').textContent = size;
+  $('#t-load').textContent = (size/M).toFixed(2);
+  $('#undo-depth').textContent = history.size();
+  $('#hist-pill').textContent = history.size();
+}
+
+function hash(k){ return ((Number(k) % M) + M) % M; }
+
+async function pulseBucket(i, color=0x35d0ff){
+  const m = bucketMeshes[i].body.material;
+  const eOld = m.emissive.clone(), iOld = m.emissiveIntensity;
+  m.emissive.setHex(color); m.emissiveIntensity = 1.2;
+  await sleep(220);
+  m.emissive.copy(eOld); m.emissiveIntensity = iOld;
+}
+async function pulseNode(k, color=0xffb454){
+  const m = nodeMeshes.get(k); if (!m) return;
+  const mat = m.body.material;
+  const eOld = mat.emissive.clone(), iOld = mat.emissiveIntensity;
+  mat.emissive.setHex(color); mat.emissiveIntensity = 1.3;
+  await sleep(240);
+  mat.emissive.copy(eOld); mat.emissiveIntensity = iOld;
+}
+
+async function probe(k, action){
+  const b = hash(k);
+  cx.set(`${action} — h(${k})=${b}`, 'avg O(1)');
+  await pulseBucket(b, 0x35d0ff);
+  const chain = table[b];
+  for (let i=0;i<chain.length;i++){
+    await pulseNode(chain[i], 0xffb454);
+    if (chain[i] === k){
+      await pulseNode(chain[i], 0x5cffb4);
+      return {bucket:b, idx:i};
+    }
+  }
+  return {bucket:b, idx:-1};
+}
+
+async function insertKey(k){
+  const b = hash(k);
+  await pulseBucket(b, 0x35d0ff);
+  const chain = table[b];
+  if (chain.includes(k)){ log.say(`<span class="kx">dup</span> ${k}`); return false; }
+  chain.push(k); size++;
+  if (!nodeMeshes.has(k)) nodeMeshes.set(k, makeNodeMesh(k));
+  await relayout(true);
+  await pulseNode(k, 0x5cffb4);
+  return true;
+}
+
+async function deleteKey(k){
+  const p = await probe(k, 'delete');
+  if (p.idx < 0) return false;
+  table[p.bucket].splice(p.idx, 1); size--;
+  const m = nodeMeshes.get(k);
+  if (m){
+    await tweenVec(m.grp.scale, new THREE.Vector3(0.001,0.001,0.001), 280);
+    scene.remove(m.grp); nodeMeshes.delete(k);
+  }
+  await relayout(true);
+  return true;
+}
+
+async function rehash(newM){
+  cx.set('rehash · 2×', 'O(n)');
+  const oldVals = table.flat();
+  M = newM;
+  table = Array.from({length:M}, () => []);
+  rebuildBuckets();
+  for (const k of oldVals){ table[hash(k)].push(k); }
+  await relayout(false);
+  log.say(`<span class="km">rehash</span> m → ${M}`);
+}
+
+let busy = false;
+function lock(fn){ return async (...a) => { if (busy) return; busy=true; try{ await fn(...a); } finally{ busy=false; refreshHUD(); } }; }
+
+function readVals(){
+  const list = parseList($('#in-val').value);
+  if (!list.length){ const v=randomInt(1,99); $('#in-val').value=v; return [v]; }
+  return list;
+}
+
+const opHandlers = {
+  insert: lock(async () => {
+    const vals = readVals();
+    history.push({type:'snapshot', M, table: table.map(c=>c.slice())});
+    for (const v of vals){
+      const ok = await insertKey(v);
+      log.say(ok ? `<span class="k">insert</span> ${v} · h=${hash(v)}` : `<span class="kx">dup</span> ${v}`);
+      if (size/M >= 0.75){
+        log.say(`<span class="km">load α=${(size/M).toFixed(2)} ≥ 0.75</span> · auto-rehash`);
+        await rehash(M*2);
+      }
+    }
+    cx.set('insert', 'avg O(1)');
+  }),
+  find: lock(async () => {
+    const vals = readVals();
+    for (const v of vals){
+      const p = await probe(v, 'find');
+      log.say(p.idx >= 0 ? `<span class="k">find</span>(${v}) → bucket ${p.bucket}, idx ${p.idx}` : `<span class="kx">find</span>(${v}) → miss (bucket ${p.bucket})`);
+    }
+  }),
+  delete: lock(async () => {
+    const vals = readVals();
+    history.push({type:'snapshot', M, table: table.map(c=>c.slice())});
+    for (const v of vals){
+      const ok = await deleteKey(v);
+      log.say(ok ? `<span class="ko">delete</span> ${v}` : `<span class="kx">delete</span> ${v} · miss`);
+    }
+    cx.set('delete', 'avg O(1)');
+  }),
+  rehash: lock(async () => {
+    history.push({type:'snapshot', M, table: table.map(c=>c.slice())});
+    await rehash(M*2);
+  }),
+  undo: lock(async () => {
+    const op = history.pop(); if (!op){ log.say(`<span class="kx">undo</span> empty`); return; }
+    M = op.M; table = op.table.map(c=>c.slice()); size = table.reduce((a,c)=>a+c.length, 0);
+    rebuildBuckets();
+    await relayout(false);
+    cx.set('undo', '—');
+    log.say(`<span class="ko">undo</span>`);
+  }),
+  clear: lock(async () => {
+    history.push({type:'snapshot', M, table: table.map(c=>c.slice())});
+    table = Array.from({length:M}, () => []); size = 0;
+    for (const [k,m] of nodeMeshes){ scene.remove(m.grp); }
+    nodeMeshes.clear();
+    await relayout(false);
+    log.say(`<span class="ko">clear</span>`);
+  }),
+};
+for (const k in opHandlers) $('#op-'+k).addEventListener('click', opHandlers[k]);
+$('#b-rand').addEventListener('click', () => $('#in-val').value = randomInt(1,99));
+
+/* seed */
+(async () => {
+  rebuildBuckets();
+  for (const v of [7, 15, 23, 4, 12, 31]){ table[hash(v)].push(v); size++; }
+  await relayout(false);
+  history.clear(); refreshHUD();
+  log.say(`<span class="k">init</span> m=${M} n=${size}`);
+  cx.set('idle', '—');
+})();
+</script>
+</body>
+</html>

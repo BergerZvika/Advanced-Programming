@@ -1,0 +1,440 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Linked List — Data Structures Lab</title>
+<link rel="stylesheet" href="lab.css" />
+</head>
+<body>
+  <div class="frame">
+    <header id="topbar" class="topbar"></header>
+
+    <div class="lab-shell">
+
+      <div class="stage" id="stage">
+        <div class="stage-corner tl"></div><div class="stage-corner tr"></div>
+        <div class="stage-corner bl"></div><div class="stage-corner br"></div>
+        <div class="stage-overlay">
+          <div class="row">
+            <div class="stage-tag"><b>head</b>&nbsp; <span id="t-head">∅</span></div>
+            <div class="stage-tag"><b>tail</b>&nbsp; <span id="t-tail">∅</span></div>
+            <div class="stage-tag"><b>size</b>&nbsp; <span id="t-size">0</span></div>
+          </div>
+          <div class="row">
+            <div class="stage-tag">singly linked &middot; O(n) traversal</div>
+          </div>
+        </div>
+      </div>
+
+      <aside class="panel">
+        <h2>Controls</h2>
+        <div class="section-rule"></div>
+
+        <div class="label">Value</div>
+        <div class="input-row">
+          <input id="in-val" placeholder="number or word (e.g. 42)" autocomplete="off" />
+          <button class="ghost" id="b-rand" title="random number">RND</button>
+        </div>
+
+        <div class="label mt-8">Index (for insertAt / removeAt)</div>
+        <div class="input-row">
+          <input id="in-idx" placeholder="0..size" autocomplete="off" />
+        </div>
+
+        <div class="label mt-12">Operations</div>
+        <div class="op-grid">
+          <button class="op" data-color="cyan"    id="op-prepend">
+            <span class="name"><span class="dot"></span> insert head</span><span class="cx">O(1)</span></button>
+          <button class="op" data-color="cyan"    id="op-append">
+            <span class="name"><span class="dot"></span> insert tail</span><span class="cx">O(1)</span></button>
+          <button class="op" data-color="amber"   id="op-insertAt">
+            <span class="name"><span class="dot"></span> insert @ i</span><span class="cx">O(n)</span></button>
+          <button class="op" data-color="amber"   id="op-find">
+            <span class="name"><span class="dot"></span> find</span><span class="cx">O(n)</span></button>
+          <button class="op" data-color="magenta" id="op-removeHead">
+            <span class="name"><span class="dot"></span> remove head</span><span class="cx">O(1)</span></button>
+          <button class="op" data-color="magenta" id="op-removeTail">
+            <span class="name"><span class="dot"></span> remove tail</span><span class="cx">O(n)</span></button>
+          <button class="op" data-color="magenta" id="op-removeAt">
+            <span class="name"><span class="dot"></span> remove @ i</span><span class="cx">O(n)</span></button>
+          <button class="op" data-color="violet"  id="op-reverse">
+            <span class="name"><span class="dot"></span> reverse</span><span class="cx">O(n)</span></button>
+          <button class="op full" data-color="lime" id="op-undo">
+            <span class="name"><span class="dot"></span> undo · last op</span><span class="cx" id="undo-depth">0</span></button>
+          <button class="op full" data-color="amber" id="op-clear">
+            <span class="name"><span class="dot"></span> clear</span><span class="cx">reset</span></button>
+        </div>
+
+        <div class="label mt-12">Complexity</div>
+        <div id="cx-mount"></div>
+      </aside>
+
+      <div class="log" id="log"></div>
+    </div>
+
+    <footer class="statusbar">
+      <span class="pill"><b>lab</b>&nbsp; 00 · linked-list</span>
+      <span class="pill"><b>renderer</b>&nbsp; three.js · WebGL</span>
+      <span class="pill"><b>history</b>&nbsp; <span id="hist-pill">0</span></span>
+    </footer>
+  </div>
+
+<script type="module">
+import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
+import {PALETTE, $, createScene, createLog, createComplexityPanel, mountTopbar, createHistory,
+        tween, tweenVec, sleep, parseNum, randomInt} from './lab.js';
+
+mountTopbar({title:'Linked List', sub:'lab 00 · singly linked'});
+const log = createLog('#log');
+const cx  = createComplexityPanel($('#cx-mount'), [
+  {key:'access / find',  val:'O(n)'},
+  {key:'insert head/tail', val:'O(1)'},
+  {key:'insert @ index',  val:'O(n)'},
+  {key:'remove head',    val:'O(1)'},
+  {key:'remove tail / @i', val:'O(n)'},
+  {key:'space',          val:'O(n)'},
+]);
+const history = createHistory();
+
+const stage = $('#stage');
+const {scene} = createScene({mount:stage, camera:{pos:[0, 3.6, 18], lookAt:[0,0,0]}});
+
+/* ─── linked-list scene ─── */
+
+const GAP = 3.0;       // distance between nodes (x)
+const NODE_R = 0.9;    // sphere radius
+const Y = 0;
+
+const list = []; // [{value, mesh, label, edgeOut}]
+
+function makeNode(value){
+  const grp = new THREE.Group();
+
+  // glow halo
+  const halo = new THREE.Mesh(
+    new THREE.SphereGeometry(NODE_R*1.55, 32, 24),
+    new THREE.MeshBasicMaterial({color:0x35d0ff, transparent:true, opacity:0.10, depthWrite:false})
+  );
+  grp.add(halo);
+
+  // body
+  const body = new THREE.Mesh(
+    new THREE.IcosahedronGeometry(NODE_R, 1),
+    new THREE.MeshPhysicalMaterial({
+      color:0x162035, metalness:0.6, roughness:0.18,
+      clearcoat:0.6, clearcoatRoughness:0.2,
+      emissive:0x0a1428, emissiveIntensity:0.6,
+    })
+  );
+  grp.add(body);
+
+  // wire overlay
+  const wire = new THREE.Mesh(
+    new THREE.IcosahedronGeometry(NODE_R*1.005, 1),
+    new THREE.MeshBasicMaterial({color:0x35d0ff, wireframe:true, transparent:true, opacity:0.45})
+  );
+  grp.add(wire);
+
+  // sprite label
+  const c = document.createElement('canvas'); c.width = 256; c.height = 128;
+  const ctx = c.getContext('2d');
+  function paint(text){
+    ctx.clearRect(0,0,256,128);
+    ctx.fillStyle = 'rgba(8,10,18,0.85)';
+    ctx.fillRect(48,30,160,68);
+    ctx.strokeStyle = '#35d0ff'; ctx.lineWidth = 2;
+    ctx.strokeRect(48,30,160,68);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '600 38px IBM Plex Mono, monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline='middle';
+    ctx.fillText(String(text), 128, 66);
+  }
+  paint(value);
+  const tex = new THREE.CanvasTexture(c); tex.minFilter = THREE.LinearFilter;
+  const spr = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true}));
+  spr.position.set(0, NODE_R + 1.3, 0); spr.scale.set(2.6, 1.3, 1);
+  grp.add(spr);
+
+  return {grp, body, wire, halo, label:{paint, tex}};
+}
+
+function makeArrow(){
+  const g = new THREE.Group();
+  const shaft = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.06, 0.06, 1, 16),
+    new THREE.MeshBasicMaterial({color:0x35d0ff, transparent:true, opacity:0.85})
+  );
+  shaft.rotation.z = Math.PI/2;
+  g.add(shaft);
+  const head = new THREE.Mesh(
+    new THREE.ConeGeometry(0.18, 0.42, 18),
+    new THREE.MeshBasicMaterial({color:0x35d0ff})
+  );
+  head.rotation.z = -Math.PI/2;
+  g.add(head);
+  g.userData = {shaft, head};
+  return g;
+}
+
+function setArrow(arrow, fromX, toX){
+  const len = toX - fromX - NODE_R*2 - 0.1;
+  const mid = (fromX + toX)/2;
+  arrow.position.set(mid, Y, 0);
+  arrow.userData.shaft.scale.y = Math.max(0.01, len);
+  arrow.userData.head.position.x = len/2 + 0.06;
+}
+
+function targetX(i){
+  const n = list.length;
+  return (i - (n-1)/2) * GAP;
+}
+
+async function relayout(animate=true){
+  // re-center all nodes & set arrows
+  const ms = animate ? 380 : 0;
+  await Promise.all(list.map((node, i) => {
+    return tweenVec(node.grp.position, new THREE.Vector3(targetX(i), Y, 0), ms);
+  }));
+  // arrows
+  list.forEach((node, i) => {
+    if (!node.edge) return;
+    if (i === list.length - 1){
+      node.edge.visible = false;
+    } else {
+      node.edge.visible = true;
+      const fromX = targetX(i), toX = targetX(i+1);
+      setArrow(node.edge, fromX, toX);
+    }
+  });
+  refreshHUD();
+}
+
+function refreshHUD(){
+  $('#t-head').textContent = list.length ? list[0].value : '∅';
+  $('#t-tail').textContent = list.length ? list[list.length-1].value : '∅';
+  $('#t-size').textContent = list.length;
+  $('#undo-depth').textContent = history.size();
+  $('#hist-pill').textContent = history.size();
+}
+
+/* ─── ops ─── */
+
+let busy = false;
+function lock(fn){
+  return async (...a) => {
+    if (busy) return; busy = true;
+    try { await fn(...a); } finally { busy = false; refreshHUD(); }
+  };
+}
+
+async function flash(node, color=0xb9ff5c, ms=520){
+  const m = node.body.material;
+  const old = m.emissive.clone(); const oldI = m.emissiveIntensity;
+  m.emissive.setHex(color); m.emissiveIntensity = 1.2;
+  node.halo.material.color.setHex(color);
+  await sleep(ms);
+  m.emissive.copy(old); m.emissiveIntensity = oldI;
+  node.halo.material.color.setHex(0x35d0ff);
+}
+
+async function spawnAt(value, idx){
+  const node = makeNode(value);
+  node.grp.position.set(targetX(idx), Y + 6, -3);
+  node.grp.scale.setScalar(0.001);
+  scene.add(node.grp);
+  // arrow (we always allocate one; toggle visibility on relayout)
+  const edge = makeArrow();
+  edge.visible = false;
+  scene.add(edge);
+
+  const record = {value, grp:node.grp, body:node.body, wire:node.wire, halo:node.halo, label:node.label, edge};
+  list.splice(idx, 0, record);
+
+  // grow
+  await tweenVec(node.grp.scale, new THREE.Vector3(1,1,1), 360);
+  await relayout(true);
+  await flash(record);
+  return record;
+}
+
+async function dropAt(idx){
+  const node = list[idx];
+  if (!node) return null;
+  // lift & fade
+  await flash(node, 0xff5c70, 180);
+  await Promise.all([
+    tweenVec(node.grp.position, new THREE.Vector3(node.grp.position.x, Y+5, 2), 420),
+    tweenVec(node.grp.scale, new THREE.Vector3(0.001,0.001,0.001), 420),
+  ]);
+  scene.remove(node.grp);
+  if (node.edge) scene.remove(node.edge);
+  list.splice(idx, 1);
+  await relayout(true);
+  return node;
+}
+
+async function traverseTo(idx, {color=0xffb454}={}){
+  for (let i=0;i<=idx;i++){
+    if (!list[i]) break;
+    await flash(list[i], color, 200);
+  }
+}
+
+const opHandlers = {
+  prepend: lock(async () => {
+    const v = readValue(true); if (v === null) return;
+    history.push({type:'remove', idx:0});
+    await spawnAt(v, 0);
+    cx.set('insert head', 'O(1)');
+    log.say(`<span class="k">prepend</span> ${esc(v)} → head`);
+  }),
+  append: lock(async () => {
+    const v = readValue(true); if (v === null) return;
+    history.push({type:'remove', idx:list.length});
+    await spawnAt(v, list.length);
+    cx.set('insert tail', 'O(1)');
+    log.say(`<span class="k">append</span> ${esc(v)} → tail`);
+  }),
+  insertAt: lock(async () => {
+    const v = readValue(true); if (v === null) return;
+    const i = parseNum($('#in-idx').value, null);
+    if (i === null || i < 0 || i > list.length){
+      log.say(`<span class="kx">err</span> index out of range (0..${list.length})`);
+      return;
+    }
+    history.push({type:'remove', idx:i});
+    cx.set('insert @ index — traversing', 'O(n)');
+    // animate traversal up to insertion point
+    for (let k=0; k<i; k++) await flash(list[k], 0xffb454, 140);
+    await spawnAt(v, i);
+    cx.set('insert @ index', 'O(n)');
+    log.say(`<span class="k">insertAt</span>(<span class="km">${i}</span>, ${esc(v)})`);
+  }),
+  find: lock(async () => {
+    const v = readValue(false); if (v === null) return;
+    cx.set('find — scanning', 'O(n)');
+    let found = -1;
+    for (let i=0;i<list.length;i++){
+      await flash(list[i], 0xffb454, 180);
+      if (String(list[i].value) === String(v)){ found = i; break; }
+    }
+    if (found >= 0){
+      await flash(list[found], 0x5cffb4, 700);
+      log.say(`<span class="k">find</span>(${esc(v)}) → idx <span class="km">${found}</span>`);
+    } else {
+      log.say(`<span class="kx">find</span>(${esc(v)}) → not found`);
+    }
+    cx.set('find', 'O(n)');
+  }),
+  removeHead: lock(async () => {
+    if (!list.length){ log.say(`<span class="kx">err</span> empty list`); return; }
+    const v = list[0].value;
+    history.push({type:'insert', idx:0, value:v});
+    await dropAt(0);
+    cx.set('remove head', 'O(1)');
+    log.say(`<span class="ko">removeHead</span> → ${esc(v)}`);
+  }),
+  removeTail: lock(async () => {
+    if (!list.length){ log.say(`<span class="kx">err</span> empty list`); return; }
+    cx.set('remove tail — traversing', 'O(n)');
+    for (let k=0;k<list.length-1;k++) await flash(list[k], 0xffb454, 140);
+    const idx = list.length-1;
+    const v = list[idx].value;
+    history.push({type:'insert', idx, value:v});
+    await dropAt(idx);
+    cx.set('remove tail', 'O(n)');
+    log.say(`<span class="ko">removeTail</span> → ${esc(v)}`);
+  }),
+  removeAt: lock(async () => {
+    const i = parseNum($('#in-idx').value, null);
+    if (i === null || i < 0 || i >= list.length){
+      log.say(`<span class="kx">err</span> index out of range (0..${list.length-1})`);
+      return;
+    }
+    cx.set('remove @ index — traversing', 'O(n)');
+    for (let k=0;k<i;k++) await flash(list[k], 0xffb454, 140);
+    const v = list[i].value;
+    history.push({type:'insert', idx:i, value:v});
+    await dropAt(i);
+    cx.set('remove @ index', 'O(n)');
+    log.say(`<span class="ko">removeAt</span>(<span class="km">${i}</span>) → ${esc(v)}`);
+  }),
+  reverse: lock(async () => {
+    if (list.length < 2){ log.say(`<span class="kx">err</span> nothing to reverse`); return; }
+    history.push({type:'reverse'});
+    cx.set('reverse — in place', 'O(n)');
+    list.reverse();
+    await relayout(true);
+    for (const n of list) flash(n, 0x7c5cff, 220);
+    log.say(`<span class="k">reverse</span> · in place`);
+  }),
+  undo: lock(async () => {
+    const op = history.pop();
+    if (!op){ log.say(`<span class="kx">undo</span> history empty`); return; }
+    cx.set(`undo · ${op.type}`, '—');
+    if (op.type === 'remove'){
+      // we previously inserted at op.idx, so remove there to undo
+      await dropAt(op.idx);
+      log.say(`<span class="ko">undo</span> insert @ ${op.idx}`);
+    } else if (op.type === 'insert'){
+      // we previously removed; reinsert
+      await spawnAt(op.value, op.idx);
+      log.say(`<span class="ko">undo</span> remove · re-inserted ${esc(op.value)} @ ${op.idx}`);
+    } else if (op.type === 'reverse'){
+      list.reverse();
+      await relayout(true);
+      log.say(`<span class="ko">undo</span> reverse`);
+    } else if (op.type === 'clear'){
+      for (const v of op.values) await spawnAt(v, list.length);
+      log.say(`<span class="ko">undo</span> clear · restored ${op.values.length} nodes`);
+    }
+  }),
+  clear: lock(async () => {
+    if (!list.length) return;
+    history.push({type:'clear', values:list.map(n => n.value)});
+    while (list.length){ await dropAt(0); }
+    cx.set('clear', 'O(n)');
+    log.say(`<span class="ko">clear</span>`);
+  }),
+};
+
+for (const k in opHandlers){
+  $('#op-'+k).addEventListener('click', opHandlers[k]);
+}
+$('#b-rand').addEventListener('click', () => {
+  $('#in-val').value = randomInt(1, 99);
+});
+
+function readValue(allowAuto){
+  const raw = $('#in-val').value.trim();
+  if (raw === ''){
+    if (!allowAuto) return null;
+    const v = randomInt(1,99); $('#in-val').value = v; return v;
+  }
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : raw;
+}
+
+function esc(s){ return String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+
+/* ─── seed a starter list ─── */
+(async () => {
+  for (const v of [12, 34, 56, 78]) await spawnAt(v, list.length);
+  history.clear(); refreshHUD();
+  log.say(`<span class="k">init</span> seeded 4 nodes`);
+  cx.set('idle', '—');
+})();
+
+/* keyboard shortcuts */
+window.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT') return;
+  if (e.key === 'z' || e.key === 'Z') $('#op-undo').click();
+  if (e.key === 'a' || e.key === 'A') $('#op-append').click();
+  if (e.key === 'p' || e.key === 'P') $('#op-prepend').click();
+  if (e.key === 'f' || e.key === 'F') $('#op-find').click();
+  if (e.key === 'r' || e.key === 'R') $('#op-reverse').click();
+});
+</script>
+</body>
+</html>

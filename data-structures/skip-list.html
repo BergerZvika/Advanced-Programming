@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Skip List — Data Structures Lab</title>
+<link rel="stylesheet" href="lab.css" />
+</head>
+<body>
+  <div class="frame">
+    <header id="topbar" class="topbar"></header>
+
+    <div class="lab-shell">
+      <div class="stage" id="stage">
+        <div class="stage-corner tl"></div><div class="stage-corner tr"></div>
+        <div class="stage-corner bl"></div><div class="stage-corner br"></div>
+        <div class="stage-overlay">
+          <div class="row">
+            <div class="stage-tag"><b>n</b>&nbsp; <span id="t-size">0</span></div>
+            <div class="stage-tag"><b>levels</b>&nbsp; <span id="t-lvl">1</span></div>
+            <div class="stage-tag"><b>p</b>&nbsp; 0.5</div>
+          </div>
+          <div class="row">
+            <div class="stage-tag">probabilistic levels · descend then advance</div>
+          </div>
+        </div>
+      </div>
+
+      <aside class="panel">
+        <h2>Controls</h2>
+        <div class="section-rule"></div>
+
+        <div class="label">Value(s)</div>
+        <div class="input-row">
+          <input id="in-val" placeholder="e.g. 17  or  17,33,42" autocomplete="off" />
+          <button class="ghost" id="b-rand">RND</button>
+        </div>
+
+        <div class="label mt-12">Operations</div>
+        <div class="op-grid">
+          <button class="op" data-color="cyan"    id="op-insert"><span class="name"><span class="dot"></span> insert</span><span class="cx">E[O(log n)]</span></button>
+          <button class="op" data-color="magenta" id="op-delete"><span class="name"><span class="dot"></span> delete</span><span class="cx">E[O(log n)]</span></button>
+          <button class="op" data-color="amber"   id="op-find"><span class="name"><span class="dot"></span> find</span><span class="cx">E[O(log n)]</span></button>
+          <button class="op" data-color="violet"  id="op-walk"><span class="name"><span class="dot"></span> level-0 walk</span><span class="cx">O(n)</span></button>
+          <button class="op full" data-color="lime"  id="op-undo"><span class="name"><span class="dot"></span> undo · last op</span><span class="cx" id="undo-depth">0</span></button>
+          <button class="op full" data-color="amber" id="op-clear"><span class="name"><span class="dot"></span> clear</span><span class="cx">reset</span></button>
+        </div>
+
+        <div class="label mt-12">Complexity</div>
+        <div id="cx-mount"></div>
+      </aside>
+
+      <div class="log" id="log"></div>
+    </div>
+
+    <footer class="statusbar">
+      <span class="pill"><b>lab</b>&nbsp; 07 · skip-list</span>
+      <span class="pill"><b>renderer</b>&nbsp; three.js · WebGL</span>
+      <span class="pill"><b>history</b>&nbsp; <span id="hist-pill">0</span></span>
+    </footer>
+  </div>
+
+<script type="module">
+import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
+import {$, createScene, createLog, createComplexityPanel, mountTopbar, createHistory,
+        tween, tweenVec, sleep, parseNum, parseList, randomInt} from './lab.js';
+
+mountTopbar({title:'Skip List', sub:'lab 07 · probabilistic levels'});
+const log = createLog('#log');
+const cx  = createComplexityPanel($('#cx-mount'), [
+  {key:'find / insert / delete', val:'E[O(log n)]'},
+  {key:'find / insert / delete (worst)', val:'O(n)'},
+  {key:'space (expected)', val:'O(n)'},
+  {key:'max level', val:'⌈log₂ n⌉'},
+]);
+const history = createHistory();
+
+const stage = $('#stage');
+const {scene} = createScene({mount:stage, camera:{pos:[0, 4.5, 22], lookAt:[0, 1, 0]}});
+
+const P = 0.5;
+const MAX_LEVEL = 6;
+
+let head = makeNode(-Infinity, MAX_LEVEL);
+let level = 0;
+let size = 0;
+
+function makeNode(value, lvl){
+  return {value, level:lvl, forward: Array(lvl+1).fill(null), columnMesh: null, sprites: []};
+}
+
+function randLevel(){
+  let lvl = 0;
+  while (Math.random() < P && lvl < MAX_LEVEL) lvl++;
+  return lvl;
+}
+
+function insert(v){
+  const update = Array(MAX_LEVEL+1).fill(head);
+  let x = head;
+  for (let i = level; i >= 0; i--){
+    while (x.forward[i] && x.forward[i].value < v) x = x.forward[i];
+    update[i] = x;
+  }
+  x = x.forward[0];
+  if (x && x.value === v) return false;
+  const lvl = randLevel();
+  if (lvl > level){
+    for (let i = level+1; i <= lvl; i++) update[i] = head;
+    level = lvl;
+  }
+  const n = makeNode(v, lvl);
+  for (let i = 0; i <= lvl; i++){
+    n.forward[i] = update[i].forward[i];
+    update[i].forward[i] = n;
+  }
+  size++;
+  return true;
+}
+
+function del(v){
+  const update = Array(MAX_LEVEL+1).fill(head);
+  let x = head;
+  for (let i = level; i >= 0; i--){
+    while (x.forward[i] && x.forward[i].value < v) x = x.forward[i];
+    update[i] = x;
+  }
+  x = x.forward[0];
+  if (!x || x.value !== v) return false;
+  for (let i = 0; i <= level; i++){
+    if (update[i].forward[i] !== x) break;
+    update[i].forward[i] = x.forward[i];
+  }
+  if (x.columnMesh) scene.remove(x.columnMesh);
+  for (const s of x.sprites) scene.remove(s);
+  while (level > 0 && !head.forward[level]) level--;
+  size--;
+  return true;
+}
+
+function find(v){
+  let x = head;
+  for (let i = level; i >= 0; i--){
+    while (x.forward[i] && x.forward[i].value < v) x = x.forward[i];
+  }
+  x = x.forward[0];
+  return x && x.value === v ? x : null;
+}
+
+/* ─── layout ─── */
+const ROW_GAP = 1.3;
+const COL_GAP_BASE = 1.55;
+
+function listAll(){
+  const out = []; let x = head.forward[0];
+  while (x){ out.push(x); x = x.forward[0]; }
+  return out;
+}
+
+function columnX(idx, n){ return (idx - (n-1)/2) * COL_GAP_BASE; }
+
+function ensureColumn(node, idx, n){
+  // column = stacked octahedrons up to node.level
+  if (!node.columnMesh){
+    const grp = new THREE.Group();
+    for (let i = 0; i <= node.level; i++){
+      const m = new THREE.Mesh(
+        new THREE.OctahedronGeometry(0.42, 0),
+        new THREE.MeshPhysicalMaterial({color:0x152040, metalness:0.55, roughness:0.18, emissive:0x081428, emissiveIntensity:0.65, clearcoat:0.6})
+      );
+      m.position.set(0, i*ROW_GAP, 0);
+      grp.add(m);
+    }
+    scene.add(grp);
+    node.columnMesh = grp;
+    // single sprite at top with value
+    const c = document.createElement('canvas'); c.width=128; c.height=128;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#fff'; ctx.font='700 56px IBM Plex Mono, monospace';
+    ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(String(node.value), 64, 64);
+    const tex = new THREE.CanvasTexture(c); tex.minFilter=THREE.LinearFilter;
+    const spr = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true}));
+    spr.position.set(0, (node.level+1)*ROW_GAP, 0); spr.scale.set(0.9, 0.9, 1);
+    grp.add(spr);
+    node.sprites = [spr];
+  }
+}
+
+const links = [];  // pool of cylinder mesh
+function getLink(i){
+  while (links.length <= i){
+    const m = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 1, 8), new THREE.MeshBasicMaterial({color:0x7c5cff, transparent:true, opacity:0.55}));
+    m.visible = false; scene.add(m); links.push(m);
+  }
+  return links[i];
+}
+function placeLink(link, ax, ay, bx, by){
+  const dx=bx-ax, dy=by-ay; const len = Math.sqrt(dx*dx+dy*dy);
+  link.position.set((ax+bx)/2, (ay+by)/2, 0);
+  link.scale.y = len; link.rotation.z = Math.atan2(dx, -dy);
+}
+
+async function relayout(animate=true){
+  const all = listAll();
+  const n = all.length;
+  for (let i=0;i<n;i++) ensureColumn(all[i], i, n);
+  const tasks = [];
+  for (let i=0;i<n;i++){
+    const node = all[i];
+    const x = columnX(i, n);
+    tasks.push(tweenVec(node.columnMesh.position, new THREE.Vector3(x, -1.5, 0), animate?420:0));
+  }
+  await Promise.all(tasks);
+
+  // links
+  for (const l of links) l.visible = false;
+  let li = 0;
+  for (let i=0;i<n;i++){
+    const node = all[i];
+    for (let lvl=0; lvl<=node.level; lvl++){
+      const target = node.forward[lvl];
+      if (!target) continue;
+      // find target idx in all
+      const tIdx = all.indexOf(target);
+      if (tIdx < 0) continue;
+      const ax = columnX(i, n); const bx = columnX(tIdx, n);
+      const y = -1.5 + lvl*ROW_GAP;
+      const link = getLink(li++);
+      link.visible = true; placeLink(link, ax, y, bx, y);
+      link.material.opacity = 0.35 + 0.1*lvl;
+    }
+  }
+  refreshHUD();
+}
+
+function refreshHUD(){
+  $('#t-size').textContent = size;
+  $('#t-lvl').textContent = level + 1;
+  $('#undo-depth').textContent = history.size();
+  $('#hist-pill').textContent = history.size();
+}
+
+async function pulseNode(node, color=0x5cffb4, ms=200){
+  if (!node || !node.columnMesh) return;
+  for (const m of node.columnMesh.children){
+    if (m.material && m.material.emissive){
+      const eOld = m.material.emissive.clone(), iOld = m.material.emissiveIntensity;
+      m.material.emissive.setHex(color); m.material.emissiveIntensity = 1.3;
+      setTimeout(() => { m.material.emissive.copy(eOld); m.material.emissiveIntensity = iOld; }, ms);
+    }
+  }
+  await sleep(ms);
+}
+
+async function findAnimated(v){
+  cx.set(`find(${v}) — descend`, 'E[O(log n)]');
+  let x = head;
+  for (let i = level; i >= 0; i--){
+    while (x.forward[i] && x.forward[i].value < v){
+      x = x.forward[i];
+      await pulseNode(x, 0xffb454, 160);
+    }
+    log.say(`<span class="km">level ${i}</span> · at ${x===head?'⊢':x.value}`);
+  }
+  x = x.forward[0];
+  if (x && x.value === v){ await pulseNode(x, 0x5cffb4, 500); return x; }
+  return null;
+}
+
+let busy = false;
+function lock(fn){ return async (...a) => { if (busy) return; busy=true; try{ await fn(...a); } finally{ busy=false; refreshHUD(); } }; }
+
+function readVals(){
+  const list = parseList($('#in-val').value);
+  if (!list.length){ const v=randomInt(1,99); $('#in-val').value=v; return [v]; }
+  return list;
+}
+
+function snapshotValues(){ return listAll().map(n=>n.value); }
+
+async function rebuildFrom(values){
+  // reset
+  for (const node of listAll()){
+    if (node.columnMesh) scene.remove(node.columnMesh);
+  }
+  head = makeNode(-Infinity, MAX_LEVEL); level = 0; size = 0;
+  for (const v of values) insert(v);
+  await relayout(false);
+}
+
+const opHandlers = {
+  insert: lock(async () => {
+    const vals = readVals();
+    history.push({type:'snapshot', values: snapshotValues()});
+    for (const v of vals){
+      const ok = insert(v);
+      await relayout(true);
+      log.say(ok ? `<span class="k">insert</span> ${v} · lvl ${listAll().find(n=>n.value===v)?.level||0}` : `<span class="kx">dup</span> ${v}`);
+    }
+    cx.set('insert', 'E[O(log n)]');
+  }),
+  delete: lock(async () => {
+    const v = parseNum($('#in-val').value, null); if (v===null){ log.say(`<span class="kx">err</span> number required`); return; }
+    history.push({type:'snapshot', values: snapshotValues()});
+    const found = await findAnimated(v);
+    if (!found){ log.say(`<span class="kx">delete</span> ${v} · miss`); return; }
+    del(v);
+    await relayout(true);
+    cx.set('delete', 'E[O(log n)]');
+    log.say(`<span class="ko">delete</span> ${v}`);
+  }),
+  find: lock(async () => {
+    const v = parseNum($('#in-val').value, null); if (v===null){ log.say(`<span class="kx">err</span> number required`); return; }
+    const found = await findAnimated(v);
+    log.say(found ? `<span class="k">find</span>(${v}) → hit` : `<span class="kx">find</span>(${v}) → miss`);
+  }),
+  walk: lock(async () => {
+    cx.set('level-0 walk', 'O(n)');
+    const out = [];
+    let x = head.forward[0];
+    while (x){ await pulseNode(x, 0x35d0ff, 120); out.push(x.value); x = x.forward[0]; }
+    log.say(`<span class="k">walk</span> [ ${out.join(', ')} ]`);
+  }),
+  undo: lock(async () => {
+    const op = history.pop(); if (!op){ log.say(`<span class="kx">undo</span> empty`); return; }
+    await rebuildFrom(op.values);
+    cx.set('undo', '—');
+    log.say(`<span class="ko">undo</span>`);
+  }),
+  clear: lock(async () => {
+    history.push({type:'snapshot', values: snapshotValues()});
+    await rebuildFrom([]);
+    log.say(`<span class="ko">clear</span>`);
+  }),
+};
+for (const k in opHandlers) $('#op-'+k).addEventListener('click', opHandlers[k]);
+$('#b-rand').addEventListener('click', () => $('#in-val').value = randomInt(1,99));
+
+/* seed */
+(async () => {
+  for (const v of [3, 7, 14, 19, 23, 26, 31, 42, 56]) insert(v);
+  await relayout(false);
+  history.clear(); refreshHUD();
+  log.say(`<span class="k">init</span> ${size} keys · top level ${level}`);
+  cx.set('idle', '—');
+})();
+</script>
+</body>
+</html>
