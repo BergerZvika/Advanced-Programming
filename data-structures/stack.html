@@ -369,6 +369,69 @@ function mountTopbar({title, sub, back='index.html'}){
   tick(); setInterval(tick, 1000);
 }
 
+/* ─── 3D arrow indicator (shaft + cone + halo + optional text label) ─── */
+// default arrow points in -Y (down). Rotate the returned group to re-aim:
+//   up:    rotation.x = Math.PI  (or rotation.z = Math.PI)
+//   left:  rotation.z =  Math.PI/2
+//   right: rotation.z = -Math.PI/2
+function makeArrow3D({color = 0x5cffb4, label = '', length = 2.0, labelSide = 'top'} = {}){
+  const grp = new THREE.Group();
+
+  const mat = new THREE.MeshPhysicalMaterial({
+    color, emissive:color, emissiveIntensity:0.55,
+    metalness:0.45, roughness:0.22, clearcoat:0.65, clearcoatRoughness:0.2
+  });
+
+  const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, length, 20), mat);
+  shaft.position.y = -length/2;
+  grp.add(shaft);
+
+  const tip = new THREE.Mesh(new THREE.ConeGeometry(0.30, 0.66, 24), mat);
+  tip.rotation.x = Math.PI;            // apex toward -Y
+  tip.position.y = -length - 0.33;
+  grp.add(tip);
+
+  const halo = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.24, 0.24, length + 0.66, 20),
+    new THREE.MeshBasicMaterial({color, transparent:true, opacity:0.18, depthWrite:false})
+  );
+  halo.position.y = -length/2 - 0.18;
+  halo.renderOrder = 0;
+  grp.add(halo);
+
+  const haloTip = new THREE.Mesh(
+    new THREE.ConeGeometry(0.46, 0.86, 24),
+    new THREE.MeshBasicMaterial({color, transparent:true, opacity:0.18, depthWrite:false})
+  );
+  haloTip.rotation.x = Math.PI;
+  haloTip.position.y = -length - 0.43;
+  grp.add(haloTip);
+
+  if (label){
+    const c = document.createElement('canvas'); c.width = 640; c.height = 192;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#' + color.toString(16).padStart(6, '0');
+    ctx.font = '800 92px IBM Plex Mono, monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 16;
+    ctx.fillText(label, 320, 96);
+    const tex = new THREE.CanvasTexture(c); tex.minFilter = THREE.LinearFilter;
+    const spr = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true, depthTest:false}));
+    spr.renderOrder = 12;
+    spr.scale.set(2.4, 0.72, 1);
+    // perched at the tail of the shaft (above for down-arrows; the parent group's rotation carries it)
+    if (labelSide === 'top')    spr.position.set(0,  0.55, 0);
+    if (labelSide === 'bottom') spr.position.set(0, -length - 0.95, 0);
+    grp.add(spr);
+  }
+
+  return {group: grp, shaft, tip, halo, haloTip,
+          setColor(c){
+            mat.color.setHex(c); mat.emissive.setHex(c);
+            halo.material.color.setHex(c); haloTip.material.color.setHex(c);
+          }};
+}
+
 /* ─── player UI · play/pause/back/forward ─── */
 function mountPlayer({mount, onBack}){
   const root = typeof mount === 'string' ? $(mount) : mount;
@@ -476,25 +539,13 @@ function makeBlock(value){
 const stack = [];   // top = last
 const BASE_Y = -3.0, DY = 1.1;
 
-/* ─── persistent push/pop indicator above the top of the stack ─── */
-function makeArrowSprite(text, color){
-  const c = document.createElement('canvas'); c.width=512; c.height=256;
-  const ctx = c.getContext('2d');
-  ctx.fillStyle = color;
-  ctx.font = '800 90px IBM Plex Mono, monospace';
-  ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 14;
-  ctx.fillText(text, 256, 128);
-  const tex = new THREE.CanvasTexture(c); tex.minFilter = THREE.LinearFilter;
-  const spr = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true, depthTest:false}));
-  spr.renderOrder = 11;
-  spr.scale.set(2.6, 1.3, 1);
-  scene.add(spr);
-  return spr;
-}
-const arrPush = makeArrowSprite('↓ PUSH',  '#5cffb4');   // green: incoming
-const arrPop  = makeArrowSprite('POP ↑',   '#ff5c70');   // red:  outgoing
-const arrTop  = makeArrowSprite('◀ TOP',   '#ffb454');   // amber: top pointer
+/* ─── 3D push / pop / top indicators above the topmost block ─── */
+const arrPush = makeArrow3D({color:0x5cffb4, label:'PUSH', length:1.8});   // green, points down into top
+const arrPop  = makeArrow3D({color:0xff5c70, label:'POP',  length:1.8});   // red, points up out of top
+const arrTop  = makeArrow3D({color:0xffb454, label:'TOP',  length:1.4, labelSide:'bottom'}); // amber side-pointer
+arrPop.group.rotation.z = Math.PI;          // flip to point upward
+arrTop.group.rotation.z =  Math.PI/2;       // rotate to point left (toward stack)
+scene.add(arrPush.group, arrPop.group, arrTop.group);
 
 async function relayout(animate=true){
   const tasks = [];
@@ -505,9 +556,9 @@ async function relayout(animate=true){
   await Promise.all(tasks);
   // position the indicators above the topmost block (or the floor when empty)
   const topY = BASE_Y + Math.max(0, stack.length - 1) * DY;
-  arrPush.position.set(-2.2, topY + 1.7, 0);
-  arrPop .position.set( 2.2, topY + 1.7, 0);
-  arrTop .position.set( 1.85, topY,       0);
+  arrPush.group.position.set(-2.5, topY + 3.0, 0);  // tip ~0.8 above top block
+  arrPop .group.position.set( 2.5, topY + 1.0, 0);  // flipped: tip points up
+  arrTop .group.position.set( 2.5, topY,        0); // sideways pointer at the top block
   refreshHUD();
 }
 function refreshHUD(){
