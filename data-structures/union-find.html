@@ -202,8 +202,10 @@ function stepperPause(){ stepper.paused = true; stepper.onState && stepper.onSta
 function stepperToggle(){ stepper.paused ? stepperPlay() : stepperPause(); }
 function stepperFastForward(){ stepper.fastForward = true; stepperKick(); }
 export async function stepperCheckpoint(label, undoFn){
-  if (undoFn) stepper.checkpoints.push({label, undo:undoFn});
-  if (stepper.onState) stepper.onState(label);
+  if (undoFn) stepper.checkpoints.push({label: label || '', undo:undoFn});
+  // only clobber the status text if a label was given; otherwise leave whatever
+  // cx.set / the current op already put there
+  if (label != null && stepper.onState) stepper.onState(label);
   if (stepper.paused){
     await new Promise(r => stepper.resume = r);
   }
@@ -317,9 +319,12 @@ function createComplexityPanel(mount, rows){
   wrap.appendChild(now);
   mount.appendChild(wrap);
   return {
-    set(opLabel, cx){
+    set(opLabel, cxLabel){
       now.querySelector('.now-text').textContent = opLabel;
-      now.querySelector('.now-cx').innerHTML = cx;
+      now.querySelector('.now-cx').innerHTML = cxLabel;
+      // mirror into the player transport status bar so the user sees what's
+      // happening without having to look at two places at once
+      if (stepper.onState) stepper.onState(opLabel);
     },
   };
 }
@@ -584,6 +589,7 @@ async function makeSetK(k){
   ensureMesh(k);
   await relayout(true);
   await pulse(k, 0x35d0ff);
+  await stepperCheckpoint();
   return true;
 }
 
@@ -604,14 +610,27 @@ async function unionK(a, b){
 async function findAnim(k){
   const trail = [k];
   let cur = k;
-  while (parent.get(cur) !== cur){ await pulse(cur, 0xffb454, 180); cur = parent.get(cur); trail.push(cur); }
+  while (parent.get(cur) !== cur){
+    cx.set(`walk · ${cur} → parent ${parent.get(cur)}`, 'O(α(n))');
+    await pulse(cur, 0xffb454, 180);
+    await stepperCheckpoint();
+    cur = parent.get(cur);
+    trail.push(cur);
+  }
+  cx.set(`root · ${cur}`, 'O(1)');
   await pulse(cur, 0xb9ff5c, 220);
+  await stepperCheckpoint();
   // path compression: rewire each trail[i] (except root) to root
   let didCompress = false;
   for (let i=0;i<trail.length-1;i++){
     if (parent.get(trail[i]) !== cur){ parent.set(trail[i], cur); didCompress = true; }
   }
-  if (didCompress){ await relayout(true); log.say(`<span class="km">compress</span> path → root ${cur}`); }
+  if (didCompress){
+    cx.set(`compress · ${trail.length-1} edges → root ${cur}`, 'amortized');
+    await relayout(true);
+    await stepperCheckpoint();
+    log.say(`<span class="km">compress</span> path → root ${cur}`);
+  }
   return cur;
 }
 

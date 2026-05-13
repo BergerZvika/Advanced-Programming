@@ -203,8 +203,10 @@ function stepperPause(){ stepper.paused = true; stepper.onState && stepper.onSta
 function stepperToggle(){ stepper.paused ? stepperPlay() : stepperPause(); }
 function stepperFastForward(){ stepper.fastForward = true; stepperKick(); }
 export async function stepperCheckpoint(label, undoFn){
-  if (undoFn) stepper.checkpoints.push({label, undo:undoFn});
-  if (stepper.onState) stepper.onState(label);
+  if (undoFn) stepper.checkpoints.push({label: label || '', undo:undoFn});
+  // only clobber the status text if a label was given; otherwise leave whatever
+  // cx.set / the current op already put there
+  if (label != null && stepper.onState) stepper.onState(label);
   if (stepper.paused){
     await new Promise(r => stepper.resume = r);
   }
@@ -318,9 +320,12 @@ function createComplexityPanel(mount, rows){
   wrap.appendChild(now);
   mount.appendChild(wrap);
   return {
-    set(opLabel, cx){
+    set(opLabel, cxLabel){
       now.querySelector('.now-text').textContent = opLabel;
-      now.querySelector('.now-cx').innerHTML = cx;
+      now.querySelector('.now-cx').innerHTML = cxLabel;
+      // mirror into the player transport status bar so the user sees what's
+      // happening without having to look at two places at once
+      if (stepper.onState) stepper.onState(opLabel);
     },
   };
 }
@@ -603,14 +608,23 @@ async function findAnimated(v){
   cx.set(`find(${v}) — descend`, 'E[O(log n)]');
   let x = head;
   for (let i = level; i >= 0; i--){
+    cx.set(`level ${i} · at ${x===head?'⊢':x.value}`, 'descend');
+    await stepperCheckpoint();
     while (x.forward[i] && x.forward[i].value < v){
       x = x.forward[i];
+      cx.set(`level ${i} · advance to ${x.value}`, 'walk');
       await pulseNode(x, 0xffb454, 160);
+      await stepperCheckpoint();
     }
     log.say(`<span class="km">level ${i}</span> · at ${x===head?'⊢':x.value}`);
   }
   x = x.forward[0];
-  if (x && x.value === v){ await pulseNode(x, 0x5cffb4, 500); return x; }
+  if (x && x.value === v){
+    cx.set(`hit ${v}`, 'O(1)');
+    await pulseNode(x, 0x5cffb4, 500);
+    return x;
+  }
+  cx.set(`miss ${v}`, '—');
   return null;
 }
 

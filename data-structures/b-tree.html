@@ -203,8 +203,10 @@ function stepperPause(){ stepper.paused = true; stepper.onState && stepper.onSta
 function stepperToggle(){ stepper.paused ? stepperPlay() : stepperPause(); }
 function stepperFastForward(){ stepper.fastForward = true; stepperKick(); }
 export async function stepperCheckpoint(label, undoFn){
-  if (undoFn) stepper.checkpoints.push({label, undo:undoFn});
-  if (stepper.onState) stepper.onState(label);
+  if (undoFn) stepper.checkpoints.push({label: label || '', undo:undoFn});
+  // only clobber the status text if a label was given; otherwise leave whatever
+  // cx.set / the current op already put there
+  if (label != null && stepper.onState) stepper.onState(label);
   if (stepper.paused){
     await new Promise(r => stepper.resume = r);
   }
@@ -318,9 +320,12 @@ function createComplexityPanel(mount, rows){
   wrap.appendChild(now);
   mount.appendChild(wrap);
   return {
-    set(opLabel, cx){
+    set(opLabel, cxLabel){
       now.querySelector('.now-text').textContent = opLabel;
-      now.querySelector('.now-cx').innerHTML = cx;
+      now.querySelector('.now-cx').innerHTML = cxLabel;
+      // mirror into the player transport status bar so the user sees what's
+      // happening without having to look at two places at once
+      if (stepper.onState) stepper.onState(opLabel);
     },
   };
 }
@@ -733,9 +738,16 @@ const opHandlers = {
       let n = root;
       while (n){
         let i = 0; while (i<n.keys.length && v > n.keys[i]) i++;
+        cx.set(`visit · keys=[${n.keys.join(',')}]`, 'descend');
         await pulse(n, 0xffb454, 120);
-        if (i<n.keys.length && n.keys[i]===v){ await pulse(n, 0x5cffb4, 320); break; }
-        if (n.leaf) break;
+        await stepperCheckpoint();
+        if (i<n.keys.length && n.keys[i]===v){
+          cx.set(`placed ${v}`, 'O(1) in-node');
+          await pulse(n, 0x5cffb4, 320);
+          await stepperCheckpoint();
+          break;
+        }
+        if (n.leaf){ cx.set(`leaf · ${v} inserted`, 'O(1)'); break; }
         n = n.children[i];
       }
       log.say(ok ? `<span class="k">insert</span> ${v}` : `<span class="kx">dup</span> ${v}`);
@@ -755,11 +767,19 @@ const opHandlers = {
     let n = root;
     while (n){
       let i = 0; while (i<n.keys.length && v > n.keys[i]) i++;
+      cx.set(`visit · keys=[${n.keys.join(',')}] · seek ${v}`, 'descend');
       await pulse(n, 0xffb454, 200);
-      if (i<n.keys.length && n.keys[i]===v){ await pulse(n, 0x5cffb4, 700); log.say(`<span class="k">find</span>(${v}) → hit`); return; }
+      await stepperCheckpoint();
+      if (i<n.keys.length && n.keys[i]===v){
+        cx.set(`hit ${v}`, 'O(1)');
+        await pulse(n, 0x5cffb4, 700);
+        await stepperCheckpoint();
+        log.say(`<span class="k">find</span>(${v}) → hit`); return;
+      }
       if (n.leaf) break;
       n = n.children[i];
     }
+    cx.set(`miss ${v}`, '—');
     log.say(`<span class="kx">find</span>(${v}) → miss`);
   }),
   inorder: lock(async () => {
@@ -773,6 +793,7 @@ const opHandlers = {
       }
       if (n.children.length > n.keys.length) await walk(n.children[n.children.length-1]);
       await pulse(n, 0x35d0ff, 120);
+      await stepperCheckpoint();
     }
     await walk(root);
     log.say(`<span class="k">in-order</span> [ ${out.join(', ')} ]`);

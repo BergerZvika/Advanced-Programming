@@ -136,8 +136,10 @@ export function stepperPause(){ stepper.paused = true; stepper.onState && steppe
 export function stepperToggle(){ stepper.paused ? stepperPlay() : stepperPause(); }
 export function stepperFastForward(){ stepper.fastForward = true; stepperKick(); }
 export async function stepperCheckpoint(label, undoFn){
-  if (undoFn) stepper.checkpoints.push({label, undo:undoFn});
-  if (stepper.onState) stepper.onState(label);
+  if (undoFn) stepper.checkpoints.push({label: label || '', undo:undoFn});
+  // only clobber the status text if a label was given; otherwise leave whatever
+  // cx.set / the current op already put there
+  if (label != null && stepper.onState) stepper.onState(label);
   if (stepper.paused){
     await new Promise(r => stepper.resume = r);
   }
@@ -251,9 +253,12 @@ export function createComplexityPanel(mount, rows){
   wrap.appendChild(now);
   mount.appendChild(wrap);
   return {
-    set(opLabel, cx){
+    set(opLabel, cxLabel){
       now.querySelector('.now-text').textContent = opLabel;
-      now.querySelector('.now-cx').innerHTML = cx;
+      now.querySelector('.now-cx').innerHTML = cxLabel;
+      // mirror into the player transport status bar so the user sees what's
+      // happening without having to look at two places at once
+      if (stepper.onState) stepper.onState(opLabel);
     },
   };
 }

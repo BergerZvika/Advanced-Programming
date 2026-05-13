@@ -223,8 +223,10 @@ function stepperPause(){ stepper.paused = true; stepper.onState && stepper.onSta
 function stepperToggle(){ stepper.paused ? stepperPlay() : stepperPause(); }
 function stepperFastForward(){ stepper.fastForward = true; stepperKick(); }
 export async function stepperCheckpoint(label, undoFn){
-  if (undoFn) stepper.checkpoints.push({label, undo:undoFn});
-  if (stepper.onState) stepper.onState(label);
+  if (undoFn) stepper.checkpoints.push({label: label || '', undo:undoFn});
+  // only clobber the status text if a label was given; otherwise leave whatever
+  // cx.set / the current op already put there
+  if (label != null && stepper.onState) stepper.onState(label);
   if (stepper.paused){
     await new Promise(r => stepper.resume = r);
   }
@@ -338,9 +340,12 @@ function createComplexityPanel(mount, rows){
   wrap.appendChild(now);
   mount.appendChild(wrap);
   return {
-    set(opLabel, cx){
+    set(opLabel, cxLabel){
       now.querySelector('.now-text').textContent = opLabel;
-      now.querySelector('.now-cx').innerHTML = cx;
+      now.querySelector('.now-cx').innerHTML = cxLabel;
+      // mirror into the player transport status bar so the user sees what's
+      // happening without having to look at two places at once
+      if (stepper.onState) stepper.onState(opLabel);
     },
   };
 }
@@ -602,6 +607,7 @@ async function spawnAt(value, idx){
   await tweenVec(node.grp.scale, new THREE.Vector3(1,1,1), 360);
   await relayout(true);
   await flash(record);
+  await stepperCheckpoint();
   return record;
 }
 
@@ -610,6 +616,7 @@ async function dropAt(idx){
   if (!node) return null;
   // lift & fade
   await flash(node, 0xff5c70, 180);
+  await stepperCheckpoint();
   await Promise.all([
     tweenVec(node.grp.position, new THREE.Vector3(node.grp.position.x, Y+5, 2), 420),
     tweenVec(node.grp.scale, new THREE.Vector3(0.001,0.001,0.001), 420),
@@ -625,6 +632,7 @@ async function traverseTo(idx, {color=0xffb454}={}){
   for (let i=0;i<=idx;i++){
     if (!list[i]) break;
     await flash(list[i], color, 200);
+    await stepperCheckpoint();
   }
 }
 
@@ -653,9 +661,13 @@ const opHandlers = {
     history.push({type:'remove', idx:i});
     cx.set('insert @ index — traversing', 'O(n)');
     // animate traversal up to insertion point
-    for (let k=0; k<i; k++) await flash(list[k], 0xffb454, 140);
+    for (let k=0; k<i; k++){
+      cx.set(`step ${k} · idx ${k}`, 'O(n)');
+      await flash(list[k], 0xffb454, 140);
+      await stepperCheckpoint();
+    }
+    cx.set(`place ${v} @ idx ${i}`, 'O(n)');
     await spawnAt(v, i);
-    cx.set('insert @ index', 'O(n)');
     log.say(`<span class="k">insertAt</span>(<span class="km">${i}</span>, ${esc(v)})`);
   }),
   find: lock(async () => {
@@ -663,11 +675,14 @@ const opHandlers = {
     cx.set('find — scanning', 'O(n)');
     let found = -1;
     for (let i=0;i<list.length;i++){
+      cx.set(`probe idx ${i} · val ${list[i].value}`, 'O(n)');
       await flash(list[i], 0xffb454, 180);
+      await stepperCheckpoint();
       if (String(list[i].value) === String(v)){ found = i; break; }
     }
     if (found >= 0){
       await flash(list[found], 0x5cffb4, 700);
+      await stepperCheckpoint();
       log.say(`<span class="k">find</span>(${esc(v)}) → idx <span class="km">${found}</span>`);
     } else {
       log.say(`<span class="kx">find</span>(${esc(v)}) → not found`);
@@ -685,12 +700,16 @@ const opHandlers = {
   removeTail: lock(async () => {
     if (!list.length){ log.say(`<span class="kx">err</span> empty list`); return; }
     cx.set('remove tail — traversing', 'O(n)');
-    for (let k=0;k<list.length-1;k++) await flash(list[k], 0xffb454, 140);
+    for (let k=0;k<list.length-1;k++){
+      cx.set(`step ${k} · idx ${k}`, 'O(n)');
+      await flash(list[k], 0xffb454, 140);
+      await stepperCheckpoint();
+    }
     const idx = list.length-1;
     const v = list[idx].value;
     history.push({type:'insert', idx, value:v});
+    cx.set(`drop tail · ${v}`, 'O(1) drop');
     await dropAt(idx);
-    cx.set('remove tail', 'O(n)');
     log.say(`<span class="ko">removeTail</span> → ${esc(v)}`);
   }),
   removeAt: lock(async () => {
@@ -700,7 +719,11 @@ const opHandlers = {
       return;
     }
     cx.set('remove @ index — traversing', 'O(n)');
-    for (let k=0;k<i;k++) await flash(list[k], 0xffb454, 140);
+    for (let k=0;k<i;k++){
+      cx.set(`step ${k} · idx ${k}`, 'O(n)');
+      await flash(list[k], 0xffb454, 140);
+      await stepperCheckpoint();
+    }
     const v = list[i].value;
     history.push({type:'insert', idx:i, value:v});
     await dropAt(i);

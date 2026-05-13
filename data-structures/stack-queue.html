@@ -208,8 +208,10 @@ function stepperPause(){ stepper.paused = true; stepper.onState && stepper.onSta
 function stepperToggle(){ stepper.paused ? stepperPlay() : stepperPause(); }
 function stepperFastForward(){ stepper.fastForward = true; stepperKick(); }
 export async function stepperCheckpoint(label, undoFn){
-  if (undoFn) stepper.checkpoints.push({label, undo:undoFn});
-  if (stepper.onState) stepper.onState(label);
+  if (undoFn) stepper.checkpoints.push({label: label || '', undo:undoFn});
+  // only clobber the status text if a label was given; otherwise leave whatever
+  // cx.set / the current op already put there
+  if (label != null && stepper.onState) stepper.onState(label);
   if (stepper.paused){
     await new Promise(r => stepper.resume = r);
   }
@@ -323,9 +325,12 @@ function createComplexityPanel(mount, rows){
   wrap.appendChild(now);
   mount.appendChild(wrap);
   return {
-    set(opLabel, cx){
+    set(opLabel, cxLabel){
       now.querySelector('.now-text').textContent = opLabel;
-      now.querySelector('.now-cx').innerHTML = cx;
+      now.querySelector('.now-cx').innerHTML = cxLabel;
+      // mirror into the player transport status bar so the user sees what's
+      // happening without having to look at two places at once
+      if (stepper.onState) stepper.onState(opLabel);
     },
   };
 }
@@ -511,6 +516,7 @@ const opHandlers = {
     stack.push(blk);
     await relayout(true);
     await pulse(blk, 0xff5cab);
+    await stepperCheckpoint();
     cx.set('stack.push', 'O(1)');
     log.say(`<span class="k">push</span> ${v}`);
   }),
@@ -519,6 +525,7 @@ const opHandlers = {
     const blk = stack.pop();
     history.push({type:'push-stack', value: blk.value});
     await pulse(blk, 0xff5c70);
+    await stepperCheckpoint();
     await tweenVec(blk.grp.position, new THREE.Vector3(blk.grp.position.x, blk.grp.position.y + 4, 2), 380);
     await tweenVec(blk.grp.scale, new THREE.Vector3(0.001,0.001,0.001), 220);
     scene.remove(blk.grp);
@@ -529,6 +536,7 @@ const opHandlers = {
   speek: lock(async () => {
     if (!stack.length){ log.say(`<span class="kx">err</span> stack empty`); return; }
     await pulse(stack[stack.length-1], 0xffb454, 520);
+    await stepperCheckpoint();
     cx.set('stack.peek', 'O(1)');
     log.say(`<span class="k">peek</span> → ${stack[stack.length-1].value}`);
   }),
@@ -540,6 +548,7 @@ const opHandlers = {
     queue.push(blk);
     await relayout(true);
     await pulse(blk, 0x35d0ff);
+    await stepperCheckpoint();
     cx.set('queue.enqueue', 'O(1)');
     log.say(`<span class="k">enqueue</span> ${v}`);
   }),
@@ -548,6 +557,7 @@ const opHandlers = {
     const blk = queue.shift();
     history.push({type:'unshift', value: blk.value});
     await pulse(blk, 0xff5c70);
+    await stepperCheckpoint();
     await tweenVec(blk.grp.position, new THREE.Vector3(blk.grp.position.x - 4, blk.grp.position.y, 2), 380);
     await tweenVec(blk.grp.scale, new THREE.Vector3(0.001,0.001,0.001), 220);
     scene.remove(blk.grp);
@@ -558,6 +568,7 @@ const opHandlers = {
   qpeek: lock(async () => {
     if (!queue.length){ log.say(`<span class="kx">err</span> queue empty`); return; }
     await pulse(queue[0], 0xffb454, 520);
+    await stepperCheckpoint();
     cx.set('queue.peek', 'O(1)');
     log.say(`<span class="k">peek front</span> → ${queue[0].value}`);
   }),

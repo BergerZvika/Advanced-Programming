@@ -218,8 +218,10 @@ function stepperPause(){ stepper.paused = true; stepper.onState && stepper.onSta
 function stepperToggle(){ stepper.paused ? stepperPlay() : stepperPause(); }
 function stepperFastForward(){ stepper.fastForward = true; stepperKick(); }
 export async function stepperCheckpoint(label, undoFn){
-  if (undoFn) stepper.checkpoints.push({label, undo:undoFn});
-  if (stepper.onState) stepper.onState(label);
+  if (undoFn) stepper.checkpoints.push({label: label || '', undo:undoFn});
+  // only clobber the status text if a label was given; otherwise leave whatever
+  // cx.set / the current op already put there
+  if (label != null && stepper.onState) stepper.onState(label);
   if (stepper.paused){
     await new Promise(r => stepper.resume = r);
   }
@@ -333,9 +335,12 @@ function createComplexityPanel(mount, rows){
   wrap.appendChild(now);
   mount.appendChild(wrap);
   return {
-    set(opLabel, cx){
+    set(opLabel, cxLabel){
       now.querySelector('.now-text').textContent = opLabel;
-      now.querySelector('.now-cx').innerHTML = cx;
+      now.querySelector('.now-cx').innerHTML = cxLabel;
+      // mirror into the player transport status bar so the user sees what's
+      // happening without having to look at two places at once
+      if (stepper.onState) stepper.onState(opLabel);
     },
   };
 }
@@ -569,8 +574,14 @@ async function swap(i, j){
 
 async function siftUp(i){
   while (i > 0 && cmp(arr[i], arr[parent(i)])){
-    await pulse(i, 0xffb454, 140); await pulse(parent(i), 0xffb454, 140);
+    cx.set(`sift-up · cmp [${i}]=${arr[i]} ↔ parent [${parent(i)}]=${arr[parent(i)]}`, 'O(log n)');
+    await pulse(i, 0xffb454, 140);
+    await stepperCheckpoint();
+    await pulse(parent(i), 0xffb454, 140);
+    await stepperCheckpoint();
+    cx.set(`swap [${i}] ↔ [${parent(i)}]`, 'O(1)');
     await swap(i, parent(i));
+    await stepperCheckpoint();
     i = parent(i);
   }
 }
@@ -581,9 +592,15 @@ async function siftDown(i){
     let target = i;
     if (l < n && cmp(arr[l], arr[target])) target = l;
     if (r < n && cmp(arr[r], arr[target])) target = r;
-    if (target === i) break;
-    await pulse(i, 0xffb454, 140); await pulse(target, 0xffb454, 140);
+    if (target === i){ cx.set(`heap property OK @ [${i}]`, '—'); break; }
+    cx.set(`sift-down · cmp [${i}]=${arr[i]} ↔ child [${target}]=${arr[target]}`, 'O(log n)');
+    await pulse(i, 0xffb454, 140);
+    await stepperCheckpoint();
+    await pulse(target, 0xffb454, 140);
+    await stepperCheckpoint();
+    cx.set(`swap [${i}] ↔ [${target}]`, 'O(1)');
     await swap(i, target);
+    await stepperCheckpoint();
     i = target;
   }
 }
@@ -599,6 +616,7 @@ async function extract(){
   if (!arr.length) return null;
   const top = arr[0];
   await pulse(0, 0xff5c70, 220);
+  await stepperCheckpoint();
   if (arr.length === 1){
     arr.pop(); const m = meshes.pop(); scene.remove(m.grp); const e = edges.pop(); scene.remove(e);
     await relayout(true); return top;
@@ -640,6 +658,7 @@ const opHandlers = {
   peek: lock(async () => {
     if (!arr.length){ log.say(`<span class="kx">err</span> empty`); return; }
     await pulse(0, 0x5cffb4, 600);
+    await stepperCheckpoint();
     cx.set('peek', 'O(1)');
     log.say(`<span class="k">peek</span> → ${arr[0]}`);
   }),

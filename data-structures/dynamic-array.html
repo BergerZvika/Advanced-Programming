@@ -212,8 +212,10 @@ function stepperPause(){ stepper.paused = true; stepper.onState && stepper.onSta
 function stepperToggle(){ stepper.paused ? stepperPlay() : stepperPause(); }
 function stepperFastForward(){ stepper.fastForward = true; stepperKick(); }
 export async function stepperCheckpoint(label, undoFn){
-  if (undoFn) stepper.checkpoints.push({label, undo:undoFn});
-  if (stepper.onState) stepper.onState(label);
+  if (undoFn) stepper.checkpoints.push({label: label || '', undo:undoFn});
+  // only clobber the status text if a label was given; otherwise leave whatever
+  // cx.set / the current op already put there
+  if (label != null && stepper.onState) stepper.onState(label);
   if (stepper.paused){
     await new Promise(r => stepper.resume = r);
   }
@@ -327,9 +329,12 @@ function createComplexityPanel(mount, rows){
   wrap.appendChild(now);
   mount.appendChild(wrap);
   return {
-    set(opLabel, cx){
+    set(opLabel, cxLabel){
       now.querySelector('.now-text').textContent = opLabel;
-      now.querySelector('.now-cx').innerHTML = cx;
+      now.querySelector('.now-cx').innerHTML = cxLabel;
+      // mirror into the player transport status bar so the user sees what's
+      // happening without having to look at two places at once
+      if (stepper.onState) stepper.onState(opLabel);
     },
   };
 }
@@ -564,6 +569,7 @@ async function pushBack(value){
   cells.push(slot);
   await relayout(true);
   await pulse(slot, 0x35d0ff);
+  await stepperCheckpoint();
 }
 
 async function popBack(){
@@ -572,6 +578,7 @@ async function popBack(){
   const value = cell.value;
   // animate up & fade then convert to empty slot
   await pulse(cell, 0xff5c70);
+  await stepperCheckpoint();
   setCellValue(cell, null, cells.length);
   // append to slot list at the appropriate position (capacity unchanged)
   slots.unshift(cell);
@@ -595,6 +602,7 @@ async function insertAt(idx, value){
   await tweenVec(slot.grp.scale, new THREE.Vector3(1,1,1), 320);
   await relayout(true);
   await pulse(slot, 0xffb454);
+  await stepperCheckpoint();
 }
 
 async function removeAt(idx){
@@ -602,6 +610,7 @@ async function removeAt(idx){
   const cell = cells[idx];
   const v = cell.value;
   await pulse(cell, 0xff5c70);
+  await stepperCheckpoint();
   cells.splice(idx, 1);
   setCellValue(cell, null, cells.length);
   slots.unshift(cell);
@@ -663,6 +672,7 @@ const opHandlers = {
     if (i === null || i < 0 || i >= cells.length){ log.say(`<span class="kx">err</span> index out of range`); return; }
     cx.set('get @ index', 'O(1)');
     await pulse(cells[i], 0x5cffb4);
+    await stepperCheckpoint();
     log.say(`<span class="k">get</span>(${i}) → <span class="km">${cells[i].value}</span>`);
   }),
   set: lock(async () => {
@@ -673,6 +683,7 @@ const opHandlers = {
     cx.set('set @ index', 'O(1)');
     setCellValue(cells[i], v, i);
     await pulse(cells[i], 0x35d0ff);
+    await stepperCheckpoint();
     log.say(`<span class="k">set</span>(${i}, ${v})`);
   }),
   reserve: lock(async () => {

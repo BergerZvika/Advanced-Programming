@@ -203,8 +203,10 @@ function stepperPause(){ stepper.paused = true; stepper.onState && stepper.onSta
 function stepperToggle(){ stepper.paused ? stepperPlay() : stepperPause(); }
 function stepperFastForward(){ stepper.fastForward = true; stepperKick(); }
 export async function stepperCheckpoint(label, undoFn){
-  if (undoFn) stepper.checkpoints.push({label, undo:undoFn});
-  if (stepper.onState) stepper.onState(label);
+  if (undoFn) stepper.checkpoints.push({label: label || '', undo:undoFn});
+  // only clobber the status text if a label was given; otherwise leave whatever
+  // cx.set / the current op already put there
+  if (label != null && stepper.onState) stepper.onState(label);
   if (stepper.paused){
     await new Promise(r => stepper.resume = r);
   }
@@ -318,9 +320,12 @@ function createComplexityPanel(mount, rows){
   wrap.appendChild(now);
   mount.appendChild(wrap);
   return {
-    set(opLabel, cx){
+    set(opLabel, cxLabel){
       now.querySelector('.now-text').textContent = opLabel;
-      now.querySelector('.now-cx').innerHTML = cx;
+      now.querySelector('.now-cx').innerHTML = cxLabel;
+      // mirror into the player transport status bar so the user sees what's
+      // happening without having to look at two places at once
+      if (stepper.onState) stepper.onState(opLabel);
     },
   };
 }
@@ -567,28 +572,101 @@ const opHandlers = {
   insert: lock(async () => {
     const vals = readVals();
     history.push({type:'snapshot', values: snapshotValues()});
-    for (const v of vals){ insertK(v); await relayout(true); log.say(`<span class="k">insert</span> ${v}`); }
-    cx.set('insert', `avg O(log n) · h=${depth(root)}`);
+    for (const v of vals){
+      // step-by-step descent
+      if (!root){
+        root = {value:v, left:null, right:null, mesh:null, edgeUp:null}; size++;
+        cx.set(`new root ${v}`, 'O(1)');
+        await relayout(true);
+        await stepperCheckpoint();
+        log.say(`<span class="k">insert</span> ${v} · root`);
+        continue;
+      }
+      let n = root;
+      while (true){
+        cx.set(`visit ${n.value} · compare ${v}`, 'descend');
+        await pulse(n, 0xffb454, 220);
+        await stepperCheckpoint();
+        if (v < n.value){
+          if (!n.left){
+            n.left = {value:v, left:null, right:null, mesh:null, edgeUp:null}; size++;
+            cx.set(`attach ${v} → left of ${n.value}`, 'place');
+            await relayout(true);
+            await pulse(n.left, 0x5cffb4, 420);
+            await stepperCheckpoint();
+            break;
+          }
+          n = n.left;
+        } else if (v > n.value){
+          if (!n.right){
+            n.right = {value:v, left:null, right:null, mesh:null, edgeUp:null}; size++;
+            cx.set(`attach ${v} → right of ${n.value}`, 'place');
+            await relayout(true);
+            await pulse(n.right, 0x5cffb4, 420);
+            await stepperCheckpoint();
+            break;
+          }
+          n = n.right;
+        } else {
+          log.say(`<span class="kx">dup</span> ${v}`); break;
+        }
+      }
+      log.say(`<span class="k">insert</span> ${v} · h=${depth(root)}`);
+    }
+    cx.set('idle', `h=${depth(root)}`);
   }),
   delete: lock(async () => {
     const v = readVal(); if (v===null) return;
     history.push({type:'snapshot', values: snapshotValues()});
-    deleteK(v); await relayout(true);
-    cx.set('delete', 'avg O(log n)');
+    // step-by-step descent
+    let n = root, found = null;
+    while (n){
+      cx.set(`visit ${n.value} · seek ${v}`, 'descend');
+      await pulse(n, 0xffb454, 220);
+      await stepperCheckpoint();
+      if (v === n.value){ found = n; break; }
+      n = v < n.value ? n.left : n.right;
+    }
+    if (!found){
+      log.say(`<span class="kx">delete</span> ${v} · miss`); cx.set('miss', '—'); return;
+    }
+    cx.set(`remove ${v}`, 'mutate');
+    await pulse(found, 0xff5c70, 480);
+    await stepperCheckpoint();
+    deleteK(v);
+    await relayout(true);
     log.say(`<span class="ko">delete</span> ${v}`);
+    cx.set('done', '—');
   }),
   find: lock(async () => {
     const v = readVal(); if (v===null) return;
     cx.set('find — descend', `worst O(h=${depth(root)})`);
     let n = root, found = null;
-    while (n){ await pulse(n, 0xffb454, 200); if (v===n.value){ found = n; break; } n = v < n.value ? n.left : n.right; }
-    if (found){ await pulse(found, 0x5cffb4, 700); log.say(`<span class="k">find</span>(${v}) → hit`); }
-    else log.say(`<span class="kx">find</span>(${v}) → miss`);
+    while (n){
+      cx.set(`visit ${n.value} · seek ${v}`, `worst O(h=${depth(root)})`);
+      await pulse(n, 0xffb454, 200);
+      await stepperCheckpoint();
+      if (v===n.value){ found = n; break; }
+      n = v < n.value ? n.left : n.right;
+    }
+    if (found){
+      cx.set(`hit ${v}`, 'O(log n)');
+      await pulse(found, 0x5cffb4, 700);
+      log.say(`<span class="k">find</span>(${v}) → hit`);
+    } else log.say(`<span class="kx">find</span>(${v}) → miss`);
   }),
   inorder: lock(async () => {
     cx.set('in-order', 'O(n)');
     const out = [];
-    async function walk(n){ if (!n) return; await walk(n.left); await pulse(n, 0x35d0ff, 130); out.push(n.value); await walk(n.right); }
+    async function walk(n){
+      if (!n) return;
+      await walk(n.left);
+      cx.set(`visit ${n.value}`, 'O(n)');
+      await pulse(n, 0x35d0ff, 130);
+      await stepperCheckpoint();
+      out.push(n.value);
+      await walk(n.right);
+    }
     await walk(root);
     log.say(`<span class="k">in-order</span> [ ${out.join(', ')} ]`);
   }),

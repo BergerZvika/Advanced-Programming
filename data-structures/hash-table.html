@@ -204,8 +204,10 @@ function stepperPause(){ stepper.paused = true; stepper.onState && stepper.onSta
 function stepperToggle(){ stepper.paused ? stepperPlay() : stepperPause(); }
 function stepperFastForward(){ stepper.fastForward = true; stepperKick(); }
 export async function stepperCheckpoint(label, undoFn){
-  if (undoFn) stepper.checkpoints.push({label, undo:undoFn});
-  if (stepper.onState) stepper.onState(label);
+  if (undoFn) stepper.checkpoints.push({label: label || '', undo:undoFn});
+  // only clobber the status text if a label was given; otherwise leave whatever
+  // cx.set / the current op already put there
+  if (label != null && stepper.onState) stepper.onState(label);
   if (stepper.paused){
     await new Promise(r => stepper.resume = r);
   }
@@ -319,9 +321,12 @@ function createComplexityPanel(mount, rows){
   wrap.appendChild(now);
   mount.appendChild(wrap);
   return {
-    set(opLabel, cx){
+    set(opLabel, cxLabel){
       now.querySelector('.now-text').textContent = opLabel;
-      now.querySelector('.now-cx').innerHTML = cx;
+      now.querySelector('.now-cx').innerHTML = cxLabel;
+      // mirror into the player transport status bar so the user sees what's
+      // happening without having to look at two places at once
+      if (stepper.onState) stepper.onState(opLabel);
     },
   };
 }
@@ -585,28 +590,36 @@ async function pulseNode(k, color=0xffb454){
 
 async function probe(k, action){
   const b = hash(k);
-  cx.set(`${action} — h(${k})=${b}`, 'avg O(1)');
+  cx.set(`${action} ${k} · hash → bucket ${b}`, 'avg O(1)');
   await pulseBucket(b, 0x35d0ff);
+  await stepperCheckpoint();
   const chain = table[b];
   for (let i=0;i<chain.length;i++){
+    cx.set(`walk chain @ [${i}] · key ${chain[i]}`, 'O(chain)');
     await pulseNode(chain[i], 0xffb454);
+    await stepperCheckpoint();
     if (chain[i] === k){
+      cx.set(`hit ${k} · bucket ${b}, idx ${i}`, 'O(1)');
       await pulseNode(chain[i], 0x5cffb4);
+      await stepperCheckpoint();
       return {bucket:b, idx:i};
     }
   }
+  cx.set(`miss ${k} · scanned ${chain.length}`, 'O(chain)');
   return {bucket:b, idx:-1};
 }
 
 async function insertKey(k){
   const b = hash(k);
   await pulseBucket(b, 0x35d0ff);
+  await stepperCheckpoint();
   const chain = table[b];
   if (chain.includes(k)){ log.say(`<span class="kx">dup</span> ${k}`); return false; }
   chain.push(k); size++;
   if (!nodeMeshes.has(k)) nodeMeshes.set(k, makeNodeMesh(k));
   await relayout(true);
   await pulseNode(k, 0x5cffb4);
+  await stepperCheckpoint();
   return true;
 }
 
