@@ -559,12 +559,6 @@ function syncStackLabels(){
   while (stackLabels.length > stacks.length){ const lbl = stackLabels.pop(); scene.remove(lbl); }
 }
 
-/* ─── 3D push / pop indicators (hover above the active stack) ─── */
-const arrPush = makeArrow3D({color:0x5cffb4, label:'PUSH', length:1.5});
-const arrPop  = makeArrow3D({color:0xff5c70, label:'POP',  length:1.5});
-arrPop.group.rotation.z = Math.PI;
-scene.add(arrPush.group, arrPop.group);
-
 async function relayout(animate=true){
   const n = stacks.length;
   syncStackLabels();
@@ -578,12 +572,7 @@ async function relayout(animate=true){
     if (stackLabels[i]) stackLabels[i].position.set(x, BASE_Y - 1.5, 0);
   }
   await Promise.all(tasks);
-  // arrows above the active stack's top
   clampActive();
-  const ax = stackX(activeIdx, n);
-  const topY = BASE_Y + Math.max(0, stacks[activeIdx].length - 1) * DY;
-  arrPush.group.position.set(ax - 1.3, topY + 2.7, 0);
-  arrPop .group.position.set(ax + 1.3, topY + 0.9, 0);
   refreshHUD();
 }
 function refreshHUD(){

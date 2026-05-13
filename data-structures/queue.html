@@ -520,14 +520,6 @@ const queue = [];   // front = index 0
 const Y = 0, DX = 1.75;
 function colX(i, n){ return (i - (n-1)/2) * DX; }
 
-/* ─── 3D enqueue / dequeue indicators that follow the ends ─── */
-const arrDeq = makeArrow3D({color:0xff5c70, label:'DEQUEUE', length:1.5});   // red:   leaving
-const arrEnq = makeArrow3D({color:0x5cffb4, label:'ENQUEUE', length:1.5});   // green: entering
-// rotate to point along -X (left): default points -Y, z = -π/2 reorients to -X
-arrDeq.group.rotation.z = -Math.PI/2;   // sits left of front, tip points left  (item leaving the queue)
-arrEnq.group.rotation.z = -Math.PI/2;   // sits right of back, tip points left  (item entering the tail)
-scene.add(arrDeq.group, arrEnq.group);
-
 async function relayout(animate=true){
   const tasks = [];
   for (let i=0;i<queue.length;i++){
@@ -535,14 +527,6 @@ async function relayout(animate=true){
     tasks.push(tweenVec(queue[i].grp.scale, new THREE.Vector3(1,1,1), animate?320:0));
   }
   await Promise.all(tasks);
-  const n = queue.length;
-  const frontX = n ? colX(0,   n) : 0;
-  const backX  = n ? colX(n-1, n) : 0;
-  // horizontal arrows: with rotation.z = -π/2 the tip ends up `length` units to the LEFT of group.x
-  // — so the shaft starts on the right of group.x and the tip lands on the left
-  arrDeq.group.position.set(frontX - 1.0, Y, 0);   // tip ends ~1.0 + length left of the front face
-  arrEnq.group.position.set(backX  + 2.8, Y, 0);   // tip ends near the back face (entering the tail)
-  arrDeq.group.visible = arrEnq.group.visible = n > 0;
   refreshHUD();
 }
 function refreshHUD(){

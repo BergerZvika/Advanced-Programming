@@ -602,18 +602,13 @@ function targetX(i){
   return (i - (n-1)/2) * GAP;
 }
 
-/* ─── 3D head / tail pointers that follow the ends of the list ─── */
-const ptrHead = makeArrow3D({color:0x5cffb4, label:'HEAD', length:1.6}); // green, points down
-const ptrTail = makeArrow3D({color:0xffb454, label:'TAIL', length:1.6}); // amber, points down
-scene.add(ptrHead.group, ptrTail.group);
-
 async function relayout(animate=true){
   // re-center all nodes & set arrows
   const ms = animate ? 380 : 0;
   await Promise.all(list.map((node, i) => {
     return tweenVec(node.grp.position, new THREE.Vector3(targetX(i), Y, 0), ms);
   }));
-  // arrows
+  // node-to-node arrows (the linked-list pointers between adjacent nodes)
   list.forEach((node, i) => {
     if (!node.edge) return;
     if (i === list.length - 1){
@@ -624,22 +619,6 @@ async function relayout(animate=true){
       setArrow(node.edge, fromX, toX);
     }
   });
-  // head / tail 3D pointers — float above the ends; hide on empty list
-  const n = list.length;
-  if (n === 0){
-    ptrHead.group.visible = ptrTail.group.visible = false;
-  } else {
-    ptrHead.group.visible = ptrTail.group.visible = true;
-    const headX = targetX(0), tailX = targetX(n-1);
-    const ptrY = Y + NODE_R + 2.6;   // shaft top is here; tip lands ~length below
-    ptrHead.group.position.set(headX, ptrY, 0);
-    ptrTail.group.position.set(tailX, ptrY, 0);
-    // when the list collapses to one node, fan them apart so the two arrows don't overlap
-    if (n === 1){
-      ptrHead.group.position.x -= 1.1;
-      ptrTail.group.position.x += 1.1;
-    }
-  }
   refreshHUD();
 }
 
