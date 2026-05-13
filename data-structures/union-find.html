@@ -35,6 +35,9 @@
         <div class="label mt-8">Element b (for union / connected)</div>
         <div class="input-row"><input id="in-b" placeholder="e.g. 7" autocomplete="off" /></div>
 
+                <div class="label">Player</div>
+        <div id="player-mount"></div>
+
         <div class="label mt-12">Operations</div>
         <div class="op-grid">
           <button class="op" data-color="cyan"    id="op-make"><span class="name"><span class="dot"></span> makeSet</span><span class="cx">O(1)</span></button>
@@ -182,15 +185,53 @@ function createScene({mount, camera = {pos:[0,4,18], lookAt:[0,0,0]}}){
   return {scene, cam, renderer, drift};
 }
 
-/* ─── small tween util ─── */
+/* ─── stepper · pause/play/fast-forward ─── */
+const stepper = {
+  paused: false,
+  resume: null,    // resolver for in-flight pause
+  speed: 1,        // 1 = normal, >1 = faster
+  fastForward: false,  // if true, next sleep returns immediately
+  checkpoints: [], // {label, undo: async () => void}
+  onState: null,   // callback(state) for UI updates
+};
+function stepperKick(){
+  if (stepper.resume){ const r = stepper.resume; stepper.resume = null; r(); }
+}
+function stepperPlay(){ stepper.paused = false; stepperKick(); stepper.onState && stepper.onState('playing'); }
+function stepperPause(){ stepper.paused = true; stepper.onState && stepper.onState('paused'); }
+function stepperToggle(){ stepper.paused ? stepperPlay() : stepperPause(); }
+function stepperFastForward(){ stepper.fastForward = true; stepperKick(); }
+export async function stepperCheckpoint(label, undoFn){
+  if (undoFn) stepper.checkpoints.push({label, undo:undoFn});
+  if (stepper.onState) stepper.onState(label);
+  if (stepper.paused){
+    await new Promise(r => stepper.resume = r);
+  }
+}
+export async function stepperUndo(){
+  const cp = stepper.checkpoints.pop();
+  if (!cp) return false;
+  if (stepper.onState) stepper.onState('undo · '+cp.label);
+  await cp.undo();
+  return true;
+}
+function stepperClear(){ stepper.checkpoints.length = 0; }
+
+/* ─── small tween util · pause-aware ─── */
 function tween(obj, prop, to, ms=420, ease=easeOutCubic){
   return new Promise(res => {
     const from = obj[prop];
-    const t0 = performance.now();
+    let t0 = performance.now(), pausedAt = 0, totalPause = 0;
     function step(now){
-      const k = Math.min(1, (now-t0)/ms);
+      if (stepper.paused){
+        if (!pausedAt) pausedAt = now;
+        requestAnimationFrame(step); return;
+      }
+      if (pausedAt){ totalPause += now - pausedAt; pausedAt = 0; }
+      const elapsed = (now - t0 - totalPause) * stepper.speed;
+      const k = stepper.fastForward ? 1 : Math.min(1, elapsed/ms);
       obj[prop] = from + (to - from)*ease(k);
-      if (k<1) requestAnimationFrame(step); else res();
+      if (k<1) requestAnimationFrame(step); else { stepper.fastForward = false; res(); }
     }
     requestAnimationFrame(step);
   });
@@ -198,18 +239,33 @@ function tween(obj, prop, to, ms=420, ease=easeOutCubic){
 function tweenVec(vec, to, ms=420, ease=easeOutCubic){
   return new Promise(res => {
     const from = vec.clone();
-    const t0 = performance.now();
+    let t0 = performance.now(), pausedAt = 0, totalPause = 0;
     function step(now){
-      const k = Math.min(1, (now-t0)/ms);
+      if (stepper.paused){
+        if (!pausedAt) pausedAt = now;
+        requestAnimationFrame(step); return;
+      }
+      if (pausedAt){ totalPause += now - pausedAt; pausedAt = 0; }
+      const elapsed = (now - t0 - totalPause) * stepper.speed;
+      const k = stepper.fastForward ? 1 : Math.min(1, elapsed/ms);
       vec.lerpVectors(from, to, ease(k));
-      if (k<1) requestAnimationFrame(step); else res();
+      if (k<1) requestAnimationFrame(step); else { stepper.fastForward = false; res(); }
     }
     requestAnimationFrame(step);
   });
 }
 const easeOutCubic = t => 1 - Math.pow(1-t, 3);
 const easeInOutCubic = t => t<0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2,3)/2;
-const sleep = ms => new Promise(r => setTimeout(r, ms));
+export async function sleep(ms){
+  let remaining = ms;
+  while (remaining > 0){
+    if (stepper.paused){ await new Promise(r => stepper.resume = r); }
+    if (stepper.fastForward){ stepper.fastForward = false; return; }
+    const chunk = Math.min(remaining, 32);
+    await new Promise(r => setTimeout(r, chunk / Math.max(0.1, stepper.speed)));
+    remaining -= chunk;
+  }
+}
 
 /* ─── undo stack ─── */
 function createHistory(){
@@ -292,6 +348,53 @@ function mountTopbar({title, sub, back='index.html'}){
   tick(); setInterval(tick, 1000);
 }
 
+/* ─── player UI · play/pause/back/forward ─── */
+function mountPlayer({mount, onBack}){
+  const root = typeof mount === 'string' ? $(mount) : mount;
+  if (!root) return null;
+  const playBtn  = el('button', {class:'pl-btn pl-play',  title:'play / pause (Space)', html:'<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>'});
+  const pauseBtn = el('button', {class:'pl-btn pl-pause hidden', title:'pause (Space)', html:'<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>'});
+  const backBtn  = el('button', {class:'pl-btn',  title:'step backward (←)', html:'<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M6 6h2v12H6zM20 6 9 12l11 6z"/></svg>'});
+  const fwdBtn   = el('button', {class:'pl-btn',  title:'skip to end of step (→)', html:'<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M16 6h2v12h-2zM4 6l11 6L4 18z"/></svg>'});
+  const speedBtn = el('button', {class:'pl-btn pl-speed', title:'cycle speed'}, '1×');
+  const status   = el('div', {class:'pl-status'}, 'idle');
+  const bar = el('div', {class:'pl-bar'}, backBtn, playBtn, pauseBtn, fwdBtn, speedBtn, status);
+  root.appendChild(bar);
+
+  function setMode(playing){
+    if (playing){ playBtn.classList.add('hidden'); pauseBtn.classList.remove('hidden'); }
+    else        { playBtn.classList.remove('hidden'); pauseBtn.classList.add('hidden'); }
+  }
+  setMode(false);  // start as "play" icon visible (i.e., paused/idle look)
+
+  // wire
+  playBtn .addEventListener('click', () => { stepperPlay();  setMode(true); });
+  pauseBtn.addEventListener('click', () => { stepperPause(); setMode(false); });
+  fwdBtn  .addEventListener('click', () => { stepperFastForward(); });
+  backBtn .addEventListener('click', async () => {
+    const ok = await stepperUndo();
+    if (!ok && onBack) onBack();   // fall back to lab's op-undo if checkpoints empty
+  });
+  const SPEEDS = [1, 1.5, 2, 0.5];
+  let si = 0;
+  speedBtn.addEventListener('click', () => {
+    si = (si + 1) % SPEEDS.length; stepper.speed = SPEEDS[si]; speedBtn.textContent = SPEEDS[si] + '×';
+  });
+
+  // status updates
+  stepper.onState = (label) => { status.textContent = String(label || 'idle').slice(0, 38); };
+
+  // keyboard
+  window.addEventListener('keydown', e => {
+    if (e.target.tagName === 'INPUT') return;
+    if (e.code === 'Space'){ e.preventDefault(); stepperToggle(); setMode(!stepper.paused); }
+    else if (e.code === 'ArrowRight'){ stepperFastForward(); }
+    else if (e.code === 'ArrowLeft'){ backBtn.click(); }
+  });
+
+  return {setMode, status};
+}
+
 /* ─── input parsing util ─── */
 function parseNum(str, fallback=null){
   if (str == null || str === '') return fallback;
@@ -304,7 +407,6 @@ function parseList(str){
   return String(str).split(/[,\s]+/).filter(Boolean).map(Number).filter(Number.isFinite);
 }
 function randomInt(a, b){ return a + Math.floor(Math.random()*(b-a+1)); }
-
 /* ─── end runtime ─── */
 
 

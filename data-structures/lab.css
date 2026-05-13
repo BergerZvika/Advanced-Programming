@@ -374,6 +374,32 @@ button{font-family:inherit;color:inherit;background:none;border:none;cursor:poin
 .mt-8{margin-top:8px}.mt-12{margin-top:12px}.mt-16{margin-top:16px}
 .hidden{display:none}
 
+/* ─────────────────────────────────────────────
+   player transport bar
+   ───────────────────────────────────────────── */
+.pl-bar{
+  display:flex; align-items:center; gap:6px;
+  padding:8px 10px; border-radius:var(--r-md);
+  background:linear-gradient(180deg, rgba(53,208,255,0.06), rgba(53,208,255,0.02));
+  border:1px solid rgba(53,208,255,0.22);
+}
+.pl-btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:6px;
+  width:36px; height:32px; border-radius:8px;
+  background:rgba(8,10,18,0.65); border:1px solid rgba(124,180,255,0.18);
+  color:var(--ink); transition:background .2s, border-color .2s, color .2s, transform .2s;
+  font-family:var(--mono); font-size:10.5px; letter-spacing:.06em;
+}
+.pl-btn:hover{background:rgba(53,208,255,0.16); border-color:rgba(53,208,255,0.55); color:#fff; transform:translateY(-1px)}
+.pl-play{color:var(--ok); border-color:rgba(92,255,180,0.35)}
+.pl-pause{color:var(--amber); border-color:rgba(255,180,84,0.35)}
+.pl-speed{width:auto; padding:0 10px; min-width:42px}
+.pl-status{
+  flex:1; padding:0 4px;
+  font-family:var(--mono); font-size:10.5px; letter-spacing:.18em; text-transform:uppercase;
+  color:var(--ink-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+
 /* scrollbars */
 *::-webkit-scrollbar{width:10px;height:10px}
 *::-webkit-scrollbar-thumb{background:rgba(124,180,255,0.18);border-radius:99px}
