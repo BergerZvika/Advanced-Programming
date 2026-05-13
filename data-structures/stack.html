@@ -24,11 +24,12 @@
 
         <div class="stage-overlay">
           <div class="row">
-            <div class="stage-tag"><b>size</b>&nbsp; <span id="t-size">0</span></div>
+            <div class="stage-tag"><b>stacks</b>&nbsp; <span id="t-count">1</span></div>
+            <div class="stage-tag"><b>active</b>&nbsp; #<span id="t-active">0</span></div>
             <div class="stage-tag"><b>top</b>&nbsp; <span id="t-top">∅</span></div>
           </div>
           <div class="row">
-            <div class="stage-tag">LIFO &middot; push/pop/peek &middot; O(1) every op</div>
+            <div class="stage-tag">multi-stack LIFO · pop(i) cascades onto stack i+1</div>
           </div>
         </div>
       </div>
@@ -43,16 +44,23 @@
           <button class="ghost" id="b-rand">RND</button>
         </div>
 
+        <div class="label mt-8">Active stack #</div>
+        <div class="input-row">
+          <input id="in-stack" type="number" min="0" value="0" />
+          <button class="ghost" id="b-add-stack">+ STACK</button>
+          <button class="ghost" id="b-rm-stack">− STACK</button>
+        </div>
+
         <div class="label">Player</div>
         <div id="player-mount"></div>
 
         <div class="label mt-12">Stack · LIFO</div>
         <div class="op-grid">
           <button class="op" data-color="magenta" id="op-push"><span class="name"><span class="dot"></span> push</span><span class="cx">O(1)</span></button>
-          <button class="op" data-color="magenta" id="op-pop"><span class="name"><span class="dot"></span> pop</span><span class="cx">O(1)</span></button>
+          <button class="op" data-color="magenta" id="op-pop"><span class="name"><span class="dot"></span> pop → i+1</span><span class="cx">O(1)</span></button>
           <button class="op" data-color="amber"   id="op-peek"><span class="name"><span class="dot"></span> peek</span><span class="cx">O(1)</span></button>
           <button class="op full" data-color="lime"  id="op-undo"><span class="name"><span class="dot"></span> undo · last op</span><span class="cx" id="undo-depth">0</span></button>
-          <button class="op full" data-color="amber" id="op-clear"><span class="name"><span class="dot"></span> clear</span><span class="cx">reset</span></button>
+          <button class="op full" data-color="amber" id="op-clear"><span class="name"><span class="dot"></span> clear all</span><span class="cx">reset</span></button>
         </div>
 
         <div class="label mt-12">Complexity</div>
@@ -516,31 +524,73 @@ function makeBlock(value){
   return {grp, body, value};
 }
 
-const stack = [];   // top = last
+/* ─── multi-stack state ─── */
+const stacks = [[]];   // each is an array of {grp, body, value} blocks (top = last)
+let activeIdx = 0;
 const BASE_Y = -3.0, DY = 1.1;
+const STACK_GAP_X = 4.4;
 
-/* ─── 3D push / pop indicators above the top block ─── */
-const arrPush = makeArrow3D({color:0x5cffb4, label:'PUSH', length:1.5});   // green: incoming
-const arrPop  = makeArrow3D({color:0xff5c70, label:'POP',  length:1.5});   // red:   outgoing
-arrPop.group.rotation.z = Math.PI;          // flip vertical so the tip points up
+function stackX(i, n){ return (i - (n-1)/2) * STACK_GAP_X; }
+function clampActive(){
+  if (activeIdx < 0) activeIdx = 0;
+  if (activeIdx >= stacks.length) activeIdx = stacks.length - 1;
+  $('#in-stack').value = activeIdx;
+}
+
+/* ─── persistent labels under each stack ─── */
+const stackLabels = [];   // sprite per stack
+function makeStackLabel(i){
+  const c = document.createElement('canvas'); c.width=384; c.height=128;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#cbd2ff'; ctx.font = '700 56px Unbounded, sans-serif';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 12;
+  ctx.fillText(`stack ${i}`, 192, 64);
+  const tex = new THREE.CanvasTexture(c); tex.minFilter = THREE.LinearFilter;
+  const spr = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true, depthTest:false}));
+  spr.renderOrder = 11;
+  spr.scale.set(2.4, 0.8, 1);
+  scene.add(spr);
+  return spr;
+}
+function syncStackLabels(){
+  // ensure label count matches stack count
+  while (stackLabels.length < stacks.length) stackLabels.push(makeStackLabel(stackLabels.length));
+  while (stackLabels.length > stacks.length){ const lbl = stackLabels.pop(); scene.remove(lbl); }
+}
+
+/* ─── 3D push / pop indicators (hover above the active stack) ─── */
+const arrPush = makeArrow3D({color:0x5cffb4, label:'PUSH', length:1.5});
+const arrPop  = makeArrow3D({color:0xff5c70, label:'POP',  length:1.5});
+arrPop.group.rotation.z = Math.PI;
 scene.add(arrPush.group, arrPop.group);
 
 async function relayout(animate=true){
+  const n = stacks.length;
+  syncStackLabels();
   const tasks = [];
-  for (let i=0;i<stack.length;i++){
-    tasks.push(tweenVec(stack[i].grp.position, new THREE.Vector3(0, BASE_Y + i*DY, 0), animate?420:0));
-    tasks.push(tweenVec(stack[i].grp.scale, new THREE.Vector3(1,1,1), animate?320:0));
+  for (let i=0;i<n;i++){
+    const x = stackX(i, n);
+    for (let j=0;j<stacks[i].length;j++){
+      tasks.push(tweenVec(stacks[i][j].grp.position, new THREE.Vector3(x, BASE_Y + j*DY, 0), animate?420:0));
+      tasks.push(tweenVec(stacks[i][j].grp.scale, new THREE.Vector3(1,1,1), animate?320:0));
+    }
+    if (stackLabels[i]) stackLabels[i].position.set(x, BASE_Y - 1.5, 0);
   }
   await Promise.all(tasks);
-  // position the two arrows above the top block (one each side, opposite directions)
-  const topY = BASE_Y + Math.max(0, stack.length - 1) * DY;
-  arrPush.group.position.set(-2.2, topY + 2.7, 0);   // points -Y, tip just above the top
-  arrPop .group.position.set( 2.2, topY + 0.9, 0);   // rotated, tip points up away from the top
+  // arrows above the active stack's top
+  clampActive();
+  const ax = stackX(activeIdx, n);
+  const topY = BASE_Y + Math.max(0, stacks[activeIdx].length - 1) * DY;
+  arrPush.group.position.set(ax - 1.3, topY + 2.7, 0);
+  arrPop .group.position.set(ax + 1.3, topY + 0.9, 0);
   refreshHUD();
 }
 function refreshHUD(){
-  $('#t-size').textContent = stack.length;
-  $('#t-top').textContent = stack.length ? stack[stack.length-1].value : '∅';
+  $('#t-count').textContent = stacks.length;
+  $('#t-active').textContent = activeIdx;
+  const stk = stacks[activeIdx];
+  $('#t-top').textContent = stk && stk.length ? stk[stk.length-1].value : '∅';
   $('#undo-depth').textContent = history.size();
   $('#hist-pill').textContent = history.size();
 }
@@ -560,90 +610,139 @@ function readVal(allowAuto=true){
   if (raw === ''){ if (!allowAuto) return null; const v = randomInt(1,99); $('#in-val').value = v; return v; }
   const n = Number(raw); return Number.isFinite(n) ? n : raw;
 }
+function readStackIdx(){
+  const raw = parseNum($('#in-stack').value, 0);
+  const i = Math.max(0, Math.min(stacks.length - 1, Math.trunc(raw)));
+  activeIdx = i;
+  $('#in-stack').value = i;
+  return i;
+}
+
+function snapshotAll(){
+  return stacks.map(s => s.map(b => b.value));
+}
+async function rebuildFrom(snap){
+  for (const s of stacks) for (const b of s) scene.remove(b.grp);
+  stacks.length = 0;
+  for (const stackVals of snap){
+    const stk = [];
+    for (const v of stackVals) stk.push(makeBlock(v));
+    stacks.push(stk);
+  }
+  if (!stacks.length) stacks.push([]);
+  clampActive();
+  await relayout(false);
+}
 
 const opHandlers = {
   push: lock(async () => {
     const v = readVal(); if (v === null) return;
-    history.push({type:'pop'});
-    cx.set(`push ${v}`, 'O(1)');
+    const i = readStackIdx();
+    history.push({type:'snapshot', snap: snapshotAll(), activeIdx});
+    cx.set(`push ${v} → stack ${i}`, 'O(1)');
     const blk = makeBlock(v);
-    blk.grp.position.set(0, BASE_Y + 6 + stack.length*DY, -2);
-    stack.push(blk);
+    blk.grp.position.set(stackX(i, stacks.length), BASE_Y + 6 + stacks[i].length*DY, -2);
+    stacks[i].push(blk);
     await relayout(true);
     await pulse(blk, 0xff5cab);
     await stepperCheckpoint();
-    log.say(`<span class="k">push</span> ${v}`);
+    log.say(`<span class="k">push</span> ${v} → stack ${i}`);
   }),
   pop: lock(async () => {
-    if (!stack.length){ log.say(`<span class="kx">err</span> stack empty`); return; }
-    const blk = stack.pop();
-    history.push({type:'push', value: blk.value});
-    cx.set(`pop · ${blk.value}`, 'O(1)');
+    const i = readStackIdx();
+    if (!stacks[i].length){ log.say(`<span class="kx">err</span> stack ${i} empty`); return; }
+    history.push({type:'snapshot', snap: snapshotAll(), activeIdx});
+    const blk = stacks[i].pop();
     await pulse(blk, 0xff5c70);
     await stepperCheckpoint();
-    await tweenVec(blk.grp.position, new THREE.Vector3(blk.grp.position.x, blk.grp.position.y + 4, 2), 380);
-    await tweenVec(blk.grp.scale, new THREE.Vector3(0.001,0.001,0.001), 220);
-    scene.remove(blk.grp);
-    await relayout(true);
-    log.say(`<span class="ko">pop</span> → ${blk.value}`);
-  }),
-  peek: lock(async () => {
-    if (!stack.length){ log.say(`<span class="kx">err</span> stack empty`); return; }
-    cx.set(`peek · top = ${stack[stack.length-1].value}`, 'O(1)');
-    await pulse(stack[stack.length-1], 0xffb454, 520);
-    await stepperCheckpoint();
-    log.say(`<span class="k">peek</span> → ${stack[stack.length-1].value}`);
-  }),
-  undo: lock(async () => {
-    const op = history.pop(); if (!op){ log.say(`<span class="kx">undo</span> empty`); return; }
-    if (op.type === 'pop'){
-      const blk = stack.pop();
-      if (blk){ await tweenVec(blk.grp.scale, new THREE.Vector3(0.001,0.001,0.001), 220); scene.remove(blk.grp); }
-    } else if (op.type === 'push'){
-      const blk = makeBlock(op.value);
-      blk.grp.position.set(0, BASE_Y + 6 + stack.length*DY, -2);
-      stack.push(blk);
-    } else if (op.type === 'snapshot'){
-      for (const b of stack) scene.remove(b.grp);
-      stack.length = 0;
-      for (const v of op.values){ stack.push(makeBlock(v)); }
+    if (i < stacks.length - 1){
+      // cascade: push the popped value onto stack i+1
+      const j = i + 1;
+      cx.set(`pop ${blk.value} from ${i} · cascade → ${j}`, 'O(1)');
+      log.say(`<span class="ko">pop</span> ${blk.value} from <b>#${i}</b> → push <b>#${j}</b>`);
+      const dstX = stackX(j, stacks.length);
+      const dstY = BASE_Y + stacks[j].length * DY;
+      // lift up, glide over, settle
+      await tweenVec(blk.grp.position, new THREE.Vector3(blk.grp.position.x, blk.grp.position.y + 1.6, 0.6), 280);
+      await tweenVec(blk.grp.position, new THREE.Vector3(dstX, blk.grp.position.y, 0.6), 420);
+      stacks[j].push(blk);
+      await tweenVec(blk.grp.position, new THREE.Vector3(dstX, dstY, 0), 360);
+      await pulse(blk, 0x5cffb4);
+      await stepperCheckpoint();
+    } else {
+      // last stack: just remove
+      cx.set(`pop ${blk.value} from ${i} · last stack, dropped`, 'O(1)');
+      log.say(`<span class="ko">pop</span> ${blk.value} from <b>#${i}</b> (last)`);
+      await tweenVec(blk.grp.position, new THREE.Vector3(blk.grp.position.x, blk.grp.position.y + 4, 2), 380);
+      await tweenVec(blk.grp.scale, new THREE.Vector3(0.001,0.001,0.001), 220);
+      scene.remove(blk.grp);
     }
     await relayout(true);
+  }),
+  peek: lock(async () => {
+    const i = readStackIdx();
+    if (!stacks[i].length){ log.say(`<span class="kx">err</span> stack ${i} empty`); return; }
+    const blk = stacks[i][stacks[i].length-1];
+    cx.set(`peek #${i} · top = ${blk.value}`, 'O(1)');
+    await pulse(blk, 0xffb454, 520);
+    await stepperCheckpoint();
+    log.say(`<span class="k">peek</span> #${i} → ${blk.value}`);
+  }),
+  undo: lock(async () => {
+    const op = history.pop();
+    if (!op){ log.say(`<span class="kx">undo</span> empty`); return; }
+    if (op.type === 'snapshot'){
+      await rebuildFrom(op.snap);
+      activeIdx = op.activeIdx ?? 0;
+      clampActive();
+      await relayout(true);
+    }
     cx.set('undo', '—');
     log.say(`<span class="ko">undo</span>`);
   }),
   clear: lock(async () => {
-    history.push({type:'snapshot', values: stack.map(b=>b.value)});
-    for (const b of stack) scene.remove(b.grp);
-    stack.length = 0;
-    await relayout(false);
-    log.say(`<span class="ko">clear</span>`);
+    history.push({type:'snapshot', snap: snapshotAll(), activeIdx});
+    await rebuildFrom([[]]);
+    activeIdx = 0;
+    log.say(`<span class="ko">clear all</span>`);
+    cx.set('cleared', '—');
   }),
 };
 for (const k in opHandlers) $('#op-'+k).addEventListener('click', opHandlers[k]);
 $('#b-rand').addEventListener('click', () => $('#in-val').value = randomInt(1,99));
 
-/* axis label */
-{
-  const c = document.createElement('canvas'); c.width=512; c.height=128;
-  const ctx = c.getContext('2d');
-  ctx.fillStyle = '#8b93b8'; ctx.font='600 36px Unbounded, sans-serif';
-  ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.fillText('LIFO · top ↑', 256, 64);
-  const tex = new THREE.CanvasTexture(c); tex.minFilter=THREE.LinearFilter;
-  const spr = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true}));
-  spr.position.set(0, BASE_Y - 1.4, 0); spr.scale.set(4, 1, 1);
-  scene.add(spr);
-}
+$('#in-stack').addEventListener('change', async () => {
+  readStackIdx();
+  await relayout(true);
+});
+
+$('#b-add-stack').addEventListener('click', lock(async () => {
+  history.push({type:'snapshot', snap: snapshotAll(), activeIdx});
+  stacks.push([]);
+  cx.set(`add stack · now ${stacks.length}`, 'O(1)');
+  log.say(`<span class="km">+ stack</span> · count = ${stacks.length}`);
+  activeIdx = stacks.length - 1;
+  await relayout(true);
+}));
+
+$('#b-rm-stack').addEventListener('click', lock(async () => {
+  if (stacks.length <= 1){ log.say(`<span class="kx">err</span> cannot remove the last stack`); return; }
+  history.push({type:'snapshot', snap: snapshotAll(), activeIdx});
+  const gone = stacks.pop();
+  for (const b of gone) scene.remove(b.grp);
+  if (stackLabels.length > stacks.length){ const lbl = stackLabels.pop(); scene.remove(lbl); }
+  cx.set(`remove stack · now ${stacks.length} · dropped ${gone.length} block(s)`, 'O(n)');
+  log.say(`<span class="ko">− stack</span> · count = ${stacks.length} · ${gone.length} block(s) gone`);
+  activeIdx = Math.min(activeIdx, stacks.length - 1);
+  await relayout(true);
+}));
 
 /* seed */
 (async () => {
-  for (const v of [5, 12, 8]){
-    const blk = makeBlock(v); stack.push(blk);
-  }
+  for (const v of [5, 12, 8]) stacks[0].push(makeBlock(v));
   await relayout(false);
   history.clear(); refreshHUD();
-  log.say(`<span class="k">init</span> stack:3`);
+  log.say(`<span class="k">init</span> 1 stack · 3 blocks`);
   cx.set('idle', '—');
 })();
 </script>
