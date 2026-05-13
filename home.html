@@ -283,23 +283,28 @@ details.section[open] > .talks{animation:sectionReveal .3s ease-out}
 .pub-authors{margin:0;font-size:13px;color:var(--text-dim);line-height:1.55}
 .pub-authors .me{background:linear-gradient(135deg,var(--accent),var(--accent-2));-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:700}
 .pub-cite{margin:0;font-size:13px;color:#cbd2ff;font-family:'JetBrains Mono',ui-monospace,monospace;line-height:1.55}
-.pub-actions{flex:none;display:flex;flex-direction:column;gap:8px;align-self:center}
-.pub-pdf, .pub-lab{
-  display:flex;align-items:center;justify-content:center;gap:8px;
-  padding:10px 14px;border-radius:10px;
-  font-weight:700;font-size:12px;letter-spacing:.12em;text-transform:uppercase;
+.pub-actions{flex:none;display:flex;flex-direction:row;gap:8px;align-self:center;align-items:stretch}
+.pub-actions-col{display:flex;flex-direction:column;gap:8px}
+.pub-actions .pub-lab{align-self:stretch}
+.pub-pdf, .pub-lab, .pub-html{
+  display:flex;align-items:center;justify-content:center;gap:4px;
+  padding:5px 7px;border-radius:8px;min-width:64px;
+  font-weight:700;font-size:10px;letter-spacing:.08em;text-transform:uppercase;
   transition:background .2s ease,border-color .2s ease,color .2s ease,transform .2s ease;
 }
+.pub-pdf .arrow, .pub-lab .arrow, .pub-html .arrow{font-size:11px}
 .pub-pdf{background:rgba(124,92,255,0.16);border:1px solid rgba(124,92,255,0.35);color:#cbd2ff}
 .pub-pdf:hover{background:rgba(124,92,255,0.32);border-color:rgba(124,92,255,0.65);color:#fff;transform:translateX(2px)}
+.pub-html{background:rgba(255,159,92,0.16);border:1px solid rgba(255,159,92,0.40);color:#ffd2b0}
+.pub-html:hover{background:rgba(255,159,92,0.32);border-color:rgba(255,159,92,0.70);color:#fff;transform:translateX(2px)}
 .pub-lab{background:rgba(53,208,255,0.16);border:1px solid rgba(53,208,255,0.40);color:#9aedff}
 .pub-lab:hover{background:rgba(53,208,255,0.32);border-color:rgba(53,208,255,0.70);color:#fff;transform:translateX(2px)}
-.pub-pdf .arrow, .pub-lab .arrow{font-size:14px;font-weight:400}
+.pub-pdf .arrow, .pub-lab .arrow, .pub-html .arrow{font-weight:400}
 @media (max-width:680px){
   .pub{flex-wrap:wrap}
   .pub-badge{min-width:0;width:100%;flex-direction:row;gap:8px;padding:8px 14px}
-  .pub-actions{width:100%;flex-direction:row}
-  .pub-pdf, .pub-lab{flex:1}
+  .pub-actions{width:100%;flex-direction:row;flex-wrap:wrap}
+  .pub-pdf, .pub-lab, .pub-html{flex:1}
 }
 
 /* Footer */
@@ -443,14 +448,20 @@ footer .sep{opacity:.5}
         <p class="pub-cite">In: SAT. Vol. 341. LIPIcs. Schloss Dagstuhl &ndash; Leibniz-Zentrum f&uuml;r Informatik, 2025, 4:1&ndash;4:24.</p>
       </div>
       <div class="pub-actions">
-        <a class="pub-pdf" href="https://drops.dagstuhl.de/storage/00lipics/lipics-vol341-sat2025/LIPIcs.SAT.2025.4/LIPIcs.SAT.2025.4.pdf" target="_blank" rel="noopener" aria-label="Open paper PDF">
-          <span>PDF</span>
-          <span class="arrow">&#8599;</span>
-        </a>
         <a class="pub-lab" href="https://bergerzvika.github.io/pbv-visual/" target="_blank" rel="noopener" aria-label="Open Visual Lab">
           <span>Visual Lab</span>
           <span class="arrow">&#8599;</span>
         </a>
+        <div class="pub-actions-col">
+          <a class="pub-pdf" href="https://drops.dagstuhl.de/storage/00lipics/lipics-vol341-sat2025/LIPIcs.SAT.2025.4/LIPIcs.SAT.2025.4.pdf" target="_blank" rel="noopener" aria-label="Open paper PDF">
+            <span>PDF</span>
+            <span class="arrow">&#8599;</span>
+          </a>
+          <a class="pub-html" href="https://drops.dagstuhl.de/storage/00lipics/lipics-vol341-sat2025/html/LIPIcs.SAT.2025.4/LIPIcs.SAT.2025.4.html" target="_blank" rel="noopener" aria-label="Open paper HTML">
+            <span>HTML</span>
+            <span class="arrow">&#8599;</span>
+          </a>
+        </div>
       </div>
     </div>
   </div>
