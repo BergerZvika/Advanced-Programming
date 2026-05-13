@@ -56,9 +56,11 @@
 
         <div class="label mt-12">Stack · LIFO</div>
         <div class="op-grid">
-          <button class="op" data-color="magenta" id="op-push"><span class="name"><span class="dot"></span> push</span><span class="cx">O(1)</span></button>
-          <button class="op" data-color="magenta" id="op-pop"><span class="name"><span class="dot"></span> pop → i+1</span><span class="cx">O(1)</span></button>
+          <button class="op full" data-color="magenta" id="op-push"><span class="name"><span class="dot"></span> push</span><span class="cx">O(1)</span></button>
+          <button class="op" data-color="magenta" id="op-pop"><span class="name"><span class="dot"></span> pop</span><span class="cx">discard</span></button>
           <button class="op" data-color="amber"   id="op-peek"><span class="name"><span class="dot"></span> peek</span><span class="cx">O(1)</span></button>
+          <button class="op" data-color="cyan"    id="op-popNext"><span class="name"><span class="dot"></span> pop → i+1</span><span class="cx">cascade</span></button>
+          <button class="op" data-color="violet"  id="op-popPrev"><span class="name"><span class="dot"></span> pop → i−1</span><span class="cx">cascade</span></button>
           <button class="op full" data-color="lime"  id="op-undo"><span class="name"><span class="dot"></span> undo · last op</span><span class="cx" id="undo-depth">0</span></button>
           <button class="op full" data-color="amber" id="op-clear"><span class="name"><span class="dot"></span> clear all</span><span class="cx">reset</span></button>
         </div>
@@ -623,6 +625,27 @@ async function rebuildFrom(snap){
   await relayout(false);
 }
 
+/* shared cascade: pop top of src, then push onto dst with a glide animation */
+async function cascadePop(src, dst){
+  history.push({type:'snapshot', snap: snapshotAll(), activeIdx});
+  const blk = stacks[src].pop();
+  const dir = dst > src ? '→' : '←';
+  cx.set(`pop ${blk.value} from #${src} ${dir} push #${dst}`, 'O(1)');
+  log.say(`<span class="ko">pop</span> ${blk.value} from <b>#${src}</b> ${dir} push <b>#${dst}</b>`);
+  await pulse(blk, 0xff5c70);
+  await stepperCheckpoint();
+  const dstX = stackX(dst, stacks.length);
+  const dstY = BASE_Y + stacks[dst].length * DY;
+  // lift up, glide over, settle
+  await tweenVec(blk.grp.position, new THREE.Vector3(blk.grp.position.x, blk.grp.position.y + 1.6, 0.6), 280);
+  await tweenVec(blk.grp.position, new THREE.Vector3(dstX, blk.grp.position.y, 0.6), 420);
+  stacks[dst].push(blk);
+  await tweenVec(blk.grp.position, new THREE.Vector3(dstX, dstY, 0), 360);
+  await pulse(blk, 0x5cffb4);
+  await stepperCheckpoint();
+  await relayout(true);
+}
+
 const opHandlers = {
   push: lock(async () => {
     const v = readVal(); if (v === null) return;
@@ -642,31 +665,32 @@ const opHandlers = {
     if (!stacks[i].length){ log.say(`<span class="kx">err</span> stack ${i} empty`); return; }
     history.push({type:'snapshot', snap: snapshotAll(), activeIdx});
     const blk = stacks[i].pop();
+    cx.set(`pop ${blk.value} from #${i} · discard`, 'O(1)');
     await pulse(blk, 0xff5c70);
     await stepperCheckpoint();
-    if (i < stacks.length - 1){
-      // cascade: push the popped value onto stack i+1
-      const j = i + 1;
-      cx.set(`pop ${blk.value} from ${i} · cascade → ${j}`, 'O(1)');
-      log.say(`<span class="ko">pop</span> ${blk.value} from <b>#${i}</b> → push <b>#${j}</b>`);
-      const dstX = stackX(j, stacks.length);
-      const dstY = BASE_Y + stacks[j].length * DY;
-      // lift up, glide over, settle
-      await tweenVec(blk.grp.position, new THREE.Vector3(blk.grp.position.x, blk.grp.position.y + 1.6, 0.6), 280);
-      await tweenVec(blk.grp.position, new THREE.Vector3(dstX, blk.grp.position.y, 0.6), 420);
-      stacks[j].push(blk);
-      await tweenVec(blk.grp.position, new THREE.Vector3(dstX, dstY, 0), 360);
-      await pulse(blk, 0x5cffb4);
-      await stepperCheckpoint();
-    } else {
-      // last stack: just remove
-      cx.set(`pop ${blk.value} from ${i} · last stack, dropped`, 'O(1)');
-      log.say(`<span class="ko">pop</span> ${blk.value} from <b>#${i}</b> (last)`);
-      await tweenVec(blk.grp.position, new THREE.Vector3(blk.grp.position.x, blk.grp.position.y + 4, 2), 380);
-      await tweenVec(blk.grp.scale, new THREE.Vector3(0.001,0.001,0.001), 220);
-      scene.remove(blk.grp);
-    }
+    await tweenVec(blk.grp.position, new THREE.Vector3(blk.grp.position.x, blk.grp.position.y + 4, 2), 380);
+    await tweenVec(blk.grp.scale, new THREE.Vector3(0.001,0.001,0.001), 220);
+    scene.remove(blk.grp);
     await relayout(true);
+    log.say(`<span class="ko">pop</span> ${blk.value} from <b>#${i}</b>`);
+  }),
+  popNext: lock(async () => {
+    const i = readStackIdx();
+    if (!stacks[i].length){ log.say(`<span class="kx">err</span> stack ${i} empty`); return; }
+    if (i >= stacks.length - 1){
+      log.say(`<span class="kx">err</span> no stack #${i+1} to cascade into · add a stack first`);
+      cx.set(`no stack #${i+1}`, 'noop'); return;
+    }
+    await cascadePop(i, i + 1);
+  }),
+  popPrev: lock(async () => {
+    const i = readStackIdx();
+    if (!stacks[i].length){ log.say(`<span class="kx">err</span> stack ${i} empty`); return; }
+    if (i <= 0){
+      log.say(`<span class="kx">err</span> no stack #${i-1} to cascade into · cannot go below 0`);
+      cx.set(`no stack #${i-1}`, 'noop'); return;
+    }
+    await cascadePop(i, i - 1);
   }),
   peek: lock(async () => {
     const i = readStackIdx();
