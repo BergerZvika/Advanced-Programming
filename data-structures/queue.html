@@ -24,12 +24,13 @@
 
         <div class="stage-overlay">
           <div class="row">
-            <div class="stage-tag"><b>size</b>&nbsp; <span id="t-size">0</span></div>
+            <div class="stage-tag"><b>queues</b>&nbsp; <span id="t-count">1</span></div>
+            <div class="stage-tag"><b>active</b>&nbsp; #<span id="t-active">0</span></div>
             <div class="stage-tag"><b>front</b>&nbsp; <span id="t-front">∅</span></div>
             <div class="stage-tag"><b>back</b>&nbsp; <span id="t-back">∅</span></div>
           </div>
           <div class="row">
-            <div class="stage-tag">FIFO &middot; enqueue at tail, dequeue from head &middot; O(1) every op</div>
+            <div class="stage-tag">multi-queue FIFO · dequeue(i) cascades onto queue i±1</div>
           </div>
         </div>
       </div>
@@ -44,16 +45,25 @@
           <button class="ghost" id="b-rand">RND</button>
         </div>
 
+        <div class="label mt-8">Active queue #</div>
+        <div class="input-row">
+          <input id="in-queue" type="number" min="0" value="0" />
+          <button class="ghost" id="b-add-queue">+ QUEUE</button>
+          <button class="ghost" id="b-rm-queue">− QUEUE</button>
+        </div>
+
         <div class="label">Player</div>
         <div id="player-mount"></div>
 
         <div class="label mt-12">Queue · FIFO</div>
         <div class="op-grid">
-          <button class="op" data-color="cyan"   id="op-enqueue"><span class="name"><span class="dot"></span> enqueue</span><span class="cx">O(1)</span></button>
-          <button class="op" data-color="cyan"   id="op-dequeue"><span class="name"><span class="dot"></span> dequeue</span><span class="cx">O(1)</span></button>
+          <button class="op full" data-color="cyan" id="op-enqueue"><span class="name"><span class="dot"></span> enqueue</span><span class="cx">O(1)</span></button>
+          <button class="op" data-color="cyan"   id="op-dequeue"><span class="name"><span class="dot"></span> dequeue</span><span class="cx">discard</span></button>
           <button class="op" data-color="amber"  id="op-peek"><span class="name"><span class="dot"></span> peek front</span><span class="cx">O(1)</span></button>
+          <button class="op" data-color="magenta" id="op-deqNext"><span class="name"><span class="dot"></span> dq → i+1</span><span class="cx">cascade</span></button>
+          <button class="op" data-color="violet"  id="op-deqPrev"><span class="name"><span class="dot"></span> dq → i−1</span><span class="cx">cascade</span></button>
           <button class="op full" data-color="lime"  id="op-undo"><span class="name"><span class="dot"></span> undo · last op</span><span class="cx" id="undo-depth">0</span></button>
-          <button class="op full" data-color="amber" id="op-clear"><span class="name"><span class="dot"></span> clear</span><span class="cx">reset</span></button>
+          <button class="op full" data-color="amber" id="op-clear"><span class="name"><span class="dot"></span> clear all</span><span class="cx">reset</span></button>
         </div>
 
         <div class="label mt-12">Complexity</div>
@@ -516,25 +526,71 @@ function makeBlock(value){
   return {grp, body, value};
 }
 
-const queue = [];   // front = index 0
-const Y = 0, DX = 1.75;
-function colX(i, n){ return (i - (n-1)/2) * DX; }
+/* ─── multi-queue state ─── */
+const queues = [[]];   // each is an array of {grp, body, value} blocks (front = idx 0)
+let activeIdx = 0;
+const DX = 1.75;
+const QUEUE_GAP_Y = 2.0;
+
+// queue 0 sits at the top, queue n-1 at the bottom — vertical stacking
+function queueY(i, n){ return (n-1)/2 * QUEUE_GAP_Y - i * QUEUE_GAP_Y; }
+function blockX(j, len){ return (j - (len-1)/2) * DX; }
+function clampActive(){
+  if (activeIdx < 0) activeIdx = 0;
+  if (activeIdx >= queues.length) activeIdx = queues.length - 1;
+  $('#in-queue').value = activeIdx;
+}
+
+/* ─── persistent labels at the left edge of each queue ─── */
+const queueLabels = [];
+function makeQueueLabel(i){
+  const c = document.createElement('canvas'); c.width=384; c.height=128;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#cbd2ff'; ctx.font = '700 56px Unbounded, sans-serif';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 12;
+  ctx.fillText(`queue ${i}`, 192, 64);
+  const tex = new THREE.CanvasTexture(c); tex.minFilter = THREE.LinearFilter;
+  const spr = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true, depthTest:false}));
+  spr.renderOrder = 11;
+  spr.scale.set(2.4, 0.8, 1);
+  scene.add(spr);
+  return spr;
+}
+function syncQueueLabels(){
+  while (queueLabels.length < queues.length) queueLabels.push(makeQueueLabel(queueLabels.length));
+  while (queueLabels.length > queues.length){ const lbl = queueLabels.pop(); scene.remove(lbl); }
+}
 
 async function relayout(animate=true){
+  const n = queues.length;
+  syncQueueLabels();
   const tasks = [];
-  for (let i=0;i<queue.length;i++){
-    tasks.push(tweenVec(queue[i].grp.position, new THREE.Vector3(colX(i, queue.length), Y, 0), animate?420:0));
-    tasks.push(tweenVec(queue[i].grp.scale, new THREE.Vector3(1,1,1), animate?320:0));
+  // figure out the widest queue so labels can sit clear of it
+  let maxLen = 0;
+  for (const q of queues) maxLen = Math.max(maxLen, q.length);
+  const labelOffsetX = (Math.max(maxLen, 1)/2) * DX + 1.6;
+  for (let i=0;i<n;i++){
+    const y = queueY(i, n);
+    const q = queues[i];
+    for (let j=0;j<q.length;j++){
+      tasks.push(tweenVec(q[j].grp.position, new THREE.Vector3(blockX(j, q.length), y, 0), animate?420:0));
+      tasks.push(tweenVec(q[j].grp.scale, new THREE.Vector3(1,1,1), animate?320:0));
+    }
+    if (queueLabels[i]) queueLabels[i].position.set(-labelOffsetX, y, 0);
   }
   await Promise.all(tasks);
+  clampActive();
   refreshHUD();
 }
 function refreshHUD(){
-  $('#t-size').textContent = queue.length;
-  $('#t-front').textContent = queue.length ? queue[0].value : '∅';
-  $('#t-back').textContent  = queue.length ? queue[queue.length-1].value : '∅';
+  $('#t-count').textContent  = queues.length;
+  $('#t-active').textContent = activeIdx;
+  const q = queues[activeIdx];
+  $('#t-front').textContent = q && q.length ? q[0].value             : '∅';
+  $('#t-back').textContent  = q && q.length ? q[q.length-1].value    : '∅';
   $('#undo-depth').textContent = history.size();
-  $('#hist-pill').textContent = history.size();
+  $('#hist-pill').textContent  = history.size();
 }
 async function pulse(block, color=0x5cffb4, ms=240){
   if (!block) return;
@@ -552,77 +608,160 @@ function readVal(allowAuto=true){
   if (raw === ''){ if (!allowAuto) return null; const v = randomInt(1,99); $('#in-val').value = v; return v; }
   const n = Number(raw); return Number.isFinite(n) ? n : raw;
 }
+function readQueueIdx(){
+  const raw = parseNum($('#in-queue').value, 0);
+  const i = Math.max(0, Math.min(queues.length - 1, Math.trunc(raw)));
+  activeIdx = i;
+  $('#in-queue').value = i;
+  return i;
+}
+function snapshotAll(){ return queues.map(q => q.map(b => b.value)); }
+async function rebuildFrom(snap){
+  for (const q of queues) for (const b of q) scene.remove(b.grp);
+  queues.length = 0;
+  for (const queueVals of snap){
+    const q = [];
+    for (const v of queueVals) q.push(makeBlock(v));
+    queues.push(q);
+  }
+  if (!queues.length) queues.push([]);
+  clampActive();
+  await relayout(false);
+}
+
+/* shared cascade: shift front of src, enqueue at back of dst with a glide animation */
+async function cascadeDeq(src, dst){
+  history.push({type:'snapshot', snap: snapshotAll(), activeIdx});
+  const blk = queues[src].shift();
+  const dir = dst > src ? '↓' : '↑';
+  cx.set(`dequeue ${blk.value} from #${src} ${dir} enqueue #${dst}`, 'O(1)');
+  log.say(`<span class="ko">dequeue</span> ${blk.value} from <b>#${src}</b> ${dir} enqueue <b>#${dst}</b>`);
+  await pulse(blk, 0xff5c70);
+  await stepperCheckpoint();
+  const n = queues.length;
+  // glide: out to the left, drop down to dst row, drift to dst back
+  const dstY = queueY(dst, n);
+  const dstQLen = queues[dst].length;
+  const dstX = blockX(dstQLen, dstQLen + 1);  // tail position once we push
+  await tweenVec(blk.grp.position, new THREE.Vector3(blk.grp.position.x - 1.8, blk.grp.position.y, 0.6), 280);
+  await tweenVec(blk.grp.position, new THREE.Vector3(blk.grp.position.x,       dstY,              0.6), 380);
+  queues[dst].push(blk);
+  await tweenVec(blk.grp.position, new THREE.Vector3(dstX, dstY, 0), 360);
+  await pulse(blk, 0x5cffb4);
+  await stepperCheckpoint();
+  await relayout(true);
+}
 
 const opHandlers = {
   enqueue: lock(async () => {
     const v = readVal(); if (v === null) return;
-    history.push({type:'dequeue'});
-    cx.set(`enqueue ${v} · @ tail`, 'O(1)');
+    const i = readQueueIdx();
+    history.push({type:'snapshot', snap: snapshotAll(), activeIdx});
+    cx.set(`enqueue ${v} → queue ${i}`, 'O(1)');
     const blk = makeBlock(v);
-    blk.grp.position.set(colX(queue.length, queue.length) + 4, Y, -2);
-    queue.push(blk);
+    const n = queues.length;
+    blk.grp.position.set(blockX(queues[i].length + 4, queues[i].length + 4), queueY(i, n), -2);
+    queues[i].push(blk);
     await relayout(true);
     await pulse(blk, 0x35d0ff);
     await stepperCheckpoint();
-    log.say(`<span class="k">enqueue</span> ${v}`);
+    log.say(`<span class="k">enqueue</span> ${v} → queue ${i}`);
   }),
   dequeue: lock(async () => {
-    if (!queue.length){ log.say(`<span class="kx">err</span> queue empty`); return; }
-    const blk = queue.shift();
-    history.push({type:'unshift', value: blk.value});
-    cx.set(`dequeue · ${blk.value} from head`, 'O(1)');
+    const i = readQueueIdx();
+    if (!queues[i].length){ log.say(`<span class="kx">err</span> queue ${i} empty`); return; }
+    history.push({type:'snapshot', snap: snapshotAll(), activeIdx});
+    const blk = queues[i].shift();
+    cx.set(`dequeue ${blk.value} from #${i} · discard`, 'O(1)');
     await pulse(blk, 0xff5c70);
     await stepperCheckpoint();
     await tweenVec(blk.grp.position, new THREE.Vector3(blk.grp.position.x - 4, blk.grp.position.y, 2), 380);
     await tweenVec(blk.grp.scale, new THREE.Vector3(0.001,0.001,0.001), 220);
     scene.remove(blk.grp);
     await relayout(true);
-    log.say(`<span class="ko">dequeue</span> → ${blk.value}`);
+    log.say(`<span class="ko">dequeue</span> ${blk.value} from <b>#${i}</b>`);
+  }),
+  deqNext: lock(async () => {
+    const i = readQueueIdx();
+    if (!queues[i].length){ log.say(`<span class="kx">err</span> queue ${i} empty`); return; }
+    if (i >= queues.length - 1){
+      log.say(`<span class="kx">err</span> no queue #${i+1} · add a queue first`);
+      cx.set(`no queue #${i+1}`, 'noop'); return;
+    }
+    await cascadeDeq(i, i + 1);
+  }),
+  deqPrev: lock(async () => {
+    const i = readQueueIdx();
+    if (!queues[i].length){ log.say(`<span class="kx">err</span> queue ${i} empty`); return; }
+    if (i <= 0){
+      log.say(`<span class="kx">err</span> no queue #${i-1} · cannot go below 0`);
+      cx.set(`no queue #${i-1}`, 'noop'); return;
+    }
+    await cascadeDeq(i, i - 1);
   }),
   peek: lock(async () => {
-    if (!queue.length){ log.say(`<span class="kx">err</span> queue empty`); return; }
-    cx.set(`peek front · ${queue[0].value}`, 'O(1)');
-    await pulse(queue[0], 0xffb454, 520);
+    const i = readQueueIdx();
+    if (!queues[i].length){ log.say(`<span class="kx">err</span> queue ${i} empty`); return; }
+    cx.set(`peek front #${i} · ${queues[i][0].value}`, 'O(1)');
+    await pulse(queues[i][0], 0xffb454, 520);
     await stepperCheckpoint();
-    log.say(`<span class="k">peek front</span> → ${queue[0].value}`);
+    log.say(`<span class="k">peek front</span> #${i} → ${queues[i][0].value}`);
   }),
   undo: lock(async () => {
-    const op = history.pop(); if (!op){ log.say(`<span class="kx">undo</span> empty`); return; }
-    if (op.type === 'dequeue'){
-      const blk = queue.pop();
-      if (blk){ await tweenVec(blk.grp.scale, new THREE.Vector3(0.001,0.001,0.001), 220); scene.remove(blk.grp); }
-    } else if (op.type === 'unshift'){
-      const blk = makeBlock(op.value);
-      blk.grp.position.set(colX(-1, queue.length) - 2, Y, -2);
-      queue.unshift(blk);
-    } else if (op.type === 'snapshot'){
-      for (const b of queue) scene.remove(b.grp);
-      queue.length = 0;
-      for (const v of op.values){ queue.push(makeBlock(v)); }
+    const op = history.pop();
+    if (!op){ log.say(`<span class="kx">undo</span> empty`); return; }
+    if (op.type === 'snapshot'){
+      await rebuildFrom(op.snap);
+      activeIdx = op.activeIdx ?? 0;
+      clampActive();
+      await relayout(true);
     }
-    await relayout(true);
     cx.set('undo', '—');
     log.say(`<span class="ko">undo</span>`);
   }),
   clear: lock(async () => {
-    history.push({type:'snapshot', values: queue.map(b=>b.value)});
-    for (const b of queue) scene.remove(b.grp);
-    queue.length = 0;
-    await relayout(false);
-    log.say(`<span class="ko">clear</span>`);
+    history.push({type:'snapshot', snap: snapshotAll(), activeIdx});
+    await rebuildFrom([[]]);
+    activeIdx = 0;
+    log.say(`<span class="ko">clear all</span>`);
+    cx.set('cleared', '—');
   }),
 };
 for (const k in opHandlers) $('#op-'+k).addEventListener('click', opHandlers[k]);
 $('#b-rand').addEventListener('click', () => $('#in-val').value = randomInt(1,99));
 
+$('#in-queue').addEventListener('change', async () => {
+  readQueueIdx();
+  await relayout(true);
+});
+
+$('#b-add-queue').addEventListener('click', lock(async () => {
+  history.push({type:'snapshot', snap: snapshotAll(), activeIdx});
+  queues.push([]);
+  cx.set(`add queue · now ${queues.length}`, 'O(1)');
+  log.say(`<span class="km">+ queue</span> · count = ${queues.length}`);
+  activeIdx = queues.length - 1;
+  await relayout(true);
+}));
+
+$('#b-rm-queue').addEventListener('click', lock(async () => {
+  if (queues.length <= 1){ log.say(`<span class="kx">err</span> cannot remove the last queue`); return; }
+  history.push({type:'snapshot', snap: snapshotAll(), activeIdx});
+  const gone = queues.pop();
+  for (const b of gone) scene.remove(b.grp);
+  if (queueLabels.length > queues.length){ const lbl = queueLabels.pop(); scene.remove(lbl); }
+  cx.set(`remove queue · now ${queues.length} · dropped ${gone.length} block(s)`, 'O(n)');
+  log.say(`<span class="ko">− queue</span> · count = ${queues.length} · ${gone.length} block(s) gone`);
+  activeIdx = Math.min(activeIdx, queues.length - 1);
+  await relayout(true);
+}));
+
 /* seed */
 (async () => {
-  for (const v of [2, 4, 6, 9]){
-    const blk = makeBlock(v); queue.push(blk);
-  }
+  for (const v of [2, 4, 6, 9]) queues[0].push(makeBlock(v));
   await relayout(false);
   history.clear(); refreshHUD();
-  log.say(`<span class="k">init</span> queue:4`);
+  log.say(`<span class="k">init</span> 1 queue · 4 blocks`);
   cx.set('idle', '—');
 })();
 </script>
