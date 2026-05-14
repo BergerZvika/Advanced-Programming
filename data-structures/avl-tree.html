@@ -432,8 +432,11 @@ function mountPlayer({mount, onBack}){
   const pauseBtn = el('button', {class:'pl-btn pl-pause hidden', title:'pause (Space)', html:'<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>'});
   const backBtn  = el('button', {class:'pl-btn',  title:'step backward (←)', html:'<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M6 6h2v12H6zM20 6 9 12l11 6z"/></svg>'});
   const fwdBtn   = el('button', {class:'pl-btn',  title:'skip to end of step (→)', html:'<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M16 6h2v12h-2zM4 6l11 6L4 18z"/></svg>'});
-  const speedBtn = el('button', {class:'pl-btn pl-speed', title:'cycle speed'}, '1×');
-  const bar = el('div', {class:'pl-bar'}, backBtn, playBtn, pauseBtn, fwdBtn, speedBtn);
+  // continuous speed slider: 0.1× ··· 5× with smooth steps
+  const speedSlider = el('input', {type:'range', class:'pl-speed-slider', min:'0.1', max:'5', step:'0.05', value:'1', title:'speed'});
+  const speedVal    = el('span', {class:'pl-speed-val'}, '1.00×');
+  const speedWrap   = el('div', {class:'pl-speed-wrap', title:'animation speed'}, speedSlider, speedVal);
+  const bar = el('div', {class:'pl-bar'}, backBtn, playBtn, pauseBtn, fwdBtn, speedWrap);
   root.appendChild(bar);
 
   function setMode(playing){
@@ -450,11 +453,15 @@ function mountPlayer({mount, onBack}){
     const ok = await stepperUndo();
     if (!ok && onBack) onBack();   // fall back to lab's op-undo if checkpoints empty
   });
-  const SPEEDS = [1, 1.5, 2, 0.5];
-  let si = 0;
-  speedBtn.addEventListener('click', () => {
-    si = (si + 1) % SPEEDS.length; stepper.speed = SPEEDS[si]; speedBtn.textContent = SPEEDS[si] + '×';
-  });
+  // continuous speed: 0.10× ··· 5.00×
+  function applySpeed(){
+    const v = parseFloat(speedSlider.value) || 1;
+    stepper.speed = v;
+    speedVal.textContent = (v < 10 ? v.toFixed(2) : v.toFixed(1)) + '×';
+  }
+  speedSlider.addEventListener('input', applySpeed);
+  speedSlider.addEventListener('change', applySpeed);
+  applySpeed();
 
   // No status text in the bar — cx.set still updates the side-panel readout
   // via createComplexityPanel; the bar stays a fixed-size button row.

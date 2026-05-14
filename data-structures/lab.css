@@ -467,10 +467,50 @@ button{font-family:inherit;color:inherit;background:none;border:none;cursor:poin
 .pl-btn:hover{background:rgba(53,208,255,0.16); border-color:rgba(53,208,255,0.55); color:#fff; transform:translateY(-1px)}
 .pl-play{color:var(--ok); border-color:rgba(92,255,180,0.35)}
 .pl-pause{color:var(--amber); border-color:rgba(255,180,84,0.35)}
-/* fixed width so the bar geometry never shifts when speed cycles 0.5× → 2× */
-.pl-speed{width:54px; min-width:54px; padding:0}
-/* legacy status element — kept for backwards compatibility, hidden */
+/* legacy single-button speed control — replaced by .pl-speed-wrap slider */
+.pl-speed{display:none}
 .pl-status{display:none}
+
+/* continuous speed slider */
+.pl-speed-wrap{
+  display:inline-flex; align-items:center; gap:8px;
+  padding:0 8px 0 10px; height:32px;
+  border-radius:8px;
+  background:rgba(8,10,18,0.65); border:1px solid rgba(124,180,255,0.18);
+}
+.pl-speed-val{
+  font-family:var(--mono); font-size:10.5px; letter-spacing:.05em;
+  color:var(--ink-dim); min-width:40px; text-align:right;
+}
+.pl-speed-slider{
+  -webkit-appearance:none; appearance:none;
+  width:120px; height:4px; background:transparent;
+  outline:none;
+}
+.pl-speed-slider::-webkit-slider-runnable-track{
+  height:4px; border-radius:99px;
+  background:linear-gradient(90deg, rgba(53,208,255,0.55), rgba(124,180,255,0.18));
+}
+.pl-speed-slider::-moz-range-track{
+  height:4px; border-radius:99px;
+  background:linear-gradient(90deg, rgba(53,208,255,0.55), rgba(124,180,255,0.18));
+}
+.pl-speed-slider::-webkit-slider-thumb{
+  -webkit-appearance:none; appearance:none;
+  width:14px; height:14px; border-radius:50%;
+  background:#fff; border:2px solid var(--cyan);
+  box-shadow:0 0 10px rgba(53,208,255,0.7);
+  margin-top:-5px;
+  cursor:grab;
+}
+.pl-speed-slider:active::-webkit-slider-thumb{cursor:grabbing}
+.pl-speed-slider::-moz-range-thumb{
+  width:14px; height:14px; border-radius:50%;
+  background:#fff; border:2px solid var(--cyan);
+  box-shadow:0 0 10px rgba(53,208,255,0.7);
+  cursor:grab;
+}
+.pl-speed-slider:focus{outline:none}
 
 /* scrollbars */
 *::-webkit-scrollbar{width:10px;height:10px}
