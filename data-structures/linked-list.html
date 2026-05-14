@@ -48,7 +48,13 @@
           <button class="ghost" id="b-rand" title="random number">RND</button>
         </div>
 
-        <div class="label mt-8">Index (for insertAt / removeAt)</div>
+        <div class="label mt-8">Direction</div>
+        <div class="op-grid" style="grid-template-columns:1fr 1fr">
+          <button class="op active" data-color="cyan"  id="op-dir-singly"><span class="name"><span class="dot"></span> singly</span><span class="cx">→</span></button>
+          <button class="op"        data-color="amber" id="op-dir-doubly"><span class="name"><span class="dot"></span> doubly</span><span class="cx">↔</span></button>
+        </div>
+
+        <div class="label mt-12">Index (for insertAt / removeAt)</div>
         <div class="input-row">
           <input id="in-idx" placeholder="0..size" autocomplete="off" />
         </div>
@@ -553,7 +559,8 @@ const GAP = 3.0;       // distance between nodes (x)
 const NODE_R = 0.9;    // sphere radius
 const Y = 0;
 
-const list = []; // [{value, mesh, label, edgeOut}]
+const list = []; // [{value, mesh, label, edge, edgeBack}]
+let doubly = false;   // direction toggle: false = singly linked, true = doubly linked
 
 function makeNode(value){
   const grp = new THREE.Group();
@@ -606,30 +613,32 @@ function makeNode(value){
   return {grp, body, wire, halo, label:{paint, tex}};
 }
 
-function makeArrow(){
+function makeArrow(color = 0x35d0ff, reverse = false){
   const g = new THREE.Group();
   const shaft = new THREE.Mesh(
     new THREE.CylinderGeometry(0.06, 0.06, 1, 16),
-    new THREE.MeshBasicMaterial({color:0x35d0ff, transparent:true, opacity:0.85})
+    new THREE.MeshBasicMaterial({color, transparent:true, opacity:0.85})
   );
   shaft.rotation.z = Math.PI/2;
   g.add(shaft);
   const head = new THREE.Mesh(
     new THREE.ConeGeometry(0.18, 0.42, 18),
-    new THREE.MeshBasicMaterial({color:0x35d0ff})
+    new THREE.MeshBasicMaterial({color})
   );
-  head.rotation.z = -Math.PI/2;
+  // forward arrow points +X (cone apex to the right); reverse points -X
+  head.rotation.z = reverse ?  Math.PI/2 : -Math.PI/2;
   g.add(head);
-  g.userData = {shaft, head};
+  g.userData = {shaft, head, reverse};
   return g;
 }
 
-function setArrow(arrow, fromX, toX){
+function setArrow(arrow, fromX, toX, yOffset = 0){
   const len = toX - fromX - NODE_R*2 - 0.1;
   const mid = (fromX + toX)/2;
-  arrow.position.set(mid, Y, 0);
+  arrow.position.set(mid, Y + yOffset, 0);
   arrow.userData.shaft.scale.y = Math.max(0.01, len);
-  arrow.userData.head.position.x = len/2 + 0.06;
+  const sign = arrow.userData.reverse ? -1 : 1;
+  arrow.userData.head.position.x = sign * (len/2 + 0.06);
 }
 
 function targetX(i){
@@ -678,15 +687,28 @@ async function relayout(animate=true){
   await Promise.all(list.map((node, i) => {
     return tweenVec(node.grp.position, new THREE.Vector3(targetX(i), Y, 0), ms);
   }));
-  // node-to-node arrows (the linked-list pointers between adjacent nodes)
+  // forward (next) and optional backward (prev) arrows between adjacent nodes
+  // - forward: drawn slightly above the node centerline so it doesn't overlap with backward
+  // - backward: drawn slightly below, only when `doubly` mode is on
+  const fwdY = doubly ?  0.22 : 0;
+  const backY = -0.22;
   list.forEach((node, i) => {
-    if (!node.edge) return;
-    if (i === list.length - 1){
-      node.edge.visible = false;
-    } else {
-      node.edge.visible = true;
-      const fromX = targetX(i), toX = targetX(i+1);
-      setArrow(node.edge, fromX, toX);
+    if (node.edge){
+      if (i === list.length - 1){
+        node.edge.visible = false;
+      } else {
+        node.edge.visible = true;
+        setArrow(node.edge, targetX(i), targetX(i+1), fwdY);
+      }
+    }
+    if (node.edgeBack){
+      if (!doubly || i === 0){
+        node.edgeBack.visible = false;
+      } else {
+        node.edgeBack.visible = true;
+        // backward arrow spans from prev to this node, but the head points left (at prev)
+        setArrow(node.edgeBack, targetX(i-1), targetX(i), backY);
+      }
     }
   });
   // refresh head/tail labels + body emissive highlight
@@ -747,12 +769,15 @@ async function spawnAt(value, idx){
   node.grp.position.set(targetX(idx), Y + 6, -3);
   node.grp.scale.setScalar(0.001);
   scene.add(node.grp);
-  // arrow (we always allocate one; toggle visibility on relayout)
-  const edge = makeArrow();
+  // arrows: forward (cyan → next) + backward (amber → prev, used only when doubly mode is on)
+  const edge = makeArrow(0x35d0ff, false);
   edge.visible = false;
   scene.add(edge);
+  const edgeBack = makeArrow(0xffb454, true);
+  edgeBack.visible = false;
+  scene.add(edgeBack);
 
-  const record = {value, grp:node.grp, body:node.body, wire:node.wire, halo:node.halo, label:node.label, edge};
+  const record = {value, grp:node.grp, body:node.body, wire:node.wire, halo:node.halo, label:node.label, edge, edgeBack};
   list.splice(idx, 0, record);
 
   // grow
@@ -774,7 +799,8 @@ async function dropAt(idx){
     tweenVec(node.grp.scale, new THREE.Vector3(0.001,0.001,0.001), 420),
   ]);
   scene.remove(node.grp);
-  if (node.edge) scene.remove(node.edge);
+  if (node.edge)     scene.remove(node.edge);
+  if (node.edgeBack) scene.remove(node.edgeBack);
   list.splice(idx, 1);
   await relayout(true);
   return node;
@@ -928,6 +954,18 @@ $('#b-rand').addEventListener('click', () => {
   $('#in-val').value = randomInt(1, 99);
 });
 
+/* direction toggle: singly ↔ doubly linked */
+async function setDoubly(on){
+  doubly = on;
+  $('#op-dir-singly').classList.toggle('active', !on);
+  $('#op-dir-doubly').classList.toggle('active',  on);
+  log.say(`<span class="km">direction</span> · ${on ? 'doubly' : 'singly'} linked`);
+  cx.set(on ? 'doubly linked · ↔ both pointers' : 'singly linked · → next only', '—');
+  await relayout(true);
+}
+$('#op-dir-singly').addEventListener('click', () => setDoubly(false));
+$('#op-dir-doubly').addEventListener('click', () => setDoubly(true));
+
 function readValue(allowAuto){
   const raw = $('#in-val').value.trim();
   if (raw === ''){
@@ -944,8 +982,9 @@ function esc(s){ return String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;
 async function loadList(values){
   // wipe the current list (without animation)
   for (const node of list){
-    if (node.grp) scene.remove(node.grp);
-    if (node.edge) scene.remove(node.edge);
+    if (node.grp)       scene.remove(node.grp);
+    if (node.edge)      scene.remove(node.edge);
+    if (node.edgeBack)  scene.remove(node.edgeBack);
   }
   list.length = 0;
   for (const v of values) await spawnAt(v, list.length);
