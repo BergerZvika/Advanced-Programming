@@ -529,6 +529,10 @@ const P = 0.5;
 const MAX_LEVEL = 6;
 
 let head = makeNode(-Infinity, MAX_LEVEL);
+// +∞ sentinel rendered on the right; it isn't traversed (forward[i]===null is the
+// signal that we've fallen off the end), only visualised so users see a proper
+// sentinel column instead of links to nothing.
+const tail = makeNode(+Infinity, MAX_LEVEL);
 let level = 0;
 let size = 0;
 
@@ -579,7 +583,9 @@ function del(v){
     update[i].forward[i] = x.forward[i];
   }
   if (x.columnMesh) scene.remove(x.columnMesh);
-  for (const s of x.sprites) scene.remove(s);
+  // (the per-cell sprites live inside x.columnMesh so removing the group is enough;
+  //  x.sprites is legacy and may be undefined now)
+  if (x.sprites) for (const s of x.sprites) scene.remove(s);
   while (level > 0 && !head.forward[level]) level--;
   size--;
   return true;
@@ -604,65 +610,64 @@ function listAll(){
   return out;
 }
 
-function columnX(idx, n){ return (idx - (n-1)/2) * COL_GAP_BASE; }
+// total visible columns = head + N real nodes + tail
+function totalCols(nReal){ return nReal + 2; }
+// idx: 0 = head, 1..N = real nodes, N+1 = tail
+function columnX(idx, total){ return (idx - (total-1)/2) * COL_GAP_BASE; }
 
-function ensureColumn(node, idx, n){
-  // column = stacked cells (one per level), tagged with the value on every cell
-  if (!node.columnMesh){
-    const grp = new THREE.Group();
-    node.cellMeshes = [];
-    node.cellSprites = [];
-    for (let i = 0; i <= node.level; i++){
-      // bigger, glossier cells so they read from any orbit angle
-      const m = new THREE.Mesh(
-        new THREE.SphereGeometry(0.62, 24, 18),
-        new THREE.MeshPhysicalMaterial({color:0x1a2548, metalness:0.55, roughness:0.18, emissive:0x152540, emissiveIntensity:0.95, clearcoat:0.7})
-      );
-      m.position.set(0, i*ROW_GAP, 0);
-      grp.add(m);
-      node.cellMeshes.push(m);
-      // wire halo around the cell
-      const wire = new THREE.Mesh(
-        new THREE.SphereGeometry(0.64, 14, 10),
-        new THREE.MeshBasicMaterial({color:0x7c5cff, wireframe:true, transparent:true, opacity:0.45})
-      );
-      wire.position.copy(m.position);
-      grp.add(wire);
-      // per-cell value label — value always visible on every level
-      const c = document.createElement('canvas'); c.width=192; c.height=192;
-      const ctx = c.getContext('2d');
-      ctx.fillStyle = '#ffffff';
-      ctx.font='800 110px IBM Plex Mono, monospace';
-      ctx.textAlign='center'; ctx.textBaseline='middle';
-      ctx.shadowColor='rgba(0,0,0,0.9)'; ctx.shadowBlur=14;
-      ctx.fillText(String(node.value), 96, 100);
-      const tex = new THREE.CanvasTexture(c); tex.minFilter=THREE.LinearFilter;
-      const spr = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true, depthTest:false}));
-      spr.renderOrder = 10;
-      spr.position.set(0, i*ROW_GAP, 0.5);
-      spr.scale.set(0.95, 0.95, 1);
-      grp.add(spr);
-      node.cellSprites.push(spr);
-    }
-    // level number tag at the top of the column
-    {
-      const c = document.createElement('canvas'); c.width=192; c.height=96;
-      const ctx = c.getContext('2d');
-      ctx.fillStyle = '#ffb454';
-      ctx.font='800 60px IBM Plex Mono, monospace';
-      ctx.textAlign='center'; ctx.textBaseline='middle';
-      ctx.shadowColor='rgba(0,0,0,0.9)'; ctx.shadowBlur=14;
-      ctx.fillText(`L${node.level}`, 96, 52);
-      const tex = new THREE.CanvasTexture(c); tex.minFilter=THREE.LinearFilter;
-      const spr = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true, depthTest:false}));
-      spr.renderOrder = 11;
-      spr.position.set(0, (node.level+1)*ROW_GAP + 0.1, 0);
-      spr.scale.set(1.1, 0.55, 1);
-      grp.add(spr);
-    }
-    scene.add(grp);
-    node.columnMesh = grp;
+function valueLabel(v){
+  if (v === -Infinity) return '−∞';
+  if (v === +Infinity) return '+∞';
+  return String(v);
+}
+
+function ensureColumn(node){
+  if (node.columnMesh) return;
+  const isSentinel = node === head || node === tail;
+  // sentinels render every level (MAX_LEVEL), real nodes only up to their own level
+  const maxLvl = isSentinel ? MAX_LEVEL : node.level;
+  const grp = new THREE.Group();
+  node.cellMeshes  = [];
+  node.cellSprites = [];
+  for (let i = 0; i <= maxLvl; i++){
+    const m = new THREE.Mesh(
+      new THREE.SphereGeometry(0.62, 24, 18),
+      new THREE.MeshPhysicalMaterial({
+        color:    isSentinel ? 0x2a1f0d : 0x1a2548,
+        metalness:0.55, roughness:0.18,
+        emissive: isSentinel ? 0xffb454 : 0x152540,
+        emissiveIntensity: isSentinel ? 0.55 : 0.95,
+        clearcoat:0.7,
+      })
+    );
+    m.position.set(0, i*ROW_GAP, 0);
+    grp.add(m);
+    node.cellMeshes.push(m);
+    // wire halo
+    const wire = new THREE.Mesh(
+      new THREE.SphereGeometry(0.64, 14, 10),
+      new THREE.MeshBasicMaterial({color: isSentinel ? 0xffb454 : 0x7c5cff, wireframe:true, transparent:true, opacity:0.45})
+    );
+    wire.position.copy(m.position);
+    grp.add(wire);
+    // per-cell value label
+    const c = document.createElement('canvas'); c.width=192; c.height=192;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.font='800 110px IBM Plex Mono, monospace';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.shadowColor='rgba(0,0,0,0.9)'; ctx.shadowBlur=14;
+    ctx.fillText(valueLabel(node.value), 96, 100);
+    const tex = new THREE.CanvasTexture(c); tex.minFilter=THREE.LinearFilter;
+    const spr = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true, depthTest:false}));
+    spr.renderOrder = 10;
+    spr.position.set(0, i*ROW_GAP, 0.5);
+    spr.scale.set(0.95, 0.95, 1);
+    grp.add(spr);
+    node.cellSprites.push(spr);
   }
+  scene.add(grp);
+  node.columnMesh = grp;
 }
 
 const links = [];  // pool of cylinder mesh — fatter / less transparent than before
@@ -679,34 +684,86 @@ function placeLink(link, ax, ay, bx, by){
   link.scale.y = len; link.rotation.z = Math.atan2(dx, -dy);
 }
 
-async function relayout(animate=true){
-  const all = listAll();
-  const n = all.length;
-  for (let i=0;i<n;i++) ensureColumn(all[i], i, n);
-  const tasks = [];
-  for (let i=0;i<n;i++){
-    const node = all[i];
-    const x = columnX(i, n);
-    tasks.push(tweenVec(node.columnMesh.position, new THREE.Vector3(x, -1.5, 0), animate?420:0));
+// row-level labels (L0, L1, … LK) — drawn ONCE on the left margin
+const rowLabels = [];
+function ensureRowLabels(){
+  while (rowLabels.length <= MAX_LEVEL){
+    const i = rowLabels.length;
+    const c = document.createElement('canvas'); c.width=192; c.height=96;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#ffb454';
+    ctx.font='800 64px IBM Plex Mono, monospace';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.shadowColor='rgba(0,0,0,0.9)'; ctx.shadowBlur=14;
+    ctx.fillText('L'+i, 96, 52);
+    const tex = new THREE.CanvasTexture(c); tex.minFilter=THREE.LinearFilter;
+    const spr = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true, depthTest:false}));
+    spr.renderOrder = 11;
+    spr.scale.set(1.2, 0.6, 1);
+    scene.add(spr);
+    rowLabels.push(spr);
   }
+}
+
+async function relayout(animate=true){
+  ensureRowLabels();
+  const all = listAll();              // real nodes only
+  const n = all.length;
+  const total = totalCols(n);         // head + N + tail
+  // make sure sentinels and every real node have a column mesh
+  ensureColumn(head);
+  ensureColumn(tail);
+  for (const node of all) ensureColumn(node);
+
+  const baseY = -1.5;
+  const tasks = [];
+  // head at idx 0, real nodes at 1..N, tail at idx N+1
+  tasks.push(tweenVec(head.columnMesh.position, new THREE.Vector3(columnX(0,        total), baseY, 0), animate?420:0));
+  for (let i=0;i<n;i++){
+    tasks.push(tweenVec(all[i].columnMesh.position, new THREE.Vector3(columnX(i+1,  total), baseY, 0), animate?420:0));
+  }
+  tasks.push(tweenVec(tail.columnMesh.position,  new THREE.Vector3(columnX(n+1,    total), baseY, 0), animate?420:0));
   await Promise.all(tasks);
 
-  // links
+  // row labels — once on the left, just past the head column
+  const labelX = columnX(0, total) - 1.8;
+  for (let i = 0; i <= MAX_LEVEL; i++){
+    rowLabels[i].visible = true;
+    rowLabels[i].position.set(labelX, baseY + i * ROW_GAP, 0);
+  }
+  for (let i = MAX_LEVEL + 1; i < rowLabels.length; i++) rowLabels[i].visible = false;
+
+  // links — every forward pointer (and a "to tail" link for null forwards at sentinel/node levels)
   for (const l of links) l.visible = false;
   let li = 0;
+  function drawLink(srcIdx, dstIdx, lvl){
+    const ax = columnX(srcIdx, total), bx = columnX(dstIdx, total);
+    const y = baseY + lvl*ROW_GAP;
+    const link = getLink(li++);
+    link.visible = true; placeLink(link, ax, y, bx, y);
+    link.material.opacity = 0.55 + 0.06*lvl;
+  }
+  // head forwards
+  for (let lvl=0; lvl<=MAX_LEVEL; lvl++){
+    const target = head.forward[lvl];
+    if (target){
+      const tIdx = all.indexOf(target);
+      if (tIdx >= 0) drawLink(0, tIdx + 1, lvl);
+    } else {
+      drawLink(0, n + 1, lvl);   // head → tail at this level (empty span)
+    }
+  }
+  // real-node forwards
   for (let i=0;i<n;i++){
     const node = all[i];
     for (let lvl=0; lvl<=node.level; lvl++){
       const target = node.forward[lvl];
-      if (!target) continue;
-      // find target idx in all
-      const tIdx = all.indexOf(target);
-      if (tIdx < 0) continue;
-      const ax = columnX(i, n); const bx = columnX(tIdx, n);
-      const y = -1.5 + lvl*ROW_GAP;
-      const link = getLink(li++);
-      link.visible = true; placeLink(link, ax, y, bx, y);
-      link.material.opacity = 0.35 + 0.1*lvl;
+      if (target){
+        const tIdx = all.indexOf(target);
+        if (tIdx >= 0) drawLink(i+1, tIdx + 1, lvl);
+      } else {
+        drawLink(i+1, n + 1, lvl); // node → tail at this level
+      }
     }
   }
   refreshHUD();
@@ -767,10 +824,12 @@ function readVals(){
 function snapshotValues(){ return listAll().map(n=>n.value); }
 
 async function rebuildFrom(values){
-  // reset
+  // reset — purge real nodes only; keep the head/tail sentinels (they're reused)
   for (const node of listAll()){
     if (node.columnMesh) scene.remove(node.columnMesh);
   }
+  // rebuild head from scratch so its forward[] is reset; keep tail as-is
+  if (head.columnMesh){ scene.remove(head.columnMesh); head.columnMesh = null; }
   head = makeNode(-Infinity, MAX_LEVEL); level = 0; size = 0;
   for (const v of values) insert(v);
   await relayout(false);
