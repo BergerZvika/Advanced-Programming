@@ -637,6 +637,41 @@ function targetX(i){
   return (i - (n-1)/2) * GAP;
 }
 
+/* ─── HEAD / TAIL text labels that track the ends of the list ─── */
+function makeEndLabel(text, color){
+  const c = document.createElement('canvas'); c.width=384; c.height=128;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = color;
+  ctx.font = '800 80px IBM Plex Mono, monospace';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 14;
+  ctx.fillText(text, 192, 64);
+  const tex = new THREE.CanvasTexture(c); tex.minFilter = THREE.LinearFilter;
+  const spr = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true, depthTest:false}));
+  spr.renderOrder = 12;
+  spr.scale.set(2.0, 0.66, 1);
+  scene.add(spr);
+  return spr;
+}
+const headLabel = makeEndLabel('HEAD', '#5cffb4');   // green
+const tailLabel = makeEndLabel('TAIL', '#ffb454');   // amber
+
+// remember which nodes carry the highlight so we can clear them when the
+// ends move
+let headHi = null, tailHi = null;
+function setEndHighlight(node, color){
+  if (!node || !node.body) return;
+  const m = node.body.material;
+  m.emissive.setHex(color);
+  m.emissiveIntensity = 1.2;
+}
+function clearEndHighlight(node){
+  if (!node || !node.body) return;
+  const m = node.body.material;
+  m.emissive.setHex(0x0a1428);
+  m.emissiveIntensity = 0.6;
+}
+
 async function relayout(animate=true){
   // re-center all nodes & set arrows
   const ms = animate ? 380 : 0;
@@ -654,6 +689,28 @@ async function relayout(animate=true){
       setArrow(node.edge, fromX, toX);
     }
   });
+  // refresh head/tail labels + body emissive highlight
+  if (headHi && headHi !== list[0])                    clearEndHighlight(headHi);
+  if (tailHi && tailHi !== list[list.length - 1])      clearEndHighlight(tailHi);
+  if (list.length){
+    headHi = list[0]; tailHi = list[list.length - 1];
+    setEndHighlight(headHi, 0x5cffb4);
+    if (tailHi !== headHi) setEndHighlight(tailHi, 0xffb454);
+    const labelY = Y + NODE_R + 2.6;
+    headLabel.visible = tailLabel.visible = true;
+    headLabel.position.set(targetX(0), labelY, 0);
+    tailLabel.position.set(targetX(list.length - 1), labelY, 0);
+    if (list.length === 1){
+      // one node is both head and tail — fan the labels apart so they don't overlap
+      headLabel.position.x -= 0.95;
+      tailLabel.position.x += 0.95;
+    }
+  } else {
+    if (headHi) clearEndHighlight(headHi);
+    if (tailHi) clearEndHighlight(tailHi);
+    headHi = tailHi = null;
+    headLabel.visible = tailLabel.visible = false;
+  }
   refreshHUD();
 }
 
