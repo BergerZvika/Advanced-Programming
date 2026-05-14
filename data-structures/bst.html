@@ -423,8 +423,7 @@ function mountPlayer({mount, onBack}){
   const backBtn  = el('button', {class:'pl-btn',  title:'step backward (←)', html:'<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M6 6h2v12H6zM20 6 9 12l11 6z"/></svg>'});
   const fwdBtn   = el('button', {class:'pl-btn',  title:'skip to end of step (→)', html:'<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M16 6h2v12h-2zM4 6l11 6L4 18z"/></svg>'});
   const speedBtn = el('button', {class:'pl-btn pl-speed', title:'cycle speed'}, '1×');
-  const status   = el('div', {class:'pl-status'}, 'idle');
-  const bar = el('div', {class:'pl-bar'}, backBtn, playBtn, pauseBtn, fwdBtn, speedBtn, status);
+  const bar = el('div', {class:'pl-bar'}, backBtn, playBtn, pauseBtn, fwdBtn, speedBtn);
   root.appendChild(bar);
 
   function setMode(playing){
@@ -447,8 +446,9 @@ function mountPlayer({mount, onBack}){
     si = (si + 1) % SPEEDS.length; stepper.speed = SPEEDS[si]; speedBtn.textContent = SPEEDS[si] + '×';
   });
 
-  // status updates
-  stepper.onState = (label) => { status.textContent = String(label || 'idle').slice(0, 38); };
+  // No status text in the bar — cx.set still updates the side-panel readout
+  // via createComplexityPanel; the bar stays a fixed-size button row.
+  stepper.onState = null;
 
   // keyboard
   window.addEventListener('keydown', e => {

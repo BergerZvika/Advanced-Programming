@@ -439,13 +439,14 @@ button{font-family:inherit;color:inherit;background:none;border:none;cursor:poin
 .player-overlay{
   position:absolute; left:50%; bottom:46px; transform:translateX(-50%);
   z-index:5; pointer-events:auto;
-  max-width:min(680px, 92%);
 }
+/* lock the bar to a fixed compact size so it never shifts during a scan */
 .player-overlay .pl-bar{
   background:rgba(8,10,18,0.78);
   border-color:rgba(53,208,255,0.35);
   box-shadow:0 12px 36px rgba(0,0,0,0.4);
   backdrop-filter:blur(8px);
+  width:auto;
 }
 .pl-btn{
   display:inline-flex; align-items:center; justify-content:center; gap:6px;
@@ -457,12 +458,10 @@ button{font-family:inherit;color:inherit;background:none;border:none;cursor:poin
 .pl-btn:hover{background:rgba(53,208,255,0.16); border-color:rgba(53,208,255,0.55); color:#fff; transform:translateY(-1px)}
 .pl-play{color:var(--ok); border-color:rgba(92,255,180,0.35)}
 .pl-pause{color:var(--amber); border-color:rgba(255,180,84,0.35)}
-.pl-speed{width:auto; padding:0 10px; min-width:42px}
-.pl-status{
-  flex:1; padding:0 4px;
-  font-family:var(--mono); font-size:10.5px; letter-spacing:.18em; text-transform:uppercase;
-  color:var(--ink-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-}
+/* fixed width so the bar geometry never shifts when speed cycles 0.5× → 2× */
+.pl-speed{width:54px; min-width:54px; padding:0}
+/* legacy status element — kept for backwards compatibility, hidden */
+.pl-status{display:none}
 
 /* scrollbars */
 *::-webkit-scrollbar{width:10px;height:10px}
