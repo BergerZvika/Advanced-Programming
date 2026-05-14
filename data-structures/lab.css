@@ -393,6 +393,19 @@ button{font-family:inherit;color:inherit;background:none;border:none;cursor:poin
   background:linear-gradient(180deg, rgba(53,208,255,0.06), rgba(53,208,255,0.02));
   border:1px solid rgba(53,208,255,0.22);
 }
+/* when the player is mounted inside the stage canvas it floats over the
+   visualization at the bottom, above the drag/scroll hint */
+.player-overlay{
+  position:absolute; left:50%; bottom:46px; transform:translateX(-50%);
+  z-index:5; pointer-events:auto;
+  max-width:min(680px, 92%);
+}
+.player-overlay .pl-bar{
+  background:rgba(8,10,18,0.78);
+  border-color:rgba(53,208,255,0.35);
+  box-shadow:0 12px 36px rgba(0,0,0,0.4);
+  backdrop-filter:blur(8px);
+}
 .pl-btn{
   display:inline-flex; align-items:center; justify-content:center; gap:6px;
   width:36px; height:32px; border-radius:8px;
