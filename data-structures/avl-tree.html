@@ -637,25 +637,28 @@ function makeNodeMesh(value){
   );
   grp.add(wire);
 
-  const c = document.createElement('canvas'); c.width=256; c.height=128;
+  const c = document.createElement('canvas'); c.width=320; c.height=160;
   const ctx = c.getContext('2d');
   function paint(v, bf){
-    ctx.clearRect(0,0,256,128);
-    ctx.fillStyle = '#ffffff';
-    ctx.font = '700 48px IBM Plex Mono, monospace';
+    ctx.clearRect(0,0,320,160);
     ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(String(v), 128, 50);
+    ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 14;
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '800 60px IBM Plex Mono, monospace';
+    ctx.fillText(String(v), 160, 58);
     if (bf !== undefined){
       const c2 = bf>1||bf<-1 ? '#ff5c70' : (bf===0?'#5cffb4':'#ffb454');
       ctx.fillStyle = c2;
-      ctx.font = '500 24px IBM Plex Mono, monospace';
-      ctx.fillText('bf '+(bf>=0?'+':'')+bf, 128, 96);
+      ctx.font = '800 40px IBM Plex Mono, monospace';
+      ctx.shadowBlur = 16;
+      ctx.fillText('bf '+(bf>=0?'+':'')+bf, 160, 122);
     }
   }
   paint(value, 0);
   const tex = new THREE.CanvasTexture(c); tex.minFilter = THREE.LinearFilter;
-  const spr = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true}));
-  spr.position.set(0, 1.4, 0); spr.scale.set(2.2, 1.1, 1);
+  const spr = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true, depthTest:false}));
+  spr.renderOrder = 10;
+  spr.position.set(0, 1.5, 0); spr.scale.set(2.6, 1.3, 1);
   grp.add(spr);
 
   return {grp, body, wire, label:{paint, tex}};

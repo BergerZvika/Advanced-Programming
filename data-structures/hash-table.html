@@ -544,13 +544,18 @@ function makeBucketMesh(i){
   );
   grp.add(edges);
   // label
-  const c = document.createElement('canvas'); c.width=256; c.height=128;
+  const c = document.createElement('canvas'); c.width=384; c.height=128;
   const ctx = c.getContext('2d');
-  ctx.fillStyle = '#35d0ff'; ctx.font='600 30px IBM Plex Mono, monospace';
-  ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(`bucket ${i}`, 128, 64);
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 14;
+  ctx.fillStyle = '#cbd2ff'; ctx.font='700 28px IBM Plex Mono, monospace';
+  ctx.fillText('bucket', 192, 44);
+  ctx.fillStyle = '#35d0ff'; ctx.font='800 64px IBM Plex Mono, monospace';
+  ctx.fillText(String(i), 192, 92);
   const tex = new THREE.CanvasTexture(c); tex.minFilter=THREE.LinearFilter;
-  const spr = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true}));
-  spr.position.set(0, 0, 0.3); spr.scale.set(BUCKET_W*0.92, BUCKET_H*0.92, 1);
+  const spr = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true, depthTest:false}));
+  spr.renderOrder = 10;
+  spr.position.set(0, 0, 0.3); spr.scale.set(BUCKET_W*1.0, BUCKET_H*1.0, 1);
   grp.add(spr);
   const p = bucketPos(i);
   grp.position.set(p.x, p.y, 0);

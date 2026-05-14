@@ -547,26 +547,28 @@ function makeCell(value, filled){
   );
   grp.add(edges);
 
-  // sprite
-  const c = document.createElement('canvas'); c.width=256; c.height=128;
+  // sprite — value + index label that stays readable from any orbit angle
+  const c = document.createElement('canvas'); c.width=320; c.height=160;
   const ctx = c.getContext('2d');
   function paint(v, idx){
-    ctx.clearRect(0,0,256,128);
+    ctx.clearRect(0,0,320,160);
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 14;
     if (v != null){
       ctx.fillStyle = '#ffffff';
-      ctx.font = '700 56px IBM Plex Mono, monospace';
-      ctx.textAlign = 'center'; ctx.textBaseline='middle';
-      ctx.fillText(String(v), 128, 56);
+      ctx.font = '800 72px IBM Plex Mono, monospace';
+      ctx.fillText(String(v), 160, 64);
     }
-    ctx.fillStyle = '#8b93b8';
-    ctx.font = '500 22px IBM Plex Mono, monospace';
-    ctx.textAlign='center';
-    ctx.fillText('['+idx+']', 128, 104);
+    ctx.fillStyle = '#cbd2ff';
+    ctx.font = '700 38px IBM Plex Mono, monospace';
+    ctx.shadowBlur = 16;
+    ctx.fillText('['+idx+']', 160, 128);
   }
   paint(value, 0);
   const tex = new THREE.CanvasTexture(c); tex.minFilter = THREE.LinearFilter;
-  const spr = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true}));
-  spr.position.set(0, CELL_H/2 + 0.9, 0); spr.scale.set(2.4, 1.2, 1);
+  const spr = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true, depthTest:false}));
+  spr.renderOrder = 10;
+  spr.position.set(0, CELL_H/2 + 1.0, 0); spr.scale.set(2.8, 1.4, 1);
   grp.add(spr);
 
   return {grp, body, mat, edges, label:{paint, tex, c, ctx}};

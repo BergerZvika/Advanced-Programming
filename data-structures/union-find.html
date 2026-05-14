@@ -527,21 +527,25 @@ function makeNodeMesh(key){
     new THREE.MeshBasicMaterial({color:0xffb454, wireframe:true, transparent:true, opacity:0.45})
   );
   grp.add(wire);
-  const c = document.createElement('canvas'); c.width=256; c.height=128;
+  const c = document.createElement('canvas'); c.width=384; c.height=160;
   const ctx = c.getContext('2d');
   function paint(v, isRoot, rk){
-    ctx.clearRect(0,0,256,128);
-    ctx.fillStyle = '#fff'; ctx.font='700 48px IBM Plex Mono, monospace';
+    ctx.clearRect(0,0,384,160);
     ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(String(v), 128, 50);
-    ctx.fillStyle = isRoot ? '#5cffb4' : '#8b93b8';
-    ctx.font='500 22px IBM Plex Mono, monospace';
-    ctx.fillText(isRoot ? `root · rk ${rk}` : 'child', 128, 100);
+    ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 14;
+    ctx.fillStyle = '#fff';
+    ctx.font='800 60px IBM Plex Mono, monospace';
+    ctx.fillText(String(v), 192, 60);
+    ctx.fillStyle = isRoot ? '#5cffb4' : '#cbd2ff';
+    ctx.font='700 36px IBM Plex Mono, monospace';
+    ctx.shadowBlur = 16;
+    ctx.fillText(isRoot ? `root · rk ${rk}` : 'child', 192, 124);
   }
   paint(key, true, 0);
   const tex = new THREE.CanvasTexture(c); tex.minFilter=THREE.LinearFilter;
-  const spr = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true}));
-  spr.position.set(0, 1.4, 0); spr.scale.set(2.4, 1.2, 1);
+  const spr = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true, depthTest:false}));
+  spr.renderOrder = 10;
+  spr.position.set(0, 1.5, 0); spr.scale.set(3.0, 1.25, 1);
   grp.add(spr);
   grp.scale.setScalar(0.001);
   scene.add(grp);
