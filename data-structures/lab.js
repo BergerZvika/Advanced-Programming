@@ -128,12 +128,12 @@ export function createScene({mount, camera = {pos:[0,4,18], lookAt:[0,0,0]}}){
   return {scene, cam, renderer, controls};
 }
 
-/* ─── stepper · pause/play/fast-forward ─── */
+/* ─── stepper · pause/play/single-step ─── */
 export const stepper = {
   paused: false,
   resume: null,    // resolver for in-flight pause
   speed: 1,        // 1 = normal, >1 = faster
-  fastForward: false,  // if true, next sleep returns immediately
+  stepOnce: false, // run forward without pausing until next checkpoint (animations still play)
   checkpoints: [], // {label, undo: async () => void}
   onState: null,   // callback(state) for UI updates
 };
@@ -143,13 +143,15 @@ export function stepperKick(){
 export function stepperPlay(){ stepper.paused = false; stepperKick(); stepper.onState && stepper.onState('playing'); }
 export function stepperPause(){ stepper.paused = true; stepper.onState && stepper.onState('paused'); }
 export function stepperToggle(){ stepper.paused ? stepperPlay() : stepperPause(); }
-export function stepperFastForward(){ stepper.fastForward = true; stepperKick(); }
+// "fast forward" button now means "single step with animation": advance to the
+// next checkpoint at normal speed instead of jumping over the animations.
+export function stepperFastForward(){ stepper.stepOnce = true; stepperKick(); }
 export async function stepperCheckpoint(label, undoFn){
   if (undoFn) stepper.checkpoints.push({label: label || '', undo:undoFn});
   if (label != null && stepper.onState) stepper.onState(label);
-  // Arrival at a checkpoint clears any active fast-forward so the *next*
-  // sleep/tween pauses again (one click = one checkpoint advance).
-  stepper.fastForward = false;
+  // Arrival at the next checkpoint ends the single-step pass so the next
+  // sleep/tween honors `paused` again.
+  stepper.stepOnce = false;
   if (stepper.paused){
     await new Promise(r => stepper.resume = r);
   }
@@ -164,16 +166,16 @@ export async function stepperUndo(){
 export function stepperClear(){ stepper.checkpoints.length = 0; }
 
 /* ─── small tween util · pause-aware ─── */
-// IMPORTANT: tween/sleep do NOT clear stepper.fastForward when they jump to
-// completion. Only stepperCheckpoint clears it. That way one forward click
-// skips every sleep/tween until the next checkpoint, instead of just one.
+// sleep / tween / tweenVec all honor stepper.paused — but if stepper.stepOnce
+// is set they treat the scene as if it's playing (animation runs at normal
+// speed). That way a single-step click shows the animation between two
+// checkpoints instead of jumping past it instantly.
 export function tween(obj, prop, to, ms=420, ease=easeOutCubic){
   return new Promise(res => {
     const from = obj[prop];
     let t0 = performance.now(), pausedAt = 0, totalPause = 0;
     function step(now){
-      if (stepper.fastForward){ obj[prop] = to; res(); return; }
-      if (stepper.paused){
+      if (stepper.paused && !stepper.stepOnce){
         if (!pausedAt) pausedAt = now;
         requestAnimationFrame(step); return;
       }
@@ -191,8 +193,7 @@ export function tweenVec(vec, to, ms=420, ease=easeOutCubic){
     const from = vec.clone();
     let t0 = performance.now(), pausedAt = 0, totalPause = 0;
     function step(now){
-      if (stepper.fastForward){ vec.copy(to); res(); return; }
-      if (stepper.paused){
+      if (stepper.paused && !stepper.stepOnce){
         if (!pausedAt) pausedAt = now;
         requestAnimationFrame(step); return;
       }
@@ -208,11 +209,11 @@ export function tweenVec(vec, to, ms=420, ease=easeOutCubic){
 export const easeOutCubic = t => 1 - Math.pow(1-t, 3);
 export const easeInOutCubic = t => t<0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2,3)/2;
 export async function sleep(ms){
-  if (stepper.fastForward) return;
   let remaining = ms;
   while (remaining > 0){
-    if (stepper.paused){ await new Promise(r => stepper.resume = r); }
-    if (stepper.fastForward) return;
+    if (stepper.paused && !stepper.stepOnce){
+      await new Promise(r => stepper.resume = r);
+    }
     const chunk = Math.min(remaining, 32);
     await new Promise(r => setTimeout(r, chunk / Math.max(0.1, stepper.speed)));
     remaining -= chunk;
