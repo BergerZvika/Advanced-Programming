@@ -564,7 +564,9 @@ function makeBlock(value){
 /* ─── multi-stack state ─── */
 const stacks = [[]];   // each is an array of {grp, body, value} blocks (top = last)
 let activeIdx = 0;
-const BASE_Y = -3.0, DY = 1.1;
+// stack base sits well above the grid floor so the stack sits in the middle of
+// the visible frame even when there are only a couple of blocks
+const BASE_Y = -1.0, DY = 1.1;
 const STACK_GAP_X = 4.4;
 
 function stackX(i, n){ return (i - (n-1)/2) * STACK_GAP_X; }
