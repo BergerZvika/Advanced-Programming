@@ -55,6 +55,7 @@
           <button class="op" data-color="magenta" id="op-postorder"><span class="name"><span class="dot"></span> post-order</span><span class="cx">L·R·N</span></button>
           <button class="op" data-color="amber"   id="op-bfs"><span class="name"><span class="dot"></span> BFS</span><span class="cx">queue</span></button>
           <button class="op" data-color="lime"    id="op-dfs"><span class="name"><span class="dot"></span> DFS</span><span class="cx">stack</span></button>
+          <button class="op full" data-color="amber" id="op-reset"><span class="name"><span class="dot"></span> reset scan</span><span class="cx">clear & pick another</span></button>
         </div>
 
         <div class="label mt-12">Edit</div>
@@ -773,10 +774,15 @@ async function rebuildFrom(values){
 }
 
 /* ─── scans · step-list player ─── */
-let scanSteps = null;   // [{kind:'visit'|'null', node?, parent?, side?}]
-let scanIdx   = 0;      // number of applied steps so far
-let scanName  = '';
-let scanColor = 0x35d0ff;
+let scanSteps     = null;   // [{kind:'visit'|'null', node?, parent?, side?}]
+let scanIdx       = 0;      // number of applied steps so far
+let scanName      = '';
+let scanColor     = 0x35d0ff;
+let scanCancelled = false;  // set by reset button so the run loop exits cleanly
+
+const SCAN_BTN_IDS = ['op-inorder','op-preorder','op-postorder','op-bfs','op-dfs'];
+function clearActiveScan(){ for (const id of SCAN_BTN_IDS){ const b = $('#'+id); if (b) b.classList.remove('active'); } }
+function setActiveScan(id){ clearActiveScan(); const b = $('#'+id); if (b) b.classList.add('active'); }
 
 function buildInOrder(out){
   (function walk(n, parent, side){
@@ -876,33 +882,64 @@ async function undoStepImmediate(){
   return true;
 }
 
-async function runScan(name, color, builder){
+async function runScan(name, color, builder, btnId){
   $('#t-scan').textContent = name;
   clearVisitNumbers();
   stepperClear();   // drop checkpoints from any previous scan
+  scanCancelled = false;
   scanSteps = [];
   scanIdx = 0;
   scanName = name;
   scanColor = color;
+  setActiveScan(btnId);
   builder(scanSteps);
   cx.set(`${name} · 0/${scanSteps.length}`, `O(n)`);
   while (scanIdx < scanSteps.length){
+    if (scanCancelled) break;
     await applyStep();
+    if (scanCancelled) break;
     // checkpoint registers an undo so the player's ← button rewinds this step
-    await stepperCheckpoint(`${name} · step ${scanIdx}`, async () => { undoStepImmediate(); });
+    await stepperCheckpoint(`${name} · step ${scanIdx}`, async () => { await undoStepImmediate(); });
+  }
+  if (scanCancelled){
+    clearVisitNumbers();
+    clearActiveScan();
+    $('#t-scan').textContent = '—';
+    scanSteps = null; scanIdx = 0;
+    log.say(`<span class="ko">reset</span> · ${name} cancelled`);
+    cx.set('idle', '—');
+    return;
   }
   const visits = countVisitsUpTo(scanSteps.length);
   log.say(`<span class="k">${name}</span> done · ${visits} visit(s) · ${scanSteps.length - visits} null(s)`);
   cx.set(`${name} done · ${visits} visits`, '—');
 }
 
+async function resetScan(){
+  // if a scan is in-flight (paused or running), tell it to abort and wake any pending pause
+  if (busy){
+    scanCancelled = true;
+    stepper.paused = false;
+    stepperKick();
+    return;
+  }
+  // not running — just clear visuals
+  clearVisitNumbers();
+  clearActiveScan();
+  stepperClear();
+  scanSteps = null; scanIdx = 0; scanName = '';
+  $('#t-scan').textContent = '—';
+  log.say(`<span class="ko">reset</span> scan`);
+  cx.set('idle', '—');
+}
+
 /* ─── ops ─── */
 const opHandlers = {
-  inorder:   lock(() => runScan('in-order',   0x35d0ff, buildInOrder)),
-  preorder:  lock(() => runScan('pre-order',  0x7c5cff, buildPreOrder)),
-  postorder: lock(() => runScan('post-order', 0xff5cab, buildPostOrder)),
-  bfs:       lock(() => runScan('BFS',        0xffb454, buildBFS)),
-  dfs:       lock(() => runScan('DFS',        0xb9ff5c, buildDFS)),
+  inorder:   lock(() => runScan('in-order',   0x35d0ff, buildInOrder,   'op-inorder')),
+  preorder:  lock(() => runScan('pre-order',  0x7c5cff, buildPreOrder,  'op-preorder')),
+  postorder: lock(() => runScan('post-order', 0xff5cab, buildPostOrder, 'op-postorder')),
+  bfs:       lock(() => runScan('BFS',        0xffb454, buildBFS,       'op-bfs')),
+  dfs:       lock(() => runScan('DFS',        0xb9ff5c, buildDFS,       'op-dfs')),
   insert: lock(async () => {
     const vals = readVals();
     history.push({type:'snapshot', values: snapshotValues()});
@@ -939,6 +976,9 @@ const opHandlers = {
   }),
 };
 for (const k in opHandlers) $('#op-'+k).addEventListener('click', opHandlers[k]);
+// reset button is intentionally NOT wrapped with `lock` — it has to be able to
+// interrupt a paused or in-flight scan
+$('#op-reset').addEventListener('click', resetScan);
 $('#b-rand').addEventListener('click', () => $('#in-val').value = randomInt(1,99));
 
 /* ─── presets ─── */

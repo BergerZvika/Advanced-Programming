@@ -360,6 +360,15 @@ button{font-family:inherit;color:inherit;background:none;border:none;cursor:poin
 .op:hover{transform:translateY(-1px); color:#fff; border-color:rgba(53,208,255,0.40); background:rgba(53,208,255,0.06)}
 .op:disabled{opacity:.45;pointer-events:none}
 .op.full{grid-column:1 / -1}
+/* active state — scan currently selected, sticks until reset or another scan */
+.op.active{
+  color:#fff;
+  background:rgba(53,208,255,0.22);
+  border-color:rgba(53,208,255,0.85);
+  box-shadow:0 0 0 1px rgba(53,208,255,0.55), 0 8px 24px rgba(53,208,255,0.18);
+}
+.op.active .dot{box-shadow:0 0 14px currentColor, 0 0 4px #fff}
+.op.active .cx{color:#fff}
 
 /* complexity readout */
 .cx-panel{
