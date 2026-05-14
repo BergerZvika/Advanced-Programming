@@ -590,6 +590,65 @@ function ensureMeshes(n){
   ensureMeshes(n.left); ensureMeshes(n.right);
 }
 
+/* ─── "ghost" placeholders for null children (visited by recursive scans) ─── */
+function makeGhost(){
+  const grp = new THREE.Group();
+  const body = new THREE.Mesh(
+    new THREE.SphereGeometry(0.32, 18, 14),
+    new THREE.MeshPhysicalMaterial({color:0x0a0e1c, metalness:0.4, roughness:0.6, emissive:0x1a2240, emissiveIntensity:0.55, transparent:true, opacity:0.6})
+  );
+  grp.add(body);
+  const wire = new THREE.Mesh(
+    new THREE.SphereGeometry(0.34, 10, 8),
+    new THREE.MeshBasicMaterial({color:0x35d0ff, wireframe:true, transparent:true, opacity:0.25})
+  );
+  grp.add(wire);
+  // dashed edge from parent
+  const edge = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.025, 0.025, 1, 10),
+    new THREE.MeshBasicMaterial({color:0x35d0ff, transparent:true, opacity:0.25})
+  );
+  // ∅ sprite
+  const c = document.createElement('canvas'); c.width=128; c.height=128;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#5b6385'; ctx.font='700 80px IBM Plex Mono, monospace';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.shadowColor='rgba(0,0,0,0.85)'; ctx.shadowBlur=12;
+  ctx.fillText('∅', 64, 70);
+  const tex = new THREE.CanvasTexture(c); tex.minFilter=THREE.LinearFilter;
+  const spr = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true, depthTest:false}));
+  spr.renderOrder = 9;
+  spr.position.set(0, 0, 0); spr.scale.set(0.7, 0.7, 1);
+  grp.add(spr);
+  scene.add(grp);
+  scene.add(edge);
+  return {grp, body, edge};
+}
+const ghosts = new Map();   // node -> {left, right}
+function ghostKey(parent, side){ return parent.value + '·' + side; }
+function getGhost(parent, side){
+  let g = ghosts.get(parent);
+  if (!g){ g = {left:null, right:null}; ghosts.set(parent, g); }
+  if (!g[side]) g[side] = makeGhost();
+  return g[side];
+}
+function clearOrphanGhosts(){
+  // remove ghost entries whose parent isn't in the tree anymore or whose side is now filled
+  for (const [parent, g] of [...ghosts.entries()]){
+    // is this parent still in the live tree?
+    let alive = false;
+    (function find(n){ if (!n || alive) return; if (n === parent) alive = true; else { find(n.left); find(n.right); } })(root);
+    if (!alive){
+      if (g.left)  { scene.remove(g.left.grp);  scene.remove(g.left.edge); }
+      if (g.right) { scene.remove(g.right.grp); scene.remove(g.right.edge); }
+      ghosts.delete(parent);
+      continue;
+    }
+    if (parent.left  && g.left)  { scene.remove(g.left.grp);  scene.remove(g.left.edge);  g.left  = null; }
+    if (parent.right && g.right) { scene.remove(g.right.grp); scene.remove(g.right.edge); g.right = null; }
+  }
+}
+
 function computeLayout(){
   const idx = {}, st = {k:0};
   (function inO(n){ if(!n) return; inO(n.left); idx[n.value] = st.k++; inO(n.right); })(root);
@@ -621,6 +680,8 @@ async function relayout(animate=true){
   ensureMeshes(root);
   const map = computeLayout();
   const tasks = [];
+  // child offset for ghost positioning (extrapolate from parent → child gap)
+  const GHOST_DX = 1.2, GHOST_DY = 1.8;
   (function walk(n, parent){
     if (!n) return;
     const p = map.get(n);
@@ -629,11 +690,35 @@ async function relayout(animate=true){
       tasks.push(tweenVec(n.mesh.grp.scale, new THREE.Vector3(1,1,1), animate?320:0));
       if (parent){ const pp = map.get(parent); n.edgeUp.visible = true; placeEdge(n.edgeUp, pp.x, pp.y, p.x, p.y); }
       else n.edgeUp.visible = false;
+      // ghosts for null children
+      for (const side of ['left','right']){
+        if (!n[side]){
+          const g = getGhost(n, side);
+          const gx = p.x + (side === 'left' ? -GHOST_DX : GHOST_DX);
+          const gy = p.y - GHOST_DY;
+          tasks.push(tweenVec(g.grp.position, new THREE.Vector3(gx, gy, 0), animate?420:0));
+          g.edge.visible = true;
+          placeEdge(g.edge, p.x, p.y, gx, gy);
+          g.edge.material.opacity = 0.22;
+        }
+      }
     }
     walk(n.left, n); walk(n.right, n);
   })(root, null);
+  clearOrphanGhosts();
   await Promise.all(tasks);
   refreshHUD();
+}
+
+async function pulseGhost(g, color=0xff5c70, ms=220){
+  if (!g) return;
+  const m = g.body.material;
+  const eOld = m.emissive.clone(), iOld = m.emissiveIntensity, oOld = m.opacity;
+  m.emissive.setHex(color); m.emissiveIntensity = 1.6; m.opacity = 1.0;
+  g.edge.material.opacity = 0.7;
+  await sleep(ms);
+  m.emissive.copy(eOld); m.emissiveIntensity = iOld; m.opacity = oOld;
+  g.edge.material.opacity = 0.22;
 }
 
 function refreshHUD(){
@@ -680,22 +765,34 @@ async function rebuildFrom(values){
 }
 
 /* ─── scans ─── */
+async function visitNullChild(parent, side, sLabel){
+  const g = ghosts.get(parent)?.[side];
+  if (!g) return;
+  cx.set(`${sLabel} · null child of ${parent.value} (${side})`, 'return');
+  log.say(`<span class="kx">∅</span> ${sLabel} · ${parent.value}.${side} is null`);
+  await pulseGhost(g, 0xff5c70, 220);
+  await stepperCheckpoint();
+}
+
 async function inOrder(){
   $('#t-scan').textContent = 'in-order';
   cx.set('in-order · L · N · R', 'O(n)');
   clearVisitNumbers();
   const order = [];
-  async function walk(n){
-    if (!n) return;
-    await walk(n.left);
+  async function walk(n, parent, side){
+    if (!n){
+      if (parent) await visitNullChild(parent, side, 'in-order');
+      return;
+    }
+    await walk(n.left, n, 'left');
     order.push(n.value);
     setVisitNumber(n, order.length);
     cx.set(`#${order.length} visit ${n.value} · in-order`, 'O(n)');
     await pulse(n, 0x35d0ff, 240);
     await stepperCheckpoint();
-    await walk(n.right);
+    await walk(n.right, n, 'right');
   }
-  await walk(root);
+  await walk(root, null, null);
   log.say(`<span class="k">in-order</span> [ ${order.join(', ')} ]`);
   cx.set(`in-order done · ${order.length} nodes`, '—');
 }
@@ -705,17 +802,20 @@ async function preOrder(){
   cx.set('pre-order · N · L · R', 'O(n)');
   clearVisitNumbers();
   const order = [];
-  async function walk(n){
-    if (!n) return;
+  async function walk(n, parent, side){
+    if (!n){
+      if (parent) await visitNullChild(parent, side, 'pre-order');
+      return;
+    }
     order.push(n.value);
     setVisitNumber(n, order.length);
     cx.set(`#${order.length} visit ${n.value} · pre-order`, 'O(n)');
     await pulse(n, 0x7c5cff, 240);
     await stepperCheckpoint();
-    await walk(n.left);
-    await walk(n.right);
+    await walk(n.left,  n, 'left');
+    await walk(n.right, n, 'right');
   }
-  await walk(root);
+  await walk(root, null, null);
   log.say(`<span class="k">pre-order</span> [ ${order.join(', ')} ]`);
   cx.set(`pre-order done · ${order.length} nodes`, '—');
 }
@@ -725,17 +825,20 @@ async function postOrder(){
   cx.set('post-order · L · R · N', 'O(n)');
   clearVisitNumbers();
   const order = [];
-  async function walk(n){
-    if (!n) return;
-    await walk(n.left);
-    await walk(n.right);
+  async function walk(n, parent, side){
+    if (!n){
+      if (parent) await visitNullChild(parent, side, 'post-order');
+      return;
+    }
+    await walk(n.left,  n, 'left');
+    await walk(n.right, n, 'right');
     order.push(n.value);
     setVisitNumber(n, order.length);
     cx.set(`#${order.length} visit ${n.value} · post-order`, 'O(n)');
     await pulse(n, 0xff5cab, 240);
     await stepperCheckpoint();
   }
-  await walk(root);
+  await walk(root, null, null);
   log.say(`<span class="k">post-order</span> [ ${order.join(', ')} ]`);
   cx.set(`post-order done · ${order.length} nodes`, '—');
 }
@@ -754,8 +857,11 @@ async function bfs(){
     cx.set(`#${order.length} visit ${n.value} · queue [${q.map(x=>x.value).join(',') || '∅'}]`, 'BFS');
     await pulse(n, 0xffb454, 240);
     await stepperCheckpoint();
-    if (n.left)  q.push(n.left);
-    if (n.right) q.push(n.right);
+    // examine children — pulse the null ones, enqueue the real ones
+    for (const side of ['left','right']){
+      if (n[side]) q.push(n[side]);
+      else await visitNullChild(n, side, 'BFS');
+    }
   }
   log.say(`<span class="k">BFS</span> [ ${order.join(', ')} ]`);
   cx.set(`BFS done · ${order.length} nodes`, '—');
@@ -775,7 +881,10 @@ async function dfs(){
     cx.set(`#${order.length} visit ${n.value} · stack [${stack.map(x=>x.value).join(',') || '∅'}]`, 'DFS');
     await pulse(n, 0xb9ff5c, 240);
     await stepperCheckpoint();
-    // push right first so left is processed next (matches pre-order)
+    // examine children (left first → so right gets pushed first onto the stack, left on top)
+    for (const side of ['left','right']){
+      if (!n[side]) await visitNullChild(n, side, 'DFS');
+    }
     if (n.right) stack.push(n.right);
     if (n.left)  stack.push(n.left);
   }
