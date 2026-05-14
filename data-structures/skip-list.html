@@ -624,10 +624,12 @@ function valueLabel(v){
 function ensureColumn(node){
   if (node.columnMesh) return;
   const isSentinel = node === head || node === tail;
-  // sentinels render every level (MAX_LEVEL), real nodes only up to their own level
+  // sentinels are pre-built with every level so we can show/hide rows by
+  // index later (without rebuilding the mesh); real nodes are exactly their height.
   const maxLvl = isSentinel ? MAX_LEVEL : node.level;
   const grp = new THREE.Group();
   node.cellMeshes  = [];
+  node.cellWires   = [];
   node.cellSprites = [];
   for (let i = 0; i <= maxLvl; i++){
     const m = new THREE.Mesh(
@@ -650,6 +652,7 @@ function ensureColumn(node){
     );
     wire.position.copy(m.position);
     grp.add(wire);
+    node.cellWires.push(wire);
     // per-cell value label
     const c = document.createElement('canvas'); c.width=192; c.height=192;
     const ctx = c.getContext('2d');
@@ -725,13 +728,31 @@ async function relayout(animate=true){
   tasks.push(tweenVec(tail.columnMesh.position,  new THREE.Vector3(columnX(n+1,    total), baseY, 0), animate?420:0));
   await Promise.all(tasks);
 
-  // row labels — once on the left, just past the head column
-  const labelX = columnX(0, total) - 1.8;
-  for (let i = 0; i <= MAX_LEVEL; i++){
-    rowLabels[i].visible = true;
-    rowLabels[i].position.set(labelX, baseY + i * ROW_GAP, 0);
+  // Only render rows 0..level — exactly the height the data needs right now.
+  const topLvl = level;
+  function setLevelVisibility(node){
+    if (!node.cellMeshes) return;
+    for (let i = 0; i < node.cellMeshes.length; i++){
+      const v = i <= topLvl;
+      node.cellMeshes[i].visible  = v;
+      if (node.cellWires[i])   node.cellWires[i].visible   = v;
+      if (node.cellSprites[i]) node.cellSprites[i].visible = v;
+    }
   }
-  for (let i = MAX_LEVEL + 1; i < rowLabels.length; i++) rowLabels[i].visible = false;
+  setLevelVisibility(head);
+  setLevelVisibility(tail);
+  // real nodes don't render past their own height anyway, but trim sentinels above
+
+  // row labels — once on the left, just past the head column, only up to topLvl
+  const labelX = columnX(0, total) - 1.8;
+  for (let i = 0; i < rowLabels.length; i++){
+    if (i <= topLvl){
+      rowLabels[i].visible = true;
+      rowLabels[i].position.set(labelX, baseY + i * ROW_GAP, 0);
+    } else {
+      rowLabels[i].visible = false;
+    }
+  }
 
   // links — every forward pointer (and a "to tail" link for null forwards at sentinel/node levels)
   for (const l of links) l.visible = false;
@@ -743,8 +764,8 @@ async function relayout(animate=true){
     link.visible = true; placeLink(link, ax, y, bx, y);
     link.material.opacity = 0.55 + 0.06*lvl;
   }
-  // head forwards
-  for (let lvl=0; lvl<=MAX_LEVEL; lvl++){
+  // head forwards — only up to the current top level
+  for (let lvl=0; lvl<=topLvl; lvl++){
     const target = head.forward[lvl];
     if (target){
       const tIdx = all.indexOf(target);
