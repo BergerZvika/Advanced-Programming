@@ -386,6 +386,26 @@ export function mountPlayer({mount, onBack}){
   return {setMode, status};
 }
 
+/* ─── preset toolbar (default-state buttons under the stage) ─── */
+// presets: array of {name, desc, apply: async ()=>void}
+export function mountPresets({mount, label = 'presets', presets = []}){
+  const root = typeof mount === 'string' ? $(mount) : mount;
+  if (!root) return;
+  root.innerHTML = '';
+  root.appendChild(el('div', {class:'presets-label'}, label));
+  for (const p of presets){
+    const btn = el('button', {class:'preset-btn', type:'button', title: p.desc || ''},
+      el('span', {class:'preset-name'}, p.name),
+      el('span', {class:'preset-desc'}, p.desc || '')
+    );
+    btn.addEventListener('click', async () => {
+      try { await p.apply(); }
+      catch (e) { console.error('preset failed', e); }
+    });
+    root.appendChild(btn);
+  }
+}
+
 /* ─── input parsing util ─── */
 export function parseNum(str, fallback=null){
   if (str == null || str === '') return fallback;

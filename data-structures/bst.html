@@ -35,6 +35,8 @@
         </div>
       </div>
 
+      <div class="presets" id="presets-mount"></div>
+
       <aside class="panel">
         <h2>Controls</h2>
         <div class="section-rule"></div>
@@ -459,6 +461,26 @@ function mountPlayer({mount, onBack}){
   return {setMode, status};
 }
 
+/* ─── preset toolbar (default-state buttons under the stage) ─── */
+// presets: array of {name, desc, apply: async ()=>void}
+function mountPresets({mount, label = 'presets', presets = []}){
+  const root = typeof mount === 'string' ? $(mount) : mount;
+  if (!root) return;
+  root.innerHTML = '';
+  root.appendChild(el('div', {class:'presets-label'}, label));
+  for (const p of presets){
+    const btn = el('button', {class:'preset-btn', type:'button', title: p.desc || ''},
+      el('span', {class:'preset-name'}, p.name),
+      el('span', {class:'preset-desc'}, p.desc || '')
+    );
+    btn.addEventListener('click', async () => {
+      try { await p.apply(); }
+      catch (e) { console.error('preset failed', e); }
+    });
+    root.appendChild(btn);
+  }
+}
+
 /* ─── input parsing util ─── */
 function parseNum(str, fallback=null){
   if (str == null || str === '') return fallback;
@@ -742,6 +764,15 @@ const opHandlers = {
 };
 for (const k in opHandlers) $('#op-'+k).addEventListener('click', opHandlers[k]);
 $('#b-rand').addEventListener('click', () => $('#in-val').value = randomInt(1,99));
+
+/* ─── preset toolbar ─── */
+mountPresets({mount: $('#presets-mount'), label: 'defaults', presets:[
+  {name:'empty',     desc:'no keys',                                                apply: () => rebuildFrom([])},
+  {name:'balanced',  desc:'pre-balanced insert order — h ≈ log n',                  apply: () => rebuildFrom([50,25,75,12,37,62,87])},
+  {name:'sorted',    desc:'[1..7] → degenerates into a list, h = n',                apply: () => rebuildFrom([1,2,3,4,5,6,7])},
+  {name:'reverse',   desc:'[7..1] → all-left chain',                                apply: () => rebuildFrom([7,6,5,4,3,2,1])},
+  {name:'zigzag',    desc:'alternating — partial degeneracy',                       apply: () => rebuildFrom([4,1,7,2,6,3,5])},
+]});
 
 /* seed */
 (async () => {

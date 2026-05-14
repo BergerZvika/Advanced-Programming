@@ -35,6 +35,8 @@
         </div>
       </div>
 
+      <div class="presets" id="presets-mount"></div>
+
       <aside class="panel">
         <h2>Controls</h2>
         <div class="section-rule"></div>
@@ -459,6 +461,26 @@ function mountPlayer({mount, onBack}){
   return {setMode, status};
 }
 
+/* ─── preset toolbar (default-state buttons under the stage) ─── */
+// presets: array of {name, desc, apply: async ()=>void}
+function mountPresets({mount, label = 'presets', presets = []}){
+  const root = typeof mount === 'string' ? $(mount) : mount;
+  if (!root) return;
+  root.innerHTML = '';
+  root.appendChild(el('div', {class:'presets-label'}, label));
+  for (const p of presets){
+    const btn = el('button', {class:'preset-btn', type:'button', title: p.desc || ''},
+      el('span', {class:'preset-name'}, p.name),
+      el('span', {class:'preset-desc'}, p.desc || '')
+    );
+    btn.addEventListener('click', async () => {
+      try { await p.apply(); }
+      catch (e) { console.error('preset failed', e); }
+    });
+    root.appendChild(btn);
+  }
+}
+
 /* ─── input parsing util ─── */
 function parseNum(str, fallback=null){
   if (str == null || str === '') return fallback;
@@ -754,6 +776,15 @@ const opHandlers = {
 };
 for (const k in opHandlers) $('#op-'+k).addEventListener('click', opHandlers[k]);
 $('#b-rand').addEventListener('click', () => $('#in-val').value = randomInt(1,99));
+
+/* ─── preset toolbar ─── */
+mountPresets({mount: $('#presets-mount'), label: 'defaults', presets:[
+  {name:'empty',     desc:'no keys',                                       apply: () => rebuildFrom([])},
+  {name:'sequential',desc:'sorted insert — [10,20,...,80]',                apply: () => rebuildFrom([10,20,30,40,50,60,70,80])},
+  {name:'sparse',    desc:'gaps — [5, 100, 200, 500, 800]',                apply: () => rebuildFrom([5,100,200,500,800])},
+  {name:'random',    desc:'shuffled values',                                apply: () => rebuildFrom([42, 7, 88, 23, 56, 11, 73, 34, 19, 65])},
+  {name:'one',       desc:'single key',                                     apply: () => rebuildFrom([42])},
+]});
 
 /* seed */
 (async () => {

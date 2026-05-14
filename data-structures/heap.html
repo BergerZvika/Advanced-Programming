@@ -44,6 +44,8 @@
         </div>
       </div>
 
+      <div class="presets" id="presets-mount"></div>
+
       <aside class="panel">
         <h2>Controls</h2>
         <div class="section-rule"></div>
@@ -474,6 +476,26 @@ function mountPlayer({mount, onBack}){
   return {setMode, status};
 }
 
+/* ─── preset toolbar (default-state buttons under the stage) ─── */
+// presets: array of {name, desc, apply: async ()=>void}
+function mountPresets({mount, label = 'presets', presets = []}){
+  const root = typeof mount === 'string' ? $(mount) : mount;
+  if (!root) return;
+  root.innerHTML = '';
+  root.appendChild(el('div', {class:'presets-label'}, label));
+  for (const p of presets){
+    const btn = el('button', {class:'preset-btn', type:'button', title: p.desc || ''},
+      el('span', {class:'preset-name'}, p.name),
+      el('span', {class:'preset-desc'}, p.desc || '')
+    );
+    btn.addEventListener('click', async () => {
+      try { await p.apply(); }
+      catch (e) { console.error('preset failed', e); }
+    });
+    root.appendChild(btn);
+  }
+}
+
 /* ─── input parsing util ─── */
 function parseNum(str, fallback=null){
   if (str == null || str === '') return fallback;
@@ -766,6 +788,25 @@ $$('#mode-toggle button').forEach(b => b.addEventListener('click', async () => {
   for (let i = Math.floor(arr.length/2)-1; i >= 0; i--) await siftDown(i);
   refreshHUD();
 }));
+
+/* ─── preset toolbar ─── */
+async function loadHeap(modeNext, values){
+  // wipe
+  while (arr.length){ arr.pop(); const m = meshes.pop(); scene.remove(m.grp); const e = edges.pop(); scene.remove(e); }
+  mode = modeNext;
+  $$('#mode-toggle button').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+  for (const v of values){ arr.push(v); meshes.push(makeMesh(v)); edges.push(makeEdge()); }
+  await relayout(false);
+  for (let i = Math.floor(arr.length/2)-1; i >= 0; i--) await siftDown(i);
+  history.clear();
+}
+mountPresets({mount: $('#presets-mount'), label: 'defaults', presets:[
+  {name:'empty',       desc:'max-heap, no keys',                                       apply: () => loadHeap('max', [])},
+  {name:'random max',  desc:'7 random keys, max-heap',                                 apply: () => loadHeap('max', [35,18,42,9,26,73,11])},
+  {name:'worst sift',  desc:'[1..7] into max-heap — every sift goes the full path',    apply: () => loadHeap('max', [1,2,3,4,5,6,7])},
+  {name:'min-heap',    desc:'min-heap from random — root is the smallest',             apply: () => loadHeap('min', [35,18,42,9,26,73,11,55,4])},
+  {name:'pyramid 15',  desc:'15-key max-heap — full 4 levels',                         apply: () => loadHeap('max', [50,30,70,20,40,60,80,10,25,35,45,55,65,75,85])},
+]});
 
 /* seed */
 (async () => {

@@ -36,6 +36,8 @@
         </div>
       </div>
 
+      <div class="presets" id="presets-mount"></div>
+
       <aside class="panel">
         <h2>Controls</h2>
         <div class="section-rule"></div>
@@ -479,6 +481,26 @@ function mountPlayer({mount, onBack}){
   return {setMode, status};
 }
 
+/* ─── preset toolbar (default-state buttons under the stage) ─── */
+// presets: array of {name, desc, apply: async ()=>void}
+function mountPresets({mount, label = 'presets', presets = []}){
+  const root = typeof mount === 'string' ? $(mount) : mount;
+  if (!root) return;
+  root.innerHTML = '';
+  root.appendChild(el('div', {class:'presets-label'}, label));
+  for (const p of presets){
+    const btn = el('button', {class:'preset-btn', type:'button', title: p.desc || ''},
+      el('span', {class:'preset-name'}, p.name),
+      el('span', {class:'preset-desc'}, p.desc || '')
+    );
+    btn.addEventListener('click', async () => {
+      try { await p.apply(); }
+      catch (e) { console.error('preset failed', e); }
+    });
+    root.appendChild(btn);
+  }
+}
+
 /* ─── input parsing util ─── */
 function parseNum(str, fallback=null){
   if (str == null || str === '') return fallback;
@@ -845,6 +867,26 @@ function readValue(allowAuto){
 }
 
 function esc(s){ return String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+
+/* ─── preset toolbar ─── */
+async function loadList(values){
+  // wipe the current list (without animation)
+  for (const node of list){
+    if (node.grp) scene.remove(node.grp);
+    if (node.edge) scene.remove(node.edge);
+  }
+  list.length = 0;
+  for (const v of values) await spawnAt(v, list.length);
+  history.clear();
+  refreshHUD();
+}
+mountPresets({mount: $('#presets-mount'), label: 'defaults', presets:[
+  {name:'empty',     desc:'no nodes',                              apply: () => loadList([])},
+  {name:'short',     desc:'4 sequential — [12, 34, 56, 78]',       apply: () => loadList([12,34,56,78])},
+  {name:'long',      desc:'10 sequential — [1..10]',               apply: () => loadList([1,2,3,4,5,6,7,8,9,10])},
+  {name:'duplicates',desc:'all same — find scans the whole list',  apply: () => loadList([5,5,5,5,5])},
+  {name:'reverse',   desc:'descending — [9,7,5,3,1]',              apply: () => loadList([9,7,5,3,1])},
+]});
 
 /* ─── seed a starter list ─── */
 (async () => {

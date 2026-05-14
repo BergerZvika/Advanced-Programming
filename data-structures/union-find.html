@@ -34,6 +34,8 @@
         </div>
       </div>
 
+      <div class="presets" id="presets-mount"></div>
+
       <aside class="panel">
         <h2>Controls</h2>
         <div class="section-rule"></div>
@@ -458,6 +460,26 @@ function mountPlayer({mount, onBack}){
   return {setMode, status};
 }
 
+/* ─── preset toolbar (default-state buttons under the stage) ─── */
+// presets: array of {name, desc, apply: async ()=>void}
+function mountPresets({mount, label = 'presets', presets = []}){
+  const root = typeof mount === 'string' ? $(mount) : mount;
+  if (!root) return;
+  root.innerHTML = '';
+  root.appendChild(el('div', {class:'presets-label'}, label));
+  for (const p of presets){
+    const btn = el('button', {class:'preset-btn', type:'button', title: p.desc || ''},
+      el('span', {class:'preset-name'}, p.name),
+      el('span', {class:'preset-desc'}, p.desc || '')
+    );
+    btn.addEventListener('click', async () => {
+      try { await p.apply(); }
+      catch (e) { console.error('preset failed', e); }
+    });
+    root.appendChild(btn);
+  }
+}
+
 /* ─── input parsing util ─── */
 function parseNum(str, fallback=null){
   if (str == null || str === '') return fallback;
@@ -751,6 +773,28 @@ const opHandlers = {
   }),
 };
 for (const k in opHandlers) $('#op-'+k).addEventListener('click', opHandlers[k]);
+
+/* ─── preset toolbar ─── */
+async function loadUF(parentMap, rankMap){
+  // wipe meshes
+  for (const [k, m] of meshes){ scene.remove(m.grp); scene.remove(edges.get(k)); }
+  meshes.clear(); edges.clear(); parent.clear(); rank.clear();
+  for (const [k, p] of parentMap){
+    parent.set(k, p);
+    rank.set(k, rankMap.get(k) ?? 0);
+    ensureMesh(k);
+  }
+  await relayout(false);
+  history.clear();
+}
+function pairs(...kv){ const m = new Map(); for (let i=0;i<kv.length;i+=2) m.set(kv[i], kv[i+1]); return m; }
+mountPresets({mount: $('#presets-mount'), label: 'defaults', presets:[
+  {name:'empty',      desc:'no elements',                                     apply: () => loadUF(new Map(), new Map())},
+  {name:'singletons', desc:'8 elements · all self-parent · 8 sets',           apply: () => loadUF(pairs(1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8), new Map())},
+  {name:'two halves', desc:'{1..4} & {5..8} — two big sets',                  apply: () => loadUF(pairs(1,1,2,1,3,1,4,1,5,5,6,5,7,5,8,5), pairs(1,2,5,2))},
+  {name:'chain',      desc:'1→2→3→4→5 — degenerate; great for compression',   apply: () => loadUF(pairs(1,2,2,3,3,4,4,5,5,5), pairs(5,1))},
+  {name:'mixed',      desc:'8 elements split into 4 small sets',              apply: () => loadUF(pairs(1,1,2,1,3,1,4,4,5,4,6,6,7,6,8,8), pairs(1,1,4,1,6,1))},
+]});
 
 /* seed */
 (async () => {

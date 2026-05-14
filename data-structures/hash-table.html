@@ -36,6 +36,8 @@
         </div>
       </div>
 
+      <div class="presets" id="presets-mount"></div>
+
       <aside class="panel">
         <h2>Controls</h2>
         <div class="section-rule"></div>
@@ -460,6 +462,26 @@ function mountPlayer({mount, onBack}){
   return {setMode, status};
 }
 
+/* ─── preset toolbar (default-state buttons under the stage) ─── */
+// presets: array of {name, desc, apply: async ()=>void}
+function mountPresets({mount, label = 'presets', presets = []}){
+  const root = typeof mount === 'string' ? $(mount) : mount;
+  if (!root) return;
+  root.innerHTML = '';
+  root.appendChild(el('div', {class:'presets-label'}, label));
+  for (const p of presets){
+    const btn = el('button', {class:'preset-btn', type:'button', title: p.desc || ''},
+      el('span', {class:'preset-name'}, p.name),
+      el('span', {class:'preset-desc'}, p.desc || '')
+    );
+    btn.addEventListener('click', async () => {
+      try { await p.apply(); }
+      catch (e) { console.error('preset failed', e); }
+    });
+    root.appendChild(btn);
+  }
+}
+
 /* ─── input parsing util ─── */
 function parseNum(str, fallback=null){
   if (str == null || str === '') return fallback;
@@ -767,6 +789,27 @@ const opHandlers = {
 };
 for (const k in opHandlers) $('#op-'+k).addEventListener('click', opHandlers[k]);
 $('#b-rand').addEventListener('click', () => $('#in-val').value = randomInt(1,99));
+
+/* ─── preset toolbar ─── */
+async function loadHash(newM, keys){
+  // wipe nodes
+  for (const [k, m] of nodeMeshes) scene.remove(m.grp);
+  nodeMeshes.clear();
+  M = newM;
+  table = Array.from({length:M}, () => []);
+  size = 0;
+  rebuildBuckets();
+  for (const k of keys){ table[hash(k)].push(k); size++; }
+  await relayout(false);
+  history.clear();
+}
+mountPresets({mount: $('#presets-mount'), label: 'defaults', presets:[
+  {name:'empty',      desc:'m=8 · no keys',                                      apply: () => loadHash(8, [])},
+  {name:'light',      desc:'m=8 · 3 keys · spread, α=0.38',                      apply: () => loadHash(8, [7,15,23])},
+  {name:'collide',    desc:'m=8 · all hash to bucket 0 — worst-case probe',      apply: () => loadHash(8, [8,16,24,32,40])},
+  {name:'pre-resize', desc:'m=8 · 7 keys · α=0.88 — next insert auto-rehashes',  apply: () => loadHash(8, [3,7,11,15,19,23,27])},
+  {name:'after rehash', desc:'m=16 · same 7 keys spread out',                    apply: () => loadHash(16, [3,7,11,15,19,23,27])},
+]});
 
 /* seed */
 (async () => {

@@ -35,6 +35,8 @@
         </div>
       </div>
 
+      <div class="presets" id="presets-mount"></div>
+
       <aside class="panel">
         <h2>Controls</h2>
         <div class="section-rule"></div>
@@ -459,6 +461,26 @@ function mountPlayer({mount, onBack}){
   });
 
   return {setMode, status};
+}
+
+/* ─── preset toolbar (default-state buttons under the stage) ─── */
+// presets: array of {name, desc, apply: async ()=>void}
+function mountPresets({mount, label = 'presets', presets = []}){
+  const root = typeof mount === 'string' ? $(mount) : mount;
+  if (!root) return;
+  root.innerHTML = '';
+  root.appendChild(el('div', {class:'presets-label'}, label));
+  for (const p of presets){
+    const btn = el('button', {class:'preset-btn', type:'button', title: p.desc || ''},
+      el('span', {class:'preset-name'}, p.name),
+      el('span', {class:'preset-desc'}, p.desc || '')
+    );
+    btn.addEventListener('click', async () => {
+      try { await p.apply(); }
+      catch (e) { console.error('preset failed', e); }
+    });
+    root.appendChild(btn);
+  }
 }
 
 /* ─── input parsing util ─── */
@@ -961,6 +983,15 @@ const opHandlers = {
 };
 for (const k in opHandlers) $('#op-'+k).addEventListener('click', opHandlers[k]);
 $('#b-rand').addEventListener('click', () => $('#in-val').value = randomInt(1,99));
+
+/* ─── preset toolbar ─── */
+mountPresets({mount: $('#presets-mount'), label: 'defaults', presets:[
+  {name:'empty',     desc:'no keys',                                          apply: () => rebuildFrom([])},
+  {name:'LL trigger',desc:'[30, 20, 10] — single right rotation at root',     apply: () => rebuildFrom([30,20,10])},
+  {name:'LR trigger',desc:'[30, 10, 20] — left-then-right rotation',          apply: () => rebuildFrom([30,10,20])},
+  {name:'cascade',   desc:'[10..50, 25] — rotations cascade up the path',     apply: () => rebuildFrom([10,20,30,40,50,25])},
+  {name:'big',       desc:'15 keys, fully balanced — height 4',               apply: () => rebuildFrom([50,25,75,10,40,60,90,5,15,35,45,55,65,85,95])},
+]});
 
 /* seed */
 (async () => {

@@ -35,6 +35,8 @@
         </div>
       </div>
 
+      <div class="presets" id="presets-mount"></div>
+
       <aside class="panel">
         <h2>Controls</h2>
         <div class="section-rule"></div>
@@ -463,6 +465,26 @@ function mountPlayer({mount, onBack}){
   });
 
   return {setMode, status};
+}
+
+/* ─── preset toolbar (default-state buttons under the stage) ─── */
+// presets: array of {name, desc, apply: async ()=>void}
+function mountPresets({mount, label = 'presets', presets = []}){
+  const root = typeof mount === 'string' ? $(mount) : mount;
+  if (!root) return;
+  root.innerHTML = '';
+  root.appendChild(el('div', {class:'presets-label'}, label));
+  for (const p of presets){
+    const btn = el('button', {class:'preset-btn', type:'button', title: p.desc || ''},
+      el('span', {class:'preset-name'}, p.name),
+      el('span', {class:'preset-desc'}, p.desc || '')
+    );
+    btn.addEventListener('click', async () => {
+      try { await p.apply(); }
+      catch (e) { console.error('preset failed', e); }
+    });
+    root.appendChild(btn);
+  }
 }
 
 /* ─── input parsing util ─── */
@@ -945,6 +967,28 @@ $('#b-apply-t').addEventListener('click', async () => {
   log.say(`<span class="km">apply</span> t=${T} · max keys=${MAX_K} · cleared`);
   cx.set(`t=${T} applied · cleared`, '—');
 });
+
+/* ─── preset toolbar ─── */
+async function loadBTree(newT, values){
+  T = Math.max(2, Math.min(8, newT|0));
+  MAX_K = 2*T - 1; MIN_K = T - 1;
+  // wipe visuals
+  (function purge(n){ if (!n) return; if (n.mesh) scene.remove(n.mesh.grp); if (n.edgeUp) scene.remove(n.edgeUp); for (const c of n.children) purge(c); })(root);
+  root = newNode(true); size = 0; nextId = 0;
+  refreshRules();
+  $('#in-t').value = T;
+  for (const v of values) insertKey(v);
+  await relayout(false);
+  history.clear();
+  cx.set(`preset · t=${T} · ${values.length} keys`, '—');
+}
+mountPresets({mount: $('#presets-mount'), label: 'defaults', presets:[
+  {name:'empty',      desc:'t=3 · empty root leaf',                              apply: () => loadBTree(3, [])},
+  {name:'pre-split',  desc:'t=3 · [10,20,30,40] — 1 more triggers root split',   apply: () => loadBTree(3, [10,20,30,40])},
+  {name:'one split',  desc:'t=3 · [10..60] — root already split once',           apply: () => loadBTree(3, [10,20,30,40,50,60])},
+  {name:'two levels', desc:'t=3 · 15 keys · interior + leaves',                  apply: () => loadBTree(3, [10,20,5,6,12,30,7,17,3,25,35,40,45,50,8])},
+  {name:'narrow t=2', desc:'t=2 · same keys, more splits / deeper tree',         apply: () => loadBTree(2, [10,20,5,6,12,30,7,17,3,25,35,40,45,50,8])},
+]});
 
 /* seed */
 (async () => {

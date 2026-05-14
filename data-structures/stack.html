@@ -35,6 +35,8 @@
         </div>
       </div>
 
+      <div class="presets" id="presets-mount"></div>
+
       <aside class="panel">
         <h2>Controls</h2>
         <div class="section-rule"></div>
@@ -467,6 +469,26 @@ function mountPlayer({mount, onBack}){
   return {setMode, status};
 }
 
+/* ─── preset toolbar (default-state buttons under the stage) ─── */
+// presets: array of {name, desc, apply: async ()=>void}
+function mountPresets({mount, label = 'presets', presets = []}){
+  const root = typeof mount === 'string' ? $(mount) : mount;
+  if (!root) return;
+  root.innerHTML = '';
+  root.appendChild(el('div', {class:'presets-label'}, label));
+  for (const p of presets){
+    const btn = el('button', {class:'preset-btn', type:'button', title: p.desc || ''},
+      el('span', {class:'preset-name'}, p.name),
+      el('span', {class:'preset-desc'}, p.desc || '')
+    );
+    btn.addEventListener('click', async () => {
+      try { await p.apply(); }
+      catch (e) { console.error('preset failed', e); }
+    });
+    root.appendChild(btn);
+  }
+}
+
 /* ─── input parsing util ─── */
 function parseNum(str, fallback=null){
   if (str == null || str === '') return fallback;
@@ -747,6 +769,20 @@ $('#b-rm-stack').addEventListener('click', lock(async () => {
   activeIdx = Math.min(activeIdx, stacks.length - 1);
   await relayout(true);
 }));
+
+/* ─── preset toolbar ─── */
+async function loadStacks(snap){
+  await rebuildFrom(snap);
+  activeIdx = 0; clampActive();
+  history.clear();
+}
+mountPresets({mount: $('#presets-mount'), label: 'defaults', presets:[
+  {name:'empty',    desc:'1 stack, no blocks',                            apply: () => loadStacks([[]])},
+  {name:'tall',     desc:'1 stack · [1..10] — deep LIFO',                 apply: () => loadStacks([[1,2,3,4,5,6,7,8,9,10]])},
+  {name:'two',      desc:'2 stacks · [5,10,15] [] — cascade ready',       apply: () => loadStacks([[5,10,15], []])},
+  {name:'three',    desc:'3 stacks · [1,2,3] [4,5] [6,7,8,9]',            apply: () => loadStacks([[1,2,3],[4,5],[6,7,8,9]])},
+  {name:'cascade',  desc:'4 stacks · for popNext / popPrev demos',        apply: () => loadStacks([[1,2,3],[4,5],[6],[]])},
+]});
 
 /* seed */
 (async () => {

@@ -35,6 +35,8 @@
         </div>
       </div>
 
+      <div class="presets" id="presets-mount"></div>
+
       <aside class="panel">
         <h2>Controls</h2>
         <div class="section-rule"></div>
@@ -468,6 +470,26 @@ function mountPlayer({mount, onBack}){
   return {setMode, status};
 }
 
+/* ─── preset toolbar (default-state buttons under the stage) ─── */
+// presets: array of {name, desc, apply: async ()=>void}
+function mountPresets({mount, label = 'presets', presets = []}){
+  const root = typeof mount === 'string' ? $(mount) : mount;
+  if (!root) return;
+  root.innerHTML = '';
+  root.appendChild(el('div', {class:'presets-label'}, label));
+  for (const p of presets){
+    const btn = el('button', {class:'preset-btn', type:'button', title: p.desc || ''},
+      el('span', {class:'preset-name'}, p.name),
+      el('span', {class:'preset-desc'}, p.desc || '')
+    );
+    btn.addEventListener('click', async () => {
+      try { await p.apply(); }
+      catch (e) { console.error('preset failed', e); }
+    });
+    root.appendChild(btn);
+  }
+}
+
 /* ─── input parsing util ─── */
 function parseNum(str, fallback=null){
   if (str == null || str === '') return fallback;
@@ -787,6 +809,24 @@ function readNum(allowAuto){
   if (raw === ''){ if (!allowAuto) return null; const v = randomInt(1,99); $('#in-val').value = v; return v; }
   const n = Number(raw); return Number.isFinite(n) ? n : null;
 }
+
+/* ─── preset toolbar ─── */
+async function loadArr(values, cap){
+  // tear down everything (cells + empty slots)
+  for (const c of cells) scene.remove(c.grp);
+  for (const s of slots) scene.remove(s.grp);
+  cells.length = 0; slots.length = 0; capacity = 0;
+  if (cap > 0) await ensureCapacity(cap);
+  for (const v of values) await pushBack(v);
+  history.clear();
+}
+mountPresets({mount: $('#presets-mount'), label: 'defaults', presets:[
+  {name:'empty',     desc:'cap = 0, no items',                              apply: () => loadArr([], 0)},
+  {name:'tight',     desc:'cap=4, [1..4] · next push triggers resize',      apply: () => loadArr([1,2,3,4], 4)},
+  {name:'just-grew', desc:'cap=8, size=5 · doubling just happened',         apply: () => loadArr([1,2,3,4,5], 8)},
+  {name:'half-full', desc:'cap=8, [10,20,30,40] · 50% load',                apply: () => loadArr([10,20,30,40], 8)},
+  {name:'big',       desc:'cap=16, [1..12] · steady state',                 apply: () => loadArr([1,2,3,4,5,6,7,8,9,10,11,12], 16)},
+]});
 
 /* seed */
 (async () => {
