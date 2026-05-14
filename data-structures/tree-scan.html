@@ -716,6 +716,11 @@ async function relayout(animate=true){
   })(root, null);
   clearOrphanGhosts();
   await Promise.all(tasks);
+  // keep the cursor ring tracking its node when the tree is rearranged
+  if (typeof currentNode !== 'undefined' && currentNode && currentNode.mesh){
+    cursorRing.position.copy(currentNode.mesh.grp.position);
+    cursorRingOuter.position.copy(currentNode.mesh.grp.position);
+  }
   refreshHUD();
 }
 
@@ -748,12 +753,61 @@ async function pulse(n, color=0xb9ff5c, ms=260){
 }
 
 function clearVisitNumbers(){
-  (function walk(n){ if (!n) return; if (n.mesh){ n.mesh.label.paint(n.value); n.mesh.label.tex.needsUpdate = true; } walk(n.left); walk(n.right); })(root);
+  (function walk(n){
+    if (!n) return;
+    if (n.mesh){
+      n.mesh.label.paint(n.value);
+      n.mesh.label.tex.needsUpdate = true;
+      // restore neutral emissive in case a previous "current" highlight was on
+      const mat = n.mesh.body.material;
+      mat.emissive.setHex(0x0c1428);
+      mat.emissiveIntensity = 0.7;
+    }
+    walk(n.left); walk(n.right);
+  })(root);
+  setCurrent(null);
 }
 function setVisitNumber(n, idx){
   if (!n || !n.mesh) return;
   n.mesh.label.paint(n.value, idx);
   n.mesh.label.tex.needsUpdate = true;
+}
+
+/* ─── persistent "current node" cursor — a glowing torus + strong emissive ─── */
+let currentNode = null;
+const cursorRing = new THREE.Mesh(
+  new THREE.TorusGeometry(0.95, 0.06, 18, 56),
+  new THREE.MeshBasicMaterial({color:0xffd966, transparent:true, opacity:0.9, depthTest:false})
+);
+cursorRing.renderOrder = 11;
+cursorRing.visible = false;
+scene.add(cursorRing);
+const cursorRingOuter = new THREE.Mesh(
+  new THREE.TorusGeometry(1.05, 0.10, 18, 56),
+  new THREE.MeshBasicMaterial({color:0xffd966, transparent:true, opacity:0.22, depthTest:false})
+);
+cursorRingOuter.renderOrder = 10;
+cursorRingOuter.visible = false;
+scene.add(cursorRingOuter);
+
+function setCurrent(node){
+  // restore the previous current node's emissive
+  if (currentNode && currentNode !== node && currentNode.mesh){
+    const m = currentNode.mesh.body.material;
+    m.emissive.setHex(0x0c1428);
+    m.emissiveIntensity = 0.7;
+  }
+  currentNode = node;
+  if (node && node.mesh){
+    const m = node.mesh.body.material;
+    m.emissive.setHex(0xffd966);
+    m.emissiveIntensity = 1.7;
+    cursorRing.position.copy(node.mesh.grp.position);
+    cursorRingOuter.position.copy(node.mesh.grp.position);
+    cursorRing.visible = cursorRingOuter.visible = true;
+  } else {
+    cursorRing.visible = cursorRingOuter.visible = false;
+  }
 }
 
 let busy = false;
@@ -850,11 +904,14 @@ async function applyStep(){
     cx.set(`#${n} visit ${s.node.value} · ${scanName}`, 'O(n)');
     log.say(`<span class="k">${scanName}</span> #${n} ${s.node.value}`);
     await pulse(s.node, scanColor, 240);
+    setCurrent(s.node);
   } else {
     const g = ghosts.get(s.parent)?.[s.side];
     cx.set(`${scanName} · null child of ${s.parent.value} (${s.side})`, 'return');
     log.say(`<span class="kx">∅</span> ${scanName} · ${s.parent.value}.${s.side} is null`);
     await pulseGhost(g, 0xff5c70, 220);
+    // for a null step, "current" stays at the parent that just probed for the missing child
+    setCurrent(s.parent);
   }
   return true;
 }
@@ -876,6 +933,13 @@ async function undoStepImmediate(){
     if (g) await pulseGhost(g, 0xff5c70, 180);
   }
   stepper.paused = wasPaused;
+  // move the "current" cursor back to whichever node the previous step was on
+  if (scanIdx > 0){
+    const prev = scanSteps[scanIdx - 1];
+    setCurrent(prev.kind === 'visit' ? prev.node : prev.parent);
+  } else {
+    setCurrent(null);
+  }
   const n = countVisitsUpTo(scanIdx);
   cx.set(`rewind · #${n} ${scanName}`, scanName);
   log.say(`<span class="ko">undo step</span> · now at #${n}`);
