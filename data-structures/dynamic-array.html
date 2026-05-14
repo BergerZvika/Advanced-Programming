@@ -230,9 +230,10 @@ function stepperToggle(){ stepper.paused ? stepperPlay() : stepperPause(); }
 function stepperFastForward(){ stepper.fastForward = true; stepperKick(); }
 export async function stepperCheckpoint(label, undoFn){
   if (undoFn) stepper.checkpoints.push({label: label || '', undo:undoFn});
-  // only clobber the status text if a label was given; otherwise leave whatever
-  // cx.set / the current op already put there
   if (label != null && stepper.onState) stepper.onState(label);
+  // Arrival at a checkpoint clears any active fast-forward so the *next*
+  // sleep/tween pauses again (one click = one checkpoint advance).
+  stepper.fastForward = false;
   if (stepper.paused){
     await new Promise(r => stepper.resume = r);
   }
@@ -247,20 +248,24 @@ export async function stepperUndo(){
 function stepperClear(){ stepper.checkpoints.length = 0; }
 
 /* ─── small tween util · pause-aware ─── */
+// IMPORTANT: tween/sleep do NOT clear stepper.fastForward when they jump to
+// completion. Only stepperCheckpoint clears it. That way one forward click
+// skips every sleep/tween until the next checkpoint, instead of just one.
 function tween(obj, prop, to, ms=420, ease=easeOutCubic){
   return new Promise(res => {
     const from = obj[prop];
     let t0 = performance.now(), pausedAt = 0, totalPause = 0;
     function step(now){
+      if (stepper.fastForward){ obj[prop] = to; res(); return; }
       if (stepper.paused){
         if (!pausedAt) pausedAt = now;
         requestAnimationFrame(step); return;
       }
       if (pausedAt){ totalPause += now - pausedAt; pausedAt = 0; }
       const elapsed = (now - t0 - totalPause) * stepper.speed;
-      const k = stepper.fastForward ? 1 : Math.min(1, elapsed/ms);
+      const k = Math.min(1, elapsed/ms);
       obj[prop] = from + (to - from)*ease(k);
-      if (k<1) requestAnimationFrame(step); else { stepper.fastForward = false; res(); }
+      if (k<1) requestAnimationFrame(step); else res();
     }
     requestAnimationFrame(step);
   });
@@ -270,15 +275,16 @@ function tweenVec(vec, to, ms=420, ease=easeOutCubic){
     const from = vec.clone();
     let t0 = performance.now(), pausedAt = 0, totalPause = 0;
     function step(now){
+      if (stepper.fastForward){ vec.copy(to); res(); return; }
       if (stepper.paused){
         if (!pausedAt) pausedAt = now;
         requestAnimationFrame(step); return;
       }
       if (pausedAt){ totalPause += now - pausedAt; pausedAt = 0; }
       const elapsed = (now - t0 - totalPause) * stepper.speed;
-      const k = stepper.fastForward ? 1 : Math.min(1, elapsed/ms);
+      const k = Math.min(1, elapsed/ms);
       vec.lerpVectors(from, to, ease(k));
-      if (k<1) requestAnimationFrame(step); else { stepper.fastForward = false; res(); }
+      if (k<1) requestAnimationFrame(step); else res();
     }
     requestAnimationFrame(step);
   });
@@ -286,10 +292,11 @@ function tweenVec(vec, to, ms=420, ease=easeOutCubic){
 const easeOutCubic = t => 1 - Math.pow(1-t, 3);
 const easeInOutCubic = t => t<0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2,3)/2;
 export async function sleep(ms){
+  if (stepper.fastForward) return;
   let remaining = ms;
   while (remaining > 0){
     if (stepper.paused){ await new Promise(r => stepper.resume = r); }
-    if (stepper.fastForward){ stepper.fastForward = false; return; }
+    if (stepper.fastForward) return;
     const chunk = Math.min(remaining, 32);
     await new Promise(r => setTimeout(r, chunk / Math.max(0.1, stepper.speed)));
     remaining -= chunk;

@@ -229,9 +229,10 @@ function stepperToggle(){ stepper.paused ? stepperPlay() : stepperPause(); }
 function stepperFastForward(){ stepper.fastForward = true; stepperKick(); }
 export async function stepperCheckpoint(label, undoFn){
   if (undoFn) stepper.checkpoints.push({label: label || '', undo:undoFn});
-  // only clobber the status text if a label was given; otherwise leave whatever
-  // cx.set / the current op already put there
   if (label != null && stepper.onState) stepper.onState(label);
+  // Arrival at a checkpoint clears any active fast-forward so the *next*
+  // sleep/tween pauses again (one click = one checkpoint advance).
+  stepper.fastForward = false;
   if (stepper.paused){
     await new Promise(r => stepper.resume = r);
   }
@@ -246,20 +247,24 @@ export async function stepperUndo(){
 function stepperClear(){ stepper.checkpoints.length = 0; }
 
 /* ─── small tween util · pause-aware ─── */
+// IMPORTANT: tween/sleep do NOT clear stepper.fastForward when they jump to
+// completion. Only stepperCheckpoint clears it. That way one forward click
+// skips every sleep/tween until the next checkpoint, instead of just one.
 function tween(obj, prop, to, ms=420, ease=easeOutCubic){
   return new Promise(res => {
     const from = obj[prop];
     let t0 = performance.now(), pausedAt = 0, totalPause = 0;
     function step(now){
+      if (stepper.fastForward){ obj[prop] = to; res(); return; }
       if (stepper.paused){
         if (!pausedAt) pausedAt = now;
         requestAnimationFrame(step); return;
       }
       if (pausedAt){ totalPause += now - pausedAt; pausedAt = 0; }
       const elapsed = (now - t0 - totalPause) * stepper.speed;
-      const k = stepper.fastForward ? 1 : Math.min(1, elapsed/ms);
+      const k = Math.min(1, elapsed/ms);
       obj[prop] = from + (to - from)*ease(k);
-      if (k<1) requestAnimationFrame(step); else { stepper.fastForward = false; res(); }
+      if (k<1) requestAnimationFrame(step); else res();
     }
     requestAnimationFrame(step);
   });
@@ -269,15 +274,16 @@ function tweenVec(vec, to, ms=420, ease=easeOutCubic){
     const from = vec.clone();
     let t0 = performance.now(), pausedAt = 0, totalPause = 0;
     function step(now){
+      if (stepper.fastForward){ vec.copy(to); res(); return; }
       if (stepper.paused){
         if (!pausedAt) pausedAt = now;
         requestAnimationFrame(step); return;
       }
       if (pausedAt){ totalPause += now - pausedAt; pausedAt = 0; }
       const elapsed = (now - t0 - totalPause) * stepper.speed;
-      const k = stepper.fastForward ? 1 : Math.min(1, elapsed/ms);
+      const k = Math.min(1, elapsed/ms);
       vec.lerpVectors(from, to, ease(k));
-      if (k<1) requestAnimationFrame(step); else { stepper.fastForward = false; res(); }
+      if (k<1) requestAnimationFrame(step); else res();
     }
     requestAnimationFrame(step);
   });
@@ -285,10 +291,11 @@ function tweenVec(vec, to, ms=420, ease=easeOutCubic){
 const easeOutCubic = t => 1 - Math.pow(1-t, 3);
 const easeInOutCubic = t => t<0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2,3)/2;
 export async function sleep(ms){
+  if (stepper.fastForward) return;
   let remaining = ms;
   while (remaining > 0){
     if (stepper.paused){ await new Promise(r => stepper.resume = r); }
-    if (stepper.fastForward){ stepper.fastForward = false; return; }
+    if (stepper.fastForward) return;
     const chunk = Math.min(remaining, 32);
     await new Promise(r => setTimeout(r, chunk / Math.max(0.1, stepper.speed)));
     remaining -= chunk;
@@ -764,141 +771,129 @@ async function rebuildFrom(values){
   await relayout(false);
 }
 
-/* ─── scans ─── */
-async function visitNullChild(parent, side, sLabel){
-  const g = ghosts.get(parent)?.[side];
-  if (!g) return;
-  cx.set(`${sLabel} · null child of ${parent.value} (${side})`, 'return');
-  log.say(`<span class="kx">∅</span> ${sLabel} · ${parent.value}.${side} is null`);
-  await pulseGhost(g, 0xff5c70, 220);
-  await stepperCheckpoint();
-}
+/* ─── scans · step-list player ─── */
+let scanSteps = null;   // [{kind:'visit'|'null', node?, parent?, side?}]
+let scanIdx   = 0;      // number of applied steps so far
+let scanName  = '';
+let scanColor = 0x35d0ff;
 
-async function inOrder(){
-  $('#t-scan').textContent = 'in-order';
-  cx.set('in-order · L · N · R', 'O(n)');
-  clearVisitNumbers();
-  const order = [];
-  async function walk(n, parent, side){
-    if (!n){
-      if (parent) await visitNullChild(parent, side, 'in-order');
-      return;
-    }
-    await walk(n.left, n, 'left');
-    order.push(n.value);
-    setVisitNumber(n, order.length);
-    cx.set(`#${order.length} visit ${n.value} · in-order`, 'O(n)');
-    await pulse(n, 0x35d0ff, 240);
-    await stepperCheckpoint();
-    await walk(n.right, n, 'right');
-  }
-  await walk(root, null, null);
-  log.say(`<span class="k">in-order</span> [ ${order.join(', ')} ]`);
-  cx.set(`in-order done · ${order.length} nodes`, '—');
+function buildInOrder(out){
+  (function walk(n, parent, side){
+    if (!n){ if (parent) out.push({kind:'null', parent, side}); return; }
+    walk(n.left,  n, 'left');
+    out.push({kind:'visit', node:n});
+    walk(n.right, n, 'right');
+  })(root, null, null);
 }
-
-async function preOrder(){
-  $('#t-scan').textContent = 'pre-order';
-  cx.set('pre-order · N · L · R', 'O(n)');
-  clearVisitNumbers();
-  const order = [];
-  async function walk(n, parent, side){
-    if (!n){
-      if (parent) await visitNullChild(parent, side, 'pre-order');
-      return;
-    }
-    order.push(n.value);
-    setVisitNumber(n, order.length);
-    cx.set(`#${order.length} visit ${n.value} · pre-order`, 'O(n)');
-    await pulse(n, 0x7c5cff, 240);
-    await stepperCheckpoint();
-    await walk(n.left,  n, 'left');
-    await walk(n.right, n, 'right');
-  }
-  await walk(root, null, null);
-  log.say(`<span class="k">pre-order</span> [ ${order.join(', ')} ]`);
-  cx.set(`pre-order done · ${order.length} nodes`, '—');
+function buildPreOrder(out){
+  (function walk(n, parent, side){
+    if (!n){ if (parent) out.push({kind:'null', parent, side}); return; }
+    out.push({kind:'visit', node:n});
+    walk(n.left,  n, 'left');
+    walk(n.right, n, 'right');
+  })(root, null, null);
 }
-
-async function postOrder(){
-  $('#t-scan').textContent = 'post-order';
-  cx.set('post-order · L · R · N', 'O(n)');
-  clearVisitNumbers();
-  const order = [];
-  async function walk(n, parent, side){
-    if (!n){
-      if (parent) await visitNullChild(parent, side, 'post-order');
-      return;
-    }
-    await walk(n.left,  n, 'left');
-    await walk(n.right, n, 'right');
-    order.push(n.value);
-    setVisitNumber(n, order.length);
-    cx.set(`#${order.length} visit ${n.value} · post-order`, 'O(n)');
-    await pulse(n, 0xff5cab, 240);
-    await stepperCheckpoint();
-  }
-  await walk(root, null, null);
-  log.say(`<span class="k">post-order</span> [ ${order.join(', ')} ]`);
-  cx.set(`post-order done · ${order.length} nodes`, '—');
+function buildPostOrder(out){
+  (function walk(n, parent, side){
+    if (!n){ if (parent) out.push({kind:'null', parent, side}); return; }
+    walk(n.left,  n, 'left');
+    walk(n.right, n, 'right');
+    out.push({kind:'visit', node:n});
+  })(root, null, null);
 }
-
-async function bfs(){
-  $('#t-scan').textContent = 'BFS';
-  cx.set('BFS · level order · uses queue', 'O(n)');
-  clearVisitNumbers();
-  if (!root){ log.say(`<span class="kx">empty</span>`); return; }
+function buildBFS(out){
+  if (!root) return;
   const q = [root];
-  const order = [];
   while (q.length){
     const n = q.shift();
-    order.push(n.value);
-    setVisitNumber(n, order.length);
-    cx.set(`#${order.length} visit ${n.value} · queue [${q.map(x=>x.value).join(',') || '∅'}]`, 'BFS');
-    await pulse(n, 0xffb454, 240);
-    await stepperCheckpoint();
-    // examine children — pulse the null ones, enqueue the real ones
+    out.push({kind:'visit', node:n});
     for (const side of ['left','right']){
       if (n[side]) q.push(n[side]);
-      else await visitNullChild(n, side, 'BFS');
+      else        out.push({kind:'null', parent:n, side});
     }
   }
-  log.say(`<span class="k">BFS</span> [ ${order.join(', ')} ]`);
-  cx.set(`BFS done · ${order.length} nodes`, '—');
 }
-
-async function dfs(){
-  $('#t-scan').textContent = 'DFS';
-  cx.set('DFS · iterative · uses stack', 'O(n)');
-  clearVisitNumbers();
-  if (!root){ log.say(`<span class="kx">empty</span>`); return; }
+function buildDFS(out){
+  if (!root) return;
   const stack = [root];
-  const order = [];
   while (stack.length){
     const n = stack.pop();
-    order.push(n.value);
-    setVisitNumber(n, order.length);
-    cx.set(`#${order.length} visit ${n.value} · stack [${stack.map(x=>x.value).join(',') || '∅'}]`, 'DFS');
-    await pulse(n, 0xb9ff5c, 240);
-    await stepperCheckpoint();
-    // examine children (left first → so right gets pushed first onto the stack, left on top)
+    out.push({kind:'visit', node:n});
     for (const side of ['left','right']){
-      if (!n[side]) await visitNullChild(n, side, 'DFS');
+      if (!n[side]) out.push({kind:'null', parent:n, side});
     }
     if (n.right) stack.push(n.right);
     if (n.left)  stack.push(n.left);
   }
-  log.say(`<span class="k">DFS</span> [ ${order.join(', ')} ]`);
-  cx.set(`DFS done · ${order.length} nodes`, '—');
+}
+
+function countVisitsUpTo(idx){
+  let c = 0;
+  for (let i = 0; i < idx; i++) if (scanSteps[i].kind === 'visit') c++;
+  return c;
+}
+
+async function applyStep(){
+  if (scanIdx >= scanSteps.length) return false;
+  const s = scanSteps[scanIdx];
+  scanIdx++;
+  if (s.kind === 'visit'){
+    const n = countVisitsUpTo(scanIdx);
+    setVisitNumber(s.node, n);
+    cx.set(`#${n} visit ${s.node.value} · ${scanName}`, 'O(n)');
+    log.say(`<span class="k">${scanName}</span> #${n} ${s.node.value}`);
+    await pulse(s.node, scanColor, 240);
+  } else {
+    const g = ghosts.get(s.parent)?.[s.side];
+    cx.set(`${scanName} · null child of ${s.parent.value} (${s.side})`, 'return');
+    log.say(`<span class="kx">∅</span> ${scanName} · ${s.parent.value}.${s.side} is null`);
+    await pulseGhost(g, 0xff5c70, 220);
+  }
+  return true;
+}
+
+function undoStepImmediate(){
+  if (scanIdx === 0) return false;
+  scanIdx--;
+  const s = scanSteps[scanIdx];
+  if (s.kind === 'visit'){
+    s.node.mesh.label.paint(s.node.value);
+    s.node.mesh.label.tex.needsUpdate = true;
+  }
+  // null pulses are transient — nothing persistent to undo
+  const n = countVisitsUpTo(scanIdx);
+  cx.set(`rewind · #${n} ${scanName}`, scanName);
+  log.say(`<span class="ko">undo step</span> · now at #${n}`);
+  return true;
+}
+
+async function runScan(name, color, builder){
+  $('#t-scan').textContent = name;
+  clearVisitNumbers();
+  stepperClear();   // drop checkpoints from any previous scan
+  scanSteps = [];
+  scanIdx = 0;
+  scanName = name;
+  scanColor = color;
+  builder(scanSteps);
+  cx.set(`${name} · 0/${scanSteps.length}`, `O(n)`);
+  while (scanIdx < scanSteps.length){
+    await applyStep();
+    // checkpoint registers an undo so the player's ← button rewinds this step
+    await stepperCheckpoint(`${name} · step ${scanIdx}`, async () => { undoStepImmediate(); });
+  }
+  const visits = countVisitsUpTo(scanSteps.length);
+  log.say(`<span class="k">${name}</span> done · ${visits} visit(s) · ${scanSteps.length - visits} null(s)`);
+  cx.set(`${name} done · ${visits} visits`, '—');
 }
 
 /* ─── ops ─── */
 const opHandlers = {
-  inorder:   lock(inOrder),
-  preorder:  lock(preOrder),
-  postorder: lock(postOrder),
-  bfs:       lock(bfs),
-  dfs:       lock(dfs),
+  inorder:   lock(() => runScan('in-order',   0x35d0ff, buildInOrder)),
+  preorder:  lock(() => runScan('pre-order',  0x7c5cff, buildPreOrder)),
+  postorder: lock(() => runScan('post-order', 0xff5cab, buildPostOrder)),
+  bfs:       lock(() => runScan('BFS',        0xffb454, buildBFS)),
+  dfs:       lock(() => runScan('DFS',        0xb9ff5c, buildDFS)),
   insert: lock(async () => {
     const vals = readVals();
     history.push({type:'snapshot', values: snapshotValues()});
