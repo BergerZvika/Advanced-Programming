@@ -702,20 +702,28 @@ function makeMedianRing(){
 const medianRingLo = makeMedianRing();
 const medianRingHi = makeMedianRing();
 const medianLabel = (() => {
-  const c = document.createElement('canvas'); c.width=512; c.height=192;
+  const W = 1024, H = 256;
+  const c = document.createElement('canvas'); c.width=W; c.height=H;
   const ctx = c.getContext('2d');
   function paint(text){
-    ctx.clearRect(0,0,512,192);
+    ctx.clearRect(0,0,W,H);
     ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.shadowColor='rgba(0,0,0,0.9)'; ctx.shadowBlur=14;
+    ctx.shadowColor='rgba(0,0,0,0.9)'; ctx.shadowBlur=16;
     ctx.fillStyle='#5cffb4';
-    ctx.font='800 88px IBM Plex Mono, monospace';
-    ctx.fillText(text, 256, 96);
+    // shrink the font if the string would overflow the canvas width
+    let fs = 110;
+    ctx.font = `800 ${fs}px IBM Plex Mono, monospace`;
+    while (ctx.measureText(text).width > W - 60 && fs > 40){
+      fs -= 6; ctx.font = `800 ${fs}px IBM Plex Mono, monospace`;
+    }
+    ctx.fillText(text, W/2, H/2);
   }
   paint('median');
   const tex = new THREE.CanvasTexture(c); tex.minFilter=THREE.LinearFilter;
   const spr = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true, depthTest:false}));
-  spr.renderOrder = 13; spr.scale.set(3.0, 1.1, 1); spr.visible = false;
+  spr.renderOrder = 13;
+  spr.scale.set(5.0, 1.25, 1);   // 1024:256 = 4:1; 5.0×1.25 keeps that aspect
+  spr.visible = false;
   scene.add(spr);
   return {spr, paint, tex};
 })();
