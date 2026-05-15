@@ -54,6 +54,7 @@
         <div class="pill-toggle" id="mode-toggle">
           <button data-mode="max" class="active">max-heap</button>
           <button data-mode="min">min-heap</button>
+          <button data-mode="median">median-heap</button>
         </div>
 
         <div class="label mt-12">Value(s)</div>
@@ -541,11 +542,21 @@ const history = createHistory();
 const stage = $('#stage');
 const {scene} = createScene({mount:stage, camera:{pos:[0, 5.5, 19], lookAt:[0, 1, 0]}});
 
-let mode = 'max';     // or 'min'
-const arr = [];       // values
+let mode = 'max';     // 'max' | 'min' | 'median'
+const arr = [];       // values used when mode === 'max' or 'min'
 const meshes = [];    // {grp, body, label}
 
-function cmp(a, b){ return mode === 'max' ? a > b : a < b; }
+// median-heap state: two sub-heaps.
+//   lo = max-heap of the LOWER half (rendered on the left)
+//   hi = min-heap of the UPPER half (rendered on the right)
+// the median = lo.arr[0] if |lo| > |hi|, else (lo.arr[0]+hi.arr[0])/2.
+const lo = {arr:[], meshes:[], edges:[], side:'lo', cmp:(a,b)=>a>b};
+const hi = {arr:[], meshes:[], edges:[], side:'hi', cmp:(a,b)=>a<b};
+
+function cmp(a, b){
+  if (mode === 'min') return a < b;
+  return a > b;            // 'max' (and irrelevant during 'median' since arr is empty)
+}
 function parent(i){ return (i-1) >> 1; }
 function lc(i){ return 2*i + 1; }
 function rc(i){ return 2*i + 2; }
@@ -643,8 +654,14 @@ async function relayout(animate=true){
 
 function refreshHUD(){
   $('#t-mode').textContent = mode.toUpperCase();
-  $('#t-size').textContent = arr.length;
-  $('#t-root').textContent = arr.length ? arr[0] : '∅';
+  if (mode === 'median'){
+    $('#t-size').textContent = lo.arr.length + hi.arr.length;
+    const m = medianValue();
+    $('#t-root').textContent = m === null ? '∅' : String(m);
+  } else {
+    $('#t-size').textContent = arr.length;
+    $('#t-root').textContent = arr.length ? arr[0] : '∅';
+  }
   $('#undo-depth').textContent = history.size();
   $('#hist-pill').textContent = history.size();
 }
@@ -730,6 +747,166 @@ async function extract(){
   return top;
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   median-heap mode: two sub-heaps rendered side by side
+   ═══════════════════════════════════════════════════════════════ */
+const HALF_OFFSET = 5.2;
+function heapPos(i, side){
+  const d = Math.floor(Math.log2(i+1));
+  const rowStart = (1<<d) - 1;
+  const k = i - rowStart;
+  const rowCount = 1 << d;
+  const spacing = Math.max(1.0, 4.5 / rowCount);
+  const offset = side === 'lo' ? -HALF_OFFSET : HALF_OFFSET;
+  return {x: offset + (k - (rowCount-1)/2) * spacing, y: -d * 1.9 + 3.2};
+}
+async function relayoutHeap(h, animate=true){
+  while (h.meshes.length < h.arr.length) h.meshes.push(makeMesh(h.arr[h.meshes.length]));
+  while (h.edges.length  < h.arr.length) h.edges.push(makeEdge());
+  while (h.meshes.length > h.arr.length){ const m = h.meshes.pop(); scene.remove(m.grp); }
+  while (h.edges.length  > h.arr.length){ const e = h.edges.pop();  scene.remove(e); }
+  const tasks = [];
+  for (let i=0;i<h.arr.length;i++){
+    const {x, y} = heapPos(i, h.side);
+    tasks.push(tweenVec(h.meshes[i].grp.position, new THREE.Vector3(x, y, 0), animate?420:0));
+    tasks.push(tweenVec(h.meshes[i].grp.scale,    new THREE.Vector3(1,1,1),  animate?320:0));
+    h.meshes[i].label.paint(h.arr[i], i); h.meshes[i].label.tex.needsUpdate=true;
+    if (i === 0){ h.edges[i].visible = false; }
+    else {
+      const p = heapPos(parent(i), h.side);
+      h.edges[i].visible = true;
+      placeEdge(h.edges[i], p.x, p.y, x, y);
+    }
+  }
+  await Promise.all(tasks);
+}
+async function heapSwap(h, i, j){
+  if (i === j) return;
+  const pi = heapPos(i, h.side), pj = heapPos(j, h.side);
+  await Promise.all([
+    tweenVec(h.meshes[i].grp.position, new THREE.Vector3(pj.x, pj.y, 0), 380),
+    tweenVec(h.meshes[j].grp.position, new THREE.Vector3(pi.x, pi.y, 0), 380),
+  ]);
+  [h.arr[i], h.arr[j]] = [h.arr[j], h.arr[i]];
+  [h.meshes[i], h.meshes[j]] = [h.meshes[j], h.meshes[i]];
+  h.meshes[i].label.paint(h.arr[i], i); h.meshes[i].label.tex.needsUpdate=true;
+  h.meshes[j].label.paint(h.arr[j], j); h.meshes[j].label.tex.needsUpdate=true;
+}
+async function heapPulse(h, i, color=0xffb454, ms=140){
+  if (!h.meshes[i]) return;
+  const m = h.meshes[i].body.material;
+  const eOld = m.emissive.clone(), iOld = m.emissiveIntensity;
+  m.emissive.setHex(color); m.emissiveIntensity = 1.3;
+  await sleep(ms);
+  m.emissive.copy(eOld); m.emissiveIntensity = iOld;
+}
+async function heapSiftUp(h, i){
+  while (i > 0 && h.cmp(h.arr[i], h.arr[parent(i)])){
+    cx.set(`${h.side === 'lo' ? 'max' : 'min'} sift-up · [${i}]=${h.arr[i]} ↔ [${parent(i)}]=${h.arr[parent(i)]}`, 'O(log n)');
+    await heapPulse(h, i); await heapPulse(h, parent(i));
+    await stepperCheckpoint();
+    await heapSwap(h, i, parent(i));
+    i = parent(i);
+  }
+}
+async function heapSiftDown(h, i){
+  const n = h.arr.length;
+  while (true){
+    const l = lc(i), r = rc(i);
+    let t = i;
+    if (l < n && h.cmp(h.arr[l], h.arr[t])) t = l;
+    if (r < n && h.cmp(h.arr[r], h.arr[t])) t = r;
+    if (t === i) break;
+    await heapPulse(h, i); await heapPulse(h, t);
+    await heapSwap(h, i, t);
+    i = t;
+  }
+}
+async function heapPush(h, v){
+  h.arr.push(v);
+  h.meshes.push(makeMesh(v));
+  h.edges.push(makeEdge());
+  await relayoutHeap(h, true);
+  await heapSiftUp(h, h.arr.length-1);
+}
+async function heapPop(h){
+  if (!h.arr.length) return null;
+  const top = h.arr[0];
+  await heapPulse(h, 0, 0xff5c70, 220);
+  if (h.arr.length === 1){
+    h.arr.pop();
+    const m = h.meshes.pop(); scene.remove(m.grp);
+    const e = h.edges.pop();  scene.remove(e);
+    await relayoutHeap(h, true);
+    return top;
+  }
+  await heapSwap(h, 0, h.arr.length-1);
+  h.arr.pop();
+  const m = h.meshes.pop(); scene.remove(m.grp);
+  const e = h.edges.pop();  scene.remove(e);
+  await relayoutHeap(h, true);
+  await heapSiftDown(h, 0);
+  return top;
+}
+
+/* median high-level ops */
+function medianValue(){
+  if (lo.arr.length === 0 && hi.arr.length === 0) return null;
+  if (lo.arr.length === hi.arr.length) return (lo.arr[0] + hi.arr[0]) / 2;
+  return lo.arr[0];           // by invariant lo has ≥ hi entries
+}
+async function medianInsert(v){
+  const loTop = lo.arr.length ? lo.arr[0] : null;
+  if (loTop === null || v <= loTop){
+    cx.set(`${v} ≤ ${loTop ?? '∅'} · push to lo (max-heap)`, 'place');
+    await heapPush(lo, v);
+  } else {
+    cx.set(`${v} > ${loTop} · push to hi (min-heap)`, 'place');
+    await heapPush(hi, v);
+  }
+  // rebalance so |lo| - |hi| ∈ {0, 1}
+  if (lo.arr.length > hi.arr.length + 1){
+    cx.set(`balance · lo too big · move top → hi`, 'rebalance');
+    const x = await heapPop(lo); await heapPush(hi, x);
+  } else if (hi.arr.length > lo.arr.length){
+    cx.set(`balance · hi too big · move top → lo`, 'rebalance');
+    const x = await heapPop(hi); await heapPush(lo, x);
+  }
+}
+async function medianExtract(){
+  if (lo.arr.length === 0 && hi.arr.length === 0) return null;
+  const med = medianValue();
+  if (lo.arr.length === 0)      await heapPop(hi);
+  else {
+    await heapPop(lo);
+    if (hi.arr.length > lo.arr.length){
+      const x = await heapPop(hi); await heapPush(lo, x);
+    }
+  }
+  return med;
+}
+async function medianHeapify(values){
+  // wipe both halves
+  while (lo.arr.length){ lo.arr.pop(); const m = lo.meshes.pop(); if (m) scene.remove(m.grp); const e = lo.edges.pop(); if (e) scene.remove(e); }
+  while (hi.arr.length){ hi.arr.pop(); const m = hi.meshes.pop(); if (m) scene.remove(m.grp); const e = hi.edges.pop(); if (e) scene.remove(e); }
+  // sort ascending, lower half → lo, upper half → hi
+  const sorted = [...values].sort((a,b)=>a-b);
+  const half = Math.ceil(sorted.length / 2);
+  for (const v of sorted.slice(0, half)) await heapPush(lo, v);
+  for (const v of sorted.slice(half))    await heapPush(hi, v);
+}
+
+/* swap state in/out of median mode */
+function clearStandardScene(){
+  while (meshes.length){ const m = meshes.pop(); scene.remove(m.grp); }
+  while (edges.length){  const e = edges.pop();  scene.remove(e); }
+  arr.length = 0;
+}
+function clearMedianScene(){
+  while (lo.arr.length){ lo.arr.pop(); const m = lo.meshes.pop(); if (m) scene.remove(m.grp); const e = lo.edges.pop(); if (e) scene.remove(e); }
+  while (hi.arr.length){ hi.arr.pop(); const m = hi.meshes.pop(); if (m) scene.remove(m.grp); const e = hi.edges.pop(); if (e) scene.remove(e); }
+}
+
 let busy = false;
 function lock(fn){ return async (...a) => { if (busy) return; busy=true; try{ await fn(...a); } finally{ busy=false; refreshHUD(); } }; }
 
@@ -739,56 +916,90 @@ function readVals(){
   return list;
 }
 
+// snapshots cover both modes
+function snapshotAll(){ return {mode, arr: arr.slice(), lo: lo.arr.slice(), hi: hi.arr.slice()}; }
+async function restoreSnapshot(s){
+  // wipe both representations, then rebuild whichever matches snapshot mode
+  clearStandardScene(); clearMedianScene();
+  mode = s.mode;
+  $$('#mode-toggle button').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+  if (mode === 'median'){
+    for (const v of s.lo){ lo.arr.push(v); lo.meshes.push(makeMesh(v)); lo.edges.push(makeEdge()); }
+    for (const v of s.hi){ hi.arr.push(v); hi.meshes.push(makeMesh(v)); hi.edges.push(makeEdge()); }
+    await relayoutHeap(lo, false); await relayoutHeap(hi, false);
+  } else {
+    for (const v of s.arr){ arr.push(v); meshes.push(makeMesh(v)); edges.push(makeEdge()); }
+    await relayout(false);
+  }
+}
+
 const opHandlers = {
   insert: lock(async () => {
     const vals = readVals();
-    history.push({type:'snapshot', arr: arr.slice()});
+    history.push({type:'snapshot', snap: snapshotAll()});
     cx.set('insert', 'O(log n)');
     for (const v of vals){
-      await insertVal(v); log.say(`<span class="k">insert</span> ${v}`);
+      if (mode === 'median'){ await medianInsert(v); }
+      else                  { await insertVal(v); }
+      log.say(`<span class="k">insert</span> ${v}`);
     }
   }),
   extract: lock(async () => {
-    if (!arr.length){ log.say(`<span class="kx">err</span> empty`); return; }
-    history.push({type:'snapshot', arr: arr.slice()});
-    cx.set('extract', 'O(log n)');
-    const top = await extract();
-    log.say(`<span class="ko">extract</span> → ${top}`);
+    if (mode === 'median'){
+      if (lo.arr.length + hi.arr.length === 0){ log.say(`<span class="kx">err</span> empty`); return; }
+      history.push({type:'snapshot', snap: snapshotAll()});
+      cx.set('extract median', 'O(log n)');
+      const m = await medianExtract();
+      log.say(`<span class="ko">extract</span> median → ${m}`);
+    } else {
+      if (!arr.length){ log.say(`<span class="kx">err</span> empty`); return; }
+      history.push({type:'snapshot', snap: snapshotAll()});
+      cx.set('extract', 'O(log n)');
+      const top = await extract();
+      log.say(`<span class="ko">extract</span> → ${top}`);
+    }
   }),
   peek: lock(async () => {
-    if (!arr.length){ log.say(`<span class="kx">err</span> empty`); return; }
-    await pulse(0, 0x5cffb4, 600);
-    await stepperCheckpoint();
-    cx.set('peek', 'O(1)');
-    log.say(`<span class="k">peek</span> → ${arr[0]}`);
+    if (mode === 'median'){
+      const m = medianValue();
+      if (m === null){ log.say(`<span class="kx">err</span> empty`); return; }
+      cx.set(`median = ${m}`, 'O(1)');
+      if (lo.arr.length) await heapPulse(lo, 0, 0x5cffb4, 600);
+      if (hi.arr.length === lo.arr.length && hi.arr.length) await heapPulse(hi, 0, 0x5cffb4, 600);
+      log.say(`<span class="k">peek</span> median → ${m}`);
+    } else {
+      if (!arr.length){ log.say(`<span class="kx">err</span> empty`); return; }
+      await pulse(0, 0x5cffb4, 600);
+      await stepperCheckpoint();
+      cx.set('peek', 'O(1)');
+      log.say(`<span class="k">peek</span> → ${arr[0]}`);
+    }
   }),
   heapify: lock(async () => {
     const list = parseList($('#in-val').value);
     if (!list.length){ log.say(`<span class="kx">err</span> need a list of values`); return; }
-    history.push({type:'snapshot', arr: arr.slice()});
+    history.push({type:'snapshot', snap: snapshotAll()});
     cx.set('heapify (build)', 'O(n)');
-    // replace
-    while (arr.length){ arr.pop(); const m = meshes.pop(); scene.remove(m.grp); const e = edges.pop(); scene.remove(e); }
-    for (const v of list){ arr.push(v); meshes.push(makeMesh(v)); edges.push(makeEdge()); }
-    await relayout(true);
-    for (let i = Math.floor(arr.length/2)-1; i >= 0; i--){
-      await siftDown(i);
+    if (mode === 'median'){
+      await medianHeapify(list);
+    } else {
+      while (arr.length){ arr.pop(); const m = meshes.pop(); scene.remove(m.grp); const e = edges.pop(); scene.remove(e); }
+      for (const v of list){ arr.push(v); meshes.push(makeMesh(v)); edges.push(makeEdge()); }
+      await relayout(true);
+      for (let i = Math.floor(arr.length/2)-1; i >= 0; i--) await siftDown(i);
     }
     log.say(`<span class="k">heapify</span> [${list.join(', ')}]`);
   }),
   undo: lock(async () => {
     const op = history.pop(); if (!op){ log.say(`<span class="kx">undo</span> empty`); return; }
-    // rebuild
-    while (arr.length){ arr.pop(); const m = meshes.pop(); scene.remove(m.grp); const e = edges.pop(); scene.remove(e); }
-    for (const v of op.arr){ arr.push(v); meshes.push(makeMesh(v)); edges.push(makeEdge()); }
-    await relayout(false);
+    if (op.snap) await restoreSnapshot(op.snap);
     cx.set('undo', '—');
     log.say(`<span class="ko">undo</span>`);
   }),
   clear: lock(async () => {
-    history.push({type:'snapshot', arr: arr.slice()});
-    while (arr.length){ arr.pop(); const m = meshes.pop(); scene.remove(m.grp); const e = edges.pop(); scene.remove(e); }
-    await relayout(false);
+    history.push({type:'snapshot', snap: snapshotAll()});
+    if (mode === 'median'){ clearMedianScene(); }
+    else { clearStandardScene(); await relayout(false); }
     cx.set('clear', '—');
     log.say(`<span class="ko">clear</span>`);
   }),
@@ -796,35 +1007,56 @@ const opHandlers = {
 for (const k in opHandlers) $('#op-'+k).addEventListener('click', opHandlers[k]);
 $('#b-rand').addEventListener('click', () => $('#in-val').value = randomInt(1,99));
 
-// mode toggle
+// mode toggle — handles transitions in/out of median mode
 $$('#mode-toggle button').forEach(b => b.addEventListener('click', async () => {
-  $$('#mode-toggle button').forEach(x => x.classList.remove('active'));
-  b.classList.add('active');
   const next = b.dataset.mode;
   if (next === mode) return;
-  mode = next;
-  log.say(`<span class="km">mode</span> → ${mode.toUpperCase()}-HEAP · re-heapifying`);
-  history.push({type:'snapshot', arr: arr.slice()});
-  for (let i = Math.floor(arr.length/2)-1; i >= 0; i--) await siftDown(i);
+  history.push({type:'snapshot', snap: snapshotAll()});
+  $$('#mode-toggle button').forEach(x => x.classList.remove('active'));
+  b.classList.add('active');
+  log.say(`<span class="km">mode</span> → ${next.toUpperCase()}-HEAP`);
+  if (next === 'median'){
+    // distribute current arr into lo/hi
+    const all = arr.slice();
+    clearStandardScene();
+    mode = next;
+    await medianHeapify(all);
+  } else if (mode === 'median'){
+    // merge lo+hi back into a single heap
+    const all = [...lo.arr, ...hi.arr];
+    clearMedianScene();
+    mode = next;
+    for (const v of all){ arr.push(v); meshes.push(makeMesh(v)); edges.push(makeEdge()); }
+    await relayout(true);
+    for (let i = Math.floor(arr.length/2)-1; i >= 0; i--) await siftDown(i);
+  } else {
+    // standard mode swap (max ↔ min): just re-heapify
+    mode = next;
+    for (let i = Math.floor(arr.length/2)-1; i >= 0; i--) await siftDown(i);
+  }
   refreshHUD();
 }));
 
 /* ─── preset toolbar ─── */
 async function loadHeap(modeNext, values){
-  // wipe
-  while (arr.length){ arr.pop(); const m = meshes.pop(); scene.remove(m.grp); const e = edges.pop(); scene.remove(e); }
+  // wipe BOTH representations and rebuild for the chosen mode
+  clearStandardScene(); clearMedianScene();
   mode = modeNext;
   $$('#mode-toggle button').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
-  for (const v of values){ arr.push(v); meshes.push(makeMesh(v)); edges.push(makeEdge()); }
-  await relayout(false);
-  for (let i = Math.floor(arr.length/2)-1; i >= 0; i--) await siftDown(i);
+  if (mode === 'median'){
+    await medianHeapify(values);
+  } else {
+    for (const v of values){ arr.push(v); meshes.push(makeMesh(v)); edges.push(makeEdge()); }
+    await relayout(false);
+    for (let i = Math.floor(arr.length/2)-1; i >= 0; i--) await siftDown(i);
+  }
   history.clear();
 }
 mountPresets({mount: $('#presets-mount'), label: 'defaults', presets:[
   {name:'empty',       desc:'max-heap, no keys',                                       apply: () => loadHeap('max', [])},
   {name:'random max',  desc:'7 random keys, max-heap',                                 apply: () => loadHeap('max', [35,18,42,9,26,73,11])},
-  {name:'worst sift',  desc:'[1..7] into max-heap — every sift goes the full path',    apply: () => loadHeap('max', [1,2,3,4,5,6,7])},
   {name:'min-heap',    desc:'min-heap from random — root is the smallest',             apply: () => loadHeap('min', [35,18,42,9,26,73,11,55,4])},
+  {name:'median',      desc:'median-heap · 9 values split into two halves',            apply: () => loadHeap('median', [35,18,42,9,26,73,11,55,4])},
   {name:'pyramid 15',  desc:'15-key max-heap — full 4 levels',                         apply: () => loadHeap('max', [50,30,70,20,40,60,80,10,25,35,45,55,65,75,85])},
 ]});
 
