@@ -42,12 +42,16 @@
         <h2>Controls</h2>
         <div class="section-rule"></div>
 
-        <div class="label">Collision mode</div>
-        <div class="op-grid" style="grid-template-columns:1fr 1fr">
-          <button class="op active" data-color="magenta" id="op-m-chaining"><span class="name"><span class="dot"></span> chaining</span><span class="cx">lists</span></button>
-          <button class="op"        data-color="cyan"    id="op-m-linear"><span class="name"><span class="dot"></span> linear</span><span class="cx">probe</span></button>
-          <button class="op"        data-color="violet"  id="op-m-double"><span class="name"><span class="dot"></span> double</span><span class="cx">h₁+i·h₂</span></button>
+        <div class="label">Chaining</div>
+        <div class="op-grid" style="grid-template-columns:1fr 1fr 1fr">
+          <button class="op active" data-color="magenta" id="op-m-chaining"><span class="name"><span class="dot"></span> list</span><span class="cx">linked</span></button>
+          <button class="op"        data-color="magenta" id="op-m-tree"><span class="name"><span class="dot"></span> tree</span><span class="cx">BST</span></button>
           <button class="op"        data-color="lime"    id="op-m-fks"><span class="name"><span class="dot"></span> FKS</span><span class="cx">perfect</span></button>
+        </div>
+        <div class="label mt-8">Open address</div>
+        <div class="op-grid" style="grid-template-columns:1fr 1fr">
+          <button class="op" data-color="cyan"   id="op-m-linear"><span class="name"><span class="dot"></span> linear</span><span class="cx">h₁+i</span></button>
+          <button class="op" data-color="violet" id="op-m-double"><span class="name"><span class="dot"></span> double</span><span class="cx">h₁+i·h₂</span></button>
         </div>
         <div class="cx-panel" id="mode-explain" style="margin-top:8px;font-family:var(--mono);font-size:11px;line-height:1.6;color:var(--ink-dim)"></div>
 
@@ -538,7 +542,8 @@ const {scene} = createScene({mount:stage, camera:{pos:[2, 4, 18], lookAt:[2, 0, 
 let mode = 'chaining';         // 'chaining' | 'linear' | 'double' | 'fks'
 let M = 8;
 let order = [];                // insertion-ordered live keys (source of truth)
-let table = Array.from({length:M}, () => []);  // chaining: M chains
+let table = Array.from({length:M}, () => []);  // chaining(list): M chains
+let trees = new Array(M).fill(null);           // chaining(tree): M BST roots
 let slots = new Array(M).fill(null);           // linear/double: one key per slot
 let fks   = null;              // fks: {buckets:[{keys,a,m2,slots}]}
 let size = 0;
@@ -549,12 +554,22 @@ const subMeshes  = [];         // fks secondary cells (pooled)
 const linkMeshes = [];
 
 const BUCKET_W = 1.6, BUCKET_H = 0.9, BUCKET_Z = 0.5;
-const BUCKET_GAP_Y = 1.05;
 const CHAIN_GAP_X  = 1.6;
-
+// trees need a lot more vertical room per bucket than a flat chain
+function bucketGapY(){ return mode === 'tree' ? 3.6 : 1.05; }
 function bucketPos(i){
-  return {x: -7, y: -(i * BUCKET_GAP_Y) + (M-1)*BUCKET_GAP_Y/2};
+  const g = bucketGapY();
+  return {x: -7, y: -(i * g) + (M-1)*g/2};
 }
+
+/* per-bucket BST (chaining-tree mode) */
+function bstInsert(root, k){
+  if (!root) return {value:k, left:null, right:null};
+  if (k < root.value)      root.left  = bstInsert(root.left, k);
+  else if (k > root.value) root.right = bstInsert(root.right, k);
+  return root;
+}
+function bstKeys(root, out){ if (!root) return; bstKeys(root.left, out); out.push(root.value); bstKeys(root.right, out); }
 function nodePos(b, k){
   const p = bucketPos(b);
   return {x: p.x + 1.8 + k * CHAIN_GAP_X, y: p.y};
@@ -677,6 +692,7 @@ function rebuildBuckets(){
 function liveKeySet(){
   const s = new Set();
   if (mode === 'chaining'){ for (const c of table) for (const k of c) s.add(k); }
+  else if (mode === 'tree'){ for (const r of trees){ const a=[]; bstKeys(r,a); for (const k of a) s.add(k); } }
   else if (mode === 'fks'){ if (fks) for (const b of fks.buckets) for (const k of b.keys) s.add(k); }
   else { for (const v of slots) if (v != null) s.add(v); }
   return s;
@@ -705,6 +721,38 @@ async function relayout(animate=true){
         const link = linkMeshes[linkI++]; link.visible = true;
         placeLink(link, prevX + 0.1, bp.y, p.x - 0.46, bp.y);
       }
+    }
+  } else if (mode === 'tree'){
+    for (let i=0;i<M;i++){
+      const root = trees[i];
+      if (!root) continue;
+      const bp = bucketPos(i);
+      // in-order index → x, depth → small y offset within the bucket band
+      const idx = new Map(); let kk = 0;
+      (function ino(n){ if(!n) return; ino(n.left); idx.set(n, kk++); ino(n.right); })(root);
+      const pos = new Map();
+      (function place(n, d){
+        if (!n) return;
+        pos.set(n, {x: bp.x + 2.0 + idx.get(n) * 1.15, y: bp.y - d * 0.95 + 0.6});
+        place(n.left, d+1); place(n.right, d+1);
+      })(root, 0);
+      (function draw(n, parent){
+        if (!n) return;
+        const p = pos.get(n);
+        const mesh = nodeMeshes.get(n.value);
+        tasks.push(tweenVec(mesh.grp.position, new THREE.Vector3(p.x, p.y, 0), animate?420:0));
+        tasks.push(tweenVec(mesh.grp.scale, new THREE.Vector3(0.78,0.78,0.78), animate?320:0));
+        if (parent){
+          const pp = pos.get(parent);
+          const link = linkMeshes[linkI++]; link.visible = true;
+          placeLink(link, pp.x, pp.y, p.x, p.y);
+        } else {
+          // root link from the bucket cell
+          const link = linkMeshes[linkI++]; link.visible = true;
+          placeLink(link, bp.x + BUCKET_W/2 + 0.1, bp.y, p.x - 0.4, p.y);
+        }
+        draw(n.left, n); draw(n.right, n);
+      })(root, null);
     }
   } else if (mode === 'linear' || mode === 'double'){
     for (let i=0;i<M;i++){
@@ -740,10 +788,15 @@ async function relayout(animate=true){
 
 const MODE_EXPLAIN = {
   chaining:
-    `<b style="color:var(--magenta)">Separate chaining.</b> Every bucket is the head of a linked list. ` +
+    `<b style="color:var(--magenta)">Separate chaining (list).</b> Every bucket is the head of a linked list. ` +
     `A collision (two keys with the same h₁) just appends the new key to that bucket's chain — ` +
     `nothing else moves. <b>find/delete</b> walk the chain. Load factor α = n/m may exceed 1; ` +
-    `cost is O(1 + α) on average.`,
+    `cost is O(1 + α) on average, O(chain) worst.`,
+  tree:
+    `<b style="color:var(--magenta)">Chaining with trees.</b> Same h₁ buckets, but each bucket is a ` +
+    `<b>binary search tree</b> instead of a flat list (this is what Java 8's HashMap does once a ` +
+    `bucket gets long). A collision inserts the key into that bucket's BST, so a heavy bucket costs ` +
+    `<b>O(log nⱼ)</b> to search instead of O(nⱼ) — adversarial / colliding keys can't degrade it to a long scan.`,
   linear:
     `<b style="color:var(--cyan)">Linear probing</b> (open addressing). One key per slot. ` +
     `On a collision, scan forward — slot (h₁+1) mod m, then (h₁+2) mod m … — until an empty slot is found. ` +
@@ -753,10 +806,11 @@ const MODE_EXPLAIN = {
     `comes from a <i>second</i> hash: slot = (h₁ + i·h₂) mod m with h₂ = 1 + k mod (m−1). ` +
     `Different keys get different probe sequences, so clustering is largely avoided. Requires α &lt; 1.`,
   fks:
-    `<b style="color:var(--lime)">FKS perfect hashing</b> — two levels, zero collisions. ` +
-    `h₁ sends a key to one of m buckets. A bucket holding nⱼ keys gets its OWN secondary table of ` +
-    `nⱼ² slots with a universal hash re-picked until those nⱼ keys collide nowhere. ` +
-    `Lookup is <b>O(1) worst-case</b> (one L1 hop + one L2 hop, no scanning); total space is O(n). Static.`,
+    `<b style="color:var(--lime)">FKS perfect hashing</b> — a chaining variant where a bucket's ` +
+    `collision list is replaced by a <b>collision-free secondary table</b>. h₁ sends a key to one of ` +
+    `m buckets; a bucket holding nⱼ keys gets its OWN table of nⱼ² slots with a universal hash ` +
+    `re-picked until those nⱼ keys collide nowhere. Lookup is <b>O(1) worst-case</b> (one L1 hop + ` +
+    `one L2 hop, no scanning); total space O(n). Static — insert/delete rebuild.`,
 };
 function updateModeExplain(){
   const el = $('#mode-explain');
@@ -770,14 +824,15 @@ function refreshHUD(){
   $('#t-load').textContent = (size/M).toFixed(2);
   $('#t-hfn').textContent  = hfnLabel();
   const desc = {
-    chaining: 'separate chaining · resize when α ≥ 0.75',
+    chaining: 'chaining (list) · resize when α ≥ 0.75',
+    tree:     'chaining (BST/bucket) · O(log nⱼ) per bucket',
     linear:   'open addressing · linear probing · α < 1',
     double:   'open addressing · double hashing · h₁+i·h₂',
     fks:      'FKS perfect hashing · 2-level · O(1) worst-case lookup',
   };
   $('#t-mode').textContent = desc[mode];
-  const ins = {chaining:'avg O(1)', linear:'avg O(1)', double:'avg O(1)', fks:'O(n) rebuild'};
-  const fnd = {chaining:'avg O(1)', linear:'avg O(1)', double:'avg O(1)', fks:'O(1) worst'};
+  const ins = {chaining:'avg O(1)', tree:'O(log nⱼ)', linear:'avg O(1)', double:'avg O(1)', fks:'O(n) rebuild'};
+  const fnd = {chaining:'avg O(1)', tree:'O(log nⱼ)', linear:'avg O(1)', double:'avg O(1)', fks:'O(1) worst'};
   $('#cx-ins').textContent = ins[mode];
   $('#cx-fnd').textContent = fnd[mode];
   $('#undo-depth').textContent = history.size();
@@ -831,6 +886,9 @@ function rebuildStructure(){
   if (mode === 'chaining'){
     table = Array.from({length:M}, () => []);
     for (const k of order) table[hash(k)].push(k);
+  } else if (mode === 'tree'){
+    trees = new Array(M).fill(null);
+    for (const k of order){ const b = hash(k); trees[b] = bstInsert(trees[b], k); }
   } else if (mode === 'linear' || mode === 'double'){
     slots = new Array(M).fill(null);
     for (const k of order){
@@ -874,6 +932,22 @@ async function findKey(k){
     cx.set(`miss ${k}`, 'O(chain)');
     return false;
   }
+  if (mode === 'tree'){
+    const b = hash(k);
+    cx.set(`find ${k} · h₁ → bucket ${b}`, 'O(log nⱼ)');
+    await pulseBucket(b, 0x35d0ff);
+    await stepperCheckpoint();
+    let n = trees[b];
+    while (n){
+      cx.set(`BST descend · ${k} vs ${n.value}`, 'O(log nⱼ)');
+      await pulseNode(n.value, 0xffb454);
+      await stepperCheckpoint();
+      if (k === n.value){ await pulseNode(k, 0x5cffb4); await stepperCheckpoint(); return true; }
+      n = k < n.value ? n.left : n.right;
+    }
+    cx.set(`miss ${k} · fell off the BST`, 'O(log nⱼ)');
+    return false;
+  }
   if (mode === 'linear' || mode === 'double'){
     for (let i=0;i<M;i++){
       const idx = probeIdx(k, i);
@@ -912,6 +986,18 @@ async function insertKey(k){
     await pulseBucket(b, 0x35d0ff);
     await stepperCheckpoint();
     table[b].push(k); order.push(k); size++;
+    if (!nodeMeshes.has(k)) nodeMeshes.set(k, makeNodeMesh(k));
+    await relayout(true);
+    await pulseNode(k, 0x5cffb4);
+    await stepperCheckpoint();
+    return true;
+  }
+  if (mode === 'tree'){
+    const b = hash(k);
+    cx.set(`insert ${k} · h₁ → bucket ${b} · BST insert`, 'O(log nⱼ)');
+    await pulseBucket(b, 0x35d0ff);
+    await stepperCheckpoint();
+    trees[b] = bstInsert(trees[b], k); order.push(k); size++;
     if (!nodeMeshes.has(k)) nodeMeshes.set(k, makeNodeMesh(k));
     await relayout(true);
     await pulseNode(k, 0x5cffb4);
@@ -1059,6 +1145,7 @@ async function setMode(next){
   cx.set(`${mode} · ${size} keys`, '—');
 }
 $('#op-m-chaining').addEventListener('click', () => setMode('chaining'));
+$('#op-m-tree')    .addEventListener('click', () => setMode('tree'));
 $('#op-m-linear')  .addEventListener('click', () => setMode('linear'));
 $('#op-m-double')  .addEventListener('click', () => setMode('double'));
 $('#op-m-fks')     .addEventListener('click', () => setMode('fks'));
@@ -1077,7 +1164,8 @@ async function loadHash(newM, keys, modeNext){
 }
 mountPresets({mount: $('#presets-mount'), label: 'defaults', presets:[
   {name:'empty',     desc:'m=8 · no keys',                                       apply: () => loadHash(8, [], 'chaining')},
-  {name:'chaining',  desc:'m=8 · 6 keys · separate chaining',                    apply: () => loadHash(8, [7,15,23,4,12,31], 'chaining')},
+  {name:'chaining',  desc:'m=8 · 6 keys · separate chaining (list)',             apply: () => loadHash(8, [7,15,23,4,12,31], 'chaining')},
+  {name:'tree',      desc:'m=4 · 9 keys · heavy buckets become BSTs',            apply: () => loadHash(4, [4,8,12,16,20,24,28,2,6], 'tree')},
   {name:'linear',    desc:'m=11 · 7 keys · linear probing clusters',             apply: () => loadHash(11, [10,21,32,5,16,27,38], 'linear')},
   {name:'double',    desc:'m=11 · 7 keys · double hashing spreads probes',       apply: () => loadHash(11, [10,21,32,5,16,27,38], 'double')},
   {name:'FKS',       desc:'m=8 · 9 keys · 2-level perfect hashing',              apply: () => loadHash(8, [3,7,11,15,19,23,27,31,35], 'fks')},
