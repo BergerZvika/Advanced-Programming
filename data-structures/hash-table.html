@@ -539,7 +539,10 @@ const cx  = createComplexityPanel($('#cx-mount'), [
 const history = createHistory();
 
 const stage = $('#stage');
-const {scene} = createScene({mount:stage, camera:{pos:[2, 4, 18], lookAt:[2, 0, 0]}});
+// framed on the structure's centroid (buckets on the left at x≈-7, chains/
+// sub-tables growing right) and pulled back so the full M-bucket column is
+// visible without orbiting
+const {scene} = createScene({mount:stage, camera:{pos:[-1, 1.5, 21], lookAt:[-1, 0, 0]}});
 
 let mode = 'chaining';         // 'chaining' | 'linear' | 'double' | 'fks'
 let M = 8;
