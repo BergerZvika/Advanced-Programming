@@ -545,13 +545,13 @@ const {scene} = createScene({mount:stage, camera:{pos:[0, 5.5, 19], lookAt:[0, 1
 let mode = 'max';     // 'max' | 'min' | 'median'
 const arr = [];       // values used when mode === 'max' or 'min'
 const meshes = [];    // {grp, body, label}
+const arrayCells = [];// parallel 3D row showing the underlying array
 
 // median-heap state: two sub-heaps.
 //   lo = max-heap of the LOWER half (rendered on the left)
 //   hi = min-heap of the UPPER half (rendered on the right)
-// the median = lo.arr[0] if |lo| > |hi|, else (lo.arr[0]+hi.arr[0])/2.
-const lo = {arr:[], meshes:[], edges:[], side:'lo', cmp:(a,b)=>a>b};
-const hi = {arr:[], meshes:[], edges:[], side:'hi', cmp:(a,b)=>a<b};
+const lo = {arr:[], meshes:[], edges:[], arrayCells:[], side:'lo', cmp:(a,b)=>a>b};
+const hi = {arr:[], meshes:[], edges:[], arrayCells:[], side:'hi', cmp:(a,b)=>a<b};
 
 function cmp(a, b){
   if (mode === 'min') return a < b;
@@ -626,28 +626,97 @@ function position(i){
   return {x: (k - (rowCount-1)/2) * spacing, y: -d * 2.2 + 3.2};
 }
 
+/* ─── parallel 3D array row underneath the pyramid ─── */
+const ARR_DX_STD = 1.35;
+const ARR_DX_MED = 1.15;
+const ARR_Y      = -5.2;
+function arrayPos(i, n, offsetX = 0, dx = ARR_DX_STD){
+  return {x: offsetX + (i - (n-1)/2) * dx, y: ARR_Y};
+}
+function makeArrayCell(value, idx){
+  const grp = new THREE.Group();
+  const body = new THREE.Mesh(
+    new THREE.BoxGeometry(1.05, 0.95, 0.45),
+    new THREE.MeshPhysicalMaterial({color:0x10182c, metalness:0.5, roughness:0.3, emissive:0x142040, emissiveIntensity:0.6, clearcoat:0.4})
+  );
+  grp.add(body);
+  const edges = new THREE.LineSegments(
+    new THREE.EdgesGeometry(body.geometry),
+    new THREE.LineBasicMaterial({color:0x7c5cff, transparent:true, opacity:0.75})
+  );
+  grp.add(edges);
+  const c = document.createElement('canvas'); c.width=256; c.height=192;
+  const ctx = c.getContext('2d');
+  function paint(v, i){
+    ctx.clearRect(0,0,256,192);
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.shadowColor='rgba(0,0,0,0.9)'; ctx.shadowBlur=12;
+    ctx.fillStyle='#fff'; ctx.font='800 70px IBM Plex Mono, monospace';
+    ctx.fillText(String(v), 128, 70);
+    ctx.fillStyle='#cbd2ff'; ctx.font='700 38px IBM Plex Mono, monospace';
+    ctx.fillText('['+i+']', 128, 142);
+  }
+  paint(value, idx);
+  const tex = new THREE.CanvasTexture(c); tex.minFilter=THREE.LinearFilter;
+  const spr = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true, depthTest:false}));
+  spr.renderOrder = 10;
+  spr.position.set(0, 0, 0.3); spr.scale.set(1.0, 0.75, 1);
+  grp.add(spr);
+  grp.scale.setScalar(0.001);
+  scene.add(grp);
+  return {grp, body, label:{paint, tex}};
+}
+
+/* "array" caption sprites — one for std mode, one each for lo/hi in median mode */
+function makeRowCaption(text){
+  const c = document.createElement('canvas'); c.width=384; c.height=128;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#cbd2ff'; ctx.font = '700 56px Unbounded, sans-serif';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.shadowColor='rgba(0,0,0,0.85)'; ctx.shadowBlur=12;
+  ctx.fillText(text, 192, 64);
+  const tex = new THREE.CanvasTexture(c); tex.minFilter=THREE.LinearFilter;
+  const spr = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true, depthTest:false}));
+  spr.renderOrder = 11; spr.scale.set(2.0, 0.7, 1); spr.visible = false;
+  scene.add(spr); return spr;
+}
+const capStd = makeRowCaption('array');
+const capLo  = makeRowCaption('lo · max');
+const capHi  = makeRowCaption('hi · min');
+
 async function relayout(animate=true){
   // ensure meshes/edges exist
-  while (meshes.length < arr.length) meshes.push(makeMesh(arr[meshes.length]));
-  while (edges.length < arr.length) edges.push(makeEdge());
+  while (meshes.length     < arr.length) meshes.push(makeMesh(arr[meshes.length]));
+  while (edges.length      < arr.length) edges.push(makeEdge());
+  while (arrayCells.length < arr.length) arrayCells.push(makeArrayCell(arr[arrayCells.length], arrayCells.length));
   // remove extras
-  while (meshes.length > arr.length){ const m = meshes.pop(); scene.remove(m.grp); }
-  while (edges.length > arr.length){ const e = edges.pop(); scene.remove(e); }
+  while (meshes.length     > arr.length){ const m = meshes.pop();     scene.remove(m.grp); }
+  while (edges.length      > arr.length){ const e = edges.pop();      scene.remove(e); }
+  while (arrayCells.length > arr.length){ const c = arrayCells.pop(); scene.remove(c.grp); }
 
   const tasks = [];
   for (let i=0;i<arr.length;i++){
     const {x, y} = position(i);
     tasks.push(tweenVec(meshes[i].grp.position, new THREE.Vector3(x, y, 0), animate?420:0));
-    tasks.push(tweenVec(meshes[i].grp.scale, new THREE.Vector3(1,1,1), animate?320:0));
+    tasks.push(tweenVec(meshes[i].grp.scale,    new THREE.Vector3(1,1,1),  animate?320:0));
     meshes[i].label.paint(arr[i], i); meshes[i].label.tex.needsUpdate=true;
-    // edge from parent
     if (i === 0){ edges[i].visible = false; }
     else {
       const p = position(parent(i));
       edges[i].visible = true;
       placeEdge(edges[i], p.x, p.y, x, y);
     }
+    // array cell below
+    const ap = arrayPos(i, arr.length, 0, ARR_DX_STD);
+    tasks.push(tweenVec(arrayCells[i].grp.position, new THREE.Vector3(ap.x, ap.y, 0), animate?420:0));
+    tasks.push(tweenVec(arrayCells[i].grp.scale,    new THREE.Vector3(1,1,1),         animate?320:0));
+    arrayCells[i].label.paint(arr[i], i); arrayCells[i].label.tex.needsUpdate=true;
   }
+  // captions: show std caption, hide median captions
+  capStd.visible = mode !== 'median' && arr.length > 0;
+  capStd.position.set(arrayPos(0, arr.length, 0, ARR_DX_STD).x - 2.5, ARR_Y, 0);
+  capLo.visible = capHi.visible = false;
+
   await Promise.all(tasks);
   refreshHUD();
 }
@@ -671,22 +740,36 @@ async function pulse(i, color=0xb9ff5c, ms=220){
   const m = meshes[i].body.material;
   const eOld = m.emissive.clone(), iOld = m.emissiveIntensity;
   m.emissive.setHex(color); m.emissiveIntensity = 1.3;
+  // mirror onto the array cell at the same index
+  let am, aeOld, aiOld;
+  if (arrayCells[i]){
+    am = arrayCells[i].body.material;
+    aeOld = am.emissive.clone(); aiOld = am.emissiveIntensity;
+    am.emissive.setHex(color); am.emissiveIntensity = 1.3;
+  }
   await sleep(ms);
   m.emissive.copy(eOld); m.emissiveIntensity = iOld;
+  if (am){ am.emissive.copy(aeOld); am.emissiveIntensity = aiOld; }
 }
 
 async function swap(i, j){
   if (i === j) return;
-  // visual swap: move both to each other's position
   const pi = position(i), pj = position(j);
+  const ai = arrayPos(i, arr.length, 0, ARR_DX_STD);
+  const aj = arrayPos(j, arr.length, 0, ARR_DX_STD);
   await Promise.all([
     tweenVec(meshes[i].grp.position, new THREE.Vector3(pj.x, pj.y, 0), 380),
     tweenVec(meshes[j].grp.position, new THREE.Vector3(pi.x, pi.y, 0), 380),
+    arrayCells[i] ? tweenVec(arrayCells[i].grp.position, new THREE.Vector3(aj.x, aj.y, 0), 380) : Promise.resolve(),
+    arrayCells[j] ? tweenVec(arrayCells[j].grp.position, new THREE.Vector3(ai.x, ai.y, 0), 380) : Promise.resolve(),
   ]);
   [arr[i], arr[j]] = [arr[j], arr[i]];
   [meshes[i], meshes[j]] = [meshes[j], meshes[i]];
+  if (arrayCells[i] && arrayCells[j]) [arrayCells[i], arrayCells[j]] = [arrayCells[j], arrayCells[i]];
   meshes[i].label.paint(arr[i], i); meshes[i].label.tex.needsUpdate=true;
   meshes[j].label.paint(arr[j], j); meshes[j].label.tex.needsUpdate=true;
+  if (arrayCells[i]){ arrayCells[i].label.paint(arr[i], i); arrayCells[i].label.tex.needsUpdate=true; }
+  if (arrayCells[j]){ arrayCells[j].label.paint(arr[j], j); arrayCells[j].label.tex.needsUpdate=true; }
 }
 
 async function siftUp(i){
@@ -760,11 +843,16 @@ function heapPos(i, side){
   const offset = side === 'lo' ? -HALF_OFFSET : HALF_OFFSET;
   return {x: offset + (k - (rowCount-1)/2) * spacing, y: -d * 1.9 + 3.2};
 }
+function halfArrayPos(i, h){
+  return arrayPos(i, h.arr.length, h.side === 'lo' ? -HALF_OFFSET : HALF_OFFSET, ARR_DX_MED);
+}
 async function relayoutHeap(h, animate=true){
-  while (h.meshes.length < h.arr.length) h.meshes.push(makeMesh(h.arr[h.meshes.length]));
-  while (h.edges.length  < h.arr.length) h.edges.push(makeEdge());
-  while (h.meshes.length > h.arr.length){ const m = h.meshes.pop(); scene.remove(m.grp); }
-  while (h.edges.length  > h.arr.length){ const e = h.edges.pop();  scene.remove(e); }
+  while (h.meshes.length     < h.arr.length) h.meshes.push(makeMesh(h.arr[h.meshes.length]));
+  while (h.edges.length      < h.arr.length) h.edges.push(makeEdge());
+  while (h.arrayCells.length < h.arr.length) h.arrayCells.push(makeArrayCell(h.arr[h.arrayCells.length], h.arrayCells.length));
+  while (h.meshes.length     > h.arr.length){ const m = h.meshes.pop();     scene.remove(m.grp); }
+  while (h.edges.length      > h.arr.length){ const e = h.edges.pop();      scene.remove(e); }
+  while (h.arrayCells.length > h.arr.length){ const c = h.arrayCells.pop(); scene.remove(c.grp); }
   const tasks = [];
   for (let i=0;i<h.arr.length;i++){
     const {x, y} = heapPos(i, h.side);
@@ -777,28 +865,55 @@ async function relayoutHeap(h, animate=true){
       h.edges[i].visible = true;
       placeEdge(h.edges[i], p.x, p.y, x, y);
     }
+    const ap = halfArrayPos(i, h);
+    tasks.push(tweenVec(h.arrayCells[i].grp.position, new THREE.Vector3(ap.x, ap.y, 0), animate?420:0));
+    tasks.push(tweenVec(h.arrayCells[i].grp.scale,    new THREE.Vector3(1,1,1),         animate?320:0));
+    h.arrayCells[i].label.paint(h.arr[i], i); h.arrayCells[i].label.tex.needsUpdate=true;
+  }
+  // captions for median mode
+  if (mode === 'median'){
+    capStd.visible = false;
+    const cap = h.side === 'lo' ? capLo : capHi;
+    cap.visible = h.arr.length > 0;
+    if (h.arr.length){
+      const first = halfArrayPos(0, h);
+      cap.position.set(first.x - 1.7, ARR_Y, 0);
+    }
   }
   await Promise.all(tasks);
 }
 async function heapSwap(h, i, j){
   if (i === j) return;
   const pi = heapPos(i, h.side), pj = heapPos(j, h.side);
+  const ai = halfArrayPos(i, h),  aj = halfArrayPos(j, h);
   await Promise.all([
     tweenVec(h.meshes[i].grp.position, new THREE.Vector3(pj.x, pj.y, 0), 380),
     tweenVec(h.meshes[j].grp.position, new THREE.Vector3(pi.x, pi.y, 0), 380),
+    h.arrayCells[i] ? tweenVec(h.arrayCells[i].grp.position, new THREE.Vector3(aj.x, aj.y, 0), 380) : Promise.resolve(),
+    h.arrayCells[j] ? tweenVec(h.arrayCells[j].grp.position, new THREE.Vector3(ai.x, ai.y, 0), 380) : Promise.resolve(),
   ]);
   [h.arr[i], h.arr[j]] = [h.arr[j], h.arr[i]];
   [h.meshes[i], h.meshes[j]] = [h.meshes[j], h.meshes[i]];
+  if (h.arrayCells[i] && h.arrayCells[j]) [h.arrayCells[i], h.arrayCells[j]] = [h.arrayCells[j], h.arrayCells[i]];
   h.meshes[i].label.paint(h.arr[i], i); h.meshes[i].label.tex.needsUpdate=true;
   h.meshes[j].label.paint(h.arr[j], j); h.meshes[j].label.tex.needsUpdate=true;
+  if (h.arrayCells[i]){ h.arrayCells[i].label.paint(h.arr[i], i); h.arrayCells[i].label.tex.needsUpdate=true; }
+  if (h.arrayCells[j]){ h.arrayCells[j].label.paint(h.arr[j], j); h.arrayCells[j].label.tex.needsUpdate=true; }
 }
 async function heapPulse(h, i, color=0xffb454, ms=140){
   if (!h.meshes[i]) return;
   const m = h.meshes[i].body.material;
   const eOld = m.emissive.clone(), iOld = m.emissiveIntensity;
   m.emissive.setHex(color); m.emissiveIntensity = 1.3;
+  let am, aeOld, aiOld;
+  if (h.arrayCells[i]){
+    am = h.arrayCells[i].body.material;
+    aeOld = am.emissive.clone(); aiOld = am.emissiveIntensity;
+    am.emissive.setHex(color); am.emissiveIntensity = 1.3;
+  }
   await sleep(ms);
   m.emissive.copy(eOld); m.emissiveIntensity = iOld;
+  if (am){ am.emissive.copy(aeOld); am.emissiveIntensity = aiOld; }
 }
 async function heapSiftUp(h, i){
   while (i > 0 && h.cmp(h.arr[i], h.arr[parent(i)])){
@@ -898,13 +1013,22 @@ async function medianHeapify(values){
 
 /* swap state in/out of median mode */
 function clearStandardScene(){
-  while (meshes.length){ const m = meshes.pop(); scene.remove(m.grp); }
-  while (edges.length){  const e = edges.pop();  scene.remove(e); }
+  while (meshes.length){     const m = meshes.pop();     scene.remove(m.grp); }
+  while (edges.length){      const e = edges.pop();      scene.remove(e); }
+  while (arrayCells.length){ const c = arrayCells.pop(); scene.remove(c.grp); }
   arr.length = 0;
+  capStd.visible = false;
 }
 function clearMedianScene(){
-  while (lo.arr.length){ lo.arr.pop(); const m = lo.meshes.pop(); if (m) scene.remove(m.grp); const e = lo.edges.pop(); if (e) scene.remove(e); }
-  while (hi.arr.length){ hi.arr.pop(); const m = hi.meshes.pop(); if (m) scene.remove(m.grp); const e = hi.edges.pop(); if (e) scene.remove(e); }
+  for (const h of [lo, hi]){
+    while (h.arr.length){
+      h.arr.pop();
+      const m = h.meshes.pop();     if (m) scene.remove(m.grp);
+      const e = h.edges.pop();      if (e) scene.remove(e);
+      const c = h.arrayCells.pop(); if (c) scene.remove(c.grp);
+    }
+  }
+  capLo.visible = capHi.visible = false;
 }
 
 let busy = false;
