@@ -29,7 +29,7 @@
             <div class="stage-tag"><b>sets</b>&nbsp; <span id="t-sets">0</span></div>
           </div>
           <div class="row">
-            <div class="stage-tag">disjoint-set forest · union-by-rank · path compression</div>
+            <div class="stage-tag" id="t-rep">forest · union-by-rank · path compression</div>
           </div>
         </div>
       </div>
@@ -40,18 +40,23 @@
         <h2>Controls</h2>
         <div class="section-rule"></div>
 
-        <div class="label">Element a</div>
+        <div class="label">Representation</div>
+        <div class="op-grid" style="grid-template-columns:1fr 1fr">
+          <button class="op active" data-color="amber"  id="op-rep-forest"><span class="name"><span class="dot"></span> forest</span><span class="cx">tree</span></button>
+          <button class="op"        data-color="cyan"   id="op-rep-list"><span class="name"><span class="dot"></span> linked-list</span><span class="cx">chain</span></button>
+        </div>
+
+        <div class="label mt-12">Element a</div>
         <div class="input-row"><input id="in-a" placeholder="e.g. 3" autocomplete="off" /></div>
 
-        <div class="label mt-8">Element b (for union / connected)</div>
+        <div class="label mt-8">Element b (for union)</div>
         <div class="input-row"><input id="in-b" placeholder="e.g. 7" autocomplete="off" /></div>
 
         <div class="label mt-12">Operations</div>
         <div class="op-grid">
           <button class="op" data-color="cyan"    id="op-make"><span class="name"><span class="dot"></span> makeSet</span><span class="cx">O(1)</span></button>
-          <button class="op" data-color="magenta" id="op-union"><span class="name"><span class="dot"></span> union</span><span class="cx">O(α(n))</span></button>
-          <button class="op" data-color="amber"   id="op-find"><span class="name"><span class="dot"></span> find</span><span class="cx">O(α(n))</span></button>
-          <button class="op" data-color="violet"  id="op-conn"><span class="name"><span class="dot"></span> connected?</span><span class="cx">O(α(n))</span></button>
+          <button class="op" data-color="magenta" id="op-union"><span class="name"><span class="dot"></span> union</span><span class="cx" id="cx-union">O(α(n))</span></button>
+          <button class="op" data-color="amber"   id="op-find"><span class="name"><span class="dot"></span> find</span><span class="cx" id="cx-find">O(α(n))</span></button>
           <button class="op full" data-color="lime"  id="op-undo"><span class="name"><span class="dot"></span> undo</span><span class="cx" id="undo-depth">0</span></button>
           <button class="op full" data-color="amber" id="op-clear"><span class="name"><span class="dot"></span> clear</span><span class="cx">reset</span></button>
         </div>
@@ -525,10 +530,13 @@ const history = createHistory();
 const stage = $('#stage');
 const {scene} = createScene({mount:stage, camera:{pos:[0, 5.5, 20], lookAt:[0, 1, 0]}});
 
-const parent = new Map(); // key -> parent key (self for root)
-const rank   = new Map();
+let mode = 'forest';      // 'forest' | 'list'
+const parent = new Map(); // forest: key -> parent key (self for root)
+const rank   = new Map(); // forest: key -> rank
+const rep    = new Map(); // list:  key -> representative (set head)
+const members= new Map(); // list:  rep -> ordered [member keys]  (rep is members[0])
 const meshes = new Map(); // key -> {grp, body, label}
-const edges  = new Map(); // key -> edge mesh (from key → parent), root has hidden edge
+const edges  = new Map(); // key -> its single outgoing edge (→parent in forest, →next in list)
 
 function makeNodeMesh(key){
   const grp = new THREE.Group();
@@ -544,19 +552,19 @@ function makeNodeMesh(key){
   grp.add(wire);
   const c = document.createElement('canvas'); c.width=384; c.height=160;
   const ctx = c.getContext('2d');
-  function paint(v, isRoot, rk){
+  function paint(v, highlight, subtitle){
     ctx.clearRect(0,0,384,160);
     ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 14;
     ctx.fillStyle = '#fff';
     ctx.font='800 60px IBM Plex Mono, monospace';
     ctx.fillText(String(v), 192, 60);
-    ctx.fillStyle = isRoot ? '#5cffb4' : '#cbd2ff';
+    ctx.fillStyle = highlight ? '#5cffb4' : '#cbd2ff';
     ctx.font='700 36px IBM Plex Mono, monospace';
     ctx.shadowBlur = 16;
-    ctx.fillText(isRoot ? `root · rk ${rk}` : 'child', 192, 124);
+    ctx.fillText(String(subtitle), 192, 124);
   }
-  paint(key, true, 0);
+  paint(key, true, 'root · rk 0');
   const tex = new THREE.CanvasTexture(c); tex.minFilter=THREE.LinearFilter;
   const spr = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true, depthTest:false}));
   spr.renderOrder = 10;
@@ -642,7 +650,7 @@ function computeForestLayout(){
   return positions;
 }
 
-async function relayout(animate=true){
+async function relayoutForest(animate=true){
   for (const k of parent.keys()) ensureMesh(k);
   const positions = computeForestLayout();
   const tasks = [];
@@ -651,7 +659,7 @@ async function relayout(animate=true){
     tasks.push(tweenVec(mesh.grp.position, new THREE.Vector3(p.x, p.y, 0), animate?420:0));
     tasks.push(tweenVec(mesh.grp.scale, new THREE.Vector3(1,1,1), animate?320:0));
     const isRoot = parent.get(k) === k;
-    mesh.label.paint(k, isRoot, rank.get(k) || 0);
+    mesh.label.paint(k, isRoot, isRoot ? `root · rk ${rank.get(k)||0}` : 'child');
     mesh.label.tex.needsUpdate = true;
     const e = edges.get(k);
     if (isRoot){ e.visible = false; }
@@ -664,13 +672,96 @@ async function relayout(animate=true){
   refreshHUD();
 }
 
+/* ─── linked-list representation ─── */
+const LIST_DX = 3.0, LIST_GAP_Y = 2.6;
+function computeListLayout(){
+  // one row per set; rep first, then the rest in insertion order
+  const order = [...members.entries()].sort((a,b)=> b[1].length - a[1].length);
+  const n = order.length;
+  const positions = new Map();
+  order.forEach(([r, ms], gi) => {
+    const y = (n-1)/2 * LIST_GAP_Y - gi * LIST_GAP_Y;
+    ms.forEach((k, i) => {
+      const x = (i - (ms.length-1)/2) * LIST_DX;
+      positions.set(k, {x, y});
+    });
+  });
+  return positions;
+}
+async function relayoutList(animate=true){
+  for (const k of rep.keys()) ensureMesh(k);
+  const positions = computeListLayout();
+  const tasks = [];
+  for (const [k, mesh] of meshes){
+    const p = positions.get(k); if (!p) continue;
+    tasks.push(tweenVec(mesh.grp.position, new THREE.Vector3(p.x, p.y, 0), animate?420:0));
+    tasks.push(tweenVec(mesh.grp.scale, new THREE.Vector3(1,1,1), animate?320:0));
+    const r = rep.get(k);
+    const isRep = r === k;
+    const setSize = members.get(r) ? members.get(r).length : 1;
+    mesh.label.paint(k, isRep, isRep ? `rep · |${setSize}|` : `→ rep ${r}`);
+    mesh.label.tex.needsUpdate = true;
+    // next-pointer edge: rep → m1 → m2 → … (each member except the last)
+    const ms = members.get(r) || [];
+    const idx = ms.indexOf(k);
+    const e = edges.get(k);
+    if (idx >= 0 && idx < ms.length - 1){
+      const np = positions.get(ms[idx+1]);
+      e.visible = true; placeEdge(e, p.x, p.y, np.x, np.y);
+    } else {
+      e.visible = false;
+    }
+  }
+  await Promise.all(tasks);
+  refreshHUD();
+}
+
+async function relayout(animate=true){
+  if (mode === 'list') return relayoutList(animate);
+  return relayoutForest(animate);
+}
+
 function refreshHUD(){
-  $('#t-size').textContent = parent.size;
-  // count roots
-  let roots = 0; for (const k of parent.keys()) if (parent.get(k) === k) roots++;
-  $('#t-sets').textContent = roots;
+  if (mode === 'list'){
+    $('#t-size').textContent = rep.size;
+    $('#t-sets').textContent = members.size;
+    $('#t-rep').textContent  = 'linked-list · weighted union · find O(1)';
+    $('#cx-union').textContent = 'O(min |set|)';
+    $('#cx-find').textContent  = 'O(1)';
+  } else {
+    $('#t-size').textContent = parent.size;
+    let roots = 0; for (const k of parent.keys()) if (parent.get(k) === k) roots++;
+    $('#t-sets').textContent = roots;
+    $('#t-rep').textContent  = 'forest · union-by-rank · path compression';
+    $('#cx-union').textContent = 'O(α(n))';
+    $('#cx-find').textContent  = 'O(α(n))';
+  }
   $('#undo-depth').textContent = history.size();
   $('#hist-pill').textContent = history.size();
+}
+
+/* convert the current partition between representations */
+function forestToList(){
+  rep.clear(); members.clear();
+  const groups = new Map();
+  for (const k of parent.keys()){
+    const r = findRoot(k);
+    if (!groups.has(r)) groups.set(r, []);
+    groups.get(r).push(k);
+  }
+  for (const [r, ks] of groups){
+    // rep first (the root), then the others in insertion order
+    const ordered = [r, ...ks.filter(x => x !== r)];
+    members.set(r, ordered);
+    for (const k of ordered) rep.set(k, r);
+  }
+}
+function listToForest(){
+  parent.clear(); rank.clear();
+  for (const [r, ms] of members){
+    for (const k of ms){ parent.set(k, r); }
+    rank.set(r, ms.length > 1 ? 1 : 0);
+  }
 }
 
 async function pulse(k, color=0x5cffb4, ms=240){
@@ -733,76 +824,159 @@ async function findAnim(k){
   return cur;
 }
 
+/* ─── linked-list operations ─── */
+async function listMakeSet(k){
+  if (rep.has(k)){ log.say(`<span class="kx">err</span> ${k} already exists`); return false; }
+  rep.set(k, k); members.set(k, [k]);
+  ensureMesh(k);
+  await relayout(true);
+  await pulse(k, 0x35d0ff);
+  await stepperCheckpoint();
+  return true;
+}
+async function listFindAnim(k){
+  // O(1): every element stores a direct pointer to its set's representative
+  cx.set(`find ${k} · follow rep pointer`, 'O(1)');
+  await pulse(k, 0xffb454, 200);
+  await stepperCheckpoint();
+  const r = rep.get(k);
+  cx.set(`rep(${k}) = ${r}`, 'O(1)');
+  await pulse(r, 0xb9ff5c, 260);
+  await stepperCheckpoint();
+  return r;
+}
+async function listUnion(a, b){
+  if (!rep.has(a)) await listMakeSet(a);
+  if (!rep.has(b)) await listMakeSet(b);
+  const ra = await listFindAnim(a), rb = await listFindAnim(b);
+  if (ra === rb){ log.say(`<span class="kx">union</span> ${a},${b} · same set`); return false; }
+  // weighted union: append the SHORTER list onto the longer one
+  let big = ra, small = rb;
+  if (members.get(ra).length < members.get(rb).length){ big = rb; small = ra; }
+  const moved = members.get(small).slice();
+  cx.set(`append set(${small}) [${moved.join(',')}] → set(${big})`, 'O(min |set|)');
+  log.say(`<span class="km">append</span> ${moved.length} node(s) · rep ${small} → ${big}`);
+  for (const k of moved){
+    members.get(big).push(k);
+    rep.set(k, big);                // update each moved element's rep pointer
+    await pulse(k, 0xff5cab, 180);  // show the pointer being relinked
+    await relayout(true);
+    await stepperCheckpoint();
+  }
+  members.delete(small);
+  await relayout(true);
+  return true;
+}
+
 let busy = false;
 function lock(fn){ return async (...a) => { if (busy) return; busy=true; try{ await fn(...a); } finally{ busy=false; refreshHUD(); } }; }
+
+function snapshot(){
+  return {
+    mode,
+    parent: new Map(parent), rank: new Map(rank),
+    rep: new Map(rep),
+    members: new Map([...members].map(([r,ms]) => [r, ms.slice()])),
+  };
+}
+async function restore(s){
+  parent.clear(); rank.clear(); rep.clear(); members.clear();
+  for (const [k,v] of s.parent) parent.set(k, v);
+  for (const [k,v] of s.rank)   rank.set(k, v);
+  for (const [k,v] of s.rep)    rep.set(k, v);
+  for (const [k,v] of s.members) members.set(k, v.slice());
+  mode = s.mode;
+  $('#op-rep-forest').classList.toggle('active', mode === 'forest');
+  $('#op-rep-list').classList.toggle('active', mode === 'list');
+  // drop meshes for keys no longer present in the active representation
+  const live = mode === 'list' ? rep : parent;
+  for (const [k, m] of meshes){
+    if (!live.has(k)){ scene.remove(m.grp); scene.remove(edges.get(k)); meshes.delete(k); edges.delete(k); }
+  }
+  await relayout(false);
+}
 
 const opHandlers = {
   make: lock(async () => {
     const a = parseNum($('#in-a').value, null);
     if (a === null){ log.say(`<span class="kx">err</span> a required`); return; }
-    history.push({type:'snapshot', parent: new Map(parent), rank: new Map(rank)});
-    const ok = await makeSetK(a);
+    history.push({type:'snapshot', snap: snapshot()});
     cx.set('makeSet', 'O(1)');
+    const ok = mode === 'list' ? await listMakeSet(a) : await makeSetK(a);
     if (ok) log.say(`<span class="k">makeSet</span>(${a})`);
   }),
   union: lock(async () => {
     const a = parseNum($('#in-a').value, null), b = parseNum($('#in-b').value, null);
     if (a === null || b === null){ log.say(`<span class="kx">err</span> a,b required`); return; }
-    history.push({type:'snapshot', parent: new Map(parent), rank: new Map(rank)});
-    cx.set('union — find roots, link', 'O(α(n))');
-    await unionK(a, b);
+    history.push({type:'snapshot', snap: snapshot()});
+    if (mode === 'list'){
+      cx.set('union — find reps, append shorter', 'O(min |set|)');
+      await listUnion(a, b);
+    } else {
+      cx.set('union — find roots, link by rank', 'O(α(n))');
+      await unionK(a, b);
+    }
     log.say(`<span class="k">union</span>(${a}, ${b})`);
   }),
   find: lock(async () => {
     const a = parseNum($('#in-a').value, null);
-    if (a === null || !parent.has(a)){ log.say(`<span class="kx">err</span> ${a} not in forest`); return; }
-    history.push({type:'snapshot', parent: new Map(parent), rank: new Map(rank)});
-    cx.set('find — walk, compress', 'O(α(n))');
-    const r = await findAnim(a);
-    log.say(`<span class="k">find</span>(${a}) → root ${r}`);
-  }),
-  conn: lock(async () => {
-    const a = parseNum($('#in-a').value, null), b = parseNum($('#in-b').value, null);
-    if (a === null || b === null){ log.say(`<span class="kx">err</span> a,b required`); return; }
-    if (!parent.has(a) || !parent.has(b)){ log.say(`<span class="kx">connected</span> element missing`); return; }
-    cx.set('connected? · find both', 'O(α(n))');
-    const ra = await findAnim(a), rb = await findAnim(b);
-    log.say(ra === rb ? `<span class="k">connected</span>(${a},${b}) → yes (root ${ra})` : `<span class="kx">connected</span>(${a},${b}) → no`);
+    const has = mode === 'list' ? rep.has(a) : parent.has(a);
+    if (a === null || !has){ log.say(`<span class="kx">err</span> ${a} not present`); return; }
+    history.push({type:'snapshot', snap: snapshot()});
+    if (mode === 'list'){
+      const r = await listFindAnim(a);
+      log.say(`<span class="k">find</span>(${a}) → rep ${r}`);
+    } else {
+      cx.set('find — walk, compress', 'O(α(n))');
+      const r = await findAnim(a);
+      log.say(`<span class="k">find</span>(${a}) → root ${r}`);
+    }
   }),
   undo: lock(async () => {
     const op = history.pop(); if (!op){ log.say(`<span class="kx">undo</span> empty`); return; }
-    // restore
-    parent.clear(); rank.clear();
-    for (const [k,v] of op.parent) parent.set(k, v);
-    for (const [k,v] of op.rank) rank.set(k, v);
-    // remove meshes for keys no longer in forest
-    for (const [k, m] of meshes){
-      if (!parent.has(k)){ scene.remove(m.grp); scene.remove(edges.get(k)); meshes.delete(k); edges.delete(k); }
-    }
-    await relayout(false);
+    if (op.snap) await restore(op.snap);
     cx.set('undo', '—');
     log.say(`<span class="ko">undo</span>`);
   }),
   clear: lock(async () => {
-    history.push({type:'snapshot', parent: new Map(parent), rank: new Map(rank)});
+    history.push({type:'snapshot', snap: snapshot()});
     for (const [k, m] of meshes){ scene.remove(m.grp); scene.remove(edges.get(k)); }
-    meshes.clear(); edges.clear(); parent.clear(); rank.clear();
+    meshes.clear(); edges.clear();
+    parent.clear(); rank.clear(); rep.clear(); members.clear();
     await relayout(false);
     log.say(`<span class="ko">clear</span>`);
   }),
 };
 for (const k in opHandlers) $('#op-'+k).addEventListener('click', opHandlers[k]);
 
+/* ─── representation toggle ─── */
+async function setMode(next){
+  if (next === mode) return;
+  history.push({type:'snapshot', snap: snapshot()});
+  if (next === 'list'){ forestToList(); }
+  else                { listToForest(); }
+  mode = next;
+  $('#op-rep-forest').classList.toggle('active', mode === 'forest');
+  $('#op-rep-list').classList.toggle('active', mode === 'list');
+  log.say(`<span class="km">representation</span> → ${mode}`);
+  await relayout(true);
+}
+$('#op-rep-forest').addEventListener('click', () => setMode('forest'));
+$('#op-rep-list').addEventListener('click',   () => setMode('list'));
+
 /* ─── preset toolbar ─── */
 async function loadUF(parentMap, rankMap){
-  // wipe meshes
+  // wipe meshes + both representations
   for (const [k, m] of meshes){ scene.remove(m.grp); scene.remove(edges.get(k)); }
-  meshes.clear(); edges.clear(); parent.clear(); rank.clear();
+  meshes.clear(); edges.clear();
+  parent.clear(); rank.clear(); rep.clear(); members.clear();
   for (const [k, p] of parentMap){
     parent.set(k, p);
     rank.set(k, rankMap.get(k) ?? 0);
     ensureMesh(k);
   }
+  // keep whichever representation is active in sync
+  if (mode === 'list') forestToList();
   await relayout(false);
   history.clear();
 }
