@@ -731,20 +731,20 @@ function refreshMedianHighlight(){
   }
   medianLabel.paint(`median = ${med}`);
   medianLabel.tex.needsUpdate = true;
+  // the text always floats at the very top, centered, so it never overlaps a
+  // pyramid node and is fully visible regardless of heap height
+  medianLabel.spr.visible = true;
+  medianLabel.spr.position.set(0, 6.8, 0);
   if (lo.arr.length && hi.arr.length && lo.arr.length === hi.arr.length){
-    // average — ring both tops, label between them
+    // average — ring both tops
     const a = heapPos(0, 'lo'), b = heapPos(0, 'hi');
     medianRingLo.visible = true; medianRingLo.position.set(a.x, a.y, 0);
     medianRingHi.visible = true; medianRingHi.position.set(b.x, b.y, 0);
-    medianLabel.spr.visible = true;
-    medianLabel.spr.position.set(0, Math.max(a.y, b.y) + 1.9, 0);
   } else {
     // |lo| > |hi| → median is lo.arr[0]
     const a = heapPos(0, 'lo');
     medianRingLo.visible = true; medianRingLo.position.set(a.x, a.y, 0);
     medianRingHi.visible = false;
-    medianLabel.spr.visible = true;
-    medianLabel.spr.position.set(a.x, a.y + 1.9, 0);
   }
 }
 
