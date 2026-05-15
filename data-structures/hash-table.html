@@ -49,6 +49,7 @@
           <button class="op"        data-color="violet"  id="op-m-double"><span class="name"><span class="dot"></span> double</span><span class="cx">h₁+i·h₂</span></button>
           <button class="op"        data-color="lime"    id="op-m-fks"><span class="name"><span class="dot"></span> FKS</span><span class="cx">perfect</span></button>
         </div>
+        <div class="cx-panel" id="mode-explain" style="margin-top:8px;font-family:var(--mono);font-size:11px;line-height:1.6;color:var(--ink-dim)"></div>
 
         <div class="label mt-12">Key (number)</div>
         <div class="input-row">
@@ -737,7 +738,33 @@ async function relayout(animate=true){
   refreshHUD();
 }
 
+const MODE_EXPLAIN = {
+  chaining:
+    `<b style="color:var(--magenta)">Separate chaining.</b> Every bucket is the head of a linked list. ` +
+    `A collision (two keys with the same h₁) just appends the new key to that bucket's chain — ` +
+    `nothing else moves. <b>find/delete</b> walk the chain. Load factor α = n/m may exceed 1; ` +
+    `cost is O(1 + α) on average.`,
+  linear:
+    `<b style="color:var(--cyan)">Linear probing</b> (open addressing). One key per slot. ` +
+    `On a collision, scan forward — slot (h₁+1) mod m, then (h₁+2) mod m … — until an empty slot is found. ` +
+    `Long runs of full slots merge into <i>primary clusters</i> that slow every later probe. Requires α &lt; 1.`,
+  double:
+    `<b style="color:var(--violet)">Double hashing</b> (open addressing). On a collision the step size ` +
+    `comes from a <i>second</i> hash: slot = (h₁ + i·h₂) mod m with h₂ = 1 + k mod (m−1). ` +
+    `Different keys get different probe sequences, so clustering is largely avoided. Requires α &lt; 1.`,
+  fks:
+    `<b style="color:var(--lime)">FKS perfect hashing</b> — two levels, zero collisions. ` +
+    `h₁ sends a key to one of m buckets. A bucket holding nⱼ keys gets its OWN secondary table of ` +
+    `nⱼ² slots with a universal hash re-picked until those nⱼ keys collide nowhere. ` +
+    `Lookup is <b>O(1) worst-case</b> (one L1 hop + one L2 hop, no scanning); total space is O(n). Static.`,
+};
+function updateModeExplain(){
+  const el = $('#mode-explain');
+  if (el) el.innerHTML = MODE_EXPLAIN[mode] || '';
+}
+
 function refreshHUD(){
+  updateModeExplain();
   $('#t-cap').textContent = M;
   $('#t-size').textContent = size;
   $('#t-load').textContent = (size/M).toFixed(2);
