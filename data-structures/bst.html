@@ -58,8 +58,7 @@
           <div class="op-grid">
             <button class="op" data-color="cyan"    id="op-insert"><span class="name"><span class="dot"></span> insert</span><span class="cx">avg O(log n)</span></button>
             <button class="op" data-color="magenta" id="op-delete"><span class="name"><span class="dot"></span> delete</span><span class="cx">avg O(log n)</span></button>
-            <button class="op" data-color="amber"   id="op-find"><span class="name"><span class="dot"></span> find</span><span class="cx">avg O(log n)</span></button>
-            <button class="op" data-color="cyan"    id="op-inorder"><span class="name"><span class="dot"></span> in-order</span><span class="cx">O(n)</span></button>
+            <button class="op full" data-color="amber"   id="op-find"><span class="name"><span class="dot"></span> find</span><span class="cx">avg O(log n)</span></button>
             <button class="op full" data-color="lime"  id="op-undo"><span class="name"><span class="dot"></span> undo · last op</span><span class="cx" id="undo-depth">0</span></button>
             <button class="op full" data-color="amber" id="op-clear"><span class="name"><span class="dot"></span> clear</span><span class="cx">reset</span></button>
           </div>
@@ -1143,21 +1142,6 @@ const opHandlers = {
       await pulse(found, 0x5cffb4, 700);
       log.say(`<span class="k">find</span>(${v}) → hit`);
     } else log.say(`<span class="kx">find</span>(${v}) → miss`);
-  }),
-  inorder: lock(async () => {
-    cx.set('in-order', 'O(n)');
-    const out = [];
-    async function walk(n){
-      if (!n) return;
-      await walk(n.left);
-      cx.set(`visit ${n.value}`, 'O(n)');
-      await pulse(n, 0x35d0ff, 130);
-      await stepperCheckpoint();
-      out.push(n.value);
-      await walk(n.right);
-    }
-    await walk(root);
-    log.say(`<span class="k">in-order</span> [ ${out.join(', ')} ]`);
   }),
   undo: lock(async () => {
     const op = history.pop(); if (!op){ log.say(`<span class="kx">undo</span> empty`); return; }
