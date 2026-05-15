@@ -66,7 +66,7 @@
         <div class="label mt-12">Operations</div>
         <div class="op-grid">
           <button class="op" data-color="cyan"    id="op-insert"><span class="name"><span class="dot"></span> insert</span><span class="cx">O(log n)</span></button>
-          <button class="op" data-color="magenta" id="op-extract"><span class="name"><span class="dot"></span> extract</span><span class="cx">O(log n)</span></button>
+          <button class="op" data-color="magenta" id="op-extract"><span class="name" id="op-extract-name"><span class="dot"></span> extract</span><span class="cx" id="op-extract-cx">O(log n)</span></button>
           <button class="op" data-color="amber"   id="op-peek"><span class="name"><span class="dot"></span> peek</span><span class="cx">O(1)</span></button>
           <button class="op" data-color="violet"  id="op-heapify"><span class="name"><span class="dot"></span> heapify list</span><span class="cx">O(n)</span></button>
           <button class="op full" data-color="lime"  id="op-undo"><span class="name"><span class="dot"></span> undo · last op</span><span class="cx" id="undo-depth">0</span></button>
@@ -540,7 +540,10 @@ const cx  = createComplexityPanel($('#cx-mount'), [
 const history = createHistory();
 
 const stage = $('#stage');
-const {scene} = createScene({mount:stage, camera:{pos:[0, 5.5, 19], lookAt:[0, 1, 0]}});
+// camera is framed so both the pyramid (y ≈ 3 down to y ≈ -3) and the array
+// row (y = -5.2) sit comfortably in view, with enough horizontal room for the
+// two side-by-side heaps + rows in median mode
+const {scene} = createScene({mount:stage, camera:{pos:[0, 3, 22], lookAt:[0, -1, 0]}});
 
 let mode = 'max';     // 'max' | 'min' | 'median'
 const arr = [];       // values used when mode === 'max' or 'min'
@@ -795,6 +798,13 @@ function refreshHUD(){
   }
   $('#undo-depth').textContent = history.size();
   $('#hist-pill').textContent = history.size();
+  // the extract op pops the heap top in max/min mode but the MEDIAN in median mode
+  const exName = $('#op-extract-name');
+  if (exName){
+    exName.innerHTML = mode === 'median'
+      ? '<span class="dot"></span> extract median'
+      : '<span class="dot"></span> extract';
+  }
 }
 
 async function pulse(i, color=0xb9ff5c, ms=220){
