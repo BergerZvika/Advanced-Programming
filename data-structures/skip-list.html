@@ -856,16 +856,115 @@ async function rebuildFrom(values){
   await relayout(false);
 }
 
+/* ─── coin flip visualization (heads = promote a level) ─── */
+async function flipCoin(heads, atLevel){
+  const c = document.createElement('canvas'); c.width=256; c.height=256;
+  const ctx = c.getContext('2d');
+  const bg = heads ? '#5cffb4' : '#ff5c70';
+  // soft halo
+  ctx.fillStyle = bg + '33';
+  ctx.beginPath(); ctx.arc(128, 128, 116, 0, Math.PI*2); ctx.fill();
+  // solid coin
+  ctx.fillStyle = bg;
+  ctx.beginPath(); ctx.arc(128, 128, 86, 0, Math.PI*2); ctx.fill();
+  // glyph
+  ctx.fillStyle = '#04050b';
+  ctx.font='800 110px IBM Plex Mono, monospace';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.shadowColor = 'rgba(0,0,0,0.3)'; ctx.shadowBlur=4;
+  ctx.fillText(heads ? '↑' : '✗', 128, 138);
+  const tex = new THREE.CanvasTexture(c); tex.minFilter=THREE.LinearFilter;
+  const spr = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true, depthTest:false}));
+  spr.renderOrder = 13;
+  // place to the left of the row labels at the targeted level
+  const n = listAll().length;
+  const total = totalCols(n);
+  const labelX = columnX(0, total) - 1.8;   // matches the L-label column
+  const coinX  = labelX - 1.7;
+  const y = -1.5 + atLevel * ROW_GAP;
+  spr.position.set(coinX, y, 0);
+  spr.scale.set(0.001, 0.001, 1);
+  scene.add(spr);
+  await tweenVec(spr.scale, new THREE.Vector3(1.5, 1.5, 1), 240);
+  await sleep(420);
+  await tweenVec(spr.scale, new THREE.Vector3(0.001, 0.001, 1), 200);
+  scene.remove(spr);
+}
+
+/* ─── animated insert: walk-find → coin flips → spawn + rewire ─── */
+async function insertAnimated(v){
+  // Phase 1 · descend, recording predecessors per level
+  const update = Array(MAX_LEVEL+1).fill(head);
+  let x = head;
+  cx.set(`insert ${v} · descend`, 'find phase');
+  await pulseNode(head, 0xffb454, 180);
+  await stepperCheckpoint();
+  for (let i = level; i >= 0; i--){
+    cx.set(`level ${i} · at ${x===head?'⊢':x.value}`, 'descend');
+    await stepperCheckpoint();
+    while (x.forward[i] && x.forward[i].value < v){
+      x = x.forward[i];
+      cx.set(`level ${i} · advance → ${x.value}`, 'walk');
+      await pulseNode(x, 0xffb454, 160);
+      await stepperCheckpoint();
+    }
+    update[i] = x;
+    log.say(`<span class="km">L${i}</span> predecessor = ${x===head?'⊢':x.value}`);
+  }
+  const next = x.forward[0];
+  if (next && next.value === v){
+    log.say(`<span class="kx">dup</span> ${v} already in list`);
+    cx.set(`dup ${v}`, '—'); return false;
+  }
+  // Phase 2 · coin flips — promote up the levels with probability P
+  let lvl = 0;
+  cx.set(`flip · L0 placed`, 'coin');
+  log.say(`<span class="km">coin</span> L0 ↑ placed`);
+  await flipCoin(true, 0);
+  await stepperCheckpoint();
+  while (lvl < MAX_LEVEL){
+    const heads = Math.random() < P;
+    if (!heads){
+      cx.set(`flip · L${lvl+1} ✗ stop`, 'coin');
+      log.say(`<span class="km">coin</span> L${lvl+1} ✗ stop`);
+      await flipCoin(false, Math.min(lvl+1, MAX_LEVEL));
+      await stepperCheckpoint();
+      break;
+    }
+    lvl++;
+    cx.set(`flip · L${lvl} ↑ promote`, 'coin');
+    log.say(`<span class="km">coin</span> L${lvl} ↑ promote`);
+    await flipCoin(true, lvl);
+    await stepperCheckpoint();
+  }
+  // Phase 3 · place new node and rewire (matches the original insert() exactly)
+  if (lvl > level){
+    for (let i = level + 1; i <= lvl; i++) update[i] = head;
+    level = lvl;
+  }
+  const n = makeNode(v, lvl);
+  for (let i = 0; i <= lvl; i++){
+    n.forward[i] = update[i].forward[i];
+    update[i].forward[i] = n;
+  }
+  size++;
+  cx.set(`insert ${v} · level ${lvl}`, 'rewire');
+  await relayout(true);
+  await pulseNode(n, 0x5cffb4, 520);
+  await stepperCheckpoint();
+  log.say(`<span class="k">insert</span> ${v} · level ${lvl}`);
+  return true;
+}
+
 const opHandlers = {
   insert: lock(async () => {
     const vals = readVals();
     history.push({type:'snapshot', values: snapshotValues()});
+    stepperClear();
     for (const v of vals){
-      const ok = insert(v);
-      await relayout(true);
-      log.say(ok ? `<span class="k">insert</span> ${v} · lvl ${listAll().find(n=>n.value===v)?.level||0}` : `<span class="kx">dup</span> ${v}`);
+      await insertAnimated(v);
     }
-    cx.set('insert', 'E[O(log n)]');
+    cx.set('insert done', 'E[O(log n)]');
   }),
   delete: lock(async () => {
     const v = parseNum($('#in-val').value, null); if (v===null){ log.say(`<span class="kx">err</span> number required`); return; }
