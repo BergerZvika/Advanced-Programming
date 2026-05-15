@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Binary Search Tree — Data Structures Lab</title>
+<title>Binary Search Tree + Scans — Data Structures Lab</title>
 <link rel="stylesheet" href="lab.css" />
 <script type="importmap">
 { "imports": {
@@ -30,7 +30,7 @@
             <div class="stage-tag"><b>height</b>&nbsp; <span id="t-height">0</span></div>
           </div>
           <div class="row">
-            <div class="stage-tag">plain BST · degenerates on sorted input</div>
+            <div class="stage-tag">plain BST · scans visualized step-by-step · <span id="t-scan">idle</span></div>
           </div>
         </div>
       </div>
@@ -41,20 +41,44 @@
         <h2>Controls</h2>
         <div class="section-rule"></div>
 
-        <div class="label">Value(s)</div>
-        <div class="input-row">
-          <input id="in-val" placeholder="e.g. 10  or  1,2,3,4 (try sorted)" autocomplete="off" />
-          <button class="ghost" id="b-rand">RND</button>
+        <div class="tabs">
+          <button class="tab active" data-tab="bst"   id="tab-bst-btn">BST</button>
+          <button class="tab"        data-tab="scans" id="tab-scans-btn">Scans</button>
         </div>
 
-        <div class="label mt-12">Operations</div>
-        <div class="op-grid">
-          <button class="op" data-color="cyan"    id="op-insert"><span class="name"><span class="dot"></span> insert</span><span class="cx">avg O(log n)</span></button>
-          <button class="op" data-color="magenta" id="op-delete"><span class="name"><span class="dot"></span> delete</span><span class="cx">avg O(log n)</span></button>
-          <button class="op" data-color="amber"   id="op-find"><span class="name"><span class="dot"></span> find</span><span class="cx">avg O(log n)</span></button>
-          <button class="op" data-color="cyan"    id="op-inorder"><span class="name"><span class="dot"></span> in-order</span><span class="cx">O(n)</span></button>
-          <button class="op full" data-color="lime"  id="op-undo"><span class="name"><span class="dot"></span> undo · last op</span><span class="cx" id="undo-depth">0</span></button>
-          <button class="op full" data-color="amber" id="op-clear"><span class="name"><span class="dot"></span> clear</span><span class="cx">reset</span></button>
+        <!-- BST tab -->
+        <div class="tab-panel" id="tab-bst">
+          <div class="label">Value(s)</div>
+          <div class="input-row">
+            <input id="in-val" placeholder="e.g. 10  or  1,2,3,4 (try sorted)" autocomplete="off" />
+            <button class="ghost" id="b-rand">RND</button>
+          </div>
+
+          <div class="label mt-12">Operations</div>
+          <div class="op-grid">
+            <button class="op" data-color="cyan"    id="op-insert"><span class="name"><span class="dot"></span> insert</span><span class="cx">avg O(log n)</span></button>
+            <button class="op" data-color="magenta" id="op-delete"><span class="name"><span class="dot"></span> delete</span><span class="cx">avg O(log n)</span></button>
+            <button class="op" data-color="amber"   id="op-find"><span class="name"><span class="dot"></span> find</span><span class="cx">avg O(log n)</span></button>
+            <button class="op" data-color="cyan"    id="op-inorder"><span class="name"><span class="dot"></span> in-order</span><span class="cx">O(n)</span></button>
+            <button class="op full" data-color="lime"  id="op-undo"><span class="name"><span class="dot"></span> undo · last op</span><span class="cx" id="undo-depth">0</span></button>
+            <button class="op full" data-color="amber" id="op-clear"><span class="name"><span class="dot"></span> clear</span><span class="cx">reset</span></button>
+          </div>
+        </div>
+
+        <!-- Scans tab -->
+        <div class="tab-panel hidden" id="tab-scans">
+          <div class="label">Traversal scans · step-by-step</div>
+          <div class="op-grid">
+            <button class="op" data-color="cyan"    id="op-scan-inorder"><span class="name"><span class="dot"></span> in-order</span><span class="cx">L·N·R</span></button>
+            <button class="op" data-color="violet"  id="op-scan-preorder"><span class="name"><span class="dot"></span> pre-order</span><span class="cx">N·L·R</span></button>
+            <button class="op" data-color="magenta" id="op-scan-postorder"><span class="name"><span class="dot"></span> post-order</span><span class="cx">L·R·N</span></button>
+            <button class="op full" data-color="amber" id="op-scan-bfs"><span class="name"><span class="dot"></span> BFS</span><span class="cx">queue · level order</span></button>
+            <button class="op full" data-color="amber" id="op-scan-reset"><span class="name"><span class="dot"></span> reset scan</span><span class="cx">clear & pick another</span></button>
+          </div>
+          <div class="label mt-12">Tip</div>
+          <div class="cx-panel" style="font-family:var(--mono);font-size:11.5px;color:var(--ink-dim);line-height:1.55">
+            Visited nodes are stamped <b style="color:var(--amber)">#N</b> in their scan order. A glowing ring marks the current node. BFS also shows the queue floating above the tree.
+          </div>
         </div>
 
         <div class="label mt-12">Complexity</div>
@@ -65,7 +89,7 @@
     </div>
 
     <footer class="statusbar">
-      <span class="pill"><b>lab</b>&nbsp; 09 · BST (unbalanced)</span>
+      <span class="pill"><b>lab</b>&nbsp; 05 · BST + Scans</span>
       <span class="pill"><b>renderer</b>&nbsp; three.js · WebGL</span>
       <span class="pill"><b>history</b>&nbsp; <span id="hist-pill">0</span></span>
     </footer>
@@ -568,17 +592,50 @@ function makeMesh(v){
     new THREE.MeshBasicMaterial({color:0xb9ff5c, wireframe:true, transparent:true, opacity:0.45})
   );
   grp.add(wire);
-  const c = document.createElement('canvas'); c.width=128; c.height=128;
+  // value + optional scan visit-number label
+  const c = document.createElement('canvas'); c.width=320; c.height=160;
   const ctx = c.getContext('2d');
-  ctx.fillStyle='#fff'; ctx.font='700 56px IBM Plex Mono, monospace';
-  ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(String(v), 64, 64);
+  function paint(val, idx){
+    ctx.clearRect(0,0,320,160);
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.shadowColor='rgba(0,0,0,0.9)'; ctx.shadowBlur=14;
+    ctx.fillStyle='#fff'; ctx.font='800 64px IBM Plex Mono, monospace';
+    ctx.fillText(String(val), 160, 60);
+    if (idx != null){
+      ctx.fillStyle='#ffb454';
+      ctx.font='800 40px IBM Plex Mono, monospace';
+      ctx.shadowBlur=16;
+      ctx.fillText('#'+idx, 160, 124);
+    }
+  }
+  paint(v);
   const tex = new THREE.CanvasTexture(c); tex.minFilter=THREE.LinearFilter;
-  const spr = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true}));
-  spr.position.set(0, 1.3, 0); spr.scale.set(1.1, 1.1, 1);
+  const spr = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true, depthTest:false}));
+  spr.renderOrder = 10;
+  spr.position.set(0, 1.5, 0); spr.scale.set(2.6, 1.3, 1);
   grp.add(spr);
   grp.scale.setScalar(0.001);
   scene.add(grp);
-  return {grp, body};
+  return {grp, body, label:{paint, tex}};
+}
+function setVisitNumber(n, idx){
+  if (!n || !n.mesh) return;
+  n.mesh.label.paint(n.value, idx);
+  n.mesh.label.tex.needsUpdate = true;
+}
+function clearVisitNumbers(){
+  (function walk(n){
+    if (!n) return;
+    if (n.mesh){
+      n.mesh.label.paint(n.value);
+      n.mesh.label.tex.needsUpdate = true;
+      const m = n.mesh.body.material;
+      m.emissive.setHex(0x0c1428); m.emissiveIntensity = 0.7;
+    }
+    walk(n.left); walk(n.right);
+  })(root);
+  setCurrent(null);
+  setQueueState([]);
 }
 function makeEdge(){
   const e = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1, 12), new THREE.MeshBasicMaterial({color:0x35d0ff, transparent:true, opacity:0.55}));
@@ -593,6 +650,161 @@ function ensureMeshes(n){
   if (!n) return;
   if (!n.mesh){ n.mesh = makeMesh(n.value); n.edgeUp = makeEdge(); }
   ensureMeshes(n.left); ensureMeshes(n.right);
+}
+
+/* ─── ghost placeholders for null children (visited by recursive scans) ─── */
+function makeGhost(){
+  const grp = new THREE.Group();
+  const body = new THREE.Mesh(
+    new THREE.SphereGeometry(0.32, 18, 14),
+    new THREE.MeshPhysicalMaterial({color:0x0a0e1c, metalness:0.4, roughness:0.6, emissive:0x1a2240, emissiveIntensity:0.55, transparent:true, opacity:0.6})
+  );
+  grp.add(body);
+  const wire = new THREE.Mesh(
+    new THREE.SphereGeometry(0.34, 10, 8),
+    new THREE.MeshBasicMaterial({color:0x35d0ff, wireframe:true, transparent:true, opacity:0.25})
+  );
+  grp.add(wire);
+  const edge = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.025, 0.025, 1, 10),
+    new THREE.MeshBasicMaterial({color:0x35d0ff, transparent:true, opacity:0.22})
+  );
+  const c = document.createElement('canvas'); c.width=128; c.height=128;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#5b6385'; ctx.font='700 80px IBM Plex Mono, monospace';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.shadowColor='rgba(0,0,0,0.85)'; ctx.shadowBlur=12;
+  ctx.fillText('∅', 64, 70);
+  const tex = new THREE.CanvasTexture(c); tex.minFilter=THREE.LinearFilter;
+  const spr = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true, depthTest:false}));
+  spr.renderOrder = 9;
+  spr.scale.set(0.7, 0.7, 1);
+  grp.add(spr);
+  scene.add(grp); scene.add(edge);
+  return {grp, body, edge};
+}
+const ghosts = new Map();   // node -> {left, right}
+function getGhost(parent, side){
+  let g = ghosts.get(parent);
+  if (!g){ g = {left:null, right:null}; ghosts.set(parent, g); }
+  if (!g[side]) g[side] = makeGhost();
+  return g[side];
+}
+function clearOrphanGhosts(){
+  for (const [parent, g] of [...ghosts.entries()]){
+    let alive = false;
+    (function find(n){ if (!n || alive) return; if (n === parent) alive = true; else { find(n.left); find(n.right); } })(root);
+    if (!alive){
+      if (g.left)  { scene.remove(g.left.grp);  scene.remove(g.left.edge); }
+      if (g.right) { scene.remove(g.right.grp); scene.remove(g.right.edge); }
+      ghosts.delete(parent);
+      continue;
+    }
+    if (parent.left  && g.left)  { scene.remove(g.left.grp);  scene.remove(g.left.edge);  g.left  = null; }
+    if (parent.right && g.right) { scene.remove(g.right.grp); scene.remove(g.right.edge); g.right = null; }
+  }
+}
+async function pulseGhost(g, color=0xff5c70, ms=220){
+  if (!g) return;
+  const m = g.body.material;
+  const eOld = m.emissive.clone(), iOld = m.emissiveIntensity, oOld = m.opacity;
+  m.emissive.setHex(color); m.emissiveIntensity = 1.6; m.opacity = 1.0;
+  g.edge.material.opacity = 0.7;
+  await sleep(ms);
+  m.emissive.copy(eOld); m.emissiveIntensity = iOld; m.opacity = oOld;
+  g.edge.material.opacity = 0.22;
+}
+
+/* ─── BFS queue tray ─── */
+const QUEUE_TRAY_Y  = 6.5;
+const QUEUE_TRAY_DX = 1.25;
+const queueTrayLabel = (() => {
+  const c = document.createElement('canvas'); c.width=384; c.height=128;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#cbd2ff'; ctx.font = '700 56px Unbounded, sans-serif';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.shadowColor='rgba(0,0,0,0.85)'; ctx.shadowBlur=14;
+  ctx.fillText('queue', 192, 64);
+  const tex = new THREE.CanvasTexture(c); tex.minFilter=THREE.LinearFilter;
+  const spr = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true, depthTest:false}));
+  spr.renderOrder = 11; spr.scale.set(2.4, 0.8, 1); spr.visible = false;
+  scene.add(spr); return spr;
+})();
+const queueItems = [];
+function makeQueueItem(value){
+  const grp = new THREE.Group();
+  const body = new THREE.Mesh(
+    new THREE.SphereGeometry(0.42, 18, 14),
+    new THREE.MeshPhysicalMaterial({color:0x2a1f0d, metalness:0.5, roughness:0.3, emissive:0xffb454, emissiveIntensity:0.85, clearcoat:0.4})
+  );
+  grp.add(body);
+  const wire = new THREE.Mesh(
+    new THREE.SphereGeometry(0.43, 12, 8),
+    new THREE.MeshBasicMaterial({color:0xffb454, wireframe:true, transparent:true, opacity:0.45})
+  );
+  grp.add(wire);
+  const c = document.createElement('canvas'); c.width=128; c.height=128;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle='#fff'; ctx.font='800 64px IBM Plex Mono, monospace';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.shadowColor='rgba(0,0,0,0.85)'; ctx.shadowBlur=12;
+  ctx.fillText(String(value), 64, 68);
+  const tex = new THREE.CanvasTexture(c); tex.minFilter=THREE.LinearFilter;
+  const spr = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true, depthTest:false}));
+  spr.renderOrder = 12; spr.position.set(0, 0, 0.4); spr.scale.set(1.0, 1.0, 1);
+  grp.add(spr);
+  scene.add(grp);
+  return {grp, body, value};
+}
+function setQueueState(values){
+  for (const it of queueItems) scene.remove(it.grp);
+  queueItems.length = 0;
+  if (!values || values.length === 0){ queueTrayLabel.visible = false; return; }
+  queueTrayLabel.visible = true;
+  const startX = -((values.length - 1) / 2) * QUEUE_TRAY_DX;
+  for (let i=0;i<values.length;i++){
+    const it = makeQueueItem(values[i]);
+    it.grp.position.set(startX + i * QUEUE_TRAY_DX, QUEUE_TRAY_Y, 0);
+    queueItems.push(it);
+  }
+  queueTrayLabel.position.set(startX - 2.0, QUEUE_TRAY_Y, 0);
+}
+async function pulseQueueItem(idx, color, ms){
+  const it = queueItems[idx]; if (!it) return;
+  const m = it.body.material;
+  const eOld = m.emissive.clone(), iOld = m.emissiveIntensity;
+  m.emissive.setHex(color); m.emissiveIntensity = 1.6;
+  await sleep(ms);
+  m.emissive.copy(eOld); m.emissiveIntensity = iOld;
+}
+
+/* ─── persistent "current node" cursor — a glowing torus + strong emissive ─── */
+let currentNode = null;
+const cursorRing = new THREE.Mesh(
+  new THREE.TorusGeometry(0.95, 0.06, 18, 56),
+  new THREE.MeshBasicMaterial({color:0xffd966, transparent:true, opacity:0.9, depthTest:false})
+);
+cursorRing.renderOrder = 11; cursorRing.visible = false; scene.add(cursorRing);
+const cursorRingOuter = new THREE.Mesh(
+  new THREE.TorusGeometry(1.05, 0.10, 18, 56),
+  new THREE.MeshBasicMaterial({color:0xffd966, transparent:true, opacity:0.22, depthTest:false})
+);
+cursorRingOuter.renderOrder = 10; cursorRingOuter.visible = false; scene.add(cursorRingOuter);
+function setCurrent(node){
+  if (currentNode && currentNode !== node && currentNode.mesh){
+    const m = currentNode.mesh.body.material;
+    m.emissive.setHex(0x0c1428); m.emissiveIntensity = 0.7;
+  }
+  currentNode = node;
+  if (node && node.mesh){
+    const m = node.mesh.body.material;
+    m.emissive.setHex(0xffd966); m.emissiveIntensity = 1.7;
+    cursorRing.position.copy(node.mesh.grp.position);
+    cursorRingOuter.position.copy(node.mesh.grp.position);
+    cursorRing.visible = cursorRingOuter.visible = true;
+  } else {
+    cursorRing.visible = cursorRingOuter.visible = false;
+  }
 }
 
 function computeLayout(){
@@ -620,6 +832,7 @@ async function relayout(animate=true){
   ensureMeshes(root);
   const map = computeLayout();
   const tasks = [];
+  const GHOST_DX = 1.2, GHOST_DY = 1.8;
   (function walk(n, parent){
     if (!n) return;
     const p = map.get(n);
@@ -628,10 +841,28 @@ async function relayout(animate=true){
       tasks.push(tweenVec(n.mesh.grp.scale, new THREE.Vector3(1,1,1), animate?320:0));
       if (parent){ const pp = map.get(parent); n.edgeUp.visible = true; placeEdge(n.edgeUp, pp.x, pp.y, p.x, p.y); }
       else n.edgeUp.visible = false;
+      // ghosts for null children (so scans can pulse a sphere when they fall off)
+      for (const side of ['left','right']){
+        if (!n[side]){
+          const g = getGhost(n, side);
+          const gx = p.x + (side === 'left' ? -GHOST_DX : GHOST_DX);
+          const gy = p.y - GHOST_DY;
+          tasks.push(tweenVec(g.grp.position, new THREE.Vector3(gx, gy, 0), animate?420:0));
+          g.edge.visible = true;
+          placeEdge(g.edge, p.x, p.y, gx, gy);
+          g.edge.material.opacity = 0.22;
+        }
+      }
     }
     walk(n.left, n); walk(n.right, n);
   })(root, null);
+  clearOrphanGhosts();
   await Promise.all(tasks);
+  // keep the cursor ring on the current node as the tree is rearranged
+  if (currentNode && currentNode.mesh){
+    cursorRing.position.copy(currentNode.mesh.grp.position);
+    cursorRingOuter.position.copy(currentNode.mesh.grp.position);
+  }
   refreshHUD();
 }
 
@@ -659,8 +890,171 @@ function readVal(){ const v = parseNum($('#in-val').value, null); if (v===null){
 function snapshotValues(){ return inorderArr(); }
 async function rebuildFrom(values){
   (function purge(n){ if (!n) return; if (n.mesh) scene.remove(n.mesh.grp); if (n.edgeUp) scene.remove(n.edgeUp); purge(n.left); purge(n.right); })(root);
+  // also clear all ghost children
+  for (const [parent, g] of ghosts){
+    if (g.left)  { scene.remove(g.left.grp);  scene.remove(g.left.edge); }
+    if (g.right) { scene.remove(g.right.grp); scene.remove(g.right.edge); }
+  }
+  ghosts.clear();
+  setCurrent(null);
+  setQueueState([]);
   root = null; size = 0; for (const v of values) insertK(v);
   await relayout(false);
+}
+
+/* ─── scan player (step-list based) ─── */
+let scanSteps = null;
+let scanIdx   = 0;
+let scanName  = '';
+let scanColor = 0x35d0ff;
+let scanCancelled = false;
+const SCAN_BTN_IDS = ['op-scan-inorder','op-scan-preorder','op-scan-postorder','op-scan-bfs'];
+function clearActiveScan(){ for (const id of SCAN_BTN_IDS){ const b = $('#'+id); if (b) b.classList.remove('active'); } }
+function setActiveScan(id){ clearActiveScan(); const b = $('#'+id); if (b) b.classList.add('active'); }
+
+function buildInOrder(out){
+  (function walk(n, parent, side){
+    if (!n){ if (parent) out.push({kind:'null', parent, side}); return; }
+    walk(n.left,  n, 'left');
+    out.push({kind:'visit', node:n});
+    walk(n.right, n, 'right');
+  })(root, null, null);
+}
+function buildPreOrder(out){
+  (function walk(n, parent, side){
+    if (!n){ if (parent) out.push({kind:'null', parent, side}); return; }
+    out.push({kind:'visit', node:n});
+    walk(n.left,  n, 'left');
+    walk(n.right, n, 'right');
+  })(root, null, null);
+}
+function buildPostOrder(out){
+  (function walk(n, parent, side){
+    if (!n){ if (parent) out.push({kind:'null', parent, side}); return; }
+    walk(n.left,  n, 'left');
+    walk(n.right, n, 'right');
+    out.push({kind:'visit', node:n});
+  })(root, null, null);
+}
+function buildBFS(out){
+  if (!root) return;
+  const q = [root];
+  while (q.length){
+    const n = q.shift();
+    out.push({kind:'visit', node:n, queueAfter:q.map(x=>x.value)});
+    for (const side of ['left','right']){
+      if (n[side]){
+        q.push(n[side]);
+        out.push({kind:'enqueue', parent:n, child:n[side], side, queueAfter:q.map(x=>x.value)});
+      } else {
+        out.push({kind:'null', parent:n, side, queueAfter:q.map(x=>x.value)});
+      }
+    }
+  }
+}
+function countVisitsUpTo(idx){
+  let c = 0; for (let i=0;i<idx;i++) if (scanSteps[i].kind === 'visit') c++; return c;
+}
+async function applyScanStep(){
+  if (scanIdx >= scanSteps.length) return false;
+  const s = scanSteps[scanIdx];
+  scanIdx++;
+  if (s.kind === 'visit'){
+    const n = countVisitsUpTo(scanIdx);
+    setVisitNumber(s.node, n);
+    cx.set(`#${n} visit ${s.node.value} · ${scanName}`, 'O(n)');
+    log.say(`<span class="k">${scanName}</span> #${n} ${s.node.value}`);
+    await pulse(s.node, scanColor, 240);
+    setCurrent(s.node);
+    if (s.queueAfter) setQueueState(s.queueAfter);
+  } else if (s.kind === 'enqueue'){
+    cx.set(`enqueue ${s.child.value} · ${s.parent.value}.${s.side}`, 'O(1)');
+    log.say(`<span class="km">enq</span> ${s.child.value} from ${s.parent.value}.${s.side}`);
+    setQueueState(s.queueAfter);
+    await pulseQueueItem(queueItems.length - 1, 0x5cffb4, 220);
+    setCurrent(s.parent);
+  } else {
+    const g = ghosts.get(s.parent)?.[s.side];
+    cx.set(`${scanName} · null child of ${s.parent.value} (${s.side})`, 'return');
+    log.say(`<span class="kx">∅</span> ${scanName} · ${s.parent.value}.${s.side} is null`);
+    await pulseGhost(g, 0xff5c70, 220);
+    setCurrent(s.parent);
+    if (s.queueAfter) setQueueState(s.queueAfter);
+  }
+  return true;
+}
+async function undoScanStep(){
+  if (scanIdx === 0) return false;
+  scanIdx--;
+  const s = scanSteps[scanIdx];
+  const wasPaused = stepper.paused;
+  stepper.paused = false;
+  if (s.kind === 'visit'){
+    await pulse(s.node, 0xff5c70, 220);
+    s.node.mesh.label.paint(s.node.value);
+    s.node.mesh.label.tex.needsUpdate = true;
+  } else if (s.kind === 'enqueue'){
+    await pulseQueueItem(queueItems.length - 1, 0xff5c70, 180);
+  } else {
+    const g = ghosts.get(s.parent)?.[s.side];
+    if (g) await pulseGhost(g, 0xff5c70, 180);
+  }
+  stepper.paused = wasPaused;
+  if (scanIdx > 0){
+    const prev = scanSteps[scanIdx - 1];
+    if (prev.kind === 'visit')     setCurrent(prev.node);
+    else                            setCurrent(prev.parent);
+    if (prev.queueAfter)            setQueueState(prev.queueAfter);
+  } else {
+    setCurrent(null);
+    setQueueState([]);
+  }
+  const n = countVisitsUpTo(scanIdx);
+  cx.set(`rewind · #${n} ${scanName}`, scanName);
+  log.say(`<span class="ko">undo step</span> · now at #${n}`);
+  return true;
+}
+async function runScan(name, color, builder, btnId){
+  $('#t-scan').textContent = name;
+  clearVisitNumbers();
+  stepperClear();
+  scanCancelled = false;
+  scanSteps = []; scanIdx = 0;
+  scanName = name; scanColor = color;
+  setActiveScan(btnId);
+  builder(scanSteps);
+  cx.set(`${name} · 0/${scanSteps.length}`, `O(n)`);
+  while (scanIdx < scanSteps.length){
+    if (scanCancelled) break;
+    await applyScanStep();
+    if (scanCancelled) break;
+    await stepperCheckpoint(`${name} · step ${scanIdx}`, async () => { await undoScanStep(); });
+  }
+  if (scanCancelled){
+    clearVisitNumbers(); clearActiveScan();
+    $('#t-scan').textContent = 'idle';
+    scanSteps = null; scanIdx = 0;
+    log.say(`<span class="ko">reset</span> · ${name} cancelled`);
+    cx.set('idle', '—');
+    return;
+  }
+  const visits = countVisitsUpTo(scanSteps.length);
+  log.say(`<span class="k">${name}</span> done · ${visits} visit(s) · ${scanSteps.length - visits} null(s)`);
+  cx.set(`${name} done · ${visits} visits`, '—');
+}
+async function resetScan(){
+  if (busy){
+    scanCancelled = true;
+    stepper.paused = false;
+    stepperKick();
+    return;
+  }
+  clearVisitNumbers(); clearActiveScan();
+  stepperClear();
+  scanSteps = null; scanIdx = 0; scanName = '';
+  $('#t-scan').textContent = 'idle';
+  log.say(`<span class="ko">reset</span> scan`);
+  cx.set('idle', '—');
 }
 
 const opHandlers = {
@@ -779,6 +1173,24 @@ const opHandlers = {
 };
 for (const k in opHandlers) $('#op-'+k).addEventListener('click', opHandlers[k]);
 $('#b-rand').addEventListener('click', () => $('#in-val').value = randomInt(1,99));
+
+/* scan handlers — not in opHandlers because RESET must NOT be locked */
+$('#op-scan-inorder')  .addEventListener('click', lock(() => runScan('in-order',   0x35d0ff, buildInOrder,   'op-scan-inorder')));
+$('#op-scan-preorder') .addEventListener('click', lock(() => runScan('pre-order',  0x7c5cff, buildPreOrder,  'op-scan-preorder')));
+$('#op-scan-postorder').addEventListener('click', lock(() => runScan('post-order', 0xff5cab, buildPostOrder, 'op-scan-postorder')));
+$('#op-scan-bfs')      .addEventListener('click', lock(() => runScan('BFS',        0xffb454, buildBFS,       'op-scan-bfs')));
+// reset is intentionally not locked so it can interrupt a paused/running scan
+$('#op-scan-reset')    .addEventListener('click', resetScan);
+
+/* tab switching */
+function showTab(name){
+  for (const t of ['bst','scans']){
+    $('#tab-'+t).classList.toggle('hidden', t !== name);
+    $('#tab-'+t+'-btn').classList.toggle('active', t === name);
+  }
+}
+$('#tab-bst-btn').addEventListener  ('click', () => showTab('bst'));
+$('#tab-scans-btn').addEventListener('click', () => showTab('scans'));
 
 /* ─── preset toolbar ─── */
 mountPresets({mount: $('#presets-mount'), label: 'defaults', presets:[

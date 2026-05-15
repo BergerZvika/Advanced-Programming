@@ -370,6 +370,28 @@ button{font-family:inherit;color:inherit;background:none;border:none;cursor:poin
 .op.active .dot{box-shadow:0 0 14px currentColor, 0 0 4px #fff}
 .op.active .cx{color:#fff}
 
+/* panel tabs */
+.tabs{
+  display:flex; gap:4px; padding:4px;
+  background:rgba(8,10,18,0.65); border:1px solid var(--panel-edge);
+  border-radius:var(--r-md); margin-bottom:8px;
+}
+.tab{
+  flex:1; min-width:0;
+  padding:8px 10px; border-radius:var(--r-sm);
+  background:transparent; border:1px solid transparent;
+  color:var(--ink-dim);
+  font-family:var(--mono); font-size:11px; letter-spacing:.18em; text-transform:uppercase;
+  cursor:pointer; transition:background .2s, border-color .2s, color .2s;
+}
+.tab:hover{color:var(--ink); background:rgba(53,208,255,0.06)}
+.tab.active{
+  background:rgba(53,208,255,0.16);
+  border-color:rgba(53,208,255,0.55);
+  color:#fff;
+}
+.tab-panel.hidden{display:none}
+
 /* complexity readout */
 .cx-panel{
   display:flex;flex-direction:column;gap:10px;
