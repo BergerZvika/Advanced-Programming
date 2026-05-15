@@ -28,10 +28,10 @@
             <div class="stage-tag"><b>buckets</b>&nbsp; <span id="t-cap">8</span></div>
             <div class="stage-tag"><b>n</b>&nbsp; <span id="t-size">0</span></div>
             <div class="stage-tag"><b>load α</b>&nbsp; <span id="t-load">0.00</span></div>
-            <div class="stage-tag"><b>h(k)</b>&nbsp; k mod m</div>
+            <div class="stage-tag"><b>h(k)</b>&nbsp; <span id="t-hfn">k mod m</span></div>
           </div>
           <div class="row">
-            <div class="stage-tag">separate chaining · resize when α ≥ 0.75</div>
+            <div class="stage-tag" id="t-mode">separate chaining · resize when α ≥ 0.75</div>
           </div>
         </div>
       </div>
@@ -42,7 +42,15 @@
         <h2>Controls</h2>
         <div class="section-rule"></div>
 
-        <div class="label">Key (number)</div>
+        <div class="label">Collision mode</div>
+        <div class="op-grid" style="grid-template-columns:1fr 1fr">
+          <button class="op active" data-color="magenta" id="op-m-chaining"><span class="name"><span class="dot"></span> chaining</span><span class="cx">lists</span></button>
+          <button class="op"        data-color="cyan"    id="op-m-linear"><span class="name"><span class="dot"></span> linear</span><span class="cx">probe</span></button>
+          <button class="op"        data-color="violet"  id="op-m-double"><span class="name"><span class="dot"></span> double</span><span class="cx">h₁+i·h₂</span></button>
+          <button class="op"        data-color="lime"    id="op-m-fks"><span class="name"><span class="dot"></span> FKS</span><span class="cx">perfect</span></button>
+        </div>
+
+        <div class="label mt-12">Key (number)</div>
         <div class="input-row">
           <input id="in-val" placeholder="e.g. 17  or  17,33,42" autocomplete="off" />
           <button class="ghost" id="b-rand">RND</button>
@@ -50,8 +58,8 @@
 
         <div class="label mt-12">Operations</div>
         <div class="op-grid">
-          <button class="op" data-color="cyan"    id="op-insert"><span class="name"><span class="dot"></span> insert</span><span class="cx">avg O(1)</span></button>
-          <button class="op" data-color="amber"   id="op-find"><span class="name"><span class="dot"></span> find</span><span class="cx">avg O(1)</span></button>
+          <button class="op" data-color="cyan"    id="op-insert"><span class="name"><span class="dot"></span> insert</span><span class="cx" id="cx-ins">avg O(1)</span></button>
+          <button class="op" data-color="amber"   id="op-find"><span class="name"><span class="dot"></span> find</span><span class="cx" id="cx-fnd">avg O(1)</span></button>
           <button class="op" data-color="magenta" id="op-delete"><span class="name"><span class="dot"></span> delete</span><span class="cx">avg O(1)</span></button>
           <button class="op" data-color="violet"  id="op-rehash"><span class="name"><span class="dot"></span> rehash · 2×</span><span class="cx">O(n)</span></button>
           <button class="op full" data-color="lime"  id="op-undo"><span class="name"><span class="dot"></span> undo · last op</span><span class="cx" id="undo-depth">0</span></button>
@@ -526,12 +534,17 @@ const history = createHistory();
 const stage = $('#stage');
 const {scene} = createScene({mount:stage, camera:{pos:[2, 4, 18], lookAt:[2, 0, 0]}});
 
+let mode = 'chaining';         // 'chaining' | 'linear' | 'double' | 'fks'
 let M = 8;
-let table = Array.from({length:M}, () => []);
+let order = [];                // insertion-ordered live keys (source of truth)
+let table = Array.from({length:M}, () => []);  // chaining: M chains
+let slots = new Array(M).fill(null);           // linear/double: one key per slot
+let fks   = null;              // fks: {buckets:[{keys,a,m2,slots}]}
 let size = 0;
 
 const bucketMeshes = [];
 const nodeMeshes = new Map();  // key -> {grp, body, label}
+const subMeshes  = [];         // fks secondary cells (pooled)
 const linkMeshes = [];
 
 const BUCKET_W = 1.6, BUCKET_H = 0.9, BUCKET_Z = 0.5;
@@ -544,6 +557,41 @@ function bucketPos(i){
 function nodePos(b, k){
   const p = bucketPos(b);
   return {x: p.x + 1.8 + k * CHAIN_GAP_X, y: p.y};
+}
+// open-addressing: the key sphere sits just right of its slot cell
+function slotKeyPos(i){ const p = bucketPos(i); return {x: p.x + 1.5, y: p.y}; }
+// fks secondary slot
+const SUB_GAP_X = 1.25;
+function subPos(b, s){ const p = bucketPos(b); return {x: p.x + 1.9 + s * SUB_GAP_X, y: p.y}; }
+function makeSubCell(){
+  const grp = new THREE.Group();
+  const body = new THREE.Mesh(
+    new THREE.BoxGeometry(1.05, 0.78, 0.4),
+    new THREE.MeshPhysicalMaterial({color:0x0e1626, metalness:0.5, roughness:0.35, emissive:0x0c1c14, emissiveIntensity:0.45})
+  );
+  grp.add(body);
+  const edges = new THREE.LineSegments(
+    new THREE.EdgesGeometry(body.geometry),
+    new THREE.LineBasicMaterial({color:0xb9ff5c, transparent:true, opacity:0.55})
+  );
+  grp.add(edges);
+  const c = document.createElement('canvas'); c.width=128; c.height=96;
+  const ctx = c.getContext('2d');
+  const tex = new THREE.CanvasTexture(c); tex.minFilter=THREE.LinearFilter;
+  const spr = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true, depthTest:false}));
+  spr.renderOrder = 10; spr.position.set(0,0,0.3); spr.scale.set(0.95, 0.7, 1);
+  grp.add(spr);
+  function paint(idx){
+    ctx.clearRect(0,0,128,96);
+    ctx.fillStyle='#5b6385'; ctx.font='700 38px IBM Plex Mono, monospace';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.shadowColor='rgba(0,0,0,0.85)'; ctx.shadowBlur=8;
+    ctx.fillText('['+idx+']', 64, 52);
+    tex.needsUpdate = true;
+  }
+  grp.visible = false;
+  scene.add(grp);
+  return {grp, body, paint};
 }
 
 function makeBucketMesh(i){
@@ -625,37 +673,64 @@ function rebuildBuckets(){
   for (let i=0;i<M;i++) bucketMeshes.push(makeBucketMesh(i));
 }
 
+function liveKeySet(){
+  const s = new Set();
+  if (mode === 'chaining'){ for (const c of table) for (const k of c) s.add(k); }
+  else if (mode === 'fks'){ if (fks) for (const b of fks.buckets) for (const k of b.keys) s.add(k); }
+  else { for (const v of slots) if (v != null) s.add(v); }
+  return s;
+}
 async function relayout(animate=true){
-  // ensure node meshes for keys present
   const tasks = [];
-  // remove orphan node meshes
-  const liveKeys = new Set();
-  for (const chain of table) for (const k of chain) liveKeys.add(k);
-  for (const [k, m] of nodeMeshes){
-    if (!liveKeys.has(k)){ scene.remove(m.grp); nodeMeshes.delete(k); }
-  }
-  // ensure existing
-  for (const chain of table) for (const k of chain){
-    if (!nodeMeshes.has(k)) nodeMeshes.set(k, makeNodeMesh(k));
-  }
-  // pool links
-  while (linkMeshes.length < 64) linkMeshes.push(makeLink());
+  // sync node meshes
+  const live = liveKeySet();
+  for (const [k, m] of nodeMeshes){ if (!live.has(k)){ scene.remove(m.grp); nodeMeshes.delete(k); } }
+  for (const k of live){ if (!nodeMeshes.has(k)) nodeMeshes.set(k, makeNodeMesh(k)); }
+  while (linkMeshes.length < 80) linkMeshes.push(makeLink());
   for (const l of linkMeshes) l.visible = false;
+  for (const s of subMeshes) s.grp.visible = false;
+  let linkI = 0, subI = 0;
 
-  let linkI = 0;
-  for (let i=0;i<M;i++){
-    const chain = table[i];
-    for (let k=0;k<chain.length;k++){
-      const mesh = nodeMeshes.get(chain[k]);
-      const p = nodePos(i, k);
+  if (mode === 'chaining'){
+    for (let i=0;i<M;i++){
+      const chain = table[i];
+      for (let k=0;k<chain.length;k++){
+        const mesh = nodeMeshes.get(chain[k]);
+        const p = nodePos(i, k);
+        tasks.push(tweenVec(mesh.grp.position, new THREE.Vector3(p.x, p.y, 0), animate?420:0));
+        tasks.push(tweenVec(mesh.grp.scale, new THREE.Vector3(1,1,1), animate?320:0));
+        const bp = bucketPos(i);
+        const prevX = k === 0 ? bp.x + BUCKET_W/2 : nodePos(i, k-1).x + 0.46;
+        const link = linkMeshes[linkI++]; link.visible = true;
+        placeLink(link, prevX + 0.1, bp.y, p.x - 0.46, bp.y);
+      }
+    }
+  } else if (mode === 'linear' || mode === 'double'){
+    for (let i=0;i<M;i++){
+      const v = slots[i];
+      if (v == null) continue;
+      const mesh = nodeMeshes.get(v);
+      const p = slotKeyPos(i);
       tasks.push(tweenVec(mesh.grp.position, new THREE.Vector3(p.x, p.y, 0), animate?420:0));
       tasks.push(tweenVec(mesh.grp.scale, new THREE.Vector3(1,1,1), animate?320:0));
-      // link
-      const bp = bucketPos(i);
-      const prevX = k === 0 ? bp.x + BUCKET_W/2 : nodePos(i, k-1).x + 0.46;
-      const ay = bp.y;
-      const link = linkMeshes[linkI++]; link.visible = true;
-      placeLink(link, prevX + 0.1, ay, p.x - 0.46, ay);
+    }
+  } else if (mode === 'fks' && fks){
+    for (let i=0;i<M;i++){
+      const bk = fks.buckets[i];
+      for (let s=0;s<bk.m2;s++){
+        while (subI >= subMeshes.length) subMeshes.push(makeSubCell());
+        const cell = subMeshes[subI++];
+        const sp = subPos(i, s);
+        cell.grp.visible = true;
+        cell.grp.position.set(sp.x, sp.y, 0);
+        cell.paint(s);
+        const key = bk.slots[s];
+        if (key != null){
+          const mesh = nodeMeshes.get(key);
+          tasks.push(tweenVec(mesh.grp.position, new THREE.Vector3(sp.x, sp.y, 0.35), animate?420:0));
+          tasks.push(tweenVec(mesh.grp.scale, new THREE.Vector3(0.7,0.7,0.7), animate?320:0));
+        }
+      }
     }
   }
   await Promise.all(tasks);
@@ -666,11 +741,78 @@ function refreshHUD(){
   $('#t-cap').textContent = M;
   $('#t-size').textContent = size;
   $('#t-load').textContent = (size/M).toFixed(2);
+  $('#t-hfn').textContent  = hfnLabel();
+  const desc = {
+    chaining: 'separate chaining · resize when α ≥ 0.75',
+    linear:   'open addressing · linear probing · α < 1',
+    double:   'open addressing · double hashing · h₁+i·h₂',
+    fks:      'FKS perfect hashing · 2-level · O(1) worst-case lookup',
+  };
+  $('#t-mode').textContent = desc[mode];
+  const ins = {chaining:'avg O(1)', linear:'avg O(1)', double:'avg O(1)', fks:'O(n) rebuild'};
+  const fnd = {chaining:'avg O(1)', linear:'avg O(1)', double:'avg O(1)', fks:'O(1) worst'};
+  $('#cx-ins').textContent = ins[mode];
+  $('#cx-fnd').textContent = fnd[mode];
   $('#undo-depth').textContent = history.size();
   $('#hist-pill').textContent = history.size();
 }
 
-function hash(k){ return ((Number(k) % M) + M) % M; }
+function hash(k){ return ((Number(k) % M) + M) % M; }     // h1
+function h2(k){ const m = Math.max(1, M-1); return 1 + (((Number(k) % m) + m) % m); }
+function probeIdx(k, i){
+  if (mode === 'double') return (((hash(k) + i*h2(k)) % M) + M) % M;
+  return (hash(k) + i) % M;                                // linear
+}
+function hfnLabel(){
+  if (mode === 'double') return 'h₁+i·h₂';
+  if (mode === 'linear') return 'h₁+i';
+  if (mode === 'fks')    return '2-level';
+  return 'k mod m';
+}
+
+/* FKS universal sub-hash: ((a·k) mod P) mod m² */
+const FKS_P = 2147483647;   // 2^31 − 1, prime
+function subHash(k, a, m2){
+  if (m2 <= 0) return 0;
+  return Number(((BigInt(a) * BigInt(Number(k))) % BigInt(FKS_P)) % BigInt(m2));
+}
+function buildFKS(){
+  const buckets = [];
+  for (let i=0;i<M;i++) buckets.push({keys:[], a:1, m2:0, slots:[]});
+  for (const k of order) buckets[hash(k)].keys.push(k);
+  for (const bk of buckets){
+    const n = bk.keys.length;
+    bk.m2 = (n <= 1) ? n : n*n;
+    bk.slots = new Array(bk.m2).fill(null);
+    if (n === 0) continue;
+    if (n === 1){ bk.slots[0] = bk.keys[0]; continue; }
+    // pick a so the n keys land collision-free in m² sub-slots
+    let done = false, t = 0;
+    while (!done && t++ < 400){
+      const a = randomInt(1, FKS_P - 1);
+      const s = new Array(bk.m2).fill(null);
+      let ok = true;
+      for (const k of bk.keys){ const j = subHash(k, a, bk.m2); if (s[j] != null){ ok = false; break; } s[j] = k; }
+      if (ok){ bk.a = a; bk.slots = s; done = true; }
+    }
+  }
+  fks = {buckets};
+}
+
+/* rebuild the active structure from `order` */
+function rebuildStructure(){
+  if (mode === 'chaining'){
+    table = Array.from({length:M}, () => []);
+    for (const k of order) table[hash(k)].push(k);
+  } else if (mode === 'linear' || mode === 'double'){
+    slots = new Array(M).fill(null);
+    for (const k of order){
+      for (let i=0;i<M;i++){ const idx = probeIdx(k,i); if (slots[idx] == null){ slots[idx] = k; break; } }
+    }
+  } else {
+    buildFKS();
+  }
+}
 
 async function pulseBucket(i, color=0x35d0ff){
   const m = bucketMeshes[i].body.material;
@@ -688,45 +830,103 @@ async function pulseNode(k, color=0xffb454){
   mat.emissive.copy(eOld); mat.emissiveIntensity = iOld;
 }
 
-async function probe(k, action){
+/* mode-aware find — returns true if k is present (with animated probe) */
+async function findKey(k){
+  if (mode === 'chaining'){
+    const b = hash(k);
+    cx.set(`find ${k} · h₁ → bucket ${b}`, 'avg O(1)');
+    await pulseBucket(b, 0x35d0ff);
+    await stepperCheckpoint();
+    const chain = table[b];
+    for (let i=0;i<chain.length;i++){
+      cx.set(`walk chain @ [${i}] · key ${chain[i]}`, 'O(chain)');
+      await pulseNode(chain[i], 0xffb454);
+      await stepperCheckpoint();
+      if (chain[i] === k){ await pulseNode(k, 0x5cffb4); await stepperCheckpoint(); return true; }
+    }
+    cx.set(`miss ${k}`, 'O(chain)');
+    return false;
+  }
+  if (mode === 'linear' || mode === 'double'){
+    for (let i=0;i<M;i++){
+      const idx = probeIdx(k, i);
+      cx.set(`probe #${i} · slot ${idx}`, 'open addr');
+      await pulseBucket(idx, 0x35d0ff);
+      await stepperCheckpoint();
+      const v = slots[idx];
+      if (v == null){ cx.set(`empty slot ${idx} · miss`, 'O(1)~'); return false; }
+      if (v === k){ await pulseNode(k, 0x5cffb4); await stepperCheckpoint(); cx.set(`hit · slot ${idx}`, 'O(1)~'); return true; }
+      await pulseNode(v, 0xffb454);
+      await stepperCheckpoint();
+    }
+    cx.set(`table full · miss`, 'O(M)');
+    return false;
+  }
+  // fks
+  if (!fks) return false;
   const b = hash(k);
-  cx.set(`${action} ${k} · hash → bucket ${b}`, 'avg O(1)');
+  cx.set(`find ${k} · L1 h₁ → bucket ${b}`, '2-level');
   await pulseBucket(b, 0x35d0ff);
   await stepperCheckpoint();
-  const chain = table[b];
-  for (let i=0;i<chain.length;i++){
-    cx.set(`walk chain @ [${i}] · key ${chain[i]}`, 'O(chain)');
-    await pulseNode(chain[i], 0xffb454);
-    await stepperCheckpoint();
-    if (chain[i] === k){
-      cx.set(`hit ${k} · bucket ${b}, idx ${i}`, 'O(1)');
-      await pulseNode(chain[i], 0x5cffb4);
-      await stepperCheckpoint();
-      return {bucket:b, idx:i};
-    }
-  }
-  cx.set(`miss ${k} · scanned ${chain.length}`, 'O(chain)');
-  return {bucket:b, idx:-1};
+  const bk = fks.buckets[b];
+  if (bk.m2 === 0){ cx.set(`bucket ${b} empty · miss`, 'O(1)'); return false; }
+  const s = subHash(k, bk.a, bk.m2);
+  cx.set(`L2 sub-hash → slot [${s}] of ${bk.m2}`, 'O(1) worst');
+  if (bk.slots[s] === k){ await pulseNode(k, 0x5cffb4); await stepperCheckpoint(); return true; }
+  cx.set(`slot [${s}] ≠ ${k} · miss`, 'O(1)');
+  return false;
 }
 
 async function insertKey(k){
-  const b = hash(k);
-  await pulseBucket(b, 0x35d0ff);
-  await stepperCheckpoint();
-  const chain = table[b];
-  if (chain.includes(k)){ log.say(`<span class="kx">dup</span> ${k}`); return false; }
-  chain.push(k); size++;
-  if (!nodeMeshes.has(k)) nodeMeshes.set(k, makeNodeMesh(k));
+  if (order.includes(k)){ log.say(`<span class="kx">dup</span> ${k}`); return false; }
+  if (mode === 'chaining'){
+    const b = hash(k);
+    cx.set(`insert ${k} · h₁ → bucket ${b}`, 'avg O(1)');
+    await pulseBucket(b, 0x35d0ff);
+    await stepperCheckpoint();
+    table[b].push(k); order.push(k); size++;
+    if (!nodeMeshes.has(k)) nodeMeshes.set(k, makeNodeMesh(k));
+    await relayout(true);
+    await pulseNode(k, 0x5cffb4);
+    await stepperCheckpoint();
+    return true;
+  }
+  if (mode === 'linear' || mode === 'double'){
+    for (let i=0;i<M;i++){
+      const idx = probeIdx(k, i);
+      cx.set(`probe #${i} · slot ${idx}`, 'open addr');
+      await pulseBucket(idx, 0x35d0ff);
+      await stepperCheckpoint();
+      if (slots[idx] == null){
+        slots[idx] = k; order.push(k); size++;
+        if (!nodeMeshes.has(k)) nodeMeshes.set(k, makeNodeMesh(k));
+        cx.set(`placed ${k} @ slot ${idx} · ${i} collision(s)`, 'O(1)~');
+        await relayout(true);
+        await pulseNode(k, 0x5cffb4);
+        await stepperCheckpoint();
+        return true;
+      }
+      await pulseNode(slots[idx], 0xffb454);
+      await stepperCheckpoint();
+    }
+    log.say(`<span class="kx">full</span> ${k} · table is full`);
+    return false;
+  }
+  // fks — static: append + full rebuild
+  order.push(k); size++;
+  cx.set(`insert ${k} · rebuild FKS (2-level)`, 'O(n) expected');
+  buildFKS();
   await relayout(true);
-  await pulseNode(k, 0x5cffb4);
-  await stepperCheckpoint();
+  if (nodeMeshes.has(k)){ await pulseNode(k, 0x5cffb4); await stepperCheckpoint(); }
   return true;
 }
 
 async function deleteKey(k){
-  const p = await probe(k, 'delete');
-  if (p.idx < 0) return false;
-  table[p.bucket].splice(p.idx, 1); size--;
+  if (!order.includes(k)) return false;
+  // visualize the lookup first
+  await findKey(k);
+  order = order.filter(x => x !== k); size--;
+  rebuildStructure();
   const m = nodeMeshes.get(k);
   if (m){
     await tweenVec(m.grp.scale, new THREE.Vector3(0.001,0.001,0.001), 280);
@@ -738,11 +938,9 @@ async function deleteKey(k){
 
 async function rehash(newM){
   cx.set('rehash · 2×', 'O(n)');
-  const oldVals = table.flat();
   M = newM;
-  table = Array.from({length:M}, () => []);
   rebuildBuckets();
-  for (const k of oldVals){ table[hash(k)].push(k); }
+  rebuildStructure();
   await relayout(false);
   log.say(`<span class="km">rehash</span> m → ${M}`);
 }
@@ -756,53 +954,62 @@ function readVals(){
   return list;
 }
 
+function snapshot(){ return {mode, M, order: order.slice()}; }
+async function restore(s){
+  mode = s.mode; M = s.M; order = s.order.slice(); size = order.length;
+  $$('[id^="op-m-"]').forEach(b => b.classList.toggle('active', b.id === 'op-m-'+mode));
+  for (const [k,m] of nodeMeshes) scene.remove(m.grp);
+  nodeMeshes.clear();
+  rebuildBuckets();
+  rebuildStructure();
+  await relayout(false);
+}
+
 const opHandlers = {
   insert: lock(async () => {
     const vals = readVals();
-    history.push({type:'snapshot', M, table: table.map(c=>c.slice())});
+    history.push({type:'snapshot', snap: snapshot()});
     for (const v of vals){
       const ok = await insertKey(v);
-      log.say(ok ? `<span class="k">insert</span> ${v} · h=${hash(v)}` : `<span class="kx">dup</span> ${v}`);
-      if (size/M >= 0.75){
+      if (ok) log.say(`<span class="k">insert</span> ${v} · bucket ${hash(v)}`);
+      // chaining + open addressing auto-grow; FKS rebuilds itself
+      if (mode !== 'fks' && size/M >= 0.75){
         log.say(`<span class="km">load α=${(size/M).toFixed(2)} ≥ 0.75</span> · auto-rehash`);
         await rehash(M*2);
       }
     }
-    cx.set('insert', 'avg O(1)');
   }),
   find: lock(async () => {
     const vals = readVals();
     for (const v of vals){
-      const p = await probe(v, 'find');
-      log.say(p.idx >= 0 ? `<span class="k">find</span>(${v}) → bucket ${p.bucket}, idx ${p.idx}` : `<span class="kx">find</span>(${v}) → miss (bucket ${p.bucket})`);
+      const hit = await findKey(v);
+      log.say(hit ? `<span class="k">find</span>(${v}) → hit` : `<span class="kx">find</span>(${v}) → miss`);
     }
   }),
   delete: lock(async () => {
     const vals = readVals();
-    history.push({type:'snapshot', M, table: table.map(c=>c.slice())});
+    history.push({type:'snapshot', snap: snapshot()});
     for (const v of vals){
       const ok = await deleteKey(v);
       log.say(ok ? `<span class="ko">delete</span> ${v}` : `<span class="kx">delete</span> ${v} · miss`);
     }
-    cx.set('delete', 'avg O(1)');
   }),
   rehash: lock(async () => {
-    history.push({type:'snapshot', M, table: table.map(c=>c.slice())});
+    history.push({type:'snapshot', snap: snapshot()});
     await rehash(M*2);
   }),
   undo: lock(async () => {
     const op = history.pop(); if (!op){ log.say(`<span class="kx">undo</span> empty`); return; }
-    M = op.M; table = op.table.map(c=>c.slice()); size = table.reduce((a,c)=>a+c.length, 0);
-    rebuildBuckets();
-    await relayout(false);
+    if (op.snap) await restore(op.snap);
     cx.set('undo', '—');
     log.say(`<span class="ko">undo</span>`);
   }),
   clear: lock(async () => {
-    history.push({type:'snapshot', M, table: table.map(c=>c.slice())});
-    table = Array.from({length:M}, () => []); size = 0;
+    history.push({type:'snapshot', snap: snapshot()});
+    order = []; size = 0;
     for (const [k,m] of nodeMeshes){ scene.remove(m.grp); }
     nodeMeshes.clear();
+    rebuildStructure();
     await relayout(false);
     log.say(`<span class="ko">clear</span>`);
   }),
@@ -810,34 +1017,53 @@ const opHandlers = {
 for (const k in opHandlers) $('#op-'+k).addEventListener('click', opHandlers[k]);
 $('#b-rand').addEventListener('click', () => $('#in-val').value = randomInt(1,99));
 
+/* ─── collision-mode toggle ─── */
+async function setMode(next){
+  if (next === mode) return;
+  history.push({type:'snapshot', snap: snapshot()});
+  mode = next;
+  $$('[id^="op-m-"]').forEach(b => b.classList.toggle('active', b.id === 'op-m-'+mode));
+  log.say(`<span class="km">mode</span> → ${mode}`);
+  // re-place every key under the new collision strategy
+  for (const [k,m] of nodeMeshes) scene.remove(m.grp);
+  nodeMeshes.clear();
+  rebuildStructure();
+  await relayout(true);
+  cx.set(`${mode} · ${size} keys`, '—');
+}
+$('#op-m-chaining').addEventListener('click', () => setMode('chaining'));
+$('#op-m-linear')  .addEventListener('click', () => setMode('linear'));
+$('#op-m-double')  .addEventListener('click', () => setMode('double'));
+$('#op-m-fks')     .addEventListener('click', () => setMode('fks'));
+
 /* ─── preset toolbar ─── */
-async function loadHash(newM, keys){
-  // wipe nodes
+async function loadHash(newM, keys, modeNext){
   for (const [k, m] of nodeMeshes) scene.remove(m.grp);
   nodeMeshes.clear();
+  if (modeNext){ mode = modeNext; $$('[id^="op-m-"]').forEach(b => b.classList.toggle('active', b.id === 'op-m-'+mode)); }
   M = newM;
-  table = Array.from({length:M}, () => []);
-  size = 0;
+  order = keys.slice(); size = order.length;
   rebuildBuckets();
-  for (const k of keys){ table[hash(k)].push(k); size++; }
+  rebuildStructure();
   await relayout(false);
   history.clear();
 }
 mountPresets({mount: $('#presets-mount'), label: 'defaults', presets:[
-  {name:'empty',      desc:'m=8 · no keys',                                      apply: () => loadHash(8, [])},
-  {name:'light',      desc:'m=8 · 3 keys · spread, α=0.38',                      apply: () => loadHash(8, [7,15,23])},
-  {name:'collide',    desc:'m=8 · all hash to bucket 0 — worst-case probe',      apply: () => loadHash(8, [8,16,24,32,40])},
-  {name:'pre-resize', desc:'m=8 · 7 keys · α=0.88 — next insert auto-rehashes',  apply: () => loadHash(8, [3,7,11,15,19,23,27])},
-  {name:'after rehash', desc:'m=16 · same 7 keys spread out',                    apply: () => loadHash(16, [3,7,11,15,19,23,27])},
+  {name:'empty',     desc:'m=8 · no keys',                                       apply: () => loadHash(8, [], 'chaining')},
+  {name:'chaining',  desc:'m=8 · 6 keys · separate chaining',                    apply: () => loadHash(8, [7,15,23,4,12,31], 'chaining')},
+  {name:'linear',    desc:'m=11 · 7 keys · linear probing clusters',             apply: () => loadHash(11, [10,21,32,5,16,27,38], 'linear')},
+  {name:'double',    desc:'m=11 · 7 keys · double hashing spreads probes',       apply: () => loadHash(11, [10,21,32,5,16,27,38], 'double')},
+  {name:'FKS',       desc:'m=8 · 9 keys · 2-level perfect hashing',              apply: () => loadHash(8, [3,7,11,15,19,23,27,31,35], 'fks')},
 ]});
 
 /* seed */
 (async () => {
   rebuildBuckets();
-  for (const v of [7, 15, 23, 4, 12, 31]){ table[hash(v)].push(v); size++; }
+  order = [7, 15, 23, 4, 12, 31]; size = order.length;
+  rebuildStructure();
   await relayout(false);
   history.clear(); refreshHUD();
-  log.say(`<span class="k">init</span> m=${M} n=${size}`);
+  log.say(`<span class="k">init</span> ${mode} · m=${M} n=${size}`);
   cx.set('idle', '—');
 })();
 </script>
