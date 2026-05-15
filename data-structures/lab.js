@@ -100,13 +100,25 @@ export function createScene({mount, camera = {pos:[0,4,18], lookAt:[0,0,0]}}){
   controls.enableDamping  = true;
   controls.dampingFactor  = 0.08;
   controls.target.set(...camera.lookAt);
-  controls.minDistance    = 4;
-  controls.maxDistance    = 90;
-  controls.maxPolarAngle  = Math.PI * 0.92;  // don't let user look from underneath the grid
-  controls.zoomSpeed      = 0.9;
+  controls.minDistance    = 3;
+  controls.maxDistance    = 220;            // zoom far enough out for tall layouts
+  controls.maxPolarAngle  = Math.PI;        // no vertical look clamp
+  controls.zoomSpeed      = 1.0;
   controls.rotateSpeed    = 0.75;
-  controls.panSpeed       = 0.75;
-  controls.screenSpacePanning = true;
+  controls.panSpeed       = 1.1;
+  controls.enablePan      = true;
+  controls.screenSpacePanning = true;       // pan straight up/down in screen space
+  // right-drag OR left-drag pans; middle drag dollies; left-drag still orbits
+  controls.mouseButtons = {
+    LEFT:   THREE.MOUSE.ROTATE,
+    MIDDLE: THREE.MOUSE.DOLLY,
+    RIGHT:  THREE.MOUSE.PAN,
+  };
+  // arrow / WASD keys pan the view (ArrowLeft/Right are also player step keys,
+  // but those only fire when a lab is mid-operation; panning otherwise is fine)
+  controls.keys = { LEFT:'KeyA', UP:'KeyW', RIGHT:'KeyD', BOTTOM:'KeyS' };
+  controls.keyPanSpeed = 16;
+  controls.listenToKeyEvents(window);
   controls.update();
 
   // render loop

@@ -20,7 +20,7 @@
       <div class="stage" id="stage">
         <div class="stage-corner tl"></div><div class="stage-corner tr"></div>
         <div class="stage-corner bl"></div><div class="stage-corner br"></div>
-        <div class="stage-hint"><span><b>drag</b> orbit</span><span><b>scroll</b> zoom</span><span><b>right-drag</b> pan</span></div>
+        <div class="stage-hint"><span><b>drag</b> orbit</span><span><b>scroll</b> zoom</span><span><b>right-drag / WASD</b> pan</span></div>
 
         <div id="player-mount" class="player-overlay"></div>
         <div class="stage-overlay">
@@ -47,13 +47,16 @@
           <button class="op active" data-color="magenta" id="op-m-chaining"><span class="name"><span class="dot"></span> list</span><span class="cx">linked</span></button>
           <button class="op"        data-color="magenta" id="op-m-tree"><span class="name"><span class="dot"></span> tree</span><span class="cx">BST</span></button>
         </div>
-        <div class="op-grid" style="margin-top:8px">
-          <button class="op full" data-color="lime" id="op-m-fks"><span class="name"><span class="dot"></span> FKS</span><span class="cx">perfect · 2-level · O(1) worst</span></button>
+        <div class="op-grid" style="grid-template-columns:1fr 1fr;margin-top:8px">
+          <button class="op" data-color="lime" id="op-m-fks"><span class="name"><span class="dot"></span> FKS</span><span class="cx">perfect</span></button>
         </div>
         <div class="label mt-8">Open address</div>
         <div class="op-grid" style="grid-template-columns:1fr 1fr">
           <button class="op" data-color="cyan"   id="op-m-linear"><span class="name"><span class="dot"></span> linear</span><span class="cx">h₁+i</span></button>
           <button class="op" data-color="violet" id="op-m-double"><span class="name"><span class="dot"></span> double</span><span class="cx">h₁+i·h₂</span></button>
+        </div>
+        <div class="op-grid" style="grid-template-columns:1fr 1fr;margin-top:8px">
+          <button class="op" data-color="amber" id="op-m-cuckoo"><span class="name"><span class="dot"></span> cuckoo</span><span class="cx">2 slots</span></button>
         </div>
         <div class="cx-panel" id="mode-explain" style="margin-top:8px;font-family:var(--mono);font-size:11px;line-height:1.6;color:var(--ink-dim)"></div>
 
@@ -191,13 +194,25 @@ function createScene({mount, camera = {pos:[0,4,18], lookAt:[0,0,0]}}){
   controls.enableDamping  = true;
   controls.dampingFactor  = 0.08;
   controls.target.set(...camera.lookAt);
-  controls.minDistance    = 4;
-  controls.maxDistance    = 90;
-  controls.maxPolarAngle  = Math.PI * 0.92;  // don't let user look from underneath the grid
-  controls.zoomSpeed      = 0.9;
+  controls.minDistance    = 3;
+  controls.maxDistance    = 220;            // zoom far enough out for tall layouts
+  controls.maxPolarAngle  = Math.PI;        // no vertical look clamp
+  controls.zoomSpeed      = 1.0;
   controls.rotateSpeed    = 0.75;
-  controls.panSpeed       = 0.75;
-  controls.screenSpacePanning = true;
+  controls.panSpeed       = 1.1;
+  controls.enablePan      = true;
+  controls.screenSpacePanning = true;       // pan straight up/down in screen space
+  // right-drag OR left-drag pans; middle drag dollies; left-drag still orbits
+  controls.mouseButtons = {
+    LEFT:   THREE.MOUSE.ROTATE,
+    MIDDLE: THREE.MOUSE.DOLLY,
+    RIGHT:  THREE.MOUSE.PAN,
+  };
+  // arrow / WASD keys pan the view (ArrowLeft/Right are also player step keys,
+  // but those only fire when a lab is mid-operation; panning otherwise is fine)
+  controls.keys = { LEFT:'KeyA', UP:'KeyW', RIGHT:'KeyD', BOTTOM:'KeyS' };
+  controls.keyPanSpeed = 16;
+  controls.listenToKeyEvents(window);
   controls.update();
 
   // render loop
@@ -759,7 +774,7 @@ async function relayout(animate=true){
         draw(n.left, n); draw(n.right, n);
       })(root, null);
     }
-  } else if (mode === 'linear' || mode === 'double'){
+  } else if (mode === 'linear' || mode === 'double' || mode === 'cuckoo'){
     for (let i=0;i<M;i++){
       const v = slots[i];
       if (v == null) continue;
@@ -810,6 +825,11 @@ const MODE_EXPLAIN = {
     `<b style="color:var(--violet)">Double hashing</b> (open addressing). On a collision the step size ` +
     `comes from a <i>second</i> hash: slot = (h₁ + i·h₂) mod m with h₂ = 1 + k mod (m−1). ` +
     `Different keys get different probe sequences, so clustering is largely avoided. Requires α &lt; 1.`,
+  cuckoo:
+    `<b style="color:var(--amber)">Cuckoo hashing</b> (open addressing). Every key has exactly TWO ` +
+    `candidate slots, h₁ and h₂. Insert goes to h₁; if it's taken, the occupant is <i>kicked out</i> ` +
+    `and bounced to its OTHER slot, which may kick someone else — a displacement chain. A cycle triggers ` +
+    `a grow + rehash. The payoff: <b>find/delete are O(1) worst-case</b> — only the two slots are ever checked.`,
   fks:
     `<b style="color:var(--lime)">FKS perfect hashing</b> — a chaining variant where a bucket's ` +
     `collision list is replaced by a <b>collision-free secondary table</b>. h₁ sends a key to one of ` +
@@ -833,11 +853,12 @@ function refreshHUD(){
     tree:     'chaining (BST/bucket) · O(log nⱼ) per bucket',
     linear:   'open addressing · linear probing · α < 1',
     double:   'open addressing · double hashing · h₁+i·h₂',
+    cuckoo:   'cuckoo · 2 slots/key · displacement · O(1) lookup',
     fks:      'FKS perfect hashing · 2-level · O(1) worst-case lookup',
   };
   $('#t-mode').textContent = desc[mode];
-  const ins = {chaining:'avg O(1)', tree:'O(log nⱼ)', linear:'avg O(1)', double:'avg O(1)', fks:'O(n) rebuild'};
-  const fnd = {chaining:'avg O(1)', tree:'O(log nⱼ)', linear:'avg O(1)', double:'avg O(1)', fks:'O(1) worst'};
+  const ins = {chaining:'avg O(1)', tree:'O(log nⱼ)', linear:'avg O(1)', double:'avg O(1)', cuckoo:'O(1) amort', fks:'O(n) rebuild'};
+  const fnd = {chaining:'avg O(1)', tree:'O(log nⱼ)', linear:'avg O(1)', double:'avg O(1)', cuckoo:'O(1) worst', fks:'O(1) worst'};
   $('#cx-ins').textContent = ins[mode];
   $('#cx-fnd').textContent = fnd[mode];
   $('#undo-depth').textContent = history.size();
@@ -850,9 +871,17 @@ function probeIdx(k, i){
   if (mode === 'double') return (((hash(k) + i*h2(k)) % M) + M) % M;
   return (hash(k) + i) % M;                                // linear
 }
+// cuckoo: every key has exactly two candidate slots, h₁ and a distinct h₂'
+function cuckH2(k){ return ((Math.floor(Number(k)/M) * 7 + 13) % M + M) % M; }
+function cuckooSlots(k){
+  const p1 = hash(k); let p2 = cuckH2(k);
+  if (p2 === p1) p2 = (p1 + 1) % M;     // guarantee two distinct slots
+  return [p1, p2];
+}
 function hfnLabel(){
   if (mode === 'double') return 'h₁+i·h₂';
   if (mode === 'linear') return 'h₁+i';
+  if (mode === 'cuckoo') return 'h₁ | h₂';
   if (mode === 'fks')    return '2-level';
   return 'k mod m';
 }
@@ -898,6 +927,23 @@ function rebuildStructure(){
     slots = new Array(M).fill(null);
     for (const k of order){
       for (let i=0;i<M;i++){ const idx = probeIdx(k,i); if (slots[idx] == null){ slots[idx] = k; break; } }
+    }
+  } else if (mode === 'cuckoo'){
+    // re-insert all keys; on a displacement cycle, grow M and retry
+    for (let attempt=0; attempt<20; attempt++){
+      slots = new Array(M).fill(null);
+      let ok = true;
+      for (const k of order){
+        let cur = k, pos = hash(cur), guard = 0;
+        while (guard++ < 4*M + 8){
+          if (slots[pos] == null){ slots[pos] = cur; break; }
+          const victim = slots[pos]; slots[pos] = cur; cur = victim;
+          const [a,b] = cuckooSlots(cur); pos = (pos === a) ? b : a;
+        }
+        if (guard >= 4*M + 8){ ok = false; break; }
+      }
+      if (ok) return;
+      M = M*2; rebuildBuckets();   // cycle → grow the table
     }
   } else {
     buildFKS();
@@ -951,6 +997,18 @@ async function findKey(k){
       n = k < n.value ? n.left : n.right;
     }
     cx.set(`miss ${k} · fell off the BST`, 'O(log nⱼ)');
+    return false;
+  }
+  if (mode === 'cuckoo'){
+    const [p1, p2] = cuckooSlots(k);
+    for (const [lbl, idx] of [['h₁', p1], ['h₂', p2]]){
+      cx.set(`check ${lbl} → slot ${idx}`, 'O(1) worst');
+      await pulseBucket(idx, 0x35d0ff);
+      await stepperCheckpoint();
+      if (slots[idx] === k){ await pulseNode(k, 0x5cffb4); await stepperCheckpoint(); cx.set(`hit · slot ${idx}`, 'O(1)'); return true; }
+      if (slots[idx] != null){ await pulseNode(slots[idx], 0xffb454); await stepperCheckpoint(); }
+    }
+    cx.set(`miss ${k} · neither slot holds it`, 'O(1)');
     return false;
   }
   if (mode === 'linear' || mode === 'double'){
@@ -1007,6 +1065,41 @@ async function insertKey(k){
     await relayout(true);
     await pulseNode(k, 0x5cffb4);
     await stepperCheckpoint();
+    return true;
+  }
+  if (mode === 'cuckoo'){
+    if (!nodeMeshes.has(k)) nodeMeshes.set(k, makeNodeMesh(k));
+    let cur = k, pos = hash(cur), guard = 0;
+    const MAXK = 4*M + 8;
+    while (guard++ < MAXK){
+      cx.set(`place ${cur} → slot ${pos}`, 'O(1) amortized');
+      await pulseBucket(pos, 0x35d0ff);
+      await stepperCheckpoint();
+      if (slots[pos] == null){
+        slots[pos] = cur;
+        if (cur === k){ order.push(k); size++; }
+        await relayout(true);
+        await pulseNode(cur, 0x5cffb4);
+        await stepperCheckpoint();
+        return true;
+      }
+      // evict the occupant and bounce it to its OTHER slot
+      const victim = slots[pos];
+      cx.set(`slot ${pos} taken by ${victim} · kick it out`, 'cuckoo kick');
+      await pulseNode(victim, 0xff5cab);
+      await stepperCheckpoint();
+      slots[pos] = cur;
+      if (cur === k && !order.includes(k)){ order.push(k); size++; }
+      cur = victim;
+      const [a,b] = cuckooSlots(cur);
+      pos = (pos === a) ? b : a;
+      await relayout(true);
+    }
+    // displacement cycle — grow the table and rebuild
+    log.say(`<span class="km">cycle</span> · grow m → ${M*2} and rehash`);
+    if (!order.includes(k)){ order.push(k); size++; }
+    M = M*2; rebuildBuckets(); rebuildStructure();
+    await relayout(true);
     return true;
   }
   if (mode === 'linear' || mode === 'double'){
@@ -1153,6 +1246,7 @@ $('#op-m-chaining').addEventListener('click', () => setMode('chaining'));
 $('#op-m-tree')    .addEventListener('click', () => setMode('tree'));
 $('#op-m-linear')  .addEventListener('click', () => setMode('linear'));
 $('#op-m-double')  .addEventListener('click', () => setMode('double'));
+$('#op-m-cuckoo')  .addEventListener('click', () => setMode('cuckoo'));
 $('#op-m-fks')     .addEventListener('click', () => setMode('fks'));
 
 /* ─── preset toolbar ─── */
@@ -1173,6 +1267,7 @@ mountPresets({mount: $('#presets-mount'), label: 'defaults', presets:[
   {name:'tree',      desc:'m=4 · 9 keys · heavy buckets become BSTs',            apply: () => loadHash(4, [4,8,12,16,20,24,28,2,6], 'tree')},
   {name:'linear',    desc:'m=11 · 7 keys · linear probing clusters',             apply: () => loadHash(11, [10,21,32,5,16,27,38], 'linear')},
   {name:'double',    desc:'m=11 · 7 keys · double hashing spreads probes',       apply: () => loadHash(11, [10,21,32,5,16,27,38], 'double')},
+  {name:'cuckoo',    desc:'m=11 · 7 keys · 2 slots/key · displacement',          apply: () => loadHash(11, [10,21,32,5,16,27,38], 'cuckoo')},
   {name:'FKS',       desc:'m=8 · 9 keys · 2-level perfect hashing',              apply: () => loadHash(8, [3,7,11,15,19,23,27,31,35], 'fks')},
 ]});
 
