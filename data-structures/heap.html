@@ -667,22 +667,83 @@ function makeArrayCell(value, idx){
   return {grp, body, label:{paint, tex}};
 }
 
-/* "array" caption sprites — one for std mode, one each for lo/hi in median mode */
-function makeRowCaption(text){
-  const c = document.createElement('canvas'); c.width=384; c.height=128;
+/* "array" / heap-type captions and median highlighter */
+function makeCaption(text, {color = '#cbd2ff', fontSize = 56, w = 384, h = 128} = {}){
+  const c = document.createElement('canvas'); c.width=w; c.height=h;
   const ctx = c.getContext('2d');
-  ctx.fillStyle = '#cbd2ff'; ctx.font = '700 56px Unbounded, sans-serif';
+  ctx.fillStyle = color; ctx.font = `700 ${fontSize}px Unbounded, sans-serif`;
   ctx.textAlign='center'; ctx.textBaseline='middle';
   ctx.shadowColor='rgba(0,0,0,0.85)'; ctx.shadowBlur=12;
-  ctx.fillText(text, 192, 64);
+  ctx.fillText(text, w/2, h/2);
   const tex = new THREE.CanvasTexture(c); tex.minFilter=THREE.LinearFilter;
   const spr = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true, depthTest:false}));
-  spr.renderOrder = 11; spr.scale.set(2.0, 0.7, 1); spr.visible = false;
+  spr.renderOrder = 11; spr.scale.set(w/192, h/192, 1); spr.visible = false;
   scene.add(spr); return spr;
 }
-const capStd = makeRowCaption('array');
-const capLo  = makeRowCaption('lo · max');
-const capHi  = makeRowCaption('hi · min');
+const capStd = makeCaption('array', {fontSize:56});
+// big "MAX-HEAP" / "MIN-HEAP" badges that sit UNDER each pyramid in median mode
+const capLo = makeCaption('MAX-HEAP', {color:'#ff5cab', fontSize:72, w:512, h:160});
+const capHi = makeCaption('MIN-HEAP', {color:'#35d0ff', fontSize:72, w:512, h:160});
+capLo.scale.set(3.0, 0.9, 1);
+capHi.scale.set(3.0, 0.9, 1);
+
+/* median highlight — torus ring(s) around the median-bearing node(s) + "median = X" sprite */
+function makeMedianRing(){
+  const m = new THREE.Mesh(
+    new THREE.TorusGeometry(0.95, 0.08, 18, 56),
+    new THREE.MeshBasicMaterial({color:0x5cffb4, transparent:true, opacity:0.95, depthTest:false})
+  );
+  m.renderOrder = 12; m.visible = false; scene.add(m);
+  return m;
+}
+const medianRingLo = makeMedianRing();
+const medianRingHi = makeMedianRing();
+const medianLabel = (() => {
+  const c = document.createElement('canvas'); c.width=512; c.height=192;
+  const ctx = c.getContext('2d');
+  function paint(text){
+    ctx.clearRect(0,0,512,192);
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.shadowColor='rgba(0,0,0,0.9)'; ctx.shadowBlur=14;
+    ctx.fillStyle='#5cffb4';
+    ctx.font='800 88px IBM Plex Mono, monospace';
+    ctx.fillText(text, 256, 96);
+  }
+  paint('median');
+  const tex = new THREE.CanvasTexture(c); tex.minFilter=THREE.LinearFilter;
+  const spr = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true, depthTest:false}));
+  spr.renderOrder = 13; spr.scale.set(3.0, 1.1, 1); spr.visible = false;
+  scene.add(spr);
+  return {spr, paint, tex};
+})();
+function refreshMedianHighlight(){
+  if (mode !== 'median'){
+    medianRingLo.visible = medianRingHi.visible = medianLabel.spr.visible = false;
+    return;
+  }
+  const med = medianValue();
+  if (med === null){
+    medianRingLo.visible = medianRingHi.visible = medianLabel.spr.visible = false;
+    return;
+  }
+  medianLabel.paint(`median = ${med}`);
+  medianLabel.tex.needsUpdate = true;
+  if (lo.arr.length && hi.arr.length && lo.arr.length === hi.arr.length){
+    // average — ring both tops, label between them
+    const a = heapPos(0, 'lo'), b = heapPos(0, 'hi');
+    medianRingLo.visible = true; medianRingLo.position.set(a.x, a.y, 0);
+    medianRingHi.visible = true; medianRingHi.position.set(b.x, b.y, 0);
+    medianLabel.spr.visible = true;
+    medianLabel.spr.position.set(0, Math.max(a.y, b.y) + 1.9, 0);
+  } else {
+    // |lo| > |hi| → median is lo.arr[0]
+    const a = heapPos(0, 'lo');
+    medianRingLo.visible = true; medianRingLo.position.set(a.x, a.y, 0);
+    medianRingHi.visible = false;
+    medianLabel.spr.visible = true;
+    medianLabel.spr.position.set(a.x, a.y + 1.9, 0);
+  }
+}
 
 async function relayout(animate=true){
   // ensure meshes/edges exist
@@ -718,6 +779,7 @@ async function relayout(animate=true){
   capLo.visible = capHi.visible = false;
 
   await Promise.all(tasks);
+  refreshMedianHighlight();
   refreshHUD();
 }
 
@@ -870,17 +932,15 @@ async function relayoutHeap(h, animate=true){
     tasks.push(tweenVec(h.arrayCells[i].grp.scale,    new THREE.Vector3(1,1,1),         animate?320:0));
     h.arrayCells[i].label.paint(h.arr[i], i); h.arrayCells[i].label.tex.needsUpdate=true;
   }
-  // captions for median mode
+  // big MAX-HEAP / MIN-HEAP badges under each pyramid (above the array row)
   if (mode === 'median'){
     capStd.visible = false;
     const cap = h.side === 'lo' ? capLo : capHi;
     cap.visible = h.arr.length > 0;
-    if (h.arr.length){
-      const first = halfArrayPos(0, h);
-      cap.position.set(first.x - 1.7, ARR_Y, 0);
-    }
+    cap.position.set(h.side === 'lo' ? -HALF_OFFSET : HALF_OFFSET, -4.0, 0);
   }
   await Promise.all(tasks);
+  refreshMedianHighlight();
 }
 async function heapSwap(h, i, j){
   if (i === j) return;
