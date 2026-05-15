@@ -678,12 +678,15 @@ function computeListLayout(){
   // one row per set; rep first, then the rest in insertion order
   const order = [...members.entries()].sort((a,b)=> b[1].length - a[1].length);
   const n = order.length;
+  // every list is LEFT-aligned: each rep sits at the same x. The shared start
+  // is chosen so the longest list is centered in the frame.
+  const maxLen = n ? order[0][1].length : 1;        // sorted desc → first is longest
+  const startX = -((maxLen - 1) / 2) * LIST_DX;
   const positions = new Map();
   order.forEach(([r, ms], gi) => {
     const y = (n-1)/2 * LIST_GAP_Y - gi * LIST_GAP_Y;
     ms.forEach((k, i) => {
-      const x = (i - (ms.length-1)/2) * LIST_DX;
-      positions.set(k, {x, y});
+      positions.set(k, {x: startX + i * LIST_DX, y});
     });
   });
   return positions;
