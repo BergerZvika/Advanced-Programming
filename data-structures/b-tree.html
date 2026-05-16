@@ -772,8 +772,22 @@ function deleteKey(k){
 
 /* ─── step timeline · one self-contained tree snapshot per step,
        navigable forward AND backward from the player bar ─── */
-function inflateBT(s){ if(!s) return null; const n=newNode(s.leaf); n.keys=s.keys.slice(); n.hot=s.hot||0; n.children=(s.children||[]).map(inflateBT); return n; }
 function purgeMeshes(n){ if(!n) return; if(n.mesh) scene.remove(n.mesh.grp); if(n.edgeUp) scene.remove(n.edgeUp); for(const c of (n.children||[])) purgeMeshes(c); }
+function buildLive(s){ const n=newNode(s.leaf); n.keys=s.keys.slice(); n.hot=s.hot||0; n.children=(s.children||[]).map(buildLive); return n; }
+// morph the LIVE tree in place to match a frame snapshot: reused nodes keep
+// their mesh (relayout tweens them), only added subtrees pop in / removed ones leave
+function reconcileBT(live, t){
+  live.keys = t.keys.slice();
+  live.leaf = t.leaf;
+  live.hot  = t.hot || 0;
+  const tc = t.children || [], lc = live.children;
+  for (let i=0;i<tc.length;i++){
+    if (i < lc.length) reconcileBT(lc[i], tc[i]);
+    else               lc[i] = buildLive(tc[i]);
+  }
+  for (let i=tc.length;i<lc.length;i++) purgeMeshes(lc[i]);
+  lc.length = tc.length;
+}
 
 // Build the list of step frames for an op on a private plain-object copy of
 // the tree (no meshes). Mirrors insertKey/deleteKey exactly, so the last
@@ -899,7 +913,7 @@ async function playTimeline(frames){
   let i = 0;
   while (true){
     const f = frames[i];
-    purgeMeshes(root); root = inflateBT(f.tree);
+    reconcileBT(root, f.tree);     // morph the existing tree, keep meshes
     cx.set(`step ${i+1}/${frames.length} · ${f.label}`, f.tag);
     await relayout(true);
     (function hot(n){ if(!n) return; if(n.hot) pulse(n, STEP_COL[f.tag]||0xffb454, 360); n.children.forEach(hot); })(root);
