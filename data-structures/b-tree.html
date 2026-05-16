@@ -878,7 +878,12 @@ async function relayout(animate=true){
   const viewH = 2 * camZ * Math.tan(FOV/2);
   const aspect = stage.clientWidth / Math.max(1, stage.clientHeight);
   const viewW = viewH * aspect;
-  const targetW = viewW * 0.42, targetH = viewH * 0.38;
+  // keep the WHOLE tree above the floor grid: the deepest level (after the
+  // re-anchor at TOP_Y) sits at TOP_Y − targetH, so cap targetH to leave the
+  // node body clear of GROUND_Y.
+  const TOP_Y = 3.0, GROUND_Y = -3.49, NODE_CLEAR = 0.9;
+  const targetW = viewW * 0.42;
+  const targetH = Math.min(viewH * 0.38, TOP_Y - GROUND_Y - NODE_CLEAR);
   let maxX = 0.001, minY = 3.0;
   for (const p of positions.values()){
     maxX = Math.max(maxX, Math.abs(p.x));
