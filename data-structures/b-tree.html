@@ -41,9 +41,9 @@
         <h2>Controls</h2>
         <div class="section-rule"></div>
 
-        <div class="label">Order m · max children/node · even · clears the tree on apply</div>
+        <div class="label">Order m · max children/node · 3…16, odd or even · clears the tree on apply</div>
         <div class="input-row">
-          <input id="in-m" type="number" min="4" max="16" step="2" value="6" />
+          <input id="in-m" type="number" min="3" max="16" step="1" value="6" />
           <button class="ghost" id="b-apply-m">APPLY</button>
         </div>
         <div class="cx-panel" id="bt-rules" style="margin-top:8px;font-family:var(--mono);font-size:10.5px;line-height:1.5;color:var(--ink-dim)"></div>
@@ -72,7 +72,7 @@
     </div>
 
     <footer class="statusbar">
-      <span class="pill"><b>lab</b>&nbsp; 03 · b-tree (t=3)</span>
+      <span class="pill"><b>lab</b>&nbsp; 03 · b-tree (m=6)</span>
       <span class="pill"><b>renderer</b>&nbsp; three.js · WebGL</span>
       <span class="pill"><b>history</b>&nbsp; <span id="hist-pill">0</span></span>
     </footer>
@@ -542,11 +542,12 @@ const cx  = createComplexityPanel($('#cx-mount'), [
   {key:'insert / delete / find', val:'O(log n)'},
   {key:'space', val:'O(n)'},
 ]);
-// even-order B-tree: order m = 2t, so m is the max #children and m−1 the max
-// #keys. ⌈m/2⌉ = t for even m, so these formulas match the t-based engine.
+// general order-m B-tree (m = max #children, m−1 = max #keys). Holds for any
+// m ≥ 3, odd or even — splits at the median, ⌈m/2⌉ = min children of a non-root.
 function buildRulesHTML(m, maxK, minChild, minK){
-  return `<b style="color:var(--cyan)">B-tree · order m = ${m}</b> <span style="color:var(--ink-faint)">(min-degree t = ${T})</span><br>`
-    + `<span style="color:var(--ink-faint)">m = max children · m−1 = max keys · even order, median split</span>`
+  const splitL = Math.ceil((m-1)/2), splitR = Math.floor((m-1)/2);
+  return `<b style="color:var(--cyan)">B-tree · order m = ${m}</b> <span style="color:var(--ink-faint)">(${m%2?'odd':'even'} order)</span><br>`
+    + `<span style="color:var(--ink-faint)">m = max children · m−1 = max keys · median split</span>`
     + `<div style="margin-top:6px"><b>Every node</b><br>`
     + `• keys stay sorted; an internal node with k keys has exactly k+1 children<br>`
     + `• keys / node ≤ <b>m−1 = ${maxK}</b> &nbsp; · &nbsp; children / node ≤ <b>m = ${m}</b><br>`
@@ -558,15 +559,18 @@ function buildRulesHTML(m, maxK, minChild, minK){
     + `• leaf root: <b>0 … ${maxK}</b> keys, 0 children<br>`
     + `• internal root: <b>≥ 1</b> key &nbsp;·&nbsp; <b>2 … ${m}</b> children</div>`
     + `<div style="margin-top:6px"><b style="color:var(--magenta)">Overflow → split</b><br>`
-    + `• the ${m}-th key overflows a node (cap is ${maxK})<br>`
-    + `• the <b>median</b> rises into the parent; the node splits into two of <b>${minK}</b> keys<br>`
-    + `• splits cascade up; splitting the root is the only way height grows</div>`;
+    + `• a node may not exceed ${maxK} keys; the ${m}-th makes it overflow<br>`
+    + `• the <b>median</b> rises into the parent; the rest splits into <b>${splitL}</b> + <b>${splitR}</b> keys<br>`
+    + `• splits cascade up; splitting the root is the only way height grows</div>`
+    + `<div style="margin-top:6px"><b style="color:var(--violet)">Underflow → borrow / merge (delete)</b><br>`
+    + `• a non-root with &lt; ${minK} keys borrows from a sibling that has &gt; ${minK}<br>`
+    + `• if no sibling can spare one, it merges with a sibling + the separator key</div>`;
 }
 function refreshRules(){
-  const m = 2 * T;                    // order = max children (even-order B-tree)
-  const maxK = m - 1;                 // 2t−1
-  const minChild = Math.ceil(m / 2);  // = t for even m
-  const minK = minChild - 1;          // t−1
+  const m = M;                        // order = max #children
+  const maxK = m - 1;
+  const minChild = Math.ceil(m / 2);
+  const minK = minChild - 1;
   const rows = $('#cx-mount').querySelectorAll('.cx-row');
   if (rows.length >= 5){
     rows[0].querySelector('.val').textContent = String(m);
@@ -580,95 +584,109 @@ function refreshRules(){
   if (tag) tag.textContent = `keys/node ≤ m−1 = ${maxK} · children ≤ m = ${m} · split on overflow`;
   const rp = $('#bt-rules');
   if (rp) rp.innerHTML = buildRulesHTML(m, maxK, minChild, minK);
+  const pill = document.querySelector('.statusbar .pill b');
+  if (pill && pill.parentElement) pill.parentElement.innerHTML = `<b>lab</b>&nbsp; 03 · b-tree (m=${m})`;
 }
 const history = createHistory();
 
 const stage = $('#stage');
 const {scene} = createScene({mount:stage, camera:{pos:[0, 5.5, 21], lookAt:[0, 1, 0]}});
 
-let T = 3;
-let MAX_K = 2*T - 1;
-let MIN_K = T - 1;
+let M = 6;                          // B-tree order = max #children (3 ≤ M ≤ 16, odd or even)
+let MAX_K = M - 1;                   // max keys per node
+let MIN_K = Math.ceil(M/2) - 1;      // min keys per NON-root node
+function recalcBounds(){ MAX_K = M - 1; MIN_K = Math.ceil(M/2) - 1; }
 
 let nextId = 0;
 function newNode(leaf){ return {id:++nextId, keys:[], children:[], leaf, mesh:null, edgeUp:null}; }
 let root = newNode(true);
 let size = 0;
 
-/* ─── B-tree ops (CLRS-style) ─── */
+/* ─── B-tree ops · general order m (reactive split / merge) ─── */
 function search(n, k){
   let i = 0; while (i < n.keys.length && k > n.keys[i]) i++;
   if (i < n.keys.length && k === n.keys[i]) return {node:n, idx:i};
   if (n.leaf) return null;
   return search(n.children[i], k);
 }
-function splitChild(x, i){
-  const y = x.children[i];
-  const z = newNode(y.leaf);
-  z.keys = y.keys.splice(T, T-1);
-  if (!y.leaf) z.children = y.children.splice(T, T);
-  x.children.splice(i+1, 0, z);
-  const upKey = y.keys.pop();
-  x.keys.splice(i, 0, upKey);
+// split an over-full node (it holds M keys) → mutate it into the LEFT part
+// and return {median, right}. Works for any order M, odd or even.
+function splitNode(node){
+  const mid = Math.floor(node.keys.length / 2);   // node has M keys here
+  const median = node.keys[mid];
+  const right = newNode(node.leaf);
+  right.keys = node.keys.slice(mid + 1);
+  node.keys  = node.keys.slice(0, mid);
+  if (!node.leaf){
+    right.children = node.children.slice(mid + 1);
+    node.children  = node.children.slice(0, mid + 1);
+  }
+  return {median, right};
 }
-function insertNonFull(x, k){
-  let i = x.keys.length - 1;
-  if (x.leaf){
-    while (i >= 0 && k < x.keys[i]) i--;
-    x.keys.splice(i+1, 0, k);
+// reactive insert: go to the leaf, drop the key in, then split any node that
+// overflowed on the way back up (median rises into the parent).
+function insertRec(node, k){
+  let i = node.keys.length - 1;
+  if (node.leaf){
+    while (i >= 0 && k < node.keys[i]) i--;
+    node.keys.splice(i + 1, 0, k);
   } else {
-    while (i >= 0 && k < x.keys[i]) i--;
+    while (i >= 0 && k < node.keys[i]) i--;
     i++;
-    if (x.children[i].keys.length === MAX_K){
-      splitChild(x, i);
-      if (k > x.keys[i]) i++;
+    insertRec(node.children[i], k);
+    if (node.children[i].keys.length > MAX_K){
+      const {median, right} = splitNode(node.children[i]);
+      node.keys.splice(i, 0, median);
+      node.children.splice(i + 1, 0, right);
     }
-    insertNonFull(x.children[i], k);
   }
 }
 function insertKey(k){
   if (search(root, k)) return false;
-  if (root.keys.length === MAX_K){
-    const s = newNode(false);
-    s.children.push(root);
-    root = s;
-    splitChild(s, 0);
-    insertNonFull(s, k);
-  } else insertNonFull(root, k);
+  insertRec(root, k);
+  if (root.keys.length > MAX_K){                   // root overflowed → grow up
+    const {median, right} = splitNode(root);
+    const ns = newNode(false);
+    ns.keys = [median];
+    ns.children = [root, right];
+    root = ns;
+  }
   size++;
   return true;
 }
 
-/* ─── visible insert: top-down split (CLRS) — each split is a discrete step ─── */
-async function splitChildAnim(x, i){
-  const y = x.children[i];
-  const median = y.keys[T-1];
-  cx.set(`split · node [${y.keys.join(',')}] · median ${median} ↑`, `O(log n)`);
-  log.say(`<span class="km">split</span> [${y.keys.join(',')}] — median ${median} → parent`);
-  await pulse(y, 0xff5c70, 480);
+/* ─── visible insert: reactive bottom-up split — each split is a step ─── */
+async function splitNodeAnim(parent, idx){
+  // the node at parent.children[idx] (or root if parent==null) overflowed
+  const node = parent ? parent.children[idx] : root;
+  const mid  = Math.floor(node.keys.length / 2);
+  const median = node.keys[mid];
+  cx.set(`overflow · [${node.keys.join(',')}] has ${node.keys.length} > ${MAX_K} max · split`, `O(log n)`);
+  log.say(`<span class="km">split</span> [${node.keys.join(',')}] — median ${median} ↑`);
+  await pulse(node, 0xff5c70, 460);
   await stepperCheckpoint();
-  splitChild(x, i);
+  const {median:med, right} = splitNode(node);
+  if (parent){
+    parent.keys.splice(idx, 0, med);
+    parent.children.splice(idx + 1, 0, right);
+  } else {
+    const ns = newNode(false);
+    ns.keys = [med]; ns.children = [node, right];
+    root = ns;
+  }
   await relayout(true);
-  await pulse(x.children[i],   0x5cffb4, 360);  // new left  (y, shrunk)
-  await pulse(x.children[i+1], 0x35d0ff, 360);  // new right (z, fresh)
-  await pulse(x, 0xffb454, 360);                // parent now holds median
+  const pNode = parent || root;
+  const li = parent ? idx : 0;
+  await pulse(pNode.children[li],   0x5cffb4, 340);  // left part (shrunk)
+  await pulse(pNode.children[li+1], 0x35d0ff, 340);  // right part (fresh)
+  await pulse(pNode, 0xffb454, 340);                 // parent took the median
   await stepperCheckpoint();
 }
 
 async function insertVisible(k){
   if (search(root, k)){ log.say(`<span class="kx">dup</span> ${k}`); return false; }
-  // pre-split root if it's full
-  if (root.keys.length === MAX_K){
-    cx.set(`root [${root.keys.join(',')}] is full · grow tree`, `O(log n)`);
-    await pulse(root, 0xff5c70, 380);
-    await stepperCheckpoint();
-    const s = newNode(false);
-    s.children.push(root);
-    root = s;
-    await relayout(false);   // immediately reflect the new empty root
-    await splitChildAnim(s, 0);
-  }
-  // top-down descent. CLRS preemptively splits any full child before descending.
+  // descend to the target leaf, recording the path (no preemptive splitting)
+  const path = [];                       // [{node, idx}] root → leaf parent
   let x = root;
   while (!x.leaf){
     cx.set(`descend · keys=[${x.keys.join(',')}]`, 'descend');
@@ -677,79 +695,75 @@ async function insertVisible(k){
     let i = x.keys.length - 1;
     while (i >= 0 && k < x.keys[i]) i--;
     i++;
-    if (x.children[i].keys.length === MAX_K){
-      cx.set(`child [${x.children[i].keys.join(',')}] full · split before descend`, `O(log n)`);
-      await splitChildAnim(x, i);
-      if (k > x.keys[i]) i++;
-    }
+    path.push({node:x, idx:i});
     x = x.children[i];
   }
-  // x is a leaf with room
+  // place into the leaf
   let j = x.keys.length - 1;
   while (j >= 0 && k < x.keys[j]) j--;
-  x.keys.splice(j+1, 0, k);
+  x.keys.splice(j + 1, 0, k);
   size++;
   cx.set(`place ${k} into leaf · keys now [${x.keys.join(',')}]`, 'O(1) in-node');
   await relayout(true);
-  await pulse(x, 0x5cffb4, 460);
+  await pulse(x, 0x5cffb4, 420);
   await stepperCheckpoint();
+  // walk back up: split every node that overflowed (cascades toward the root)
+  for (let p = path.length - 1; p >= 0; p--){
+    const {node, idx} = path[p];
+    if (node.children[idx].keys.length > MAX_K) await splitNodeAnim(node, idx);
+  }
+  if (root.keys.length > MAX_K) await splitNodeAnim(null, 0);
   return true;
 }
 
-function predecessor(x, i){ let n = x.children[i]; while (!n.leaf) n = n.children[n.children.length-1]; return n.keys[n.keys.length-1]; }
-function successor(x, i){ let n = x.children[i+1]; while (!n.leaf) n = n.children[0]; return n.keys[0]; }
-function mergeChildren(x, i){
-  const y = x.children[i], z = x.children[i+1];
-  y.keys.push(x.keys[i]);
-  y.keys.push(...z.keys);
-  if (!y.leaf) y.children.push(...z.children);
-  x.keys.splice(i, 1);
-  x.children.splice(i+1, 1);
-  return y;
-}
-function fill(x, i){
-  const y = x.children[i];
-  if (i !== 0 && x.children[i-1].keys.length >= T){
-    const l = x.children[i-1];
-    y.keys.unshift(x.keys[i-1]);
-    if (!y.leaf) y.children.unshift(l.children.pop());
-    x.keys[i-1] = l.keys.pop();
-  } else if (i !== x.children.length-1 && x.children[i+1].keys.length >= T){
-    const r = x.children[i+1];
-    y.keys.push(x.keys[i]);
-    if (!y.leaf) y.children.push(r.children.shift());
-    x.keys[i] = r.keys.shift();
-  } else {
-    if (i !== x.children.length-1) mergeChildren(x, i);
-    else mergeChildren(x, i-1);
+// reactive delete: remove the key, then on the way back up repair any child
+// that fell below MIN_K keys — borrow from a sibling, else merge. General M.
+function maxLeafKey(n){ while (!n.leaf) n = n.children[n.children.length-1]; return n.keys[n.keys.length-1]; }
+function fixChild(node, i){
+  const c = node.children[i];
+  if (c.keys.length >= MIN_K) return;                  // not deficient
+  const L = i > 0 ? node.children[i-1] : null;
+  const R = i < node.children.length - 1 ? node.children[i+1] : null;
+  if (L && L.keys.length > MIN_K){                      // borrow from left sibling
+    c.keys.unshift(node.keys[i-1]);
+    node.keys[i-1] = L.keys.pop();
+    if (!c.leaf) c.children.unshift(L.children.pop());
+  } else if (R && R.keys.length > MIN_K){               // borrow from right sibling
+    c.keys.push(node.keys[i]);
+    node.keys[i] = R.keys.shift();
+    if (!c.leaf) c.children.push(R.children.shift());
+  } else if (L){                                        // merge c into left sibling
+    L.keys.push(node.keys[i-1], ...c.keys);
+    if (!c.leaf) L.children.push(...c.children);
+    node.keys.splice(i-1, 1);
+    node.children.splice(i, 1);
+  } else if (R){                                        // merge right sibling into c
+    c.keys.push(node.keys[i], ...R.keys);
+    if (!c.leaf) c.children.push(...R.children);
+    node.keys.splice(i, 1);
+    node.children.splice(i+1, 1);
   }
 }
-function deleteFromLeaf(x, i){ x.keys.splice(i, 1); }
-function deleteFromInternal(x, i){
-  const k = x.keys[i];
-  if (x.children[i].keys.length >= T){
-    const p = predecessor(x, i); x.keys[i] = p; deleteFromNode(x.children[i], p);
-  } else if (x.children[i+1].keys.length >= T){
-    const s = successor(x, i); x.keys[i] = s; deleteFromNode(x.children[i+1], s);
-  } else { mergeChildren(x, i); deleteFromNode(x.children[i], k); }
-}
-function deleteFromNode(x, k){
-  let i = 0; while (i < x.keys.length && x.keys[i] < k) i++;
-  if (i < x.keys.length && x.keys[i] === k){
-    if (x.leaf) deleteFromLeaf(x, i); else deleteFromInternal(x, i);
+function deleteRec(node, k){
+  let i = 0; while (i < node.keys.length && k > node.keys[i]) i++;
+  if (i < node.keys.length && node.keys[i] === k){
+    if (node.leaf){ node.keys.splice(i, 1); }
+    else {                                              // replace with predecessor
+      const pred = maxLeafKey(node.children[i]);
+      node.keys[i] = pred;
+      deleteRec(node.children[i], pred);
+      fixChild(node, i);
+    }
   } else {
-    if (x.leaf) return false;
-    const flag = (i === x.keys.length);
-    if (x.children[i].keys.length < T) fill(x, i);
-    if (flag && i > x.keys.length) deleteFromNode(x.children[i-1], k);
-    else deleteFromNode(x.children[i], k);
+    if (node.leaf) return;                              // not present
+    deleteRec(node.children[i], k);
+    fixChild(node, i);
   }
-  return true;
 }
 function deleteKey(k){
   if (!search(root, k)) return false;
-  deleteFromNode(root, k);
-  if (root.keys.length === 0 && !root.leaf) root = root.children[0];
+  deleteRec(root, k);
+  if (!root.leaf && root.keys.length === 0) root = root.children[0];  // shrink height
   size--;
   return true;
 }
@@ -1011,42 +1025,39 @@ $('#b-rand').addEventListener('click', () => $('#in-val').value = randomInt(1,99
 
 $('#b-apply-m').addEventListener('click', async () => {
   let m = Math.trunc(parseNum($('#in-m').value, 6));
-  if (m % 2 !== 0) m += 1;                       // even-order engine: round up to even
-  m = Math.max(4, Math.min(16, m));
+  m = Math.max(3, Math.min(16, m));              // any integer order ≥ 3 (odd or even)
   $('#in-m').value = m;
-  const newT = m / 2;
-  if (newT === T){ log.say(`<span class="kx">m</span> unchanged (m=${m})`); return; }
-  history.push({type:'snapshot', values: snapshotValues(), T});
+  if (m === M){ log.say(`<span class="kx">m</span> unchanged (m=${m})`); return; }
+  history.push({type:'snapshot', values: snapshotValues()});
   // tear down current visuals
   (function purge(n){ if (!n) return; if (n.mesh) scene.remove(n.mesh.grp); if (n.edgeUp) scene.remove(n.edgeUp); for (const c of n.children) purge(c); })(root);
-  T = newT; MAX_K = 2*T - 1; MIN_K = T - 1;
+  M = m; recalcBounds();
   root = newNode(true); size = 0; nextId = 0;
   refreshRules();
   await relayout(false);
-  log.say(`<span class="km">apply</span> m=${m} · max keys=${MAX_K} · cleared`);
+  log.say(`<span class="km">apply</span> m=${m} · max keys=${MAX_K} · min keys=${MIN_K} · cleared`);
   cx.set(`m=${m} applied · cleared`, '—');
 });
 
 /* ─── preset toolbar ─── */
-async function loadBTree(newT, values){
-  T = Math.max(2, Math.min(8, newT|0));
-  MAX_K = 2*T - 1; MIN_K = T - 1;
+async function loadBTree(m, values){
+  M = Math.max(3, Math.min(16, m|0)); recalcBounds();
   // wipe visuals
   (function purge(n){ if (!n) return; if (n.mesh) scene.remove(n.mesh.grp); if (n.edgeUp) scene.remove(n.edgeUp); for (const c of n.children) purge(c); })(root);
   root = newNode(true); size = 0; nextId = 0;
   refreshRules();
-  $('#in-m').value = 2 * T;
+  $('#in-m').value = M;
   for (const v of values) insertKey(v);
   await relayout(false);
   history.clear();
-  cx.set(`preset · t=${T} · ${values.length} keys`, '—');
+  cx.set(`preset · m=${M} · ${values.length} keys`, '—');
 }
 mountPresets({mount: $('#presets-mount'), label: 'defaults', presets:[
-  {name:'empty',      desc:'m=6 · empty root leaf',                              apply: () => loadBTree(3, [])},
-  {name:'pre-split',  desc:'m=6 · [10,20,30,40] — 1 more triggers root split',   apply: () => loadBTree(3, [10,20,30,40])},
-  {name:'one split',  desc:'m=6 · [10..60] — root already split once',           apply: () => loadBTree(3, [10,20,30,40,50,60])},
-  {name:'two levels', desc:'m=6 · 15 keys · interior + leaves',                  apply: () => loadBTree(3, [10,20,5,6,12,30,7,17,3,25,35,40,45,50,8])},
-  {name:'narrow m=4', desc:'m=4 · same keys, more splits / deeper tree',         apply: () => loadBTree(2, [10,20,5,6,12,30,7,17,3,25,35,40,45,50,8])},
+  {name:'empty',      desc:'m=6 · empty root leaf',                              apply: () => loadBTree(6, [])},
+  {name:'pre-split',  desc:'m=6 · [10,20,30,40,50] — 1 more splits the root',    apply: () => loadBTree(6, [10,20,30,40,50])},
+  {name:'2-3 tree',   desc:'m=3 · odd order · max 2 keys / 3 children',          apply: () => loadBTree(3, [10,20,5,6,12,30,7,17,3,25])},
+  {name:'odd m=5',    desc:'m=5 · odd order · 15 keys · interior + leaves',      apply: () => loadBTree(5, [10,20,5,6,12,30,7,17,3,25,35,40,45,50,8])},
+  {name:'wide m=6',   desc:'m=6 · same keys, shallower tree',                    apply: () => loadBTree(6, [10,20,5,6,12,30,7,17,3,25,35,40,45,50,8])},
 ]});
 
 /* seed */
@@ -1055,7 +1066,7 @@ mountPresets({mount: $('#presets-mount'), label: 'defaults', presets:[
   for (const v of [10,20,5,6,12,30,7,17,3,25,35,40,45,50,8]) insertKey(v);
   await relayout(false);
   history.clear(); refreshHUD();
-  log.say(`<span class="k">init</span> ${size} keys · m=${2*T}`);
+  log.say(`<span class="k">init</span> ${size} keys · m=${M}`);
   cx.set('idle', '—');
 })();
 </script>
