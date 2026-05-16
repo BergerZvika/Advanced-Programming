@@ -707,6 +707,10 @@ function placeEdge(edge, ax, ay, bx, by){
   edge.rotation.z = Math.atan2(dx, -dy);  // align to vector
 }
 
+// every node whose mesh is currently in the scene — lets relayout drop the
+// meshes of nodes that left the tree (e.g. after a delete)
+const liveMeshes = new Set();
+
 function ensureMeshes(n){
   if (!n) return;
   if (!n.mesh){
@@ -718,6 +722,7 @@ function ensureMeshes(n){
     scene.add(n.mesh.grp);
     scene.add(n.edgeUp);
   }
+  liveMeshes.add(n);
   ensureMeshes(n.left); ensureMeshes(n.right);
 }
 
@@ -748,7 +753,19 @@ async function relayout(animate=true){
     walk(n.left, n); walk(n.right, n);
   }
   walk(root, null);
+  // nodes that left the tree (deleted): shrink them out, then drop their meshes
+  const dead = [];
+  for (const n of liveMeshes){ if (!seen.has(n)) dead.push(n); }
+  for (const n of dead){
+    if (n.edgeUp) n.edgeUp.visible = false;
+    if (n.mesh) tasks.push(tweenVec(n.mesh.grp.scale, new THREE.Vector3(0.001,0.001,0.001), animate?300:0));
+  }
   await Promise.all(tasks);
+  for (const n of dead){
+    if (n.mesh) scene.remove(n.mesh.grp);
+    if (n.edgeUp) scene.remove(n.edgeUp);
+    liveMeshes.delete(n);
+  }
   refreshHUD();
 }
 
@@ -767,6 +784,24 @@ async function pulse(node, color=0xb9ff5c, ms=240){
   m.emissive.setHex(color); m.emissiveIntensity = 1.3;
   await sleep(ms);
   m.emissive.copy(eOld); m.emissiveIntensity = iOld;
+}
+
+// repaint just one node's bf label in place (relayout repaints all; this is
+// for the climb-up steps where nothing moves but the balance factor changes)
+function refreshBF(node){
+  if (!node || !node.mesh) return;
+  node.mesh.label.paint(node.value, BF(node));
+  node.mesh.label.tex.needsUpdate = true;
+}
+
+// sustained highlight (stays lit across a relayout) — returns a release fn.
+// Used to mark the two nodes that swap so they glow during the rotation motion.
+function holdHL(node, color=0x7c5cff){
+  if (!node || !node.mesh) return () => {};
+  const m = node.mesh.body.material;
+  const eOld = m.emissive.clone(), iOld = m.emissiveIntensity;
+  m.emissive.setHex(color); m.emissiveIntensity = 1.7;
+  return () => { m.emissive.copy(eOld); m.emissiveIntensity = iOld; };
 }
 
 async function animateTrail(trail){
@@ -810,12 +845,58 @@ function snapshotValues(){
 
 async function rebuildFrom(values){
   // clear current scene state then re-insert
-  function purge(n){ if (!n) return; if (n.mesh){ scene.remove(n.mesh.grp); scene.remove(n.edgeUp); } purge(n.left); purge(n.right); }
-  purge(root); root = null; size = 0;
+  function purge(n){ if (!n) return; if (n.mesh){ scene.remove(n.mesh.grp); scene.remove(n.edgeUp); } liveMeshes.delete(n); purge(n.left); purge(n.right); }
+  purge(root); liveMeshes.clear(); root = null; size = 0;
   for (const v of values){
     const t = []; root = insert(root, v, t);
   }
   await relayout(false);
+}
+
+/* ─── shared: play one rebalance (LL/RR single, LR/RL double) as swaps ───
+   Highlights the two nodes that exchange places and holds them lit through
+   the motion; each elementary rotation is its own checkpoint. Re-links the
+   subtree to `parent[dir]` (or `root`) and returns the new subtree root.   */
+async function rotateAnimated(node, parent, dir, kind, undo){
+  const oldVal = node.value;
+  cx.set(`unbalanced @ ${oldVal} · case ${kind}`, 'rebalance');
+  log.say(`<span class="km">case ${kind}</span> @ ${oldVal}`);
+
+  // double rotations: first the inner single rotation on the child
+  if (kind === 'LR' || kind === 'RL'){
+    const onLeft = kind === 'LR';
+    const piv = onLeft ? node.left : node.right;       // child being rotated
+    const ch  = onLeft ? piv.right : piv.left;          // its swap partner
+    const relP = holdHL(piv), relC = holdHL(ch);
+    await sleep(280);
+    if (onLeft) node.left  = rotL(node.left);
+    else        node.right = rotR(node.right);
+    await relayout(true);
+    await sleep(220);
+    relP(); relC();
+    cx.set(`${kind} step 1 · rotate ${onLeft?'L':'R'} @ ${piv.value} (${piv.value}↔${ch.value})`, 'O(1)');
+    await stepperCheckpoint(`${kind} step 1 · ${onLeft?'L':'R'} @ ${piv.value}`, undo);
+  }
+
+  // the rotation about `node` itself (the only one for LL/RR; step 2 for LR/RL)
+  const leftCase = (kind === 'LL' || kind === 'LR');
+  const child = leftCase ? node.left : node.right;     // node swaps with this
+  const relN = holdHL(node), relK = holdHL(child);
+  await sleep(300);
+  const swapTxt = `${node.value}↔${child.value}`;
+  const newRoot = leftCase ? rotR(node) : rotL(node);
+  if (parent) parent[dir] = newRoot; else root = newRoot;
+  await relayout(true);                                // repaints every bf
+  await sleep(260);
+  relN(); relK();
+  await pulse(newRoot, 0x5cffb4, 360);                 // settled = green flash
+  const half = (kind === 'LL' || kind === 'RR')
+    ? `rotate ${leftCase?'R':'L'} @ ${oldVal}`
+    : `${kind} step 2 · rotate ${leftCase?'R':'L'} @ ${oldVal}`;
+  cx.set(`${half} · swap ${swapTxt} · subtree balanced`, 'O(1)');
+  log.say(`<span class="km">${half}</span> · swap ${swapTxt}`);
+  await stepperCheckpoint(half, undo);
+  return newRoot;
 }
 
 /* ─── step-by-step insert · descend then re-balance up the path ─── */
@@ -872,70 +953,145 @@ async function insertStep(v){
       return;
     }
   }
-  // walk back up, re-balancing
+  // walk back up: at each ancestor recompute height, update its bf (its own
+  // step), then if it is unbalanced show the rotation(s) — the swap — one at a time
+  const undo = async () => { await rebuildFrom(beforeSnap); };
   for (let i = path.length - 1; i >= 0; i--){
-    const node = path[i].node;
+    let node = path[i].node;
+    const parent = i > 0 ? path[i-1].node : null;
+    const dir = parent ? (parent.left === node ? 'left' : 'right') : null;
+
+    // ── step: recompute height, update this node's balance factor ──
     upd(node);
     const bf = BF(node);
-    await pulse(node, 0xffb454, 200);
-    cx.set(`check @ ${node.value} · bf=${bf>=0?'+':''}${bf}`, 'balance');
-    if (Math.abs(bf) > 1){
-      const parent = i > 0 ? path[i-1].node : null;
-      const dir = parent ? (parent.left === node ? 'left' : 'right') : null;
-      const oldVal = node.value;
-      let newRoot, kind;
-      if (bf > 1 && v < node.left.value){ kind='LL'; newRoot = rotR(node); }
-      else if (bf < -1 && v > node.right.value){ kind='RR'; newRoot = rotL(node); }
-      else if (bf > 1 && v > node.left.value){ kind='LR'; node.left = rotL(node.left); newRoot = rotR(node); }
-      else if (bf < -1 && v < node.right.value){ kind='RL'; node.right = rotR(node.right); newRoot = rotL(node); }
-      if (parent) parent[dir] = newRoot; else root = newRoot;
-      path[i] = {node: newRoot, dir: path[i].dir};
-      cx.set(`rotate ${kind} @ ${oldVal}`, 'O(1)');
-      log.say(`<span class="km">rotate</span> ${kind} @ ${oldVal}`);
-      await relayout(true);
-      await pulse(newRoot, 0x7c5cff, 460);
-      await stepperCheckpoint(`rotate ${kind} @ ${oldVal}`,
-        async () => { await rebuildFrom(beforeSnap); });
-    } else {
-      await stepperCheckpoint(`balanced @ ${node.value}`,
-        async () => { await rebuildFrom(beforeSnap); });
-    }
+    refreshBF(node);                       // bf label on the node changes live
+    await pulse(node, 0xffb454, 240);
+    const sbf = (bf >= 0 ? '+' : '') + bf;
+    cx.set(`bf @ ${node.value} = ${sbf} · h=${node.h}`,
+           Math.abs(bf) > 1 ? 'unbalanced' : 'update bf');
+    log.say(`<span class="k">bf</span> ${node.value} = ${sbf}` +
+            (Math.abs(bf) > 1 ? ` <span class="kx">unbalanced</span>` : ``));
+    await stepperCheckpoint(`bf @ ${node.value} = ${sbf}`, undo);
+
+    if (Math.abs(bf) <= 1) continue;       // balanced here · keep climbing
+
+    // ── unbalanced: identify the case (by the inserted value's path) ──
+    let kind;
+    if      (bf > 1  && v < node.left.value)  kind = 'LL';
+    else if (bf < -1 && v > node.right.value) kind = 'RR';
+    else if (bf > 1  && v > node.left.value)  kind = 'LR';
+    else                                      kind = 'RL';
+    const newRoot = await rotateAnimated(node, parent, dir, kind, undo);
+    path[i] = {node: newRoot, dir: path[i].dir};
   }
 }
 
-/* ─── step-by-step delete · walk down, then mutate + relayout ─── */
+/* ─── step-by-step delete · descend, unlink, then re-balance up the path ─── */
 async function deleteStep(v){
   const beforeSnap = snapshotValues();
-  // visualize descent
-  let n = root, found = null;
-  while (n){
+  const undo = async () => { await rebuildFrom(beforeSnap); };
+  if (!root){ cx.set('empty', '—'); log.say(`<span class="kx">delete</span> ${v} · empty`); return; }
+
+  // ── 1. descend to the target, recording the ancestor stack (root → target) ──
+  const stack = [];
+  let n = root;
+  while (n && n.value !== v){
     await pulse(n, 0xffb454, 220);
     cx.set(`visit ${n.value} · seek ${v}`, 'descend');
-    await stepperCheckpoint(`visit ${n.value}`,
-      async () => { await rebuildFrom(beforeSnap); });
-    if (v === n.value){ found = n; break; }
+    await stepperCheckpoint(`visit ${n.value}`, undo);
+    stack.push(n);
     n = v < n.value ? n.left : n.right;
   }
-  if (!found){
+  if (!n){
     log.say(`<span class="kx">delete</span> ${v} · not present`);
     cx.set('miss', '—'); return;
   }
-  await pulse(found, 0xff5c70, 480);
-  cx.set(`remove ${v} · then re-balance`, 'mutate');
-  await stepperCheckpoint(`mark ${v} for removal`,
-    async () => { await rebuildFrom(beforeSnap); });
-  const trail = [];
-  root = del(root, v, trail);
-  await relayout(true);
-  log.say(`<span class="ko">delete</span> ${v} · ${trail.filter(e=>e.type==='rot').length||0} rot`);
-  // animate any rotations that happened (post-hoc pulse)
-  for (const e of trail){
-    if (e.type === 'rot'){
-      log.say(`<span class="km">rebalance</span> ${e.kind} @ ${e.at}`);
-      await stepperCheckpoint(`rebalance ${e.kind} @ ${e.at}`,
-        async () => { await rebuildFrom(beforeSnap); });
+  const target = n;
+  stack.push(target);
+  await pulse(target, 0xff5c70, 460);
+  cx.set(`found ${v}`, 'mutate');
+  await stepperCheckpoint(`found ${v}`, undo);
+
+  // ── 2. two children → splice in the in-order successor (min of right subtree) ──
+  let removeNode = target;
+  if (target.left && target.right){
+    cx.set(`${v} has two children · find in-order successor`, 'successor');
+    log.say(`<span class="km">successor</span> = min of right subtree`);
+    await stepperCheckpoint(`two children · seek successor`, undo);
+    let s = target.right;
+    stack.push(s);
+    while (s.left){
+      await pulse(s, 0xffb454, 200);
+      cx.set(`successor descent · left from ${s.value}`, 'successor');
+      await stepperCheckpoint(`successor · go left @ ${s.value}`, undo);
+      s = s.left;
+      stack.push(s);
     }
+    // swap the value-to-delete with its in-order successor (next sequential
+    // value), then remove it down at the successor's spot
+    const relS = holdHL(s, 0x5cffb4), relT = holdHL(target, 0x5cffb4);
+    await sleep(320);
+    const dv = target.value, sv = s.value;
+    target.value = sv; s.value = dv;          // exchange the two labels
+    if (target.mesh){ target.mesh.label.paint(target.value, BF(target)); target.mesh.label.tex.needsUpdate = true; }
+    if (s.mesh){ s.mesh.label.paint(s.value, BF(s)); s.mesh.label.tex.needsUpdate = true; }
+    await relayout(true);
+    await sleep(220);
+    relS(); relT();
+    cx.set(`swap ${dv} ↔ successor ${sv} · now delete ${dv} at its new spot`, 'swap');
+    log.say(`<span class="km">swap</span> ${dv} ↔ ${sv}`);
+    await stepperCheckpoint(`swap ${dv} ↔ ${sv}`, undo);
+    removeNode = s;            // s now holds dv → physically unlink it (≤ 1 child)
   }
+
+  // ── 3. unlink the ≤1-child node, splicing its child into its parent ──
+  const childSub = removeNode.left || removeNode.right || null;
+  const rmIdx = stack.length - 1;
+  const rmParent = rmIdx > 0 ? stack[rmIdx - 1] : null;
+  if (rmParent){
+    if (rmParent.left === removeNode) rmParent.left = childSub;
+    else                              rmParent.right = childSub;
+  } else {
+    root = childSub;
+  }
+  size--;
+  stack.pop();                 // drop removeNode; what remains are its ancestors
+  await pulse(removeNode, 0xff5c70, 360);
+  await relayout(true);        // removeNode is unreachable now → shrinks & is dropped
+  cx.set(`unlinked ${removeNode.value}` +
+         (childSub ? ` · child ${childSub.value} spliced in` : ` · was a leaf`), 'mutate');
+  log.say(`<span class="ko">remove</span> ${removeNode.value}`);
+  await stepperCheckpoint(`removed ${removeNode.value}`, undo);
+
+  // ── 4. walk back up: update bf per ancestor, rebalance (swap) when needed ──
+  for (let i = stack.length - 1; i >= 0; i--){
+    let node = stack[i];
+    const parent = i > 0 ? stack[i-1] : null;
+    const dir = parent ? (parent.left === node ? 'left' : 'right') : null;
+
+    upd(node);
+    const bf = BF(node);
+    refreshBF(node);
+    await pulse(node, 0xffb454, 240);
+    const sbf = (bf >= 0 ? '+' : '') + bf;
+    cx.set(`bf @ ${node.value} = ${sbf} · h=${node.h}`,
+           Math.abs(bf) > 1 ? 'unbalanced' : 'update bf');
+    log.say(`<span class="k">bf</span> ${node.value} = ${sbf}` +
+            (Math.abs(bf) > 1 ? ` <span class="kx">unbalanced</span>` : ``));
+    await stepperCheckpoint(`bf @ ${node.value} = ${sbf}`, undo);
+
+    if (Math.abs(bf) <= 1) continue;
+
+    // delete rebalance: the case comes from the heavier child's balance factor
+    let kind;
+    if      (bf > 1  && BF(node.left)  >= 0) kind = 'LL';
+    else if (bf > 1)                         kind = 'LR';
+    else if (bf < -1 && BF(node.right) <= 0) kind = 'RR';
+    else                                     kind = 'RL';
+    stack[i] = await rotateAnimated(node, parent, dir, kind, undo);
+    // height may have dropped → keep climbing (delete can need several rotations)
+  }
+  refreshHUD();
 }
 
 const opHandlers = {

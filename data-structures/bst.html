@@ -657,9 +657,14 @@ function placeEdge(edge, ax,ay,bx,by){
   edge.position.set((ax+bx)/2, (ay+by)/2, 0); edge.scale.y=len; edge.rotation.z = Math.atan2(dx, -dy);
 }
 
+// every node whose mesh is currently in the scene — lets relayout drop the
+// meshes of nodes that left the tree (e.g. after a delete)
+const liveMeshes = new Set();
+
 function ensureMeshes(n){
   if (!n) return;
   if (!n.mesh){ n.mesh = makeMesh(n.value); n.edgeUp = makeEdge(); }
+  liveMeshes.add(n);
   ensureMeshes(n.left); ensureMeshes(n.right);
 }
 
@@ -843,9 +848,11 @@ async function relayout(animate=true){
   ensureMeshes(root);
   const map = computeLayout();
   const tasks = [];
+  const seen = new Set();
   const GHOST_DX = 1.2, GHOST_DY = 1.8;
   (function walk(n, parent){
     if (!n) return;
+    seen.add(n);
     const p = map.get(n);
     if (p){
       tasks.push(tweenVec(n.mesh.grp.position, new THREE.Vector3(p.x, p.y, 0), animate?420:0));
@@ -868,7 +875,19 @@ async function relayout(animate=true){
     walk(n.left, n); walk(n.right, n);
   })(root, null);
   clearOrphanGhosts();
+  // nodes that left the tree (deleted): shrink them out, then drop their meshes
+  const dead = [];
+  for (const n of liveMeshes){ if (!seen.has(n)) dead.push(n); }
+  for (const n of dead){
+    if (n.edgeUp) n.edgeUp.visible = false;
+    if (n.mesh) tasks.push(tweenVec(n.mesh.grp.scale, new THREE.Vector3(0.001,0.001,0.001), animate?300:0));
+  }
   await Promise.all(tasks);
+  for (const n of dead){
+    if (n.mesh) scene.remove(n.mesh.grp);
+    if (n.edgeUp) scene.remove(n.edgeUp);
+    liveMeshes.delete(n);
+  }
   // keep the cursor ring on the current node as the tree is rearranged
   if (currentNode && currentNode.mesh){
     cursorRing.position.copy(currentNode.mesh.grp.position);
@@ -894,13 +913,24 @@ async function pulse(n, color=0xb9ff5c, ms=240){
   m.emissive.copy(eOld); m.emissiveIntensity = iOld;
 }
 
+// sustained highlight that stays lit across a relayout — returns a release fn.
+// Used to mark the two nodes that swap during a two-child delete.
+function holdHL(n, color=0x5cffb4){
+  if (!n || !n.mesh) return () => {};
+  const m = n.mesh.body.material;
+  const eOld = m.emissive.clone(), iOld = m.emissiveIntensity;
+  m.emissive.setHex(color); m.emissiveIntensity = 1.7;
+  return () => { m.emissive.copy(eOld); m.emissiveIntensity = iOld; };
+}
+
 let busy = false;
 function lock(fn){ return async (...a) => { if (busy) return; busy=true; try{ await fn(...a); } finally{ busy=false; refreshHUD(); } }; }
 function readVals(){ const list = parseList($('#in-val').value); if (!list.length){ const v=randomInt(1,99); $('#in-val').value=v; return [v]; } return list; }
 function readVal(){ const v = parseNum($('#in-val').value, null); if (v===null){ log.say(`<span class="kx">err</span> number required`); return null; } return v; }
 function snapshotValues(){ return inorderArr(); }
 async function rebuildFrom(values){
-  (function purge(n){ if (!n) return; if (n.mesh) scene.remove(n.mesh.grp); if (n.edgeUp) scene.remove(n.edgeUp); purge(n.left); purge(n.right); })(root);
+  (function purge(n){ if (!n) return; if (n.mesh) scene.remove(n.mesh.grp); if (n.edgeUp) scene.remove(n.edgeUp); liveMeshes.delete(n); purge(n.left); purge(n.right); })(root);
+  liveMeshes.clear();
   // also clear all ghost children
   for (const [parent, g] of ghosts){
     if (g.left)  { scene.remove(g.left.grp);  scene.remove(g.left.edge); }
@@ -1118,25 +1148,67 @@ const opHandlers = {
   delete: lock(async () => {
     const v = readVal(); if (v===null) return;
     history.push({type:'snapshot', values: snapshotValues()});
-    // step-by-step descent
-    let n = root, found = null;
-    while (n){
+    if (!root){ log.say(`<span class="kx">delete</span> ${v} · empty`); cx.set('empty','—'); return; }
+    // step-by-step descent, tracking the parent chain
+    let n = root, parent = null;
+    while (n && n.value !== v){
       cx.set(`visit ${n.value} · seek ${v}`, 'descend');
       await pulse(n, 0xffb454, 220);
       await stepperCheckpoint();
-      if (v === n.value){ found = n; break; }
+      parent = n;
       n = v < n.value ? n.left : n.right;
     }
-    if (!found){
+    if (!n){
       log.say(`<span class="kx">delete</span> ${v} · miss`); cx.set('miss', '—'); return;
     }
-    cx.set(`remove ${v}`, 'mutate');
-    await pulse(found, 0xff5c70, 480);
+    const target = n;
+    cx.set(`found ${v}`, 'mutate');
+    await pulse(target, 0xff5c70, 460);
     await stepperCheckpoint();
-    deleteK(v);
-    await relayout(true);
-    log.say(`<span class="ko">delete</span> ${v}`);
-    cx.set('done', '—');
+
+    let removeNode = target, rmParent = parent;
+    if (target.left && target.right){
+      // two children → swap with the in-order successor (the next sequential value)
+      cx.set(`${v} has two children · find in-order successor (next value)`, 'successor');
+      log.say(`<span class="km">successor</span> = min of right subtree`);
+      await stepperCheckpoint();
+      let sp = target, s = target.right;
+      while (s.left){
+        cx.set(`successor descent · left from ${s.value}`, 'successor');
+        await pulse(s, 0xffb454, 200);
+        await stepperCheckpoint();
+        sp = s; s = s.left;
+      }
+      // swap the value-to-delete with its successor, then remove it down there
+      const relS = holdHL(s, 0x5cffb4), relT = holdHL(target, 0x5cffb4);
+      await sleep(320);
+      const dv = target.value, sv = s.value;
+      target.value = sv; s.value = dv;        // exchange the two labels
+      if (target.mesh){ target.mesh.label.paint(target.value); target.mesh.label.tex.needsUpdate = true; }
+      if (s.mesh){ s.mesh.label.paint(s.value); s.mesh.label.tex.needsUpdate = true; }
+      await relayout(true);
+      await sleep(220);
+      relS(); relT();
+      cx.set(`swap ${dv} ↔ ${sv} · now delete ${dv} at its new spot`, 'swap');
+      log.say(`<span class="km">swap</span> ${dv} ↔ ${sv}`);
+      await stepperCheckpoint();
+      removeNode = s; rmParent = sp;          // s now holds dv → unlink it
+    }
+
+    // unlink the ≤1-child node, splicing its single child into its parent
+    const childSub = removeNode.left || removeNode.right || null;
+    if (rmParent){
+      if (rmParent.left === removeNode) rmParent.left = childSub;
+      else                              rmParent.right = childSub;
+    } else {
+      root = childSub;
+    }
+    size--;
+    await pulse(removeNode, 0xff5c70, 360);
+    await relayout(true);                     // removeNode unreachable → shrinks & is dropped
+    log.say(`<span class="ko">delete</span> ${removeNode.value}`);
+    cx.set(childSub ? `removed ${removeNode.value} · child ${childSub.value} spliced in`
+                     : `removed ${removeNode.value} · was a leaf`, '—');
   }),
   find: lock(async () => {
     const v = readVal(); if (v===null) return;

@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Hash Table — Data Structures Lab</title>
 <link rel="stylesheet" href="lab.css" />
+<style>
+  /* hash-table only: compact single-line preset buttons (shorter row) */
+  .preset-btn{ flex-direction:row; align-items:baseline; gap:8px; padding:3px 12px; }
+  .preset-btn .preset-name{ flex:none; font-size:11px; line-height:1.2; }
+  .preset-btn .preset-desc{ flex:1; min-width:0; font-size:9.5px; line-height:1.2; }
+</style>
 <script type="importmap">
 { "imports": {
     "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
@@ -703,6 +709,26 @@ function placeLink(link, ax, ay, bx, by){
   link.scale.y = len; link.rotation.z = Math.atan2(dx, -dy);
 }
 
+/* cuckoo: amber arc tying a key's slot to its OTHER candidate slot */
+const arcMeshes = [];
+function makeArc(){
+  const m = new THREE.Mesh(
+    new THREE.TubeGeometry(new THREE.LineCurve3(new THREE.Vector3(), new THREE.Vector3(0,1,0)), 1, 0.035, 6, false),
+    new THREE.MeshBasicMaterial({color:0xffb454, transparent:true, opacity:0.42})
+  );
+  m.visible = false; scene.add(m);
+  return m;
+}
+function placeArc(arc, ax, ay, bx, by, bow){
+  // quadratic bezier bowing out to the LEFT of the bucket column (empty space)
+  const ctrl = new THREE.Vector3(Math.min(ax,bx) - bow, (ay+by)/2, 0);
+  const curve = new THREE.QuadraticBezierCurve3(
+    new THREE.Vector3(ax,ay,0), ctrl, new THREE.Vector3(bx,by,0));
+  arc.geometry.dispose();
+  arc.geometry = new THREE.TubeGeometry(curve, 28, 0.035, 6, false);
+  arc.visible = true;
+}
+
 function rebuildBuckets(){
   for (const b of bucketMeshes) scene.remove(b.grp);
   bucketMeshes.length = 0;
@@ -725,8 +751,9 @@ async function relayout(animate=true){
   for (const k of live){ if (!nodeMeshes.has(k)) nodeMeshes.set(k, makeNodeMesh(k)); }
   while (linkMeshes.length < 80) linkMeshes.push(makeLink());
   for (const l of linkMeshes) l.visible = false;
+  for (const a of arcMeshes) a.visible = false;
   for (const s of subMeshes) s.grp.visible = false;
-  let linkI = 0, subI = 0;
+  let linkI = 0, subI = 0, arcI = 0;
 
   if (mode === 'chaining'){
     for (let i=0;i<M;i++){
@@ -774,7 +801,7 @@ async function relayout(animate=true){
         draw(n.left, n); draw(n.right, n);
       })(root, null);
     }
-  } else if (mode === 'linear' || mode === 'double' || mode === 'cuckoo'){
+  } else if (mode === 'linear' || mode === 'double'){
     for (let i=0;i<M;i++){
       const v = slots[i];
       if (v == null) continue;
@@ -782,6 +809,23 @@ async function relayout(animate=true){
       const p = slotKeyPos(i);
       tasks.push(tweenVec(mesh.grp.position, new THREE.Vector3(p.x, p.y, 0), animate?420:0));
       tasks.push(tweenVec(mesh.grp.scale, new THREE.Vector3(1,1,1), animate?320:0));
+    }
+  } else if (mode === 'cuckoo'){
+    for (let i=0;i<M;i++){
+      const v = slots[i];
+      if (v == null) continue;
+      const mesh = nodeMeshes.get(v);
+      const p = slotKeyPos(i);
+      tasks.push(tweenVec(mesh.grp.position, new THREE.Vector3(p.x, p.y, 0), animate?420:0));
+      tasks.push(tweenVec(mesh.grp.scale, new THREE.Vector3(1,1,1), animate?320:0));
+      // tie this key to its OTHER candidate slot so both homes are visible
+      const [s1, s2] = cuckooSlots(v);
+      const alt = (i === s1) ? s2 : (i === s2 ? s1 : s2);
+      const bp = bucketPos(i), ap = bucketPos(alt);
+      const edgeX = bp.x - BUCKET_W/2 - 0.05;     // hug the left edge of the column
+      const bow = Math.min(2.8, 0.7 + 0.34 * Math.abs(i - alt)); // wider arc for distant slots
+      while (arcI >= arcMeshes.length) arcMeshes.push(makeArc());
+      placeArc(arcMeshes[arcI++], edgeX, bp.y, edgeX, ap.y, bow);
     }
   } else if (mode === 'fks' && fks){
     for (let i=0;i<M;i++){
@@ -829,7 +873,9 @@ const MODE_EXPLAIN = {
     `<b style="color:var(--amber)">Cuckoo hashing</b> (open addressing). Every key has exactly TWO ` +
     `candidate slots, h₁ and h₂. Insert goes to h₁; if it's taken, the occupant is <i>kicked out</i> ` +
     `and bounced to its OTHER slot, which may kick someone else — a displacement chain. A cycle triggers ` +
-    `a grow + rehash. The payoff: <b>find/delete are O(1) worst-case</b> — only the two slots are ever checked.`,
+    `a grow + rehash. The payoff: <b>find/delete are O(1) worst-case</b> — only the two slots are ever checked. ` +
+    `The <b style="color:var(--amber)">amber arc</b> on each key links its current slot to its <i>other</i> ` +
+    `candidate (h₁↔h₂), so you can see both homes for every element at once.`,
   fks:
     `<b style="color:var(--lime)">FKS perfect hashing</b> — a chaining variant where a bucket's ` +
     `collision list is replaced by a <b>collision-free secondary table</b>. h₁ sends a key to one of ` +
