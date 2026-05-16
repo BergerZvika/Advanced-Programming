@@ -1,0 +1,1063 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>B-Tree — Data Structures Lab</title>
+<link rel="stylesheet" href="lab.css" />
+<script type="importmap">
+{ "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+  <div class="frame">
+    <header id="topbar" class="topbar"><a class="btn-back" href="index.html" style="text-decoration:none"><span class="arrow">&#8592;</span> labs</a></header>
+
+    <div class="lab-shell">
+      <div class="stage" id="stage">
+        <div class="stage-corner tl"></div><div class="stage-corner tr"></div>
+        <div class="stage-corner bl"></div><div class="stage-corner br"></div>
+        <div class="stage-hint"><span><b>drag</b> orbit</span><span><b>scroll</b> zoom</span><span><b>right-drag / WASD</b> pan</span></div>
+
+        <div id="player-mount" class="player-overlay"></div>
+        <div class="stage-overlay">
+          <div class="row">
+            <div class="stage-tag"><b>order m</b>&nbsp; <span id="t-order">6</span></div>
+            <div class="stage-tag"><b>keys</b>&nbsp; <span id="t-size">0</span></div>
+            <div class="stage-tag"><b>height</b>&nbsp; <span id="t-height">0</span></div>
+          </div>
+          <div class="row">
+            <div class="stage-tag">keys/node ≤ m−1 · children ≤ m · split on overflow</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="presets" id="presets-mount"></div>
+
+      <aside class="panel">
+        <h2>Controls</h2>
+        <div class="section-rule"></div>
+
+        <div class="label">Order m · max children/node · even · clears the tree on apply</div>
+        <div class="input-row">
+          <input id="in-m" type="number" min="4" max="16" step="2" value="6" />
+          <button class="ghost" id="b-apply-m">APPLY</button>
+        </div>
+        <div class="cx-panel" id="bt-rules" style="margin-top:8px;font-family:var(--mono);font-size:10.5px;line-height:1.5;color:var(--ink-dim)"></div>
+
+        <div class="label mt-8">Value(s)</div>
+        <div class="input-row">
+          <input id="in-val" placeholder="e.g. 10  or  10,20,30" autocomplete="off" />
+          <button class="ghost" id="b-rand">RND</button>
+        </div>
+
+        <div class="label mt-12">Operations</div>
+        <div class="op-grid">
+          <button class="op" data-color="cyan"    id="op-insert"><span class="name"><span class="dot"></span> insert</span><span class="cx">O(log n)</span></button>
+          <button class="op" data-color="magenta" id="op-delete"><span class="name"><span class="dot"></span> delete</span><span class="cx">O(log n)</span></button>
+          <button class="op" data-color="amber"   id="op-find"><span class="name"><span class="dot"></span> find</span><span class="cx">O(log n)</span></button>
+          <button class="op" data-color="cyan"    id="op-inorder"><span class="name"><span class="dot"></span> in-order</span><span class="cx">O(n)</span></button>
+          <button class="op full" data-color="lime"  id="op-undo"><span class="name"><span class="dot"></span> undo · last op</span><span class="cx" id="undo-depth">0</span></button>
+          <button class="op full" data-color="amber" id="op-clear"><span class="name"><span class="dot"></span> clear</span><span class="cx">reset</span></button>
+        </div>
+
+        <div class="label mt-12">Complexity</div>
+        <div id="cx-mount"></div>
+      </aside>
+
+      <div class="log" id="log"></div>
+    </div>
+
+    <footer class="statusbar">
+      <span class="pill"><b>lab</b>&nbsp; 03 · b-tree (t=3)</span>
+      <span class="pill"><b>renderer</b>&nbsp; three.js · WebGL</span>
+      <span class="pill"><b>history</b>&nbsp; <span id="hist-pill">0</span></span>
+    </footer>
+  </div>
+
+<script type="module">
+import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
+
+import { OrbitControls } from 'https://unpkg.com/three@0.160.0/examples/jsm/controls/OrbitControls.js';
+/* ─── inlined lab runtime ─── */
+/* ─────────────────────────────────────────────────────────────
+   shared lab runtime
+   ───────────────────────────────────────────────────────────── */
+
+const PALETTE = {
+  void:    0x05060d,
+  ink:     0xe6ecff,
+  inkDim:  0x8b93b8,
+  cyan:    0x35d0ff,
+  amber:   0xffb454,
+  magenta: 0xff5cab,
+  violet:  0x7c5cff,
+  lime:    0xb9ff5c,
+  err:     0xff5c70,
+  ok:      0x5cffb4,
+};
+
+/* ─── small DOM helpers ─── */
+const $  = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => [...r.querySelectorAll(s)];
+const el = (tag, attrs={}, ...kids) => {
+  const n = document.createElement(tag);
+  for (const k in attrs){
+    if (k === 'class') n.className = attrs[k];
+    else if (k === 'html') n.innerHTML = attrs[k];
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), attrs[k]);
+    else n.setAttribute(k, attrs[k]);
+  }
+  for (const c of kids){
+    if (c == null) continue;
+    n.appendChild(c.nodeType ? c : document.createTextNode(c));
+  }
+  return n;
+};
+
+/* ─── three.js scene wrapper ─── */
+function createScene({mount, camera = {pos:[0,4,18], lookAt:[0,0,0]}}){
+  const w = mount.clientWidth, h = mount.clientHeight;
+  const scene = new THREE.Scene();
+  scene.fog = new THREE.Fog(0x04050b, 26, 90);
+
+  const cam = new THREE.PerspectiveCamera(45, w/h, 0.1, 200);
+  cam.position.set(...camera.pos);
+  cam.lookAt(new THREE.Vector3(...camera.lookAt));
+
+  const renderer = new THREE.WebGLRenderer({antialias:true, alpha:true});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(w, h, false);
+  renderer.setClearColor(0x000000, 0);
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  mount.appendChild(renderer.domElement);
+
+  // lighting
+  const amb = new THREE.AmbientLight(0xb8c4ff, 0.55);
+  scene.add(amb);
+  const key = new THREE.DirectionalLight(0xffffff, 1.05);
+  key.position.set(5, 10, 8);
+  scene.add(key);
+  const rim = new THREE.DirectionalLight(0x35d0ff, 0.45);
+  rim.position.set(-8, 4, -6);
+  scene.add(rim);
+  const mag = new THREE.PointLight(0xff5cab, 0.65, 40);
+  mag.position.set(-6, 2, 6);
+  scene.add(mag);
+
+  // starfield (very subtle)
+  {
+    const g = new THREE.BufferGeometry();
+    const N = 320, arr = new Float32Array(N*3);
+    for (let i=0;i<N;i++){
+      arr[i*3]   = (Math.random()-0.5)*120;
+      arr[i*3+1] = (Math.random()-0.5)*80 + 8;
+      arr[i*3+2] = (Math.random()-0.5)*120 - 20;
+    }
+    g.setAttribute('position', new THREE.BufferAttribute(arr, 3));
+    const m = new THREE.PointsMaterial({color:0x9aa6d6, size:0.05, transparent:true, opacity:0.45});
+    scene.add(new THREE.Points(g, m));
+  }
+
+  // floor: large faint disc + radial grid
+  {
+    const disc = new THREE.Mesh(
+      new THREE.CircleGeometry(60, 64),
+      new THREE.MeshBasicMaterial({color:0x0a0e1c, transparent:true, opacity:0.65, side:THREE.DoubleSide})
+    );
+    disc.rotation.x = -Math.PI/2;
+    disc.position.y = -3.5;
+    scene.add(disc);
+    const grid = new THREE.GridHelper(80, 40, 0x35d0ff, 0x1a2240);
+    grid.material.opacity = 0.18; grid.material.transparent = true;
+    grid.position.y = -3.49;
+    scene.add(grid);
+  }
+
+  // orbit / pan / zoom controls
+  const controls = new OrbitControls(cam, renderer.domElement);
+  controls.enableDamping  = true;
+  controls.dampingFactor  = 0.08;
+  controls.target.set(...camera.lookAt);
+  controls.minDistance    = 3;
+  controls.maxDistance    = 220;            // zoom far enough out for tall layouts
+  controls.maxPolarAngle  = Math.PI;        // no vertical look clamp
+  controls.zoomSpeed      = 1.0;
+  controls.rotateSpeed    = 0.75;
+  controls.panSpeed       = 1.1;
+  controls.enablePan      = true;
+  controls.screenSpacePanning = true;       // pan straight up/down in screen space
+  // right-drag OR left-drag pans; middle drag dollies; left-drag still orbits
+  controls.mouseButtons = {
+    LEFT:   THREE.MOUSE.ROTATE,
+    MIDDLE: THREE.MOUSE.DOLLY,
+    RIGHT:  THREE.MOUSE.PAN,
+  };
+  // arrow / WASD keys pan the view (ArrowLeft/Right are also player step keys,
+  // but those only fire when a lab is mid-operation; panning otherwise is fine)
+  controls.keys = { LEFT:'KeyA', UP:'KeyW', RIGHT:'KeyD', BOTTOM:'KeyS' };
+  controls.keyPanSpeed = 16;
+  controls.listenToKeyEvents(window);
+  controls.update();
+
+  // render loop
+  function tick(){
+    controls.update();
+    renderer.render(scene, cam);
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+
+  // resize
+  const onResize = () => {
+    const W = mount.clientWidth, H = mount.clientHeight;
+    cam.aspect = W/H; cam.updateProjectionMatrix();
+    renderer.setSize(W, H, false);
+  };
+  window.addEventListener('resize', onResize);
+
+  return {scene, cam, renderer, controls};
+}
+
+/* ─── stepper · pause/play/single-step ─── */
+const stepper = {
+  paused: false,
+  resume: null,    // resolver for in-flight pause
+  speed: 1,        // 1 = normal, >1 = faster
+  stepOnce: false, // run forward without pausing until next checkpoint (animations still play)
+  checkpoints: [], // {label, undo: async () => void}
+  onState: null,   // callback(state) for UI updates
+};
+function stepperKick(){
+  if (stepper.resume){ const r = stepper.resume; stepper.resume = null; r(); }
+}
+function stepperPlay(){ stepper.paused = false; stepperKick(); stepper.onState && stepper.onState('playing'); }
+function stepperPause(){ stepper.paused = true; stepper.onState && stepper.onState('paused'); }
+function stepperToggle(){ stepper.paused ? stepperPlay() : stepperPause(); }
+// "fast forward" button now means "single step with animation": advance to the
+// next checkpoint at normal speed instead of jumping over the animations.
+function stepperFastForward(){ stepper.stepOnce = true; stepperKick(); }
+export async function stepperCheckpoint(label, undoFn){
+  if (undoFn) stepper.checkpoints.push({label: label || '', undo:undoFn});
+  if (label != null && stepper.onState) stepper.onState(label);
+  // Arrival at the next checkpoint ends the single-step pass so the next
+  // sleep/tween honors `paused` again.
+  stepper.stepOnce = false;
+  if (stepper.paused){
+    await new Promise(r => stepper.resume = r);
+  }
+}
+export async function stepperUndo(){
+  const cp = stepper.checkpoints.pop();
+  if (!cp) return false;
+  if (stepper.onState) stepper.onState('undo · '+cp.label);
+  await cp.undo();
+  return true;
+}
+function stepperClear(){ stepper.checkpoints.length = 0; }
+
+/* ─── small tween util · pause-aware ─── */
+// sleep / tween / tweenVec all honor stepper.paused — but if stepper.stepOnce
+// is set they treat the scene as if it's playing (animation runs at normal
+// speed). That way a single-step click shows the animation between two
+// checkpoints instead of jumping past it instantly.
+function tween(obj, prop, to, ms=420, ease=easeOutCubic){
+  return new Promise(res => {
+    const from = obj[prop];
+    let t0 = performance.now(), pausedAt = 0, totalPause = 0;
+    function step(now){
+      if (stepper.paused && !stepper.stepOnce){
+        if (!pausedAt) pausedAt = now;
+        requestAnimationFrame(step); return;
+      }
+      if (pausedAt){ totalPause += now - pausedAt; pausedAt = 0; }
+      const elapsed = (now - t0 - totalPause) * stepper.speed;
+      const k = Math.min(1, elapsed/ms);
+      obj[prop] = from + (to - from)*ease(k);
+      if (k<1) requestAnimationFrame(step); else res();
+    }
+    requestAnimationFrame(step);
+  });
+}
+function tweenVec(vec, to, ms=420, ease=easeOutCubic){
+  return new Promise(res => {
+    const from = vec.clone();
+    let t0 = performance.now(), pausedAt = 0, totalPause = 0;
+    function step(now){
+      if (stepper.paused && !stepper.stepOnce){
+        if (!pausedAt) pausedAt = now;
+        requestAnimationFrame(step); return;
+      }
+      if (pausedAt){ totalPause += now - pausedAt; pausedAt = 0; }
+      const elapsed = (now - t0 - totalPause) * stepper.speed;
+      const k = Math.min(1, elapsed/ms);
+      vec.lerpVectors(from, to, ease(k));
+      if (k<1) requestAnimationFrame(step); else res();
+    }
+    requestAnimationFrame(step);
+  });
+}
+const easeOutCubic = t => 1 - Math.pow(1-t, 3);
+const easeInOutCubic = t => t<0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2,3)/2;
+export async function sleep(ms){
+  let remaining = ms;
+  while (remaining > 0){
+    if (stepper.paused && !stepper.stepOnce){
+      await new Promise(r => stepper.resume = r);
+    }
+    const chunk = Math.min(remaining, 32);
+    await new Promise(r => setTimeout(r, chunk / Math.max(0.1, stepper.speed)));
+    remaining -= chunk;
+  }
+}
+
+/* ─── undo stack ─── */
+function createHistory(){
+  const stack = [];
+  return {
+    push(snapshot){ stack.push(snapshot); },
+    pop(){ return stack.pop(); },
+    size(){ return stack.length; },
+    clear(){ stack.length = 0; },
+  };
+}
+
+/* ─── on-screen log ─── */
+function createLog(mountSel='#log'){
+  const root = typeof mountSel === 'string' ? $(mountSel) : mountSel;
+  const list = el('div', {class:'log-list'});
+  root.appendChild(el('h3', {}, 'Trace'));
+  root.appendChild(list);
+  function fmtTime(){
+    const d = new Date();
+    return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')+':'+String(d.getSeconds()).padStart(2,'0');
+  }
+  return {
+    say(html){
+      const row = el('div', {class:'entry'},
+        el('span', {class:'t'}, fmtTime()),
+        el('span', {class:'e', html})
+      );
+      list.prepend(row);
+      while (list.childElementCount > 80) list.lastElementChild.remove();
+    },
+    clear(){ list.innerHTML = ''; },
+  };
+}
+
+/* ─── complexity readout ─── */
+function createComplexityPanel(mount, rows){
+  const wrap = el('div', {class:'cx-panel'});
+  for (const r of rows){
+    wrap.appendChild(el('div', {class:'cx-row'},
+      el('span', {class:'key'}, r.key),
+      el('span', {class:'val'}, r.val)
+    ));
+  }
+  const now = el('div', {class:'cx-now'},
+    el('span', {html:'<span class="badge"></span><span class="now-text">idle</span>'}),
+    el('span', {class:'now-cx', html:'&nbsp;'})
+  );
+  wrap.appendChild(now);
+  mount.appendChild(wrap);
+  return {
+    set(opLabel, cxLabel){
+      now.querySelector('.now-text').textContent = opLabel;
+      now.querySelector('.now-cx').innerHTML = cxLabel;
+      // mirror into the player transport status bar so the user sees what's
+      // happening without having to look at two places at once
+      if (stepper.onState) stepper.onState(opLabel);
+    },
+  };
+}
+
+/* ─── wire back button + clock ─── */
+function mountTopbar({title, sub, back='index.html'}){
+  const root = $('#topbar');
+  if (!root) return;
+  root.innerHTML = '';
+  root.appendChild(el('a', {class:'btn-back', href:back, 'aria-label':'Back to labs'},
+    el('span', {class:'arrow', html:'&#8592;'}), 'labs'));
+  root.appendChild(el('div', {class:'brand'},
+    el('div', {class:'brand-mark'}),
+    el('div', {},
+      el('div', {class:'brand-title'}, title),
+      el('div', {class:'brand-sub'}, sub),
+    )
+  ));
+  root.appendChild(el('div', {class:'spacer'}));
+  const clock = el('div', {class:'stage-tag'}, '');
+  root.appendChild(clock);
+  const tick = () => {
+    const d = new Date();
+    clock.innerHTML = `<b>T</b>&nbsp; ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`;
+  };
+  tick(); setInterval(tick, 1000);
+}
+
+/* ─── 3D arrow indicator (shaft + cone + halo + optional text label) ─── */
+// default arrow points in -Y (down). Rotate the returned group to re-aim:
+//   up:    rotation.x = Math.PI  (or rotation.z = Math.PI)
+//   left:  rotation.z =  Math.PI/2
+//   right: rotation.z = -Math.PI/2
+function makeArrow3D({color = 0x5cffb4, label = '', length = 1.5, labelSide = 'top'} = {}){
+  const grp = new THREE.Group();
+
+  const mat = new THREE.MeshPhysicalMaterial({
+    color, emissive:color, emissiveIntensity:0.45,
+    metalness:0.5, roughness:0.25, clearcoat:0.5
+  });
+
+  const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.085, length, 18), mat);
+  shaft.position.y = -length/2;
+  grp.add(shaft);
+
+  const tip = new THREE.Mesh(new THREE.ConeGeometry(0.24, 0.5, 22), mat);
+  tip.rotation.x = Math.PI;            // apex toward -Y
+  tip.position.y = -length - 0.25;
+  grp.add(tip);
+
+  if (label){
+    const c = document.createElement('canvas'); c.width = 512; c.height = 160;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#' + color.toString(16).padStart(6, '0');
+    ctx.font = '800 78px IBM Plex Mono, monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 14;
+    ctx.fillText(label, 256, 80);
+    const tex = new THREE.CanvasTexture(c); tex.minFilter = THREE.LinearFilter;
+    const spr = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true, depthTest:false}));
+    spr.renderOrder = 12;
+    spr.scale.set(1.9, 0.6, 1);
+    if (labelSide === 'top')    spr.position.set(0,  0.45, 0);
+    if (labelSide === 'bottom') spr.position.set(0, -length - 0.75, 0);
+    grp.add(spr);
+  }
+
+  return {group: grp, shaft, tip,
+          setColor(c){ mat.color.setHex(c); mat.emissive.setHex(c); }};
+}
+
+/* ─── player UI · play/pause/back/forward ─── */
+function mountPlayer({mount, onBack}){
+  const root = typeof mount === 'string' ? $(mount) : mount;
+  if (!root) return null;
+  const playBtn  = el('button', {class:'pl-btn pl-play',  title:'play / pause (Space)', html:'<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>'});
+  const pauseBtn = el('button', {class:'pl-btn pl-pause hidden', title:'pause (Space)', html:'<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>'});
+  const backBtn  = el('button', {class:'pl-btn',  title:'step backward (←)', html:'<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M6 6h2v12H6zM20 6 9 12l11 6z"/></svg>'});
+  const fwdBtn   = el('button', {class:'pl-btn',  title:'skip to end of step (→)', html:'<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M16 6h2v12h-2zM4 6l11 6L4 18z"/></svg>'});
+  // continuous speed slider: 0.1× ··· 5× with smooth steps
+  const speedSlider = el('input', {type:'range', class:'pl-speed-slider', min:'0.1', max:'5', step:'0.05', value:'1', title:'speed'});
+  const speedVal    = el('span', {class:'pl-speed-val'}, '1.00×');
+  const speedWrap   = el('div', {class:'pl-speed-wrap', title:'animation speed'}, speedSlider, speedVal);
+  const bar = el('div', {class:'pl-bar'}, backBtn, playBtn, pauseBtn, fwdBtn, speedWrap);
+  root.appendChild(bar);
+
+  function setMode(playing){
+    if (playing){ playBtn.classList.add('hidden'); pauseBtn.classList.remove('hidden'); }
+    else        { playBtn.classList.remove('hidden'); pauseBtn.classList.add('hidden'); }
+  }
+  setMode(false);  // start as "play" icon visible (i.e., paused/idle look)
+
+  // wire
+  playBtn .addEventListener('click', () => { stepperPlay();  setMode(true); });
+  pauseBtn.addEventListener('click', () => { stepperPause(); setMode(false); });
+  fwdBtn  .addEventListener('click', () => { stepperFastForward(); });
+  backBtn .addEventListener('click', async () => {
+    const ok = await stepperUndo();
+    if (!ok && onBack) onBack();   // fall back to lab's op-undo if checkpoints empty
+  });
+  // continuous speed: 0.10× ··· 5.00×
+  function applySpeed(){
+    const v = parseFloat(speedSlider.value) || 1;
+    stepper.speed = v;
+    speedVal.textContent = (v < 10 ? v.toFixed(2) : v.toFixed(1)) + '×';
+  }
+  speedSlider.addEventListener('input', applySpeed);
+  speedSlider.addEventListener('change', applySpeed);
+  applySpeed();
+
+  // No status text in the bar — cx.set still updates the side-panel readout
+  // via createComplexityPanel; the bar stays a fixed-size button row.
+  stepper.onState = null;
+
+  // keyboard
+  window.addEventListener('keydown', e => {
+    if (e.target.tagName === 'INPUT') return;
+    if (e.code === 'Space'){ e.preventDefault(); stepperToggle(); setMode(!stepper.paused); }
+    else if (e.code === 'ArrowRight'){ stepperFastForward(); }
+    else if (e.code === 'ArrowLeft'){ backBtn.click(); }
+  });
+
+  return {setMode, status};
+}
+
+/* ─── preset toolbar (default-state buttons under the stage) ─── */
+// presets: array of {name, desc, apply: async ()=>void}
+function mountPresets({mount, label = 'presets', presets = []}){
+  const root = typeof mount === 'string' ? $(mount) : mount;
+  if (!root) return;
+  root.innerHTML = '';
+  root.appendChild(el('div', {class:'presets-label'}, label));
+  for (const p of presets){
+    const btn = el('button', {class:'preset-btn', type:'button', title: p.desc || ''},
+      el('span', {class:'preset-name'}, p.name),
+      el('span', {class:'preset-desc'}, p.desc || '')
+    );
+    btn.addEventListener('click', async () => {
+      try { await p.apply(); }
+      catch (e) { console.error('preset failed', e); }
+    });
+    root.appendChild(btn);
+  }
+}
+
+/* ─── input parsing util ─── */
+function parseNum(str, fallback=null){
+  if (str == null || str === '') return fallback;
+  const n = Number(str);
+  if (Number.isFinite(n)) return n;
+  return fallback;
+}
+function parseList(str){
+  if (!str) return [];
+  return String(str).split(/[,\s]+/).filter(Boolean).map(Number).filter(Number.isFinite);
+}
+function randomInt(a, b){ return a + Math.floor(Math.random()*(b-a+1)); }
+/* ─── end runtime ─── */
+
+
+mountTopbar({title:'B-Tree', sub:'lab 03 · multi-key tree'});
+const log = createLog('#log');
+mountPlayer({mount: $('#player-mount'), onBack: () => $('#op-undo')?.click()});
+const cx  = createComplexityPanel($('#cx-mount'), [
+  {key:'order m (max children)', val:'6'},
+  {key:'max keys / node', val:'m−1 = 5'},
+  {key:'min keys / node', val:'⌈m/2⌉−1 = 2 (non-root)'},
+  {key:'min children / node', val:'⌈m/2⌉ = 3 (non-root)'},
+  {key:'root', val:'≥1 key · ≥2 children (internal)'},
+  {key:'insert / delete / find', val:'O(log n)'},
+  {key:'space', val:'O(n)'},
+]);
+// even-order B-tree: order m = 2t, so m is the max #children and m−1 the max
+// #keys. ⌈m/2⌉ = t for even m, so these formulas match the t-based engine.
+function buildRulesHTML(m, maxK, minChild, minK){
+  return `<b style="color:var(--cyan)">B-tree · order m = ${m}</b> <span style="color:var(--ink-faint)">(min-degree t = ${T})</span><br>`
+    + `<span style="color:var(--ink-faint)">m = max children · m−1 = max keys · even order, median split</span>`
+    + `<div style="margin-top:6px"><b>Every node</b><br>`
+    + `• keys stay sorted; an internal node with k keys has exactly k+1 children<br>`
+    + `• keys / node ≤ <b>m−1 = ${maxK}</b> &nbsp; · &nbsp; children / node ≤ <b>m = ${m}</b><br>`
+    + `• all leaves sit at the <b>same depth</b> (perfectly balanced)</div>`
+    + `<div style="margin-top:6px"><b style="color:var(--lime)">Non-root node</b><br>`
+    + `• keys: <b>⌈m/2⌉−1 = ${minK}</b> … ${maxK}<br>`
+    + `• children (if internal): <b>⌈m/2⌉ = ${minChild}</b> … ${m}</div>`
+    + `<div style="margin-top:6px"><b style="color:var(--amber)">Root (different rule)</b><br>`
+    + `• leaf root: <b>0 … ${maxK}</b> keys, 0 children<br>`
+    + `• internal root: <b>≥ 1</b> key &nbsp;·&nbsp; <b>2 … ${m}</b> children</div>`
+    + `<div style="margin-top:6px"><b style="color:var(--magenta)">Overflow → split</b><br>`
+    + `• the ${m}-th key overflows a node (cap is ${maxK})<br>`
+    + `• the <b>median</b> rises into the parent; the node splits into two of <b>${minK}</b> keys<br>`
+    + `• splits cascade up; splitting the root is the only way height grows</div>`;
+}
+function refreshRules(){
+  const m = 2 * T;                    // order = max children (even-order B-tree)
+  const maxK = m - 1;                 // 2t−1
+  const minChild = Math.ceil(m / 2);  // = t for even m
+  const minK = minChild - 1;          // t−1
+  const rows = $('#cx-mount').querySelectorAll('.cx-row');
+  if (rows.length >= 5){
+    rows[0].querySelector('.val').textContent = String(m);
+    rows[1].querySelector('.val').textContent = `m−1 = ${maxK}`;
+    rows[2].querySelector('.val').textContent = `⌈m/2⌉−1 = ${minK} (non-root)`;
+    rows[3].querySelector('.val').textContent = `⌈m/2⌉ = ${minChild} (non-root)`;
+    rows[4].querySelector('.val').textContent = `≥1 key · 2…${m} children (internal)`;
+  }
+  $('#t-order').textContent = String(m);
+  const tag = document.querySelector('.stage-overlay .row:nth-child(2) .stage-tag');
+  if (tag) tag.textContent = `keys/node ≤ m−1 = ${maxK} · children ≤ m = ${m} · split on overflow`;
+  const rp = $('#bt-rules');
+  if (rp) rp.innerHTML = buildRulesHTML(m, maxK, minChild, minK);
+}
+const history = createHistory();
+
+const stage = $('#stage');
+const {scene} = createScene({mount:stage, camera:{pos:[0, 5.5, 21], lookAt:[0, 1, 0]}});
+
+let T = 3;
+let MAX_K = 2*T - 1;
+let MIN_K = T - 1;
+
+let nextId = 0;
+function newNode(leaf){ return {id:++nextId, keys:[], children:[], leaf, mesh:null, edgeUp:null}; }
+let root = newNode(true);
+let size = 0;
+
+/* ─── B-tree ops (CLRS-style) ─── */
+function search(n, k){
+  let i = 0; while (i < n.keys.length && k > n.keys[i]) i++;
+  if (i < n.keys.length && k === n.keys[i]) return {node:n, idx:i};
+  if (n.leaf) return null;
+  return search(n.children[i], k);
+}
+function splitChild(x, i){
+  const y = x.children[i];
+  const z = newNode(y.leaf);
+  z.keys = y.keys.splice(T, T-1);
+  if (!y.leaf) z.children = y.children.splice(T, T);
+  x.children.splice(i+1, 0, z);
+  const upKey = y.keys.pop();
+  x.keys.splice(i, 0, upKey);
+}
+function insertNonFull(x, k){
+  let i = x.keys.length - 1;
+  if (x.leaf){
+    while (i >= 0 && k < x.keys[i]) i--;
+    x.keys.splice(i+1, 0, k);
+  } else {
+    while (i >= 0 && k < x.keys[i]) i--;
+    i++;
+    if (x.children[i].keys.length === MAX_K){
+      splitChild(x, i);
+      if (k > x.keys[i]) i++;
+    }
+    insertNonFull(x.children[i], k);
+  }
+}
+function insertKey(k){
+  if (search(root, k)) return false;
+  if (root.keys.length === MAX_K){
+    const s = newNode(false);
+    s.children.push(root);
+    root = s;
+    splitChild(s, 0);
+    insertNonFull(s, k);
+  } else insertNonFull(root, k);
+  size++;
+  return true;
+}
+
+/* ─── visible insert: top-down split (CLRS) — each split is a discrete step ─── */
+async function splitChildAnim(x, i){
+  const y = x.children[i];
+  const median = y.keys[T-1];
+  cx.set(`split · node [${y.keys.join(',')}] · median ${median} ↑`, `O(log n)`);
+  log.say(`<span class="km">split</span> [${y.keys.join(',')}] — median ${median} → parent`);
+  await pulse(y, 0xff5c70, 480);
+  await stepperCheckpoint();
+  splitChild(x, i);
+  await relayout(true);
+  await pulse(x.children[i],   0x5cffb4, 360);  // new left  (y, shrunk)
+  await pulse(x.children[i+1], 0x35d0ff, 360);  // new right (z, fresh)
+  await pulse(x, 0xffb454, 360);                // parent now holds median
+  await stepperCheckpoint();
+}
+
+async function insertVisible(k){
+  if (search(root, k)){ log.say(`<span class="kx">dup</span> ${k}`); return false; }
+  // pre-split root if it's full
+  if (root.keys.length === MAX_K){
+    cx.set(`root [${root.keys.join(',')}] is full · grow tree`, `O(log n)`);
+    await pulse(root, 0xff5c70, 380);
+    await stepperCheckpoint();
+    const s = newNode(false);
+    s.children.push(root);
+    root = s;
+    await relayout(false);   // immediately reflect the new empty root
+    await splitChildAnim(s, 0);
+  }
+  // top-down descent. CLRS preemptively splits any full child before descending.
+  let x = root;
+  while (!x.leaf){
+    cx.set(`descend · keys=[${x.keys.join(',')}]`, 'descend');
+    await pulse(x, 0xffb454, 200);
+    await stepperCheckpoint();
+    let i = x.keys.length - 1;
+    while (i >= 0 && k < x.keys[i]) i--;
+    i++;
+    if (x.children[i].keys.length === MAX_K){
+      cx.set(`child [${x.children[i].keys.join(',')}] full · split before descend`, `O(log n)`);
+      await splitChildAnim(x, i);
+      if (k > x.keys[i]) i++;
+    }
+    x = x.children[i];
+  }
+  // x is a leaf with room
+  let j = x.keys.length - 1;
+  while (j >= 0 && k < x.keys[j]) j--;
+  x.keys.splice(j+1, 0, k);
+  size++;
+  cx.set(`place ${k} into leaf · keys now [${x.keys.join(',')}]`, 'O(1) in-node');
+  await relayout(true);
+  await pulse(x, 0x5cffb4, 460);
+  await stepperCheckpoint();
+  return true;
+}
+
+function predecessor(x, i){ let n = x.children[i]; while (!n.leaf) n = n.children[n.children.length-1]; return n.keys[n.keys.length-1]; }
+function successor(x, i){ let n = x.children[i+1]; while (!n.leaf) n = n.children[0]; return n.keys[0]; }
+function mergeChildren(x, i){
+  const y = x.children[i], z = x.children[i+1];
+  y.keys.push(x.keys[i]);
+  y.keys.push(...z.keys);
+  if (!y.leaf) y.children.push(...z.children);
+  x.keys.splice(i, 1);
+  x.children.splice(i+1, 1);
+  return y;
+}
+function fill(x, i){
+  const y = x.children[i];
+  if (i !== 0 && x.children[i-1].keys.length >= T){
+    const l = x.children[i-1];
+    y.keys.unshift(x.keys[i-1]);
+    if (!y.leaf) y.children.unshift(l.children.pop());
+    x.keys[i-1] = l.keys.pop();
+  } else if (i !== x.children.length-1 && x.children[i+1].keys.length >= T){
+    const r = x.children[i+1];
+    y.keys.push(x.keys[i]);
+    if (!y.leaf) y.children.push(r.children.shift());
+    x.keys[i] = r.keys.shift();
+  } else {
+    if (i !== x.children.length-1) mergeChildren(x, i);
+    else mergeChildren(x, i-1);
+  }
+}
+function deleteFromLeaf(x, i){ x.keys.splice(i, 1); }
+function deleteFromInternal(x, i){
+  const k = x.keys[i];
+  if (x.children[i].keys.length >= T){
+    const p = predecessor(x, i); x.keys[i] = p; deleteFromNode(x.children[i], p);
+  } else if (x.children[i+1].keys.length >= T){
+    const s = successor(x, i); x.keys[i] = s; deleteFromNode(x.children[i+1], s);
+  } else { mergeChildren(x, i); deleteFromNode(x.children[i], k); }
+}
+function deleteFromNode(x, k){
+  let i = 0; while (i < x.keys.length && x.keys[i] < k) i++;
+  if (i < x.keys.length && x.keys[i] === k){
+    if (x.leaf) deleteFromLeaf(x, i); else deleteFromInternal(x, i);
+  } else {
+    if (x.leaf) return false;
+    const flag = (i === x.keys.length);
+    if (x.children[i].keys.length < T) fill(x, i);
+    if (flag && i > x.keys.length) deleteFromNode(x.children[i-1], k);
+    else deleteFromNode(x.children[i], k);
+  }
+  return true;
+}
+function deleteKey(k){
+  if (!search(root, k)) return false;
+  deleteFromNode(root, k);
+  if (root.keys.length === 0 && !root.leaf) root = root.children[0];
+  size--;
+  return true;
+}
+
+/* ─── visuals ─── */
+
+const NODE_KEY_W = 1.05, NODE_H = 1.05;
+
+function makeNodeMesh(node){
+  const grp = new THREE.Group();
+  return rebuildNodeMesh(node, grp);
+}
+function rebuildNodeMesh(node, grp){
+  // clear existing children
+  while (grp.children.length) grp.remove(grp.children[0]);
+  const k = Math.max(1, node.keys.length);
+  const width = k * NODE_KEY_W + 0.15;
+  // backplate
+  const bg = new THREE.Mesh(
+    new THREE.BoxGeometry(width, NODE_H, 0.5),
+    new THREE.MeshPhysicalMaterial({color: node.leaf ? 0x141c34 : 0x1a2548, metalness:0.55, roughness:0.25, emissive:0x0c1330, emissiveIntensity:0.6})
+  );
+  grp.add(bg);
+  // outline
+  const edges = new THREE.LineSegments(
+    new THREE.EdgesGeometry(bg.geometry),
+    new THREE.LineBasicMaterial({color: node.leaf ? 0xffb454 : 0xff5cab, transparent:true, opacity:0.7})
+  );
+  grp.add(edges);
+  // key labels via sprite per key
+  for (let i=0;i<node.keys.length;i++){
+    const c = document.createElement('canvas'); c.width = 128; c.height = 128;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#ffffff'; ctx.font = '700 64px IBM Plex Mono, monospace';
+    ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(String(node.keys[i]), 64, 64);
+    const tex = new THREE.CanvasTexture(c); tex.minFilter = THREE.LinearFilter;
+    const spr = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true}));
+    const x = (i - (node.keys.length - 1)/2) * NODE_KEY_W;
+    spr.position.set(x, 0, 0.3); spr.scale.set(NODE_KEY_W*0.9, NODE_H*0.9, 1);
+    grp.add(spr);
+    // dividing tick
+    if (i > 0){
+      const tick = new THREE.Mesh(new THREE.BoxGeometry(0.02, NODE_H*0.7, 0.55), new THREE.MeshBasicMaterial({color:0x35d0ff, transparent:true, opacity:0.55}));
+      tick.position.set(x - NODE_KEY_W/2, 0, 0.1); grp.add(tick);
+    }
+  }
+  grp.userData = {width};
+  return grp;
+}
+
+function makeEdge(){
+  return new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1, 12), new THREE.MeshBasicMaterial({color:0xff5cab, transparent:true, opacity:0.55}));
+}
+
+function placeEdge(edge, ax, ay, bx, by){
+  const dx = bx-ax, dy = by-ay;
+  const len = Math.sqrt(dx*dx+dy*dy);
+  edge.position.set((ax+bx)/2, (ay+by)/2, 0);
+  edge.scale.y = len;
+  edge.rotation.z = Math.atan2(dx, -dy);
+}
+
+function gather(n, depth, depthMap){
+  if (!n) return;
+  if (!depthMap[depth]) depthMap[depth] = [];
+  depthMap[depth].push(n);
+  for (const c of n.children) gather(c, depth+1, depthMap);
+}
+
+function ensureMeshes(){
+  function walk(n){
+    if (!n) return;
+    if (!n.mesh){
+      const grp = new THREE.Group();
+      rebuildNodeMesh(n, grp);
+      n.mesh = {grp};
+      n.edgeUp = makeEdge(); n.edgeUp.visible = false;
+      n.mesh.grp.scale.setScalar(0.001);
+      scene.add(n.mesh.grp);
+      scene.add(n.edgeUp);
+    } else {
+      rebuildNodeMesh(n, n.mesh.grp);
+    }
+    for (const c of n.children) walk(c);
+  }
+  walk(root);
+}
+
+function depth(n){ if (!n) return 0; return 1 + (n.children.length ? Math.max(...n.children.map(depth)) : 0); }
+
+async function relayout(animate=true){
+  ensureMeshes();
+  const depthMap = {};
+  gather(root, 0, depthMap);
+  const positions = new Map();
+  // 1. raw layout
+  for (const d in depthMap){
+    const layer = depthMap[d];
+    const total = layer.reduce((a,n) => a + n.mesh.grp.userData.width + 0.6, 0);
+    let cursor = -total/2;
+    for (const n of layer){
+      const w = n.mesh.grp.userData.width;
+      const x = cursor + w/2;
+      cursor += w + 0.6;
+      const y = -d * 2.4 + 3.0;
+      positions.set(n, {x, y});
+    }
+  }
+  // 2. fit-to-viewport — scale tree so it fits inside the canvas
+  const FOV = 45 * Math.PI/180;
+  const camZ = 21;
+  const viewH = 2 * camZ * Math.tan(FOV/2);
+  const aspect = stage.clientWidth / Math.max(1, stage.clientHeight);
+  const viewW = viewH * aspect;
+  const targetW = viewW * 0.42, targetH = viewH * 0.38;
+  let maxX = 0.001, minY = 3.0;
+  for (const p of positions.values()){
+    maxX = Math.max(maxX, Math.abs(p.x));
+    minY = Math.min(minY, p.y);
+  }
+  // include node widths in maxX
+  for (const [n, p] of positions){ maxX = Math.max(maxX, Math.abs(p.x) + n.mesh.grp.userData.width/2); }
+  const usedH = 3.0 - minY;
+  const s = Math.min(1, targetW / maxX, usedH > 0 ? targetH / usedH : 1);
+  if (s < 1) for (const p of positions.values()){ p.x *= s; p.y = 3.0 + (p.y - 3.0) * s; }
+
+  // 3. animate
+  const tasks = [];
+  for (const [n, p] of positions){
+    tasks.push(tweenVec(n.mesh.grp.position, new THREE.Vector3(p.x, p.y, 0), animate?420:0));
+    tasks.push(tweenVec(n.mesh.grp.scale, new THREE.Vector3(s, s, s), animate?320:0));
+  }
+  // edges
+  function walk(n, parent){
+    if (!n) return;
+    if (n.edgeUp){
+      if (parent){
+        const pp = positions.get(parent), pn = positions.get(n);
+        n.edgeUp.visible = true; placeEdge(n.edgeUp, pp.x, pp.y, pn.x, pn.y);
+      } else n.edgeUp.visible = false;
+    }
+    for (const c of n.children) walk(c, n);
+  }
+  walk(root, null);
+  await Promise.all(tasks);
+  refreshHUD();
+}
+
+function refreshHUD(){
+  $('#t-size').textContent = size;
+  $('#t-height').textContent = depth(root);
+  $('#undo-depth').textContent = history.size();
+  $('#hist-pill').textContent = history.size();
+}
+
+async function pulse(node, color=0x5cffb4, ms=260){
+  if (!node || !node.mesh) return;
+  const m = node.mesh.grp.children[0].material;
+  const eOld = m.emissive.clone(), iOld = m.emissiveIntensity;
+  m.emissive.setHex(color); m.emissiveIntensity = 1.3;
+  await sleep(ms);
+  m.emissive.copy(eOld); m.emissiveIntensity = iOld;
+}
+
+/* ─── ops ─── */
+let busy = false;
+function lock(fn){ return async (...a) => { if (busy) return; busy=true; try{ await fn(...a); } finally{ busy=false; refreshHUD(); } }; }
+
+function readVals(){
+  const list = parseList($('#in-val').value);
+  if (!list.length){ const v=randomInt(1,99); $('#in-val').value=v; return [v]; }
+  return list;
+}
+function readVal(){ const v = parseNum($('#in-val').value, null); if (v===null){ log.say(`<span class="kx">err</span> number required`); return null; } return v; }
+
+function snapshotValues(){
+  const out = [];
+  (function walk(n){ if (!n) return; for (let i=0;i<n.keys.length;i++){ if (n.children[i]) walk(n.children[i]); out.push(n.keys[i]); } if (n.children.length) walk(n.children[n.children.length-1]); })(root);
+  return out;
+}
+async function rebuildFrom(values){
+  function purge(n){ if (!n) return; if (n.mesh){ scene.remove(n.mesh.grp); scene.remove(n.edgeUp); } for (const c of n.children) purge(c); }
+  purge(root);
+  root = newNode(true); size = 0;
+  for (const v of values) insertKey(v);
+  await relayout(false);
+}
+
+const opHandlers = {
+  insert: lock(async () => {
+    const vals = readVals();
+    history.push({type:'snapshot', values:snapshotValues()});
+    cx.set('insert', 'O(log n)');
+    for (const v of vals){
+      const ok = await insertVisible(v);
+      if (ok) log.say(`<span class="k">insert</span> ${v}`);
+    }
+    cx.set(`idle · height ${depth(root)}`, '—');
+  }),
+  delete: lock(async () => {
+    const v = readVal(); if (v===null) return;
+    history.push({type:'snapshot', values:snapshotValues()});
+    cx.set('delete', 'O(log n)');
+    const ok = deleteKey(v);
+    await relayout(true);
+    log.say(ok ? `<span class="ko">delete</span> ${v}` : `<span class="kx">delete</span> ${v} · not present`);
+  }),
+  find: lock(async () => {
+    const v = readVal(); if (v===null) return;
+    cx.set('find — descend', 'O(log n)');
+    let n = root;
+    while (n){
+      let i = 0; while (i<n.keys.length && v > n.keys[i]) i++;
+      cx.set(`visit · keys=[${n.keys.join(',')}] · seek ${v}`, 'descend');
+      await pulse(n, 0xffb454, 200);
+      await stepperCheckpoint();
+      if (i<n.keys.length && n.keys[i]===v){
+        cx.set(`hit ${v}`, 'O(1)');
+        await pulse(n, 0x5cffb4, 700);
+        await stepperCheckpoint();
+        log.say(`<span class="k">find</span>(${v}) → hit`); return;
+      }
+      if (n.leaf) break;
+      n = n.children[i];
+    }
+    cx.set(`miss ${v}`, '—');
+    log.say(`<span class="kx">find</span>(${v}) → miss`);
+  }),
+  inorder: lock(async () => {
+    cx.set('in-order', 'O(n)');
+    const out = [];
+    async function walk(n){
+      if (!n) return;
+      for (let i=0;i<n.keys.length;i++){
+        if (n.children[i]) await walk(n.children[i]);
+        out.push(n.keys[i]);
+      }
+      if (n.children.length > n.keys.length) await walk(n.children[n.children.length-1]);
+      await pulse(n, 0x35d0ff, 120);
+      await stepperCheckpoint();
+    }
+    await walk(root);
+    log.say(`<span class="k">in-order</span> [ ${out.join(', ')} ]`);
+  }),
+  undo: lock(async () => {
+    const op = history.pop(); if (!op){ log.say(`<span class="kx">undo</span> empty`); return; }
+    await rebuildFrom(op.values);
+    cx.set('undo · snapshot', '—');
+    log.say(`<span class="ko">undo</span> · ${op.values.length} keys`);
+  }),
+  clear: lock(async () => {
+    history.push({type:'snapshot', values:snapshotValues()});
+    await rebuildFrom([]);
+    log.say(`<span class="ko">clear</span>`);
+  }),
+};
+for (const k in opHandlers) $('#op-'+k).addEventListener('click', opHandlers[k]);
+$('#b-rand').addEventListener('click', () => $('#in-val').value = randomInt(1,99));
+
+$('#b-apply-m').addEventListener('click', async () => {
+  let m = Math.trunc(parseNum($('#in-m').value, 6));
+  if (m % 2 !== 0) m += 1;                       // even-order engine: round up to even
+  m = Math.max(4, Math.min(16, m));
+  $('#in-m').value = m;
+  const newT = m / 2;
+  if (newT === T){ log.say(`<span class="kx">m</span> unchanged (m=${m})`); return; }
+  history.push({type:'snapshot', values: snapshotValues(), T});
+  // tear down current visuals
+  (function purge(n){ if (!n) return; if (n.mesh) scene.remove(n.mesh.grp); if (n.edgeUp) scene.remove(n.edgeUp); for (const c of n.children) purge(c); })(root);
+  T = newT; MAX_K = 2*T - 1; MIN_K = T - 1;
+  root = newNode(true); size = 0; nextId = 0;
+  refreshRules();
+  await relayout(false);
+  log.say(`<span class="km">apply</span> m=${m} · max keys=${MAX_K} · cleared`);
+  cx.set(`m=${m} applied · cleared`, '—');
+});
+
+/* ─── preset toolbar ─── */
+async function loadBTree(newT, values){
+  T = Math.max(2, Math.min(8, newT|0));
+  MAX_K = 2*T - 1; MIN_K = T - 1;
+  // wipe visuals
+  (function purge(n){ if (!n) return; if (n.mesh) scene.remove(n.mesh.grp); if (n.edgeUp) scene.remove(n.edgeUp); for (const c of n.children) purge(c); })(root);
+  root = newNode(true); size = 0; nextId = 0;
+  refreshRules();
+  $('#in-m').value = 2 * T;
+  for (const v of values) insertKey(v);
+  await relayout(false);
+  history.clear();
+  cx.set(`preset · t=${T} · ${values.length} keys`, '—');
+}
+mountPresets({mount: $('#presets-mount'), label: 'defaults', presets:[
+  {name:'empty',      desc:'m=6 · empty root leaf',                              apply: () => loadBTree(3, [])},
+  {name:'pre-split',  desc:'m=6 · [10,20,30,40] — 1 more triggers root split',   apply: () => loadBTree(3, [10,20,30,40])},
+  {name:'one split',  desc:'m=6 · [10..60] — root already split once',           apply: () => loadBTree(3, [10,20,30,40,50,60])},
+  {name:'two levels', desc:'m=6 · 15 keys · interior + leaves',                  apply: () => loadBTree(3, [10,20,5,6,12,30,7,17,3,25,35,40,45,50,8])},
+  {name:'narrow m=4', desc:'m=4 · same keys, more splits / deeper tree',         apply: () => loadBTree(2, [10,20,5,6,12,30,7,17,3,25,35,40,45,50,8])},
+]});
+
+/* seed */
+(async () => {
+  refreshRules();
+  for (const v of [10,20,5,6,12,30,7,17,3,25,35,40,45,50,8]) insertKey(v);
+  await relayout(false);
+  history.clear(); refreshHUD();
+  log.say(`<span class="k">init</span> ${size} keys · m=${2*T}`);
+  cx.set('idle', '—');
+})();
+</script>
+</body>
+</html>
