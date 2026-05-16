@@ -41,7 +41,7 @@
         <h2>Controls</h2>
         <div class="section-rule"></div>
 
-        <div class="label">Order m · max children/node · 3…16, odd or even · clears the tree on apply</div>
+        <div class="label">Order m · max children/node · 3…16, odd or even · rebuilds the tree on apply</div>
         <div class="input-row">
           <input id="in-m" type="number" min="3" max="16" step="1" value="6" />
           <button class="ghost" id="b-apply-m">APPLY</button>
@@ -1029,14 +1029,16 @@ $('#b-apply-m').addEventListener('click', async () => {
   $('#in-m').value = m;
   if (m === M){ log.say(`<span class="kx">m</span> unchanged (m=${m})`); return; }
   history.push({type:'snapshot', values: snapshotValues()});
-  // tear down current visuals
+  // keep the current keys, rebuild them as a correct B-tree of the new order
+  const keep = snapshotValues();
   (function purge(n){ if (!n) return; if (n.mesh) scene.remove(n.mesh.grp); if (n.edgeUp) scene.remove(n.edgeUp); for (const c of n.children) purge(c); })(root);
   M = m; recalcBounds();
   root = newNode(true); size = 0; nextId = 0;
+  for (const v of keep) insertKey(v);
   refreshRules();
   await relayout(false);
-  log.say(`<span class="km">apply</span> m=${m} · max keys=${MAX_K} · min keys=${MIN_K} · cleared`);
-  cx.set(`m=${m} applied · cleared`, '—');
+  log.say(`<span class="km">apply</span> m=${m} · rebuilt ${keep.length} key(s) · max ${MAX_K} / min ${MIN_K} per node`);
+  cx.set(`m=${m} applied · ${keep.length} keys re-balanced`, '—');
 });
 
 /* ─── preset toolbar ─── */
