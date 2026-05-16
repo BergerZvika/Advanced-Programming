@@ -834,6 +834,10 @@ function gather(n, depth, depthMap){
   for (const c of n.children) gather(c, depth+1, depthMap);
 }
 
+// every node whose mesh is currently in the scene — lets relayout drop the
+// meshes of nodes that left the tree (merged / removed during a delete)
+const liveMeshes = new Set();
+
 function ensureMeshes(){
   function walk(n){
     if (!n) return;
@@ -848,6 +852,7 @@ function ensureMeshes(){
     } else {
       rebuildNodeMesh(n, n.mesh.grp);
     }
+    liveMeshes.add(n);
     for (const c of n.children) walk(c);
   }
   walk(root);
@@ -914,7 +919,19 @@ async function relayout(animate=true){
     for (const c of n.children) walk(c, n);
   }
   walk(root, null);
+  // nodes that left the tree (merged / removed by delete): shrink them out
+  const dead = [];
+  for (const n of liveMeshes){ if (!positions.has(n)) dead.push(n); }
+  for (const n of dead){
+    if (n.edgeUp) n.edgeUp.visible = false;
+    if (n.mesh) tasks.push(tweenVec(n.mesh.grp.scale, new THREE.Vector3(0.001,0.001,0.001), animate?300:0));
+  }
   await Promise.all(tasks);
+  for (const n of dead){
+    if (n.mesh) scene.remove(n.mesh.grp);
+    if (n.edgeUp) scene.remove(n.edgeUp);
+    liveMeshes.delete(n);
+  }
   refreshHUD();
 }
 
@@ -951,8 +968,8 @@ function snapshotValues(){
   return out;
 }
 async function rebuildFrom(values){
-  function purge(n){ if (!n) return; if (n.mesh){ scene.remove(n.mesh.grp); scene.remove(n.edgeUp); } for (const c of n.children) purge(c); }
-  purge(root);
+  function purge(n){ if (!n) return; if (n.mesh){ scene.remove(n.mesh.grp); scene.remove(n.edgeUp); } liveMeshes.delete(n); for (const c of n.children) purge(c); }
+  purge(root); liveMeshes.clear();
   root = newNode(true); size = 0;
   for (const v of values) insertKey(v);
   await relayout(false);
@@ -1037,7 +1054,7 @@ $('#b-apply-m').addEventListener('click', async () => {
   history.push({type:'snapshot', values: snapshotValues()});
   // keep the current keys, rebuild them as a correct B-tree of the new order
   const keep = snapshotValues();
-  (function purge(n){ if (!n) return; if (n.mesh) scene.remove(n.mesh.grp); if (n.edgeUp) scene.remove(n.edgeUp); for (const c of n.children) purge(c); })(root);
+  (function purge(n){ if (!n) return; if (n.mesh) scene.remove(n.mesh.grp); if (n.edgeUp) scene.remove(n.edgeUp); for (const c of n.children) purge(c); })(root); liveMeshes.clear();
   M = m; recalcBounds();
   root = newNode(true); size = 0; nextId = 0;
   for (const v of keep) insertKey(v);
@@ -1051,7 +1068,7 @@ $('#b-apply-m').addEventListener('click', async () => {
 async function loadBTree(m, values){
   M = Math.max(3, Math.min(16, m|0)); recalcBounds();
   // wipe visuals
-  (function purge(n){ if (!n) return; if (n.mesh) scene.remove(n.mesh.grp); if (n.edgeUp) scene.remove(n.edgeUp); for (const c of n.children) purge(c); })(root);
+  (function purge(n){ if (!n) return; if (n.mesh) scene.remove(n.mesh.grp); if (n.edgeUp) scene.remove(n.edgeUp); for (const c of n.children) purge(c); })(root); liveMeshes.clear();
   root = newNode(true); size = 0; nextId = 0;
   refreshRules();
   $('#in-m').value = M;
