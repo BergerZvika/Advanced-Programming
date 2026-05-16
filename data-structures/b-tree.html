@@ -235,12 +235,12 @@ const stepper = {
 function stepperKick(){
   if (stepper.resume){ const r = stepper.resume; stepper.resume = null; r(); }
 }
-function stepperPlay(){ stepper.paused = false; stepperKick(); stepper.onState && stepper.onState('playing'); }
-function stepperPause(){ stepper.paused = true; stepper.onState && stepper.onState('paused'); }
+function stepperPlay(){ stepper.paused = false; stepperKick(); if (stepper._armNav) stepper._armNav(); stepper.onState && stepper.onState('playing'); }
+function stepperPause(){ stepper.paused = true; if (stepper._cancelNav) stepper._cancelNav(); stepper.onState && stepper.onState('paused'); }
 function stepperToggle(){ stepper.paused ? stepperPlay() : stepperPause(); }
 // "fast forward" button now means "single step with animation": advance to the
 // next checkpoint at normal speed instead of jumping over the animations.
-function stepperFastForward(){ stepper.stepOnce = true; stepperKick(); }
+function stepperFastForward(){ if (stepper.nav){ stepper.nav('fwd'); return; } stepper.stepOnce = true; stepperKick(); }
 export async function stepperCheckpoint(label, undoFn){
   if (undoFn) stepper.checkpoints.push({label: label || '', undo:undoFn});
   if (label != null && stepper.onState) stepper.onState(label);
@@ -252,6 +252,7 @@ export async function stepperCheckpoint(label, undoFn){
   }
 }
 export async function stepperUndo(){
+  if (stepper.nav){ stepper.nav('back'); return true; }   // navigate the step timeline
   const cp = stepper.checkpoints.pop();
   if (!cp) return false;
   if (stepper.onState) stepper.onState('undo · '+cp.label);
@@ -769,6 +770,146 @@ function deleteKey(k){
   return true;
 }
 
+/* ─── step timeline · one self-contained tree snapshot per step,
+       navigable forward AND backward from the player bar ─── */
+function inflateBT(s){ if(!s) return null; const n=newNode(s.leaf); n.keys=s.keys.slice(); n.hot=s.hot||0; n.children=(s.children||[]).map(inflateBT); return n; }
+function purgeMeshes(n){ if(!n) return; if(n.mesh) scene.remove(n.mesh.grp); if(n.edgeUp) scene.remove(n.edgeUp); for(const c of (n.children||[])) purgeMeshes(c); }
+
+// Build the list of step frames for an op on a private plain-object copy of
+// the tree (no meshes). Mirrors insertKey/deleteKey exactly, so the last
+// frame == the real post-op tree. Returns null when there's nothing to do.
+function framesFor(op, k){
+  const cl = n => n ? {keys:n.keys.slice(), leaf:n.leaf, hot:0, children:n.children.map(cl)} : null;
+  const NK = leaf => ({keys:[], children:[], leaf, hot:0});
+  let W = cl(root);
+  const frames = [];
+  const snap = (label, tag, hot) => {
+    const set = new Set((hot||[]).filter(Boolean));
+    (function mark(n){ if(!n) return; n.hot = set.has(n) ? 1 : 0; n.children.forEach(mark); })(W);
+    frames.push({tree: cl(W), label, tag});
+  };
+  function splitW(node){
+    const mid = Math.floor(node.keys.length / 2), median = node.keys[mid];
+    const right = NK(node.leaf);
+    right.keys = node.keys.slice(mid + 1);
+    node.keys  = node.keys.slice(0, mid);
+    if (!node.leaf){ right.children = node.children.slice(mid + 1); node.children = node.children.slice(0, mid + 1); }
+    return {median, right};
+  }
+  if (op === 'insert'){
+    let e = W; while (e){ let i=0; while(i<e.keys.length && k>e.keys[i]) i++; if(i<e.keys.length && e.keys[i]===k) return null; if(e.leaf) break; e=e.children[i]; }
+    const path = []; let x = W;
+    snap(`insert ${k} · find the target leaf`, 'descend', [x]);
+    while (!x.leaf){
+      let i = x.keys.length - 1; while (i>=0 && k<x.keys[i]) i--; i++;
+      path.push({node:x, idx:i}); x = x.children[i];
+      snap(`descend into child [${x.keys.join(',')}]`, 'descend', [x]);
+    }
+    let j = x.keys.length - 1; while (j>=0 && k<x.keys[j]) j--; x.keys.splice(j+1, 0, k);
+    snap(`place ${k} → leaf becomes [${x.keys.join(',')}]`, 'insert', [x]);
+    for (let p = path.length - 1; p >= 0; p--){
+      const {node, idx} = path[p], c = node.children[idx];
+      if (c.keys.length > MAX_K){
+        snap(`overflow · [${c.keys.join(',')}] has ${c.keys.length} > ${MAX_K} · split`, 'split', [c]);
+        const {median, right} = splitW(c);
+        node.keys.splice(idx, 0, median); node.children.splice(idx+1, 0, right);
+        snap(`median ${median} ↑ · [${node.children[idx].keys.join(',')}] | [${right.keys.join(',')}]`, 'split', [node, node.children[idx], right]);
+      }
+    }
+    if (W.keys.length > MAX_K){
+      snap(`root overflow · [${W.keys.join(',')}] · split`, 'split', [W]);
+      const {median, right} = splitW(W);
+      const ns = NK(false); ns.keys=[median]; ns.children=[W, right]; W = ns;
+      snap(`new root [${median}] · tree grew one level`, 'split', [W, W.children[0], W.children[1]]);
+    }
+    snap(`done · ${k} inserted`, 'done', []);
+  } else {
+    let e=W,present=false; while(e){ let i=0; while(i<e.keys.length && k>e.keys[i]) i++; if(i<e.keys.length && e.keys[i]===k){present=true;break;} if(e.leaf)break; e=e.children[i]; }
+    if (!present) return null;
+    const maxLeaf = n => { while(!n.leaf) n=n.children[n.children.length-1]; return n.keys[n.keys.length-1]; };
+    function fix(node, i){
+      const c = node.children[i]; if (c.keys.length >= MIN_K) return;
+      const L = i>0 ? node.children[i-1] : null;
+      const R = i<node.children.length-1 ? node.children[i+1] : null;
+      if (L && L.keys.length > MIN_K){
+        snap(`underflow [${c.keys.join(',')}] · borrow from left sibling [${L.keys.join(',')}]`, 'borrow', [c, L, node]);
+        c.keys.unshift(node.keys[i-1]); node.keys[i-1]=L.keys.pop(); if(!c.leaf) c.children.unshift(L.children.pop());
+        snap(`borrowed · node now [${c.keys.join(',')}]`, 'borrow', [c, node]);
+      } else if (R && R.keys.length > MIN_K){
+        snap(`underflow [${c.keys.join(',')}] · borrow from right sibling [${R.keys.join(',')}]`, 'borrow', [c, R, node]);
+        c.keys.push(node.keys[i]); node.keys[i]=R.keys.shift(); if(!c.leaf) c.children.push(R.children.shift());
+        snap(`borrowed · node now [${c.keys.join(',')}]`, 'borrow', [c, node]);
+      } else if (L){
+        snap(`underflow [${c.keys.join(',')}] · merge with left [${L.keys.join(',')}] + separator ${node.keys[i-1]}`, 'merge', [c, L, node]);
+        L.keys.push(node.keys[i-1], ...c.keys); if(!c.leaf) L.children.push(...c.children);
+        node.keys.splice(i-1,1); node.children.splice(i,1);
+        snap(`merged → [${L.keys.join(',')}]`, 'merge', [L, node]);
+      } else if (R){
+        snap(`underflow [${c.keys.join(',')}] · merge with right [${R.keys.join(',')}] + separator ${node.keys[i]}`, 'merge', [c, R, node]);
+        c.keys.push(node.keys[i], ...R.keys); if(!c.leaf) c.children.push(...R.children);
+        node.keys.splice(i,1); node.children.splice(i+1,1);
+        snap(`merged → [${c.keys.join(',')}]`, 'merge', [c, node]);
+      }
+    }
+    function del(node, key){
+      let i=0; while(i<node.keys.length && key>node.keys[i]) i++;
+      if (i<node.keys.length && node.keys[i]===key){
+        if (node.leaf){
+          snap(`remove ${key} from leaf [${node.keys.join(',')}]`, 'delete', [node]);
+          node.keys.splice(i,1);
+          snap(`removed · leaf now [${node.keys.join(',')}]`, 'delete', [node]);
+        } else {
+          const pred = maxLeaf(node.children[i]);
+          snap(`${key} is internal · replace with predecessor ${pred}`, 'delete', [node, node.children[i]]);
+          node.keys[i] = pred;
+          snap(`now delete ${pred} from the left subtree`, 'descend', [node.children[i]]);
+          del(node.children[i], pred); fix(node, i);
+        }
+      } else {
+        if (node.leaf) return;
+        snap(`descend toward ${key} → child [${node.children[i].keys.join(',')}]`, 'descend', [node.children[i]]);
+        del(node.children[i], key); fix(node, i);
+      }
+    }
+    snap(`delete ${k} · locate the key`, 'descend', [W]);
+    del(W, k);
+    if (!W.leaf && W.keys.length === 0){
+      snap(`root has no keys · drop a level`, 'merge', [W]);
+      W = W.children[0];
+      snap(`new root [${W.keys.join(',')}]`, 'merge', [W]);
+    }
+    snap(`done · ${k} deleted`, 'done', []);
+  }
+  return frames;
+}
+
+// navigator: resolves 'fwd' / 'back'. When playing, auto-advances on a timer.
+function navStep(){
+  return new Promise(resolve => {
+    let settled=false, timer=null;
+    const fin = c => { if(settled) return; settled=true; if(timer) clearTimeout(timer); stepper.nav=null; stepper._armNav=null; stepper._cancelNav=null; resolve(c); };
+    const arm = () => { if(!stepper.paused && timer===null) timer = setTimeout(() => fin('fwd'), Math.max(170, 850 / Math.max(0.1, stepper.speed))); };
+    const cancel = () => { if(timer){ clearTimeout(timer); timer=null; } };
+    stepper.nav = fin; stepper._armNav = arm; stepper._cancelNav = cancel;
+    arm();
+  });
+}
+const STEP_COL = {descend:0xffb454, insert:0x5cffb4, delete:0xff5c70, split:0x35d0ff, borrow:0x7c5cff, merge:0xff5cab, done:0x5cffb4};
+async function playTimeline(frames){
+  let i = 0;
+  while (true){
+    const f = frames[i];
+    purgeMeshes(root); root = inflateBT(f.tree);
+    cx.set(`step ${i+1}/${frames.length} · ${f.label}`, f.tag);
+    await relayout(true);
+    (function hot(n){ if(!n) return; if(n.hot) pulse(n, STEP_COL[f.tag]||0xffb454, 360); n.children.forEach(hot); })(root);
+    const cmd = await navStep();
+    if (cmd === 'back') i = Math.max(0, i - 1);
+    else { if (i >= frames.length - 1) break; i++; }
+  }
+  refreshHUD();
+}
+
 /* ─── visuals ─── */
 
 const NODE_KEY_W = 1.05, NODE_H = 1.05;
@@ -964,8 +1105,11 @@ const opHandlers = {
     history.push({type:'snapshot', values:snapshotValues()});
     cx.set('insert', 'O(log n)');
     for (const v of vals){
-      const ok = await insertVisible(v);
-      if (ok) log.say(`<span class="k">insert</span> ${v}`);
+      const frames = framesFor('insert', v);
+      if (!frames){ log.say(`<span class="kx">dup</span> ${v}`); continue; }
+      await playTimeline(frames);
+      size = snapshotValues().length;
+      log.say(`<span class="k">insert</span> ${v}`);
     }
     cx.set(`idle · height ${depth(root)}`, '—');
   }),
@@ -973,9 +1117,11 @@ const opHandlers = {
     const v = readVal(); if (v===null) return;
     history.push({type:'snapshot', values:snapshotValues()});
     cx.set('delete', 'O(log n)');
-    const ok = deleteKey(v);
-    await relayout(true);
-    log.say(ok ? `<span class="ko">delete</span> ${v}` : `<span class="kx">delete</span> ${v} · not present`);
+    const frames = framesFor('delete', v);
+    if (!frames){ log.say(`<span class="kx">delete</span> ${v} · not present`); cx.set('miss', '—'); return; }
+    await playTimeline(frames);
+    size = snapshotValues().length;
+    log.say(`<span class="ko">delete</span> ${v}`);
   }),
   find: lock(async () => {
     const v = readVal(); if (v===null) return;
