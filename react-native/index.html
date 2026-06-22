@@ -394,7 +394,25 @@ body::after{
 }
 .preview-head .icon-btn:hover{ background:var(--surface-2); color:var(--text); border-color:var(--border-strong) }
 
-/* Phone-shaped frame around the iframe so the preview reads as "mobile". */
+/* Device picker + size slider in the preview header */
+.preview-head select.device-select{
+  padding:5px 8px; border-radius:8px; border:1px solid var(--border);
+  background:rgba(255,255,255,0.02); color:var(--text-dim); font-size:11.5px;
+  font-family:'Inter',sans-serif; cursor:pointer;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.preview-head select.device-select:hover{ background:var(--surface-2); color:var(--text); border-color:var(--border-strong) }
+.preview-head select.device-select option{ background:#12121c; color:#e8e8f0 }
+.preview-head .size-control{ display:flex; align-items:center; gap:6px }
+.preview-head .size-control input[type=range]{
+  width:80px; height:4px; cursor:pointer; accent-color:#a978ff;
+}
+.preview-head .size-val{
+  font-size:10.5px; color:var(--text-faint);
+  font-family:'JetBrains Mono',monospace; min-width:36px; text-align:right;
+}
+
+/* Device-shaped frame around the iframe. One base + per-device variants. */
 .phone-stage{
   flex:1; min-height:0; display:flex; align-items:center; justify-content:center;
   padding: 16px; overflow: auto;
@@ -403,10 +421,8 @@ body::after{
     radial-gradient(600px 350px at 80% 80%, rgba(97,218,251,0.08), transparent 60%),
     linear-gradient(180deg, #0e0e1c, #08081a);
 }
-.phone{
-  width: 320px; height: 580px;
+.device{
   background: #0c0c14; padding: 10px;
-  border-radius: 38px;
   border: 2px solid #2a2a3a;
   box-shadow:
     0 30px 60px -20px rgba(0,0,0,0.7),
@@ -414,100 +430,58 @@ body::after{
     0 0 0 1px rgba(169,120,255,0.18);
   position: relative;
   flex-shrink: 0;
+  transform: scale(var(--device-scale, 1));
+  transition: width .25s ease, height .25s ease, border-radius .25s ease, transform .15s ease;
 }
-.phone::before{
-  content:""; position: absolute; top: 6px; left: 50%;
-  transform: translateX(-50%);
-  width: 110px; height: 18px;
-  background: #0c0c14;
-  border-radius: 0 0 12px 12px;
-  z-index: 2;
-}
-.phone .screen{
+.device .screen{
   width: 100%; height: 100%;
   background: #fff;
-  border-radius: 28px;
   overflow: hidden;
   position: relative;
 }
-.phone iframe{
-  width: 100%; height: 100%;
-  border: 0;
-  display: block;
+.device iframe{ width: 100%; height: 100%; border: 0; display: block }
+
+/* Phone — tall, rounded, with a notch */
+.device-phone{ width:320px; height:580px; border-radius:38px }
+.device-phone .screen{ border-radius:28px }
+.device-phone::before{
+  content:""; position:absolute; top:6px; left:50%; transform:translateX(-50%);
+  width:110px; height:18px; background:#0c0c14; border-radius:0 0 12px 12px; z-index:2;
 }
 
-/* Console panel — same style as the React lab */
-.console-panel{
-  border-top: 1px solid var(--border);
-  background: linear-gradient(180deg, rgba(8,8,18,0.92), rgba(6,6,14,0.92));
-  display: flex; flex-direction: column;
-  flex-shrink: 0;
-  height: 160px;
-  transition: height .2s ease;
-  position: relative; z-index: 2;
+/* Tablet — larger, gentler corners, small front camera */
+.device-tablet{ width:480px; height:640px; border-radius:24px; padding:14px }
+.device-tablet .screen{ border-radius:12px }
+.device-tablet::before{
+  content:""; position:absolute; top:7px; left:50%; transform:translateX(-50%);
+  width:6px; height:6px; border-radius:50%; background:#3a3a4a; z-index:2;
 }
-.console-panel.collapsed{ height: 34px; }
-.console-head{
-  display: flex; align-items: center; gap: 10px;
-  padding: 6px 12px; border-bottom: 1px solid var(--border);
-  background: linear-gradient(180deg, rgba(20,20,40,0.6), rgba(8,8,18,0.0));
-  cursor: pointer; user-select: none;
-  flex-shrink: 0;
+
+/* Smart watch — small square with very round corners + a crown */
+.device-watch{ width:200px; height:236px; border-radius:54px; padding:14px; border-width:3px }
+.device-watch .screen{ border-radius:42px }
+.device-watch::before{
+  content:""; position:absolute; top:50%; right:-8px; transform:translateY(-50%);
+  width:8px; height:34px; background:#2a2a3a; border-radius:3px;
 }
-.console-head .label{
-  font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-dim);
-  display: flex; align-items: center; gap: 8px;
+
+/* Smart TV — wide 16:9 with a thick bezel and a stand */
+.device-tv{ width:640px; height:380px; border-radius:12px; padding:12px; border-width:8px }
+.device-tv .screen{ border-radius:4px }
+.device-tv::after{
+  content:""; position:absolute; bottom:-22px; left:50%; transform:translateX(-50%);
+  width:150px; height:22px; background:linear-gradient(#1a1a26,#0c0c14);
+  border-radius:0 0 10px 10px; box-shadow:0 8px 12px -6px rgba(0,0,0,0.6);
 }
-.console-head .label::before{
-  content:""; width:7px; height:7px; border-radius:50%;
-  background: var(--text-faint);
+
+/* Car infotainment — wide dashboard screen */
+.device-car{ width:600px; height:340px; border-radius:18px; padding:14px; border-width:6px }
+.device-car .screen{ border-radius:8px }
+.device-car::before{
+  content:"◉  IN-DASH"; position:absolute; top:-20px; left:16px;
+  font-size:9px; letter-spacing:0.22em; color:var(--text-faint);
+  font-family:'JetBrains Mono',monospace;
 }
-.console-panel.has-output .console-head .label::before{ background: var(--rn-cyan); box-shadow: 0 0 8px rgba(97,218,251,0.7) }
-.console-panel.has-error  .console-head .label::before{ background: var(--error);   box-shadow: 0 0 8px rgba(255,90,122,0.7) }
-.console-head .count{
-  font-size: 10.5px; color: var(--text-faint); padding: 1px 7px; border-radius: 20px;
-  background: rgba(255,255,255,0.06); font-family: 'JetBrains Mono', ui-monospace, monospace;
-}
-.console-panel.has-output .console-head .count{ background: rgba(97,218,251,0.18); color: #c8f0ff }
-.console-panel.has-error  .console-head .count{ background: rgba(255,90,122,0.20); color: #ffd1d8 }
-.console-head .right{ margin-left: auto; display: flex; gap: 6px; }
-.console-head .icon-btn{
-  padding: 3px 9px; border-radius: 6px;
-  border: 1px solid var(--border); background: rgba(255,255,255,0.02);
-  color: var(--text-dim); font-size: 11px; font-family: 'Inter', sans-serif;
-  transition: background .15s, color .15s, border-color .15s;
-}
-.console-head .icon-btn:hover{ background: var(--surface-2); color: var(--text); border-color: var(--border-strong) }
-.console-out{
-  flex: 1; min-height: 0; overflow: auto;
-  padding: 4px 0;
-  scrollbar-width: thin;
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 12px; line-height: 1.55;
-}
-.console-panel.collapsed .console-out{ display: none; }
-.console-out::-webkit-scrollbar{ width: 6px; height: 6px }
-.console-out::-webkit-scrollbar-thumb{ background: rgba(255,255,255,0.08); border-radius: 6px }
-.console-out .empty{
-  color: var(--text-faint); text-align: center; padding: 24px 12px;
-  font-style: italic; font-family: 'Inter', sans-serif; font-size: 12px;
-}
-.console-line{
-  display: flex; gap: 8px; padding: 2px 12px;
-  border-left: 2px solid transparent;
-  white-space: pre-wrap; word-break: break-word;
-}
-.console-line .lvl{
-  flex-shrink: 0; min-width: 38px; font-size: 10px; text-transform: uppercase;
-  letter-spacing: 0.08em; padding-top: 2px; opacity: 0.7;
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
-}
-.console-line .body{ flex: 1; min-width: 0 }
-.console-line.log  { color: #dcd5ff; border-left-color: rgba(124,92,255,0.30) }
-.console-line.info { color: #9bd9ff; border-left-color: rgba(53,208,255,0.50) }
-.console-line.warn { color: #ffe0a3; border-left-color: rgba(255,181,71,0.55); background: rgba(255,181,71,0.04) }
-.console-line.error{ color: #ffb1bf; border-left-color: rgba(255,90,122,0.65); background: rgba(255,90,122,0.06) }
-.console-line.debug{ color: #a8b9d3; border-left-color: rgba(154,154,176,0.30) }
 
 .ambient{
   position:absolute; border-radius:50%; pointer-events:none; z-index:0;
@@ -599,27 +573,25 @@ body::after{
         <span class="label" id="previewStatus">Preview</span>
         <span class="stats" id="previewStats"></span>
         <div class="right">
+          <select class="device-select" id="deviceSelect" title="Choose a device to preview in">
+            <option value="phone">📱 Phone</option>
+            <option value="tablet">📲 Tablet</option>
+            <option value="watch">⌚ Watch</option>
+            <option value="tv">📺 TV</option>
+            <option value="car">🚗 Car</option>
+          </select>
+          <div class="size-control" title="Resize the device screen">
+            <input type="range" id="sizeRange" min="60" max="140" step="5" value="100">
+            <span class="size-val" id="sizeVal">100%</span>
+          </div>
           <button class="icon-btn" id="popoutBtn" title="Open the rendered preview in a new tab">↗ Pop out</button>
         </div>
       </div>
       <div class="phone-stage">
-        <div class="phone">
+        <div class="device device-phone" id="deviceFrame">
           <div class="screen">
-            <iframe id="preview" sandbox="allow-scripts allow-same-origin" title="Phone preview"></iframe>
+            <iframe id="preview" sandbox="allow-scripts allow-same-origin" title="Device preview"></iframe>
           </div>
-        </div>
-      </div>
-      <div class="console-panel" id="consolePanel">
-        <div class="console-head" id="consoleHead">
-          <span class="label">Console</span>
-          <span class="count" id="consoleCount">0</span>
-          <div class="right">
-            <button class="icon-btn" id="consoleClearBtn" title="Clear console">⌫ Clear</button>
-            <button class="icon-btn" id="consoleCollapseBtn" title="Collapse / expand">▾</button>
-          </div>
-        </div>
-        <div class="console-out" id="consoleOut">
-          <div class="empty">No console output yet — anything the React Native code logs will appear here.</div>
         </div>
       </div>
     </section>
@@ -2599,34 +2571,7 @@ function buildPreviewHtml(){
     '  window.ReactDOM = ReactDOM;',
     '  window.ReactNative = ReactNative;',
     '  ',
-    '  // 2) Console shim — forward console.* to the parent panel',
-    '  (function(){',
-    '    const levels = ["log","info","warn","error","debug"];',
-    '    function fmt(v){',
-    '      if(v === undefined) return "undefined";',
-    '      if(v === null) return "null";',
-    '      if(typeof v === "function") return v.toString().slice(0,200);',
-    '      if(typeof v === "string") return v;',
-    '      if(typeof v === "object"){',
-    '        try { return JSON.stringify(v, function(_,x){',
-    '          if(typeof x === "function") return "[Function " + (x.name || "anonymous") + "]";',
-    '          if(x && typeof x === "object" && x.$$typeof) return "[ReactElement]";',
-    '          return x;',
-    '        }, 2); } catch(e){ return Object.prototype.toString.call(v); }',
-    '      }',
-    '      return String(v);',
-    '    }',
-    '    levels.forEach(function(lv){',
-    '      const orig = window.console[lv] ? window.console[lv].bind(window.console) : function(){};',
-    '      window.console[lv] = function(){',
-    '        const args = Array.prototype.slice.call(arguments);',
-    '        try { window.parent.postMessage({ __reactLab:true, kind:"console", level:lv, args:args.map(fmt) }, "*"); } catch(e){}',
-    '        try { orig.apply(null, args); } catch(e){}',
-    '      };',
-    '    });',
-    '  })();',
-    '  ',
-    '  // 3) Error overlay',
+    '  // 2) Error overlay',
     '  function showErr(err){',
     '    const box = document.getElementById("__rn-error");',
     '    if(!box) return;',
@@ -2771,7 +2716,6 @@ function renderPreview(){
   previewStatusEl.classList.remove('error');
   previewStatusEl.textContent = 'Rendering';
   previewStatsEl.textContent = (proj.bundle ? proj.bundle.length : 1) + ' tsx' + (proj.needsNavigation ? ' · nav' : '');
-  clearConsole();
   previewEl.srcdoc = html;
 }
 function schedulePreview(){
@@ -2801,6 +2745,44 @@ document.getElementById('popoutBtn').addEventListener('click', ()=>{
 editor.on('change', schedulePreview);
 
 /* ==========================================================
+   Device picker + screen-size slider
+   ========================================================== */
+(function initDeviceControls(){
+  const frame   = document.getElementById('deviceFrame');
+  const select  = document.getElementById('deviceSelect');
+  const range   = document.getElementById('sizeRange');
+  const sizeVal = document.getElementById('sizeVal');
+  if(!frame || !select || !range || !sizeVal) return;
+
+  const DEVICES = ['phone','tablet','watch','tv','car'];
+  const D_KEY = 'rn-lab-device', S_KEY = 'rn-lab-device-scale';
+
+  function applyDevice(name){
+    if(DEVICES.indexOf(name) === -1) name = 'phone';
+    frame.className = 'device device-' + name;
+    try { localStorage.setItem(D_KEY, name); } catch {}
+  }
+  function applyScale(pct){
+    pct = Math.max(60, Math.min(140, parseInt(pct, 10) || 100));
+    frame.style.setProperty('--device-scale', (pct / 100).toString());
+    sizeVal.textContent = pct + '%';
+    try { localStorage.setItem(S_KEY, String(pct)); } catch {}
+  }
+
+  // Restore any saved choices.
+  try {
+    const d = localStorage.getItem(D_KEY); if(d) select.value = d;
+    const s = parseInt(localStorage.getItem(S_KEY), 10); if(s) range.value = String(s);
+  } catch {}
+
+  applyDevice(select.value);
+  applyScale(range.value);
+
+  select.addEventListener('change', ()=> applyDevice(select.value));
+  range.addEventListener('input', ()=> applyScale(range.value));
+})();
+
+/* ==========================================================
    Toast helper
    ========================================================== */
 const toastEl = document.getElementById('toast');
@@ -2812,53 +2794,6 @@ function toast(msg, kind){
   clearTimeout(toastTimer);
   toastTimer = setTimeout(()=> toastEl.classList.remove('show'), 1800);
 }
-
-/* ==========================================================
-   Console panel — receives forwarded console.* calls
-   ========================================================== */
-const consolePanelEl     = document.getElementById('consolePanel');
-const consoleOutEl       = document.getElementById('consoleOut');
-const consoleCountEl     = document.getElementById('consoleCount');
-const consoleHeadEl      = document.getElementById('consoleHead');
-const consoleClearBtn    = document.getElementById('consoleClearBtn');
-const consoleCollapseBtn = document.getElementById('consoleCollapseBtn');
-let consoleN = 0, consoleErrN = 0;
-function clearConsole(){
-  consoleN = 0; consoleErrN = 0;
-  consoleCountEl.textContent = '0';
-  consolePanelEl.classList.remove('has-output','has-error');
-  consoleOutEl.innerHTML =
-    '<div class="empty">No console output yet — anything the React Native code logs will appear here.</div>';
-}
-function appendConsoleLine(level, args){
-  if(consoleN === 0) consoleOutEl.innerHTML = '';
-  consoleN++; if(level === 'error') consoleErrN++;
-  consoleCountEl.textContent = String(consoleN);
-  consolePanelEl.classList.add('has-output');
-  if(consoleErrN) consolePanelEl.classList.add('has-error');
-  const line = document.createElement('div');
-  line.className = 'console-line ' + level;
-  const lvl = document.createElement('span'); lvl.className = 'lvl'; lvl.textContent = level;
-  const body = document.createElement('span'); body.className = 'body'; body.textContent = (args||[]).join(' ');
-  line.appendChild(lvl); line.appendChild(body);
-  consoleOutEl.appendChild(line);
-  consoleOutEl.scrollTop = consoleOutEl.scrollHeight;
-}
-window.addEventListener('message', (e)=>{
-  if(!e.data || !e.data.__reactLab) return;
-  if(e.data.kind === 'console') appendConsoleLine(e.data.level, e.data.args);
-});
-consoleClearBtn.addEventListener('click', (e)=>{ e.stopPropagation(); clearConsole(); });
-consoleCollapseBtn.addEventListener('click', (e)=>{
-  e.stopPropagation();
-  consolePanelEl.classList.toggle('collapsed');
-  consoleCollapseBtn.textContent = consolePanelEl.classList.contains('collapsed') ? '▴' : '▾';
-});
-consoleHeadEl.addEventListener('click', (e)=>{
-  if(e.target.closest('button')) return;
-  consolePanelEl.classList.toggle('collapsed');
-  consoleCollapseBtn.textContent = consolePanelEl.classList.contains('collapsed') ? '▴' : '▾';
-});
 
 /* ==========================================================
    Drag-to-resize splitter
