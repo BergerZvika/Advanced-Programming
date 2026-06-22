@@ -2131,9 +2131,22 @@ function rxStorageKey(rx){
   const orig = state.originals[rx] || '';
   return STORAGE_PREFIX + rx + ':v' + hashShort(orig);
 }
-function saveBufferToStorage(rx, value){ try{ localStorage.setItem(rxStorageKey(rx), value); }catch{} }
-function loadBufferFromStorage(rx){ try{ return localStorage.getItem(rxStorageKey(rx)); }catch{ return null; } }
+// Edits are session-only: they live in state.buffers while the page is open
+// but are never persisted, so a refresh always restores the original code.
+function saveBufferToStorage(rx, value){ /* persistence disabled — see purgeSavedEdits() */ }
+function loadBufferFromStorage(rx){ return null; }
 function clearBufferFromStorage(rx){ try{ localStorage.removeItem(rxStorageKey(rx)); }catch{} }
+
+// Drop any edits saved by older versions of the lab so they don't resurface.
+function purgeSavedEdits(){
+  try{
+    for(let i = localStorage.length - 1; i >= 0; i--){
+      const k = localStorage.key(i);
+      if(k && k.indexOf(STORAGE_PREFIX) === 0) localStorage.removeItem(k);
+    }
+  }catch{}
+}
+purgeSavedEdits();
 
 function readEmbedded(rx){
   const node = document.querySelector('script[type="text/plain"][data-rxfile="' + CSS.escape(rx) + '"]');
@@ -2523,6 +2536,62 @@ const previewStatusEl = document.getElementById('previewStatus');
 const previewStatsEl  = document.getElementById('previewStats');
 const autoChk         = document.getElementById('autoChk');
 
+/* Which device the preview is currently emulating. Drives both the outer
+   frame (see initDeviceControls) and the in-iframe native theming below. */
+let currentDevice = 'phone';
+
+/* Per-device "native" look: system font, ambient colors and an accent.
+   Injected into the iframe and consumed by the Button override + base CSS so
+   the same RN code renders with each platform's conventions. */
+const DEVICE_THEMES = {
+  phone:  { os:'iOS',          font:'-apple-system, "SF Pro Text", system-ui, sans-serif', bg:'#ffffff', text:'#000000', accent:'#007aff' },
+  tablet: { os:'iPadOS',       font:'-apple-system, "SF Pro Text", system-ui, sans-serif', bg:'#f2f2f7', text:'#000000', accent:'#007aff' },
+  watch:  { os:'watchOS',      font:'-apple-system, "SF Pro Text", system-ui, sans-serif', bg:'#000000', text:'#ffffff', accent:'#ff2d55' },
+  tv:     { os:'tvOS',         font:'-apple-system, "SF Pro Text", system-ui, sans-serif', bg:'#15151c', text:'#f5f5f7', accent:'#0a84ff' },
+  car:    { os:'Android Auto', font:'"Roboto", system-ui, sans-serif',                     bg:'#0b0e14', text:'#e8eaed', accent:'#8ab4f8' },
+};
+
+/* In-iframe override of RN's <Button> so it adopts each device's native
+   styling. react-native-web renders one flat Material button regardless of
+   platform; this swaps in per-device containers/text. Reads window.__deviceKind
+   + window.__deviceTheme, which buildPreviewHtml injects before the bundle. */
+const BUTTON_OVERRIDE =
+  '  (function(){' +
+  '    function tint(hex){ return (typeof hex === "string" && hex.charAt(0) === "#" && hex.length === 7) ? hex + "22" : "rgba(0,122,255,0.13)"; }' +
+  '    function styleFor(kind, theme, color){' +
+  '      const accent = color || theme.accent || "#007aff";' +
+  '      switch(kind){' +
+  '        case "phone":  return { c:{ paddingVertical:8,  paddingHorizontal:8,  alignItems:"center" }, t:{ color:accent, fontSize:17, fontWeight:"400" } };' +
+  '        case "tablet": return { c:{ paddingVertical:11, paddingHorizontal:22, borderRadius:12, backgroundColor:tint(accent), alignItems:"center" }, t:{ color:accent, fontSize:18, fontWeight:"600" } };' +
+  '        case "watch":  return { c:{ paddingVertical:12, paddingHorizontal:16, borderRadius:22, backgroundColor:"#1c1c1e", alignSelf:"stretch", alignItems:"center" }, t:{ color:accent, fontSize:15, fontWeight:"600" } };' +
+  '        case "tv":     return { c:{ paddingVertical:16, paddingHorizontal:30, borderRadius:14, backgroundColor:"#2a2a35", alignItems:"center" }, t:{ color:"#f5f5f7", fontSize:20, fontWeight:"600" } };' +
+  '        case "car":    return { c:{ paddingVertical:15, paddingHorizontal:26, borderRadius:10, backgroundColor:accent, alignItems:"center" }, t:{ color:"#0b0e14", fontSize:18, fontWeight:"700" } };' +
+  '        default:       return { c:{ paddingVertical:8,  paddingHorizontal:16, borderRadius:2,  backgroundColor:accent, alignItems:"center" }, t:{ color:"#fff", fontSize:14, fontWeight:"500", textTransform:"uppercase" } };' +
+  '      }' +
+  '    }' +
+  '    function DeviceButton(props){' +
+  '      const kind  = window.__deviceKind  || "phone";' +
+  '      const theme = window.__deviceTheme || {};' +
+  '      const s = styleFor(kind, theme, props.color);' +
+  '      return React.createElement(ReactNative.TouchableOpacity, {' +
+  '        onPress: props.disabled ? undefined : props.onPress,' +
+  '        disabled: props.disabled,' +
+  '        activeOpacity: 0.7,' +
+  '        accessibilityRole: "button",' +
+  '        style: [s.c, props.disabled ? { opacity: 0.5 } : null],' +
+  '      }, React.createElement(ReactNative.Text, { style: s.t }, props.title));' +
+  '    }' +
+  '    ReactNative.Button = DeviceButton;' +
+  '    /* Default uncolored Text to the device text color (legible on dark watch/tv/car); explicit colors still win. */' +
+  '    const BaseText = ReactNative.Text;' +
+  '    function DeviceText(props){' +
+  '      const theme = window.__deviceTheme || {};' +
+  '      return React.createElement(BaseText, Object.assign({}, props, { style: [{ color: theme.text || "#000" }, props.style] }));' +
+  '    }' +
+  '    DeviceText.displayName = "Text";' +
+  '    ReactNative.Text = DeviceText;' +
+  '  })();';
+
 function buildPreviewHtml(){
   const proj = activeProject();
   if(!proj) return '';
@@ -2534,6 +2603,7 @@ function buildPreviewHtml(){
   // needsNavigation pulls in NavigationContainer + Stack + BottomTabs shims.
   // They're tiny; loading all three is simpler than three flags.
   const navShim = proj.needsNavigation ? (NAV_SHIM + '\n' + TABS_SHIM) : '';
+  const theme = DEVICE_THEMES[currentDevice] || DEVICE_THEMES.phone;
 
   return [
     '<!DOCTYPE html>',
@@ -2548,8 +2618,8 @@ function buildPreviewHtml(){
     '<\/script>',
     '<script src="https://unpkg.com/@babel/standalone@7.24.5/babel.min.js"><\/script>',
     '<style>',
-    '  html,body{margin:0;padding:0;height:100%;overflow:hidden;background:#fff;font-family:-apple-system,system-ui,sans-serif}',
-    '  #root{height:100%;display:flex;flex-direction:column}',
+    '  html,body{margin:0;padding:0;height:100%;overflow:hidden;background:' + theme.bg + ';color:' + theme.text + ';font-family:' + theme.font + '}',
+    '  #root{height:100%;display:flex;flex-direction:column;background:' + theme.bg + ';color:' + theme.text + '}',
     '  #__rn-error{display:none;color:#fff;background:#b00020;padding:12px 14px;font-family:ui-monospace,monospace;white-space:pre-wrap;border-radius:8px;margin:12px;font-size:12px;line-height:1.5}',
     '<\/style>',
     '</head><body>',
@@ -2565,13 +2635,20 @@ function buildPreviewHtml(){
     '  ',
     '  const React = (ReactNS && ReactNS.default) || ReactNS;',
     '  const ReactDOM = Object.assign({}, (ReactDOMNS && ReactDOMNS.default) || ReactDOMNS, ReactDOMClient);',
-    '  const ReactNative = (RN && RN.default) || RN;',
+    '  // Copy RN into a plain object so per-device overrides (Button) can be',
+    '  // assigned — the raw module namespace is read-only.',
+    '  const ReactNative = Object.assign({}, (RN && RN.default) || RN);',
     '  ',
     '  window.React = React;',
     '  window.ReactDOM = ReactDOM;',
     '  window.ReactNative = ReactNative;',
     '  ',
-    '  // 2) Error overlay',
+    '  // 2) Per-device native theming (see DEVICE_THEMES + BUTTON_OVERRIDE)',
+    '  window.__deviceKind = ' + JSON.stringify(currentDevice) + ';',
+    '  window.__deviceTheme = ' + JSON.stringify(theme) + ';',
+    BUTTON_OVERRIDE,
+    '  ',
+    '  // 3) Error overlay',
     '  function showErr(err){',
     '    const box = document.getElementById("__rn-error");',
     '    if(!box) return;',
@@ -2760,6 +2837,7 @@ editor.on('change', schedulePreview);
   function applyDevice(name){
     if(DEVICES.indexOf(name) === -1) name = 'phone';
     frame.className = 'device device-' + name;
+    currentDevice = name;
     try { localStorage.setItem(D_KEY, name); } catch {}
   }
   function applyScale(pct){
@@ -2778,7 +2856,10 @@ editor.on('change', schedulePreview);
   applyDevice(select.value);
   applyScale(range.value);
 
-  select.addEventListener('change', ()=> applyDevice(select.value));
+  select.addEventListener('change', ()=>{
+    applyDevice(select.value);
+    renderPreview();   // re-render so the iframe picks up the new native theme
+  });
   range.addEventListener('input', ()=> applyScale(range.value));
 })();
 
