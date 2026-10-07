@@ -199,6 +199,7 @@ pre.sql .t{color:#ffd59a}
   <span class="sep"></span>
   <select class="sel" id="tpl" title="Load an example diagram">
     <option value="">Examples…</option>
+    <option value="school">School — same as the SQL Lab</option>
     <option value="rental">Rental — multi-way relationship</option>
     <option value="medical">Person / Physician / Patient — isa</option>
     <option value="company">Company (Elmasri &amp; Navathe)</option>
@@ -291,6 +292,16 @@ function build(spec){
   return m;
 }
 const TEMPLATES = {
+  // the SQL Lab's School database: mapping it gives exactly students, courses and enrollments
+  school: () => build({
+    entities: [
+      ['students', 300, 380, false, [['student_id','INTEGER','k'],['name','TEXT'],['age','INTEGER'],['city','TEXT']]],
+      ['courses', 880, 380, false, [['course_id','INTEGER','k'],['title','TEXT'],['credits','INTEGER']]]
+    ],
+    rels: [
+      ['enrollments', 590, 380, ['students','N',false], ['courses','N',false], false, [['grade','INTEGER']]]
+    ]
+  }),
   rental: () => build({   // multi-way: Agency × Invoice × Person → Car and Agency × Invoice × Car → Person
     entities: [
       ['Agency', 300, 470, false, [['agency_id','INTEGER','k'],['city','TEXT']]],
@@ -1501,7 +1512,7 @@ $('#tpl').addEventListener('change', e => {
     if (saved.V) Object.assign(V, saved.V);
     renderAll();
   } else {
-    M = TEMPLATES.company();
+    M = TEMPLATES.school();
     renderAll();
     requestAnimationFrame(fit);
   }

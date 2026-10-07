@@ -318,6 +318,47 @@ const IDENT = /^[A-Za-z_][A-Za-z0-9_]*$/;
    Sample databases
    ================================================================ */
 const DATASETS = {
+  school: {
+    name: 'School · students, courses, enrollments (same as the SQL Lab)',
+    desc: 'The School database from the SQL Lab. Ido has no city (NULL) and no enrollments, Machine Learning has no students, and one grade is still missing.',
+    start: "σ[city = 'Haifa'](students)",
+    rels: [
+      {name:'students', key:['student_id'], attrs:['student_id','name','age','city'], rows:[
+        [1,'Dana',21,'Tel Aviv'],[2,'Omer',23,'Haifa'],[3,'Noa',20,'Tel Aviv'],[4,'Avi',25,'Jerusalem'],
+        [5,'Maya',22,'Haifa'],[6,'Yossi',19,'Tel Aviv'],[7,'Shira',24,'Jerusalem'],[8,'Ido',22,null]]},
+      {name:'courses', key:['course_id'], attrs:['course_id','title','credits'], rows:[
+        [1,'Intro to Programming',4],[2,'Databases',3],[3,'Algorithms',4],[4,'Linear Algebra',5],[5,'Machine Learning',3]]},
+      {name:'enrollments', key:['student_id','course_id'], attrs:['student_id','course_id','grade'], rows:[
+        [1,1,92],[1,2,88],[2,1,75],[2,3,81],[3,2,95],[3,4,67],[4,1,58],[4,3,90],[5,2,84],[5,4,72],[6,1,100],[6,2,null],[7,3,77],[7,4,88]]}
+    ],
+    examples: [
+      ['Basics', [
+        ['Selection', "σ[city = 'Haifa'](students)"],
+        ['Projection', 'π[name, age](students)'],
+        ['AND', "σ[age > 21 ∧ city = 'Tel Aviv'](students)"],
+        ['NULL is unknown', "σ[city ≠ 'Haifa'](students)"],
+        ['IS NULL', 'σ[grade IS NULL](enrollments)']
+      ]],
+      ['Joins', [
+        ['Natural join', 'students ⋈ enrollments'],
+        ['Who takes what', 'π[name, title, grade](students ⋈ enrollments ⋈ courses)'],
+        ['Left outer', 'π[name, course_id, grade](students ⟕ enrollments)'],
+        ['Not enrolled ▷', 'students ▷ enrollments'],
+        ['Course with no students', 'courses ▷ enrollments'],
+        ['Same city (ρ + θ)', 'π[s1.name, s2.name, s1.city](ρ[s1](students) ⋈[s1.city = s2.city ∧ s1.student_id < s2.student_id] ρ[s2](students))']
+      ]],
+      ['Sets', [
+        ['In course 1 and 2 (∩)', 'π[student_id](σ[course_id = 1](enrollments)) ∩ π[student_id](σ[course_id = 2](enrollments))'],
+        ['Never enrolled (−)', 'π[student_id](students) − π[student_id](enrollments)'],
+        ['Union', 'π[student_id](σ[grade ≥ 90](enrollments)) ∪ π[student_id](σ[age < 21](students))']
+      ]],
+      ['Advanced', [
+        ['Took every 4-credit course ÷', 'π[name](students ⋈ (π[student_id, course_id](enrollments) ÷ π[course_id](σ[credits = 4](courses))))'],
+        ['Per course γ', 'γ[course_id; COUNT(*) AS students, AVG(grade) AS avg_grade](enrollments)'],
+        ['Assignment ←', 'Top ← σ[grade ≥ 90](enrollments)\nπ[name, title, grade](Top ⋈ students ⋈ courses)']
+      ]]
+    ]
+  },
   company: {
     name: 'Company · employees, departments, projects',
     desc: 'Frank has no department (NULL), Dave works in department 30 which does not exist, and Marketing has no employees: good for outer joins and NULLs.',
@@ -1233,7 +1274,9 @@ const STORE = 'ralab.v1';
 const clone = o => JSON.parse(JSON.stringify(o));
 const freshRels = ds => clone(DATASETS[ds].rels);
 let S = (() => { try { const v = JSON.parse(localStorage.getItem(STORE)); if (v && DATASETS[v.ds]) return v; } catch (e) {} return null; })()
-  || {ds:'company', data:{}, expr:{}};
+  || {ds:'school', data:{}, expr:{}};
+// School is the default (as in the SQL Lab): switch to it once for visitors who saved another database
+if (!S.schoolDefault){ S.ds = 'school'; S.schoolDefault = true; try { localStorage.setItem(STORE, JSON.stringify(S)); } catch (e) {} }
 let tab = (() => { try { return localStorage.getItem('ralab.tab') || 'result'; } catch (e){ return 'result'; } })();
 let saveT = null;
 const save = () => { clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem(STORE, JSON.stringify(S)); } catch (e) {} }, 250); };
