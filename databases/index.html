@@ -68,8 +68,6 @@ a{color:inherit;text-decoration:none}
 .lab .glyph pre{margin:0;text-align:left}
 .lab .glyph .k{color:#c792ea}.lab .glyph .t{color:var(--sql)}.lab .glyph .n{color:#f78c6c}.lab .glyph .c{color:var(--text-faint)}
 .lab .glyph .sub{font-size:10px;vertical-align:-4px;color:#9fb4d8;margin-left:1px}
-.lab .cursor{display:inline-block;width:7px;height:14px;background:var(--sql);vertical-align:-2px;animation:blink 1s steps(1) infinite}
-@keyframes blink{50%{opacity:0}}
 .lab h3{margin:0 0 8px;font-size:22px;letter-spacing:-0.01em;display:flex;align-items:center;gap:10px}
 .lab .pill{font-size:9.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--sql);background:rgba(76,224,163,0.12);border:1px solid rgba(76,224,163,0.35);padding:2px 8px;border-radius:6px}
 .lab p{color:var(--text-dim);font-size:14px;line-height:1.6;margin:0}
@@ -103,7 +101,7 @@ a{color:inherit;text-decoration:none}
       <div class="glyph"><pre><span class="k">SELECT</span> d.name, <span class="k">AVG</span>(e.salary)
 <span class="k">FROM</span>   <span class="t">employees</span> e
 <span class="k">JOIN</span>   <span class="t">departments</span> d <span class="k">USING</span>(dept_id)
-<span class="k">GROUP BY</span> d.name <span class="k">LIMIT</span> <span class="n">5</span>;<span class="cursor"></span></pre></div>
+<span class="k">GROUP BY</span> d.name <span class="k">LIMIT</span> <span class="n">5</span>;</pre></div>
       <h3>SQL Lab <span class="pill">IDE</span></h3>
       <p>A SQL IDE backed by a real SQLite engine compiled to WebAssembly. Editor with highlighting and autocomplete, a schema explorer, multi-statement results, query history, and sample databases to practice on.</p>
       <div class="meta">
@@ -121,7 +119,7 @@ a{color:inherit;text-decoration:none}
   <span class="k">σ</span><span class="sub">salary &gt; 25000</span> (
     <span class="t">Employees</span> <span class="k">⋈</span> <span class="t">Departments</span>
   )
-)<span class="cursor"></span></pre></div>
+)</pre></div>
       <h3>Relational Algebra <span class="pill">Query trees</span></h3>
       <p>The math behind SQL. Write relational algebra over relations you can edit, see the query tree, follow each operator step by step (NULLs included), and translate the expression to SQL that opens straight in the SQL Lab.</p>
       <div class="meta">
@@ -137,7 +135,7 @@ a{color:inherit;text-decoration:none}
       <span class="idx">02 · DESIGN</span>
       <div class="glyph"><pre><span class="t">R</span>(A,B,C,D)   <span class="c">A→B  B→C</span>
   <span class="k">⇓</span> BCNF
-<span class="t">R1</span>(<u>B</u>,C)  <span class="t">R2</span>(<u>A</u>,B)  <span class="t">R3</span>(<u>A,D</u>)<span class="cursor"></span></pre></div>
+<span class="t">R1</span>(<u>B</u>,C)  <span class="t">R2</span>(<u>A</u>,B)  <span class="t">R3</span>(<u>A,D</u>)</pre></div>
       <h3>Normalization <span class="pill">BCNF · 3NF</span></h3>
       <p>Enter a relation and its functional dependencies, then watch every step: attribute closures, candidate keys, the normal form check, the minimal cover, 3NF synthesis and the BCNF decomposition tree, with dependency preservation at the end.</p>
       <div class="meta">
@@ -153,7 +151,7 @@ a{color:inherit;text-decoration:none}
       <span class="idx">03 · MODELING</span>
       <div class="glyph"><pre><span class="t">[Employee]</span>━<span class="n">N</span>━<span class="k">◇works_for◇</span>━<span class="n">1</span>━<span class="t">[Dept]</span>
    (<u>ssn</u>)              (<u>dno</u>)
-  <span class="k">⇓</span> <span class="c">Employee(<u>ssn</u>, dno→Dept)</span><span class="cursor"></span></pre></div>
+  <span class="k">⇓</span> <span class="c">Employee(<u>ssn</u>, dno→Dept)</span></pre></div>
       <h3>ER Diagrams <span class="pill">Chen · Crow's foot</span></h3>
       <p>Draw an entity-relationship diagram: entities, weak entities, relationships with cardinality and participation, key, multivalued and derived attributes. Switch notations, map it to relations step by step, and generate the CREATE TABLE script.</p>
       <div class="meta">
@@ -169,7 +167,7 @@ a{color:inherit;text-decoration:none}
       <div class="glyph"><pre><span class="k">for</span> page p <span class="k">in</span> <span class="t">R</span>:        <span class="c">-- B(R)</span>
   <span class="k">for</span> page q <span class="k">in</span> <span class="t">S</span>:      <span class="c">-- B(R)·B(S)</span>
     <span class="k">if</span> r.JC = s.JC → out
-<span class="c">I/O</span> = <span class="n">2</span> + <span class="n">2</span>·<span class="n">2</span> = <span class="n">6</span><span class="cursor"></span></pre></div>
+<span class="c">I/O</span> = <span class="n">2</span> + <span class="n">2</span>·<span class="n">2</span> = <span class="n">6</span></pre></div>
       <h3>Join Execution <span class="pill">I/O cost</span></h3>
       <p>Watch the five join algorithms run page by page: nested loop, block nested loop, index nested loop, sort-merge and hash join. See which pages sit in memory, every comparison and output, and an I/O counter checked against each cost formula. Then compare all the formulas on the same numbers.</p>
       <div class="meta">

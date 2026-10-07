@@ -134,7 +134,30 @@ textarea.inp{min-height:140px;resize:vertical;line-height:1.5}
 .main{min-width:0;padding:16px 20px 60px;display:flex;flex-direction:column;gap:14px}
 .head{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap}
 .head .what{flex:1;min-width:280px}
-.head h1{margin:0 0 4px;font-size:20px;letter-spacing:-0.01em}
+.head h1{margin:0 0 4px;font-size:20px;letter-spacing:-0.01em;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.pc-btn{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:5px 11px;border-radius:8px;background:rgba(0,176,240,0.12);border:1px solid rgba(0,176,240,0.45);color:#d6f6ff;letter-spacing:0}
+.pc-btn:hover{background:rgba(0,176,240,0.22)}
+.pc-back{position:fixed;inset:0;background:rgba(3,3,8,0.66);z-index:60;display:none;align-items:center;justify-content:center;padding:20px}
+.pc-back.on{display:flex}
+.pc-modal{width:min(760px,100%);max-height:calc(100vh - 40px);display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--border-strong);border-top:3px solid #00b0f0;border-radius:14px;box-shadow:0 30px 80px rgba(0,0,0,0.6)}
+.pc-head{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border)}
+.pc-head h2{margin:0;font-size:17px;font-weight:800}
+.pc-head .chip{font-family:var(--mono)}
+.pc-head .x{margin-left:auto;background:none;border:1px solid var(--border);border-radius:8px;color:var(--text-dim);width:32px;height:30px;font-size:16px}
+.pc-head .x:hover{color:var(--text);border-color:var(--border-strong)}
+.pc-body{overflow:auto;padding:14px 16px 18px;display:flex;flex-direction:column;gap:12px}
+.pc-code{margin:0;padding:14px 16px;border-radius:11px;background:var(--bg-0);border:1px solid var(--border);font-family:var(--mono);font-size:13px;line-height:1.7;color:var(--text);overflow-x:auto;counter-reset:ln;display:grid;grid-template-columns:max-content auto;column-gap:28px}
+.pc-code .l{grid-column:1;padding-left:34px;position:relative;white-space:pre;min-height:1.7em}
+.pc-code .c{grid-column:2;white-space:pre;font-size:12px}
+.pc-code .l.full{grid-column:1 / -1}
+.pc-code .l::before{counter-increment:ln;content:counter(ln);position:absolute;left:0;width:22px;text-align:right;color:var(--text-faint);font-size:11px}
+.pc-code .kw{color:#c792ea;font-weight:700}
+.pc-code .cm{color:#6b7394;font-style:italic}
+.pc-code .io{color:#ffd59a}
+.pc-cost{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:baseline;font-size:13px;color:var(--text-dim);padding:10px 12px;border-radius:10px;background:rgba(0,176,240,0.07);border-left:3px solid #00b0f0}
+.pc-cost b{font-family:var(--mono);color:var(--text)}
+.pc-notes{margin:0;padding-left:18px;color:var(--text-dim);font-size:12.5px;line-height:1.7}
+.pc-notes b{color:var(--text)}
 .head p{margin:0;color:var(--text-dim);line-height:1.6;max-width:780px}
 .cost{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:10px 14px;min-width:300px;display:flex;flex-direction:column;gap:6px}
 .cost .f{font-family:var(--mono);font-size:12.5px;color:var(--text-dim)}
@@ -347,6 +370,12 @@ table.ct tr.best td.ccost::after{content:"  ★ cheapest";color:var(--sql);font-
   <main class="main" id="main"></main>
 </div>
 <div class="tip" id="tip"></div>
+<div class="pc-back" id="pcBack" role="dialog" aria-modal="true" aria-labelledby="pcTitle">
+  <div class="pc-modal">
+    <div class="pc-head"><h2 id="pcTitle"></h2><span class="chip" id="pcCost"></span><button class="x" id="pcClose" title="Close (Esc)">×</button></div>
+    <div class="pc-body" id="pcBody"></div>
+  </div>
+</div>
 
 <script>
 (function(){
@@ -722,6 +751,96 @@ const PSEUDO = {
   smj:['read a page from R and from S', 'output all the matches', 'if the last JC of R is smaller, read a page of R; otherwise read a page of S', 'continue until reaching the end of R or S'],
   hash:['step 1: for each page of R, then of S:', '    put every tuple in bucket h1(JC) (M−1 output buffers)', '    write a buffer to disk when it is full', 'step 2: for each bucket i:', '    read Rᵢ into memory, build a hash table with h2', '    for each page of Sᵢ:', '        probe the table with each s, output the matches']
 };
+// Complete pseudocode for the "Pseudocode" window. "-- " starts a comment; "[io]" marks the lines that cost I/O.
+const FULL_PSEUDO = {
+  nlj:{cost:'B(R) + B(R)·B(S)', code:`-- R is the outer relation, S the inner one
+for each page p of R:                          [io]  -- B(R) reads
+    for each page q of S:                      [io]  -- B(S) reads, once per page of R
+        for each tuple r in p:
+            for each tuple s in q:
+                if r.JC = s.JC:
+                    add (r, s) to the output buffer
+                    if the output buffer is full: write it out`,
+    notes:['Needs only <b>3 frames</b>: one page of R, one page of S, one output buffer.', 'S is read again for <b>every page of R</b>, so the cost grows with B(R)·B(S).', 'Put the <b>smaller</b> relation outside: B(R) + B(R)·B(S) is smaller when B(R) is.']},
+  bnlj:{cost:'B(R) + ⌈B(R)/(M−2)⌉·B(S)', code:`-- M frames: M−2 for a block of R, 1 input buffer for S, 1 output buffer
+for each block of M−2 pages of R:              [io]  -- every page of R is read once
+    build a hash table on JC for the tuples of the block
+    for each page q of S:                      [io]  -- one full scan of S per block
+        for each tuple s in q:
+            for each r in hashTable[s.JC]:
+                add (r, s) to the output buffer
+                if the output buffer is full: write it out`,
+    notes:['S is scanned once <b>per block</b> instead of once per page: ⌈B(R)/(M−2)⌉ scans.', 'If all of R fits in M−2 frames, S is read only once: cost B(R) + B(S).', 'The hash table only speeds up the CPU work; it does not change the I/O cost.']},
+  inlj:{cost:'B(R) + T(R)·[search + matching pages]', code:`-- an index on S.JC is needed
+for each page p of R:                          [io]  -- B(R) reads
+    for each tuple r in p:
+        entries = index.search(r.JC)           [io]  -- 0 in memory, 1 hash, 2–4 B+ tree
+        if the index is clustered:
+            read the adjacent S pages that hold the entries      [io]  -- ⌈B(S)/V(S,JC)⌉ pages
+        else:
+            for each entry: read the S page it points to         [io]  -- one page per tuple: T(S)/V(S,JC)
+        for each matching tuple s:
+            add (r, s) to the output buffer`,
+    notes:['Clustered: <b>B(R) + T(R)·[search + RF·⌈B(S)/V(S,JC)⌉]</b>.', 'Unclustered: <b>B(R) + T(R)·[search + RF·(⌈B(I)/V(S,JC)⌉ + ⌈T(S)/V(S,JC)⌉)]</b>.', '<b>RF = min{1, V(S,JC)/V(R,JC)}</b>: the fraction of R tuples that have a match in S (uniform data assumed).', 'Good when there are few matches per tuple of R or the index is clustered.']},
+  smj:{cost:'(2k+1)·[B(R) + B(S)]', code:`-- phase 1: sort both relations on JC (external merge sort, k passes, usually 2)
+sort R on JC                                   [io]  -- 2·B(R)·k
+sort S on JC                                   [io]  -- 2·B(S)·k
+
+-- phase 2: merge
+read the first page of R and of S              [io]
+loop:
+    output all the matches between the R pages and S pages in memory
+    if the last JC of R < the last JC of S:
+        read the next page of R                [io]
+    else:
+        read the next page of S                [io]
+    drop pages whose values can no longer match a later page
+until reaching the end of R or S`,
+    notes:['Total: 2k·B(R) + 2k·B(S) + B(R) + B(S) = <b>(2k+1)·[B(R)+B(S)]</b>, i.e. <b>5·[B(R)+B(S)]</b> for k = 2.', 'If R and S are already sorted, only the merge is paid: <b>B(R) + B(S)</b>.', 'Careful: one R tuple can match <b>several pages</b> of S (the "tricky example") — those pages must stay in memory together.']},
+  hash:{cost:'3·[B(R) + B(S)]', code:`-- step 1: partition both relations with the same hash function h1
+for each page p of R:                          [io]  -- read B(R)
+    for each tuple r in p:
+        put r in output buffer h1(r.JC)        -- M−1 buffers, one per bucket
+        if that buffer is full: write it to partition R_i       [io]
+write the partly filled buffers                [io]  -- ≈ B(R) writes in total
+do the same for S                              [io]  -- read B(S), write ≈ B(S)
+
+-- step 2: join each pair of partitions
+for each bucket i:
+    read R_i into memory                       [io]  -- must fit in M−2 frames
+    build a hash table on R_i with h2
+    for each page q of S_i:                    [io]
+        for each tuple s in q:
+            for each r in hashTable[s.JC]:
+                add (r, s) to the output buffer`,
+    notes:['Step 1 reads and writes each relation once (2·B(R) + 2·B(S)); step 2 reads the partitions once more (B(R) + B(S)): <b>3·[B(R)+B(S)]</b>.', 'Works as is only if every partition of one relation fits in <b>M−2</b> pages; otherwise partition the partitions again.', 'A tuple of R<sub>i</sub> can only match tuples of S<sub>i</sub>: both went through the same h1.']}
+};
+function openPseudo(){
+  const a = CFG.algo, f = FULL_PSEUDO[a]; if (!f) return;
+  const kw = /\b(for each|for|each|in|if|else|loop|until|read|write|output|add|build|sort|drop|put|do)\b/g;
+  // code in the left column, its comment (cost) in the right column; comment-only lines span both
+  const lines = f.code.split('\n').map(line => {
+    const ci = line.indexOf('--');
+    let code = (ci < 0 ? line : line.slice(0, ci)), com = ci < 0 ? '' : line.slice(ci);
+    const io = code.includes('[io]');
+    code = code.replace('[io]', '').replace(/\s+$/, '');
+    if (!code.trim() && com) return `<span class="l full"><span class="cm">${esc(com)}</span></span>`;
+    return `<span class="l">${esc(code).replace(kw, '<span class="kw">$1</span>')}</span><span class="c ${io ? 'io' : 'cm'}">${esc(com)}</span>`;
+  }).join('');
+  $('#pcTitle').textContent = INTRO[a].title;
+  $('#pcCost').textContent = 'cost ' + f.cost;
+  $('#pcBody').innerHTML = `<pre class="pc-code">${lines}</pre>` +
+    `<div class="pc-cost">Cost on the current data: <b>${esc(FORMULAS[a](STATS()).plugged)} = ${fmt(FORMULAS[a](STATS()).value)}</b> I/O <span style="color:var(--text-faint)">· orange comments mark the lines that cost I/O</span></div>` +
+    `<ul class="pc-notes">${f.notes.map(n => `<li>${n}</li>`).join('')}</ul>`;
+  stopPlay();
+  $('#pcBack').classList.add('on');
+  $('#pcClose').focus();
+}
+const closePseudo = () => { $('#pcBack').classList.remove('on'); const b = $('#pcBtn'); if (b) b.focus(); };
+$('#pcClose').addEventListener('click', closePseudo);
+$('#pcBack').addEventListener('click', e => { if (e.target.id === 'pcBack') closePseudo(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#pcBack').classList.contains('on')){ e.stopImmediatePropagation(); closePseudo(); } }, true);
+
 const INTRO = {
   nlj:{title:'Nested loop join', text:'For every page of R, read every page of S and output the pairs that match. Simple, needs only 3 frames, but S is scanned once per page of R.'},
   bnlj:{title:'Block nested loop join', text:'Use the memory: load as many R pages as fit (M − 2) as one block, then scan S once per block instead of once per page.'},
@@ -773,7 +892,7 @@ function renderSide(){
 function renderShell(){
   const intro = INTRO[CFG.algo], f = FORMULAS[CFG.algo](STATS()), s = STATS();
   $('#main').innerHTML = `
-    <div class="head"><div class="what"><h1>${esc(intro.title)}</h1><p>${esc(intro.text)}</p></div>
+    <div class="head"><div class="what"><h1>${esc(intro.title)}<button class="pc-btn" id="pcBtn" title="Show the full pseudocode of ${esc(intro.title.toLowerCase())}"><svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M5.5 4L2 8l3.5 4M10.5 4L14 8l-3.5 4"/></svg>Pseudocode</button></h1><p>${esc(intro.text)}</p></div>
       <div class="cost"><div class="f">Cost = <b>${esc(f.general)}</b></div><div class="f">= ${esc(f.plugged)} = <b>${fmt(f.value)}</b> I/O</div>
         <div class="io"><span>B(R) <b>${s.BR}</b></span><span>B(S) <b>${s.BS}</b></span><span>M <b>${s.M}</b></span><span id="ioNow"></span></div></div></div>
     <div class="controls">
@@ -793,6 +912,7 @@ function renderShell(){
   $('#scrub').max = TRACE.steps.length - 1;
   $('#first').onclick = () => go(0); $('#prev').onclick = () => go(cur - 1); $('#next').onclick = () => go(cur + 1); $('#last').onclick = () => go(TRACE.steps.length - 1);
   $('#play').onclick = togglePlay;
+  $('#pcBtn').onclick = openPseudo;
   $('#scrub').oninput = e => go(+e.target.value);
   $('#speed').oninput = e => { CFG.speed = +e.target.value; save(); if (timer){ stopPlay(); togglePlay(); } };
 }
