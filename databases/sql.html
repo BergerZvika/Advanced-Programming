@@ -125,7 +125,10 @@ button{cursor:pointer}
 
 /* ---------- work area ---------- */
 .work{flex:1;display:flex;flex-direction:column;min-width:0;min-height:0}
-.etabs{display:flex;align-items:stretch;background:var(--bg-1);border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:thin}
+.ebar{display:flex;align-items:stretch;background:var(--bg-1);border-bottom:1px solid var(--border);min-width:0}
+.etabs{display:flex;align-items:stretch;flex:1;min-width:0;overflow-x:auto;scrollbar-width:thin}
+.eacts{display:flex;align-items:center;gap:6px;padding:4px 8px;flex:none;border-left:1px solid var(--border)}
+.eacts .btn{padding:5px 10px;font-size:12px}
 .etab{display:flex;align-items:center;gap:8px;padding:8px 10px 8px 14px;border-right:1px solid var(--border);color:var(--text-dim);font-size:12.5px;cursor:pointer;white-space:nowrap;user-select:none;border-top:2px solid transparent}
 .etab.on{background:var(--panel);color:var(--text);border-top-color:var(--sql)}
 .etab .x{border:none;background:none;color:var(--text-faint);font-size:14px;line-height:1;padding:0 3px;border-radius:4px}
@@ -261,7 +264,8 @@ table.grid td.chg{background:rgba(255,181,71,0.22)!important;color:#ffe2b0}
 
 .btn svg{flex:none}
 @media (max-width:1500px){ .topbar .btn kbd{display:none} }
-@media (max-width:1640px){ .topbar .btn.icon .lbl{display:none} }
+@media (max-width:1280px){ .eacts .btn kbd{display:none} }
+@media (max-width:1150px){ .topbar .btn.icon .lbl{display:none} }
 @media (max-width:1180px){ .topbar .brand small{display:none} }
 @media (max-width:700px){
   .steps{position:static}
@@ -322,14 +326,10 @@ table.grid td.chg{background:rgba(255,181,71,0.22)!important;color:#ffe2b0}
 <header class="topbar">
   <button class="btn icon" id="sidebarToggle" title="Schema / examples / history">☰</button>
   <a class="brand" href="index.html" title="Back to Databases Lab"><span class="dot"></span>SQL Lab <small>SQLite · WASM</small></a>
-  <button class="btn primary" id="runBtn" title="Run selection or the whole editor">▶ <span class="lbl">Run</span> <kbd>Ctrl ↵</kbd></button>
-  <button class="btn" id="runCurBtn" title="Run only the statement under the cursor">▸ <span class="lbl">Run statement</span> <kbd>⇧ Ctrl ↵</kbd></button>
-  <button class="btn step" id="stepBtn" title="Walk through how the statement under the cursor is executed, clause by clause"><svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M2 3v10l8-5z"/><rect x="11" y="3" width="2.5" height="10" rx=".6"/></svg> <span class="lbl">Step-by-step</span> <kbd>Alt ↵</kbd></button>
-  <button class="btn" id="explainBtn" title="EXPLAIN QUERY PLAN for the statement under the cursor">⌕ <span class="lbl">Explain</span></button>
-  <button class="btn ref-open" id="refBtn" title="Every SQL command with a short example (F1)"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M2 3.2C3.8 2.4 6 2.5 8 3.6v9.6C6 12.1 3.8 12 2 12.8z M14 3.2c-1.8-.8-4-.7-6 .4v9.6c2-1.1 4.2-1.2 6-.4z" stroke-linejoin="round"/></svg> <span class="lbl">Commands</span></button>
-  <span class="sep"></span>
   <select class="sel" id="dataset" title="Choose a database schema to practice on"></select>
   <button class="btn" id="resetBtn" title="Discard all changes and reload the chosen database">↺ <span class="lbl">Reset DB</span></button>
+  <span class="sep"></span>
+  <button class="btn ref-open" id="refBtn" title="Every SQL command with a short example (F1)"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M2 3.2C3.8 2.4 6 2.5 8 3.6v9.6C6 12.1 3.8 12 2 12.8z M14 3.2c-1.8-.8-4-.7-6 .4v9.6c2-1.1 4.2-1.2 6-.4z" stroke-linejoin="round"/></svg> <span class="lbl">Commands</span></button>
   <span class="spacer"></span>
   <button class="btn icon" id="importBtn" title="Open a .sqlite / .db file">⤒ <span class="lbl">Open .db</span></button>
   <button class="btn icon" id="exportBtn" title="Download the database as a .sqlite file">⤓ <span class="lbl">Save .db</span></button>
@@ -362,7 +362,15 @@ table.grid td.chg{background:rgba(255,181,71,0.22)!important;color:#ffe2b0}
   </aside>
 
   <section class="work">
-    <div class="etabs" id="etabs"></div>
+    <div class="ebar">
+      <div class="etabs" id="etabs"></div>
+      <div class="eacts">
+        <button class="btn primary" id="runBtn" title="Run selection or the whole editor">▶ <span class="lbl">Run</span> <kbd>Ctrl ↵</kbd></button>
+        <button class="btn" id="runCurBtn" title="Run only the statement under the cursor">▸ <span class="lbl">Run statement</span> <kbd>⇧ Ctrl ↵</kbd></button>
+        <button class="btn step" id="stepBtn" title="Walk through how the statement under the cursor is executed, clause by clause"><svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M2 3v10l8-5z"/><rect x="11" y="3" width="2.5" height="10" rx=".6"/></svg> <span class="lbl">Step-by-step</span> <kbd>Alt ↵</kbd></button>
+        <button class="btn" id="explainBtn" title="EXPLAIN QUERY PLAN for the statement under the cursor">⌕ <span class="lbl">Explain</span></button>
+      </div>
+    </div>
     <div class="editor" id="editorWrap"></div>
     <div class="splitter" id="splitter" title="Drag to resize"></div>
     <div class="results">
@@ -801,22 +809,11 @@ CREATE INDEX idx_employees_dept ON employees(dept_id);
 };
 const DEFAULT_DATASET = 'school';
 
-const WELCOME_SQL = `-- Welcome to the SQL Lab!  This is a real SQLite database running in your browser.
--- Press Ctrl+Enter (Cmd+Enter on Mac) to run everything, or select some text to run just that.
--- Alt+Enter shows step by step how the statement under the cursor is executed.
--- Pick another database (Starter, Library, Movies, …) from the menu at the top.
+const WELCOME_SQL = `-- Welcome to the SQL Lab! This is a real database running in your browser.
+-- Press Ctrl+Enter (Cmd+Enter on Mac) to run the query.
 
-SELECT name, age, city
-FROM students
-WHERE age >= 21
-ORDER BY age;
-
--- Who takes which course, and with what grade?
-SELECT s.name, c.title, e.grade
-FROM enrollments e
-JOIN students s ON s.student_id = e.student_id
-JOIN courses  c ON c.course_id  = e.course_id
-ORDER BY s.name;
+-- Show every student:
+SELECT * FROM students;
 `;
 
 /* ================================================================
@@ -1486,6 +1483,13 @@ let schemaTables = {};
 let dirtySave = false;
 
 if (!Array.isArray(tabs) || !tabs.length) tabs = [{name:'Query 1', sql:WELCOME_SQL}];
+// One-time update to the simple welcome query: any tab still starting with an older welcome text is replaced.
+let welcomeReset = false;
+if (!LS.get('welcome2', false)){
+  tabs.forEach(t => { if (/^-- Welcome to the SQL Lab!/.test(t.sql) && t.sql !== WELCOME_SQL){ t.sql = WELCOME_SQL; welcomeReset = true; } });
+  LS.set('welcome2', true);
+  if (welcomeReset) LS.set('tabs', tabs);
+}
 if (activeTab >= tabs.length) activeTab = 0;
 
 /* ================================================================
@@ -1833,7 +1837,9 @@ const openTables = new Set(LS.get('openTables', []));
 function q1(sql){ const r = db.exec(sql); return r.length ? r[0].values : []; }
 function datasetOptions(){
   const ds = currentDataset();
-  $('#dataset').innerHTML = Object.entries(DATASETS).map(([k, d]) => `<option value="${k}">${esc(d.name)}</option>`).join('') +
+  // the default database first in the menu, then the rest in their usual order
+  const order = [DEFAULT_DATASET, ...Object.keys(DATASETS).filter(k => k !== DEFAULT_DATASET)];
+  $('#dataset').innerHTML = order.map(k => `<option value="${k}">${esc(DATASETS[k].name)}${k === DEFAULT_DATASET ? ' (default)' : ''}</option>`).join('') +
     (ds === 'custom' ? '<option value="custom">Opened file</option>' : '');
   $('#dataset').value = ds;
 }
@@ -3064,6 +3070,10 @@ async function boot(){
   if (saved){
     try { db = new SQL.Database(b64ToU8(saved)); db.exec('SELECT 1 FROM sqlite_schema LIMIT 1; PRAGMA foreign_keys = ON;'); restored = true; }
     catch(e){ db = null; }
+  }
+  // the new welcome query reads the School tables; switch a restored database that has no students table to School
+  if (restored && welcomeReset && !db.exec("SELECT 1 FROM sqlite_schema WHERE type = 'table' AND name = 'students'").length){
+    db.close(); db = null; restored = false; ds = DEFAULT_DATASET;
   }
   if (!restored) loadDataset(DATASETS[ds] ? ds : DEFAULT_DATASET);
   else LS.set('dataset', ds);
