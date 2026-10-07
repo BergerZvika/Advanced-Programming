@@ -1,0 +1,1513 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>ERD Lab</title>
+<meta name="description" content="Draw entity-relationship diagrams in Chen or crow's foot notation, map them to relations step by step and generate SQL." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg-0:#07070e;
+  --bg-1:#0c0c18;
+  --panel:#0f0f1d;
+  --panel-2:#14142a;
+  --surface:rgba(255,255,255,0.04);
+  --surface-2:rgba(255,255,255,0.08);
+  --border:rgba(255,255,255,0.09);
+  --border-strong:rgba(255,255,255,0.18);
+  --text:#eaeaf5;
+  --text-dim:#9a9ab0;
+  --text-faint:#666680;
+  --accent:#7c5cff;
+  --accent-2:#35d0ff;
+  --sql:#4ce0a3;
+  --warn:#ffb547;
+  --err:#ff6b7a;
+  --pink:#ff6ec7;
+  --ent:#8aa2ff;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg-0)}
+body{font-family:'Inter',system-ui,sans-serif;color:var(--text);font-size:13.5px;display:flex;flex-direction:column;height:100dvh;overflow:hidden}
+a{color:inherit;text-decoration:none}
+button,select,input,textarea{font-family:inherit;color:inherit}
+button{cursor:pointer}
+
+.topbar{display:flex;align-items:center;gap:10px;padding:10px 16px;flex-wrap:wrap;background:linear-gradient(180deg,#0e0e1c,#0a0a15);border-bottom:1px solid var(--border);flex:none}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;white-space:nowrap}
+.brand .dot{width:10px;height:10px;border-radius:50%;background:linear-gradient(135deg,var(--ent),var(--warn));box-shadow:0 0 14px var(--ent)}
+.brand small{font-family:var(--mono);font-weight:500;font-size:11px;color:var(--text-faint)}
+.spacer{flex:1}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:7px 12px;border-radius:9px;font-size:12.5px;font-weight:600;background:var(--surface);border:1px solid var(--border);transition:background .15s,border-color .15s;white-space:nowrap}
+.btn:hover{background:var(--surface-2);border-color:var(--border-strong)}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.primary{background:linear-gradient(135deg,#2bbf86,#1f9d6b);border-color:rgba(76,224,163,0.5);color:#04140d}
+.btn.primary:hover{background:linear-gradient(135deg,#4ce0a3,#25b07a)}
+.btn.on{background:rgba(138,162,255,0.18);border-color:rgba(138,162,255,0.6);color:#dfe5ff}
+.btn.sm{padding:5px 10px;font-size:12px}
+.btn.danger:hover{border-color:rgba(255,107,122,0.55);color:var(--err)}
+
+.toolbar{display:flex;align-items:center;gap:8px;padding:8px 16px;border-bottom:1px solid var(--border);background:var(--bg-1);flex-wrap:wrap;flex:none}
+.toolbar .sep{width:1px;height:22px;background:var(--border)}
+.seg{display:inline-flex;border:1px solid var(--border);border-radius:9px;overflow:hidden}
+.seg button{background:var(--surface);border:none;padding:7px 11px;font-size:12.5px;font-weight:600;color:var(--text-dim)}
+.seg button+button{border-left:1px solid var(--border)}
+.seg button.on{background:rgba(138,162,255,0.18);color:#dfe5ff}
+.sel{padding:7px 10px;border-radius:9px;background:var(--surface);border:1px solid var(--border);font-size:12.5px;font-weight:600;outline:none}
+.sel option{background:var(--panel)}
+.tlabel{font-size:11px;color:var(--text-faint);font-weight:600;letter-spacing:.08em;text-transform:uppercase}
+
+.work{flex:1;display:grid;grid-template-columns:minmax(0,1fr) 400px;min-height:0}
+.canvas-wrap{position:relative;min-width:0;min-height:0;overflow:hidden;background-color:var(--bg-0);
+  background-image:radial-gradient(circle,rgba(255,255,255,0.07) 1px,transparent 1.2px);touch-action:none}
+#svg{width:100%;height:100%;display:block;user-select:none;-webkit-user-select:none}
+#svg [data-k]{cursor:move}
+.canvas-wrap.connect #svg [data-k="entity"]{cursor:crosshair}
+.canvas-wrap.panning #svg{cursor:grabbing}
+.fab{position:absolute;top:14px;left:14px;width:44px;height:44px;border-radius:50%;border:1px solid rgba(138,162,255,0.6);background:linear-gradient(135deg,#5b6cff,#8aa2ff);color:#fff;font-size:26px;line-height:1;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(91,108,255,0.45);transition:transform .15s,box-shadow .15s;z-index:2}
+.fab:hover{transform:scale(1.08);box-shadow:0 10px 30px rgba(91,108,255,0.6)}
+.addrel{border:1px dashed var(--border-strong);border-radius:10px;padding:10px;margin-top:10px;display:flex;flex-direction:column;gap:7px;background:var(--bg-1)}
+.addrel .row{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.addrel .lbl{font-size:12px;font-weight:600;color:var(--text-dim)}
+.addrel .inp{font-size:12.5px;padding:6px 8px}
+.banner{position:absolute;top:12px;left:50%;transform:translateX(-50%);background:rgba(20,20,42,0.95);border:1px solid rgba(138,162,255,0.5);padding:8px 14px;border-radius:10px;font-size:12.5px;display:none;align-items:center;gap:10px;white-space:nowrap;box-shadow:0 10px 30px rgba(0,0,0,0.5)}
+.banner.on{display:flex}
+.zoomctl{position:absolute;right:12px;bottom:12px;display:flex;gap:4px;align-items:center;background:rgba(15,15,29,0.9);border:1px solid var(--border);border-radius:10px;padding:4px}
+.zoomctl button{width:30px;height:28px;border-radius:7px;background:none;border:none;font-size:15px;color:var(--text-dim)}
+.zoomctl button:hover{background:var(--surface-2);color:var(--text)}
+.zoomctl span{font-family:var(--mono);font-size:11px;color:var(--text-faint);min-width:42px;text-align:center}
+.legend{position:absolute;left:12px;bottom:12px;font-size:11px;color:var(--text-faint);background:rgba(15,15,29,0.9);border:1px solid var(--border);border-radius:10px;padding:7px 10px;max-width:calc(100% - 200px);line-height:1.5}
+.legend b{color:var(--text-dim);font-weight:600}
+
+.panel{background:var(--panel);border-left:1px solid var(--border);display:flex;flex-direction:column;min-height:0}
+.ptabs{display:flex;gap:2px;border-bottom:1px solid var(--border);padding:0 10px;flex:none;overflow-x:auto}
+.ptabs button{background:none;border:none;border-bottom:2px solid transparent;padding:10px 11px;font-weight:600;font-size:12.5px;color:var(--text-faint);white-space:nowrap}
+.ptabs button:hover{color:var(--text)}
+.ptabs button.on{color:var(--text);border-bottom-color:var(--ent)}
+.ptabs .n{font-family:var(--mono);font-size:10.5px;margin-left:4px;padding:0 5px;border-radius:5px;background:var(--surface-2)}
+.ptabs .n.err{background:rgba(255,107,122,0.2);color:var(--err)}
+.ptabs .n.warn{background:rgba(255,181,71,0.18);color:var(--warn)}
+.pbody{flex:1;overflow-y:auto;padding:16px}
+
+.kind{display:inline-flex;font-size:10.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;padding:3px 8px;border-radius:6px}
+.kind.ent{color:var(--ent);background:rgba(138,162,255,0.12)}
+.kind.rel{color:var(--warn);background:rgba(255,181,71,0.12)}
+.ih{display:flex;align-items:center;gap:8px;margin-bottom:14px}
+.field{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+.field > span{font-size:12px;font-weight:600;color:var(--text-dim)}
+.inp{width:100%;padding:8px 10px;border-radius:8px;background:var(--bg-1);border:1px solid var(--border);font-size:13px;outline:none}
+.inp:focus{border-color:rgba(138,162,255,0.6)}
+.ck{display:flex;align-items:flex-start;gap:8px;font-size:12.5px;color:var(--text-dim);margin-bottom:10px;line-height:1.45;cursor:pointer}
+.ck input{margin-top:2px;accent-color:var(--ent)}
+.ck b{color:var(--text)}
+h4{margin:18px 0 8px;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--text-faint);font-weight:700;display:flex;align-items:center;gap:8px}
+table.at{width:100%;border-collapse:collapse;font-size:12px}
+table.at th{font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-faint);font-weight:700;text-align:center;padding:0 2px 5px}
+table.at th:first-child,table.at th:nth-child(2){text-align:left}
+table.at td{padding:2px;text-align:center}
+table.at td input[type=text]{width:100%;padding:5px 7px;border-radius:6px;background:var(--bg-1);border:1px solid var(--border);font-size:12px;outline:none;min-width:0}
+table.at td input[type=text]:focus{border-color:rgba(138,162,255,0.6)}
+table.at td input.ty{font-family:var(--mono);font-size:11px;color:var(--text-dim)}
+table.at td input[type=checkbox]{accent-color:var(--ent)}
+table.at tr.hl td input[type=text]{border-color:var(--pink)}
+.x{background:none;border:none;color:var(--text-faint);font-size:14px;line-height:1;padding:3px 5px;border-radius:5px}
+.x:hover{color:var(--err);background:rgba(255,107,122,0.12)}
+.addrow{margin-top:6px;width:100%;justify-content:center}
+.end{border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:10px;background:var(--bg-1)}
+.end-h{display:grid;grid-template-columns:1fr 92px;gap:6px;margin-bottom:8px}
+.end .ck{margin-bottom:6px}
+.end .inp{font-size:12.5px;padding:6px 8px}
+.sentences{font-size:12.5px;color:var(--text-dim);line-height:1.7;padding:10px 12px;border-radius:9px;background:rgba(255,181,71,0.06);border-left:3px solid var(--warn);margin:4px 0 6px}
+.sentences b{color:var(--text)}
+.sentences .ratio{font-family:var(--mono);font-weight:700;color:var(--warn)}
+.rlist{display:flex;flex-direction:column;gap:5px}
+.rlist button{text-align:left;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-size:12.5px}
+.rlist button:hover{border-color:var(--border-strong)}
+.rlist .muted{color:var(--text-faint);font-family:var(--mono);font-size:11px}
+.hint{font-size:12px;color:var(--text-faint);line-height:1.6}
+.hint code,.hint kbd{font-family:var(--mono);font-size:11px;background:var(--surface-2);padding:1px 5px;border-radius:4px;color:var(--text-dim)}
+.help{display:flex;flex-direction:column;gap:12px}
+.help ul{margin:0;padding-left:18px;color:var(--text-dim);font-size:12.5px;line-height:1.75}
+.help b{color:var(--text)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat{background:var(--bg-1);border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center}
+.stat b{display:block;font-size:20px}
+.stat span{font-size:11px;color:var(--text-faint)}
+
+/* schema */
+.tbl{border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px;background:var(--bg-1);font-family:var(--mono);font-size:12.5px;line-height:1.7;overflow-x:auto}
+.tbl .tn{font-weight:700;color:var(--ent)}
+.tbl u{text-decoration-color:var(--warn);text-decoration-thickness:2px;text-underline-offset:3px}
+.tbl .fk{font-style:italic;color:#ffd59a}
+.tbl .ref{color:var(--text-faint);font-size:11px}
+.tbl .origin{display:block;font-family:'Inter',sans-serif;font-size:11px;color:var(--text-faint)}
+.steps{counter-reset:s;display:flex;flex-direction:column;gap:8px;margin:0;padding:0;list-style:none}
+.steps li{font-size:12.5px;color:var(--text-dim);line-height:1.6;padding:8px 10px 8px 34px;position:relative;border-radius:9px;background:var(--surface)}
+.steps li::before{content:attr(data-r);position:absolute;left:8px;top:8px;width:20px;height:20px;border-radius:6px;background:rgba(138,162,255,0.16);color:var(--ent);font-family:var(--mono);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.steps li b{color:var(--text)}
+.steps li code{font-family:var(--mono);font-size:11.5px;color:var(--text)}
+
+pre.sql{margin:0;padding:12px 14px;border-radius:10px;background:var(--bg-0);border:1px solid var(--border);font-family:var(--mono);font-size:12px;line-height:1.6;overflow-x:auto;color:var(--text)}
+pre.sql .k{color:#c4b2ff;font-weight:600}
+pre.sql .c{color:var(--text-faint);font-style:italic}
+pre.sql .t{color:#ffd59a}
+.sqlbar{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+
+.check{display:flex;gap:10px;align-items:flex-start;padding:9px 11px;border-radius:9px;background:var(--surface);border:1px solid var(--border);margin-bottom:7px;font-size:12.5px;line-height:1.55;color:var(--text-dim);cursor:pointer;width:100%;text-align:left}
+.check:hover{border-color:var(--border-strong)}
+.check .ic{font-weight:800;flex:none;width:16px;text-align:center}
+.check.err .ic{color:var(--err)}
+.check.warn .ic{color:var(--warn)}
+.check.info .ic{color:var(--accent-2)}
+.check b{color:var(--text)}
+.ok{padding:14px;border-radius:10px;background:rgba(76,224,163,0.08);border:1px solid rgba(76,224,163,0.3);color:var(--sql);font-size:13px}
+
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--panel-2);border:1px solid var(--border-strong);padding:9px 16px;border-radius:10px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:60}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+@media (max-width:900px){
+  body{height:auto;overflow:auto}
+  .work{grid-template-columns:1fr}
+  .canvas-wrap{height:62vh}
+  .panel{border-left:none;border-top:1px solid var(--border)}
+  .pbody{overflow:visible}
+  .brand small,.legend{display:none}
+}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="index.html" title="Back to Databases Lab"><span class="dot"></span>ERD Lab <small>Chen · crow's foot · ER → relations → SQL</small></a>
+  <span class="spacer"></span>
+  <a class="btn" href="index.html">← Databases</a>
+  <a class="btn" href="../home.html">⌂ Home</a>
+</header>
+
+<div class="toolbar">
+  <button class="btn" id="addEnt" title="Add an entity (or double-click the canvas)">▭ Entity</button>
+  <button class="btn" id="addRel" title="Connect two entities with a relationship (R)">◇ Relationship</button>
+  <span class="sep"></span>
+  <button class="btn sm" id="undo" title="Undo (Ctrl+Z)">↶</button>
+  <button class="btn sm" id="redo" title="Redo (Ctrl+Shift+Z)">↷</button>
+  <span class="sep"></span>
+  <span class="tlabel">Notation</span>
+  <div class="seg" id="notation"><button data-n="er" title="Course E/R notation: arrows, isa triangles, multi-way relationships">E/R</button><button data-n="chen">Chen</button><button data-n="crow">Crow's foot</button></div>
+  <span class="sep"></span>
+  <select class="sel" id="tpl" title="Load an example diagram">
+    <option value="">Examples…</option>
+    <option value="rental">Rental — multi-way relationship</option>
+    <option value="medical">Person / Physician / Patient — isa</option>
+    <option value="company">Company (Elmasri &amp; Navathe)</option>
+    <option value="university">University</option>
+    <option value="library">Library</option>
+    <option value="blank">Blank diagram</option>
+  </select>
+  <span class="spacer"></span>
+  <button class="btn sm" id="importBtn" title="Open a diagram saved as JSON">⤒ Open</button>
+  <span class="tlabel">Export</span>
+  <button class="btn sm" id="expPng">PNG</button>
+  <button class="btn sm" id="expSvg">SVG</button>
+  <button class="btn sm" id="expJson">JSON</button>
+  <input type="file" id="fileIn" accept=".json,application/json" hidden>
+</div>
+
+<div class="work">
+  <div class="canvas-wrap" id="cw">
+    <svg id="svg" xmlns="http://www.w3.org/2000/svg"><g id="world"></g></svg>
+    <button class="fab" id="fabAdd" title="Add a new entity">+</button>
+    <div class="banner" id="banner"><span id="bannerText"></span><button class="btn sm" id="cancelConnect">Cancel</button></div>
+    <div class="legend" id="legend"></div>
+    <div class="zoomctl">
+      <button id="zOut" title="Zoom out">−</button><span id="zLbl">100%</span><button id="zIn" title="Zoom in">+</button>
+      <button id="zFit" title="Fit diagram to view" style="width:auto;padding:0 8px;font-size:12px">Fit</button>
+    </div>
+  </div>
+  <aside class="panel">
+    <div class="ptabs" id="ptabs">
+      <button data-t="edit">Edit</button>
+      <button data-t="schema">Relational schema</button>
+      <button data-t="sql">SQL</button>
+      <button data-t="checks">Checks<span class="n" id="nChecks"></span></button>
+    </div>
+    <div class="pbody" id="pbody"></div>
+  </aside>
+</div>
+<datalist id="types"><option value="INTEGER"><option value="TEXT"><option value="VARCHAR(50)"><option value="REAL"><option value="DECIMAL(10,2)"><option value="DATE"><option value="BOOLEAN"></datalist>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+'use strict';
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const f1 = v => Math.round(v * 10) / 10;
+
+/* ================================================================
+   Model
+   entity: {id, name, x, y, weak, parent, attrs:[attr]}   parent = superclass id (isa) or null
+   relationship: {id, name, x, y, identifying, ends:[end, end, …], attrs:[attr]}   2 ends = binary, 3+ = multi-way
+   end: {entity, max:'1'|'N', total, role} — max '1' means an arrow into this entity: each combination of the
+        OTHER ends is related to at most one instance of it. total means every instance of THIS entity takes part.
+   attr: {id, name, type, pk, multi, derived, dx?, dy?}  (pk on a weak entity = partial key)
+   ================================================================ */
+let M = {entities:[], rels:[], seq:0};
+const uid = p => p + (++M.seq);
+const ent = id => M.entities.find(e => e.id === id);
+const relOf = id => M.rels.find(r => r.id === id);
+const ownerOf = id => ent(id) || relOf(id);
+const touches = (r, id) => r.ends.some(x => x.entity === id);
+const binary = r => r.ends.length === 2;
+// Older saved diagrams stored relationships as {a, b}.
+function normalize(m){
+  for (const e of m.entities) if (e.parent === undefined) e.parent = null;
+  for (const r of m.rels) if (!r.ends){ r.ends = [r.a, r.b]; delete r.a; delete r.b; }
+  return m;
+}
+const ancestors = id => { const out = []; let e = ent(id); while (e && e.parent && !out.includes(e.parent)){ out.push(e.parent); e = ent(e.parent); } return out; };
+
+/* ================================================================
+   Example diagrams
+   ================================================================ */
+function build(spec){
+  const m = {entities:[], rels:[], seq:0};
+  const id = p => p + (++m.seq);
+  const attrs = list => list.map(([name, type, fl = '']) => ({id:id('a'), name, type, pk:fl.includes('k'), multi:fl.includes('m'), derived:fl.includes('d')}));
+  for (const [name, x, y, weak, al] of spec.entities) m.entities.push({id:id('e'), name, x, y, weak:!!weak, parent:null, attrs:attrs(al)});
+  const byName = n => m.entities.find(e => e.name === n).id;
+  for (const [child, parent] of spec.isa || []) m.entities.find(e => e.name === child).parent = byName(parent);
+  for (const [name, x, y, ...rest] of spec.rels){
+    // either [name, x, y, endA, endB, identifying, attrs] or [name, x, y, [end, end, …], identifying, attrs]
+    const multi = Array.isArray(rest[0][0]);
+    const ends = multi ? rest[0] : [rest[0], rest[1]];
+    const [identifying, al] = multi ? rest.slice(1) : rest.slice(2);
+    const end = ([e, max, total, role]) => ({entity:byName(e), max, total:!!total, role:role || ''});
+    m.rels.push({id:id('r'), name, x, y, identifying:!!identifying, ends:ends.map(end), attrs:attrs(al || [])});
+  }
+  return m;
+}
+const TEMPLATES = {
+  rental: () => build({   // multi-way: Agency × Invoice × Person → Car and Agency × Invoice × Car → Person
+    entities: [
+      ['Agency', 300, 470, false, [['agency_id','INTEGER','k'],['city','TEXT']]],
+      ['Invoice', 640, 330, false, [['invoice_no','INTEGER','k'],['amount','DECIMAL(10,2)']]],
+      ['Car', 900, 560, false, [['plate','VARCHAR(10)','k'],['model','TEXT']]],
+      ['Person', 560, 820, false, [['ID','INTEGER','k'],['name','TEXT']]]
+    ],
+    rels: [
+      ['Rental', 560, 560, [['Agency','N'], ['Invoice','N'], ['Car','1'], ['Person','1']], false, [['date','DATE']]]
+    ]
+  }),
+  medical: () => build({  // subclasses: Physician isa Person, Patient isa Person
+    entities: [
+      ['Person', 580, 330, false, [['ID','INTEGER','k'],['name','TEXT'],['address','TEXT']]],
+      ['Physician', 370, 640, false, [['specialty','TEXT']]],
+      ['Patient', 790, 640, false, [['medicalHistory','TEXT']]]
+    ],
+    isa: [['Physician', 'Person'], ['Patient', 'Person']],
+    rels: [
+      ['treats', 580, 820, ['Physician','N'], ['Patient','N'], false, [['since','DATE']]]
+    ]
+  }),
+  company: () => build({
+    entities: [
+      ['Employee', 300, 330, false, [['ssn','CHAR(9)','k'],['name','TEXT'],['salary','DECIMAL(10,2)'],['bdate','DATE'],['age','INTEGER','d']]],
+      ['Department', 880, 330, false, [['dnumber','INTEGER','k'],['dname','TEXT'],['locations','TEXT','m'],['num_employees','INTEGER','d']]],
+      ['Project', 880, 760, false, [['pnumber','INTEGER','k'],['pname','TEXT'],['plocation','TEXT']]],
+      ['Dependent', 300, 800, true, [['dependent_name','TEXT','k'],['sex','CHAR(1)'],['relationship','TEXT']]]
+    ],
+    rels: [
+      ['works_for', 590, 250, ['Employee','N',true], ['Department','1',true]],
+      ['manages', 590, 420, ['Employee','1',false], ['Department','1',true], false, [['start_date','DATE']]],
+      ['controls', 880, 545, ['Department','1',false], ['Project','N',true]],
+      ['works_on', 600, 610, ['Employee','N',true], ['Project','N',true], false, [['hours','REAL']]],
+      ['supervision', 90, 470, ['Employee','1',false,'supervisor'], ['Employee','N',false,'supervisee']],
+      ['dependents_of', 300, 570, ['Employee','1',false], ['Dependent','N',true], true]
+    ]
+  }),
+  university: () => build({
+    entities: [
+      ['Student', 260, 300, false, [['sid','INTEGER','k'],['name','TEXT'],['email','TEXT','m'],['gpa','REAL','d']]],
+      ['Course', 820, 300, false, [['cid','VARCHAR(10)','k'],['title','TEXT'],['credits','INTEGER']]],
+      ['Instructor', 820, 760, false, [['iid','INTEGER','k'],['name','TEXT'],['office','TEXT']]],
+      ['Department', 260, 760, false, [['code','VARCHAR(8)','k'],['dname','TEXT'],['building','TEXT']]]
+    ],
+    rels: [
+      ['enrolls', 540, 220, ['Student','N',false], ['Course','N',false], false, [['grade','CHAR(2)']]],
+      ['prereq', 1080, 300, ['Course','N',false,'course'], ['Course','N',false,'prerequisite']],
+      ['teaches', 820, 530, ['Instructor','1',false], ['Course','N',true]],
+      ['member_of', 540, 760, ['Instructor','N',true], ['Department','1',false]],
+      ['major_in', 260, 530, ['Student','N',false], ['Department','1',false]]
+    ]
+  }),
+  library: () => build({
+    entities: [
+      ['Author', 240, 260, false, [['author_id','INTEGER','k'],['name','TEXT'],['country','TEXT']]],
+      ['Book', 760, 260, false, [['isbn','VARCHAR(13)','k'],['title','TEXT'],['year','INTEGER'],['keywords','TEXT','m']]],
+      ['Copy', 760, 720, true, [['copy_no','INTEGER','k'],['shelf','TEXT']]],
+      ['Member', 240, 720, false, [['member_id','INTEGER','k'],['name','TEXT'],['phone','TEXT','m'],['joined','DATE']]]
+    ],
+    rels: [
+      ['writes', 500, 190, ['Author','N',true], ['Book','N',true]],
+      ['has_copy', 760, 490, ['Book','1',false], ['Copy','N',true], true],
+      ['borrows', 500, 790, ['Member','1',false], ['Copy','N',false], false, [['due_date','DATE']]]
+    ]
+  }),
+  blank: () => ({entities:[], rels:[], seq:0})
+};
+
+/* ================================================================
+   Geometry
+   ================================================================ */
+const FONT = 'Inter, Arial, sans-serif', MONO = "'JetBrains Mono', Consolas, monospace";
+const mctx = document.createElement('canvas').getContext('2d');
+const tw = (s, font) => { mctx.font = font; return mctx.measureText(s).width; };
+const sub = (a, b) => ({x:a.x - b.x, y:a.y - b.y});
+const unit = v => { const l = Math.hypot(v.x, v.y) || 1; return {x:v.x / l, y:v.y / l}; };
+const along = (p, u, d) => ({x:p.x + u.x * d, y:p.y + u.y * d});
+const perp = u => ({x:-u.y, y:u.x});
+const angDist = (a, b) => { const d = Math.abs(a - b) % 360; return d > 180 ? 360 - d : d; };
+const deg = v => Math.atan2(v.y, v.x) * 180 / Math.PI;
+// Where the ray from a shape's centre toward t leaves the shape.
+function clip(s, t){
+  const dx = t.x - s.x, dy = t.y - s.y;
+  if (!dx && !dy) return {x:s.x, y:s.y};
+  let k;
+  if (s.shape === 'diamond') k = 1 / (Math.abs(dx) / (s.w / 2) + Math.abs(dy) / (s.h / 2));
+  else if (s.shape === 'ellipse') k = 1 / Math.hypot(dx / s.rx, dy / s.ry);
+  else k = Math.min(Math.abs((s.w / 2) / (dx || 1e-9)), Math.abs((s.h / 2) / (dy || 1e-9)));
+  return {x:s.x + dx * k, y:s.y + dy * k};
+}
+// Spread n attribute ovals around a shape, away from the lines that leave it.
+function autoAngles(n, avoid){
+  const chosen = [];
+  for (let i = 0; i < n; i++){
+    let best = -90, bs = -Infinity;
+    for (let d = -180; d < 180; d += 10){
+      const all = [...avoid, ...chosen];
+      const md = all.length ? Math.min(...all.map(a => angDist(a, d))) : 180;
+      const s = md - angDist(d, -90) * 0.04;
+      if (s > bs){ bs = s; best = d; }
+    }
+    chosen.push(best);
+  }
+  return chosen.sort((a, b) => a - b);
+}
+
+const isaAxis = (c, p) => { const dx = p.x - c.x, dy = p.y - c.y;
+  return Math.abs(dy) >= Math.abs(dx) ? {x:0, y:Math.sign(dy) || -1} : {x:Math.sign(dx), y:0}; };
+function layout(notation){
+  const G = {ent:{}, rel:{}, attr:{}, isa:{}, notation};
+  if (notation !== 'crow'){
+    for (const e of M.entities){
+      G.ent[e.id] = {x:e.x, y:e.y, w:Math.max(110, tw(e.name, `700 14px ${FONT}`) + 40), h:46, shape:'rect'};
+    }
+    for (const r of M.rels){
+      G.rel[r.id] = {x:r.x, y:r.y, w:Math.max(110, tw(r.name, `600 13px ${FONT}`) + 56), h:60, shape:'diamond'};
+    }
+    const placeAttrs = (owner, shape, avoid) => {
+      const auto = owner.attrs.filter(a => a.dx == null);
+      const ang = autoAngles(auto.length, avoid);
+      const n = owner.attrs.length, grow = Math.max(0, n - 5) * 9;
+      let k = 0;
+      for (const a of owner.attrs){
+        const rx = Math.max(36, tw(a.name, `12.5px ${FONT}`) / 2 + 16), ry = 17;
+        let x, y;
+        if (a.dx != null){ x = shape.x + a.dx; y = shape.y + a.dy; }
+        else {
+          const t = ang[k++] * Math.PI / 180;
+          x = shape.x + Math.cos(t) * (shape.w / 2 + rx + 14 + grow);
+          y = shape.y + Math.sin(t) * (shape.h / 2 + 48 + grow);
+        }
+        G.attr[a.id] = {x, y, rx, ry, shape:'ellipse', owner:owner.id, auto:a.dx == null};
+      }
+      // push overlapping auto-placed ovals apart (and off their owner)
+      const ov = owner.attrs.map(a => G.attr[a.id]);
+      for (let it = 0; it < 40; it++){
+        let moved = false;
+        for (let i = 0; i < ov.length; i++){
+          const A = ov[i];
+          for (let j = i + 1; j < ov.length; j++){
+            const B = ov[j]; if (!A.auto && !B.auto) continue;
+            const dx = B.x - A.x, dy = B.y - A.y;
+            const ox = A.rx + B.rx + 6 - Math.abs(dx), oy = A.ry + B.ry + 6 - Math.abs(dy);
+            if (ox <= 0 || oy <= 0) continue;
+            moved = true;
+            const wa = A.auto && B.auto ? 0.5 : A.auto ? 1 : 0, wb = 1 - wa;
+            if (ox < oy){ const s = Math.sign(dx) || 1; A.x -= s * ox * wa; B.x += s * ox * wb; }
+            else { const s = Math.sign(dy) || 1; A.y -= s * oy * wa; B.y += s * oy * wb; }
+          }
+          if (A.auto){
+            const dx = A.x - shape.x, dy = A.y - shape.y;
+            const ox = shape.w / 2 + A.rx + 8 - Math.abs(dx), oy = shape.h / 2 + A.ry + 8 - Math.abs(dy);
+            if (ox > 0 && oy > 0){ moved = true; if (ox < oy) A.x += (Math.sign(dx) || 1) * ox; else A.y += (Math.sign(dy) || 1) * oy; }
+          }
+        }
+        if (!moved) break;
+      }
+    };
+    for (const e of M.entities){
+      const s = G.ent[e.id];
+      const avoid = M.rels.filter(r => touches(r, e.id)).map(r => deg(sub(G.rel[r.id], s)))
+        .concat(M.entities.filter(c => c.parent === e.id).map(c => deg(sub(G.ent[c.id], s))))
+        .concat(e.parent && G.ent[e.parent] ? [deg(isaAxis(s, G.ent[e.parent]))] : []);
+      placeAttrs(e, s, avoid);
+    }
+    for (const r of M.rels){
+      const s = G.rel[r.id];
+      const avoid = r.ends.map(x => x.entity).filter(id => G.ent[id]).map(id => deg(sub(G.ent[id], s)));
+      placeAttrs(r, s, avoid);
+    }
+  } else {
+    for (const e of M.entities){
+      const rows = e.attrs.map(a => crowRowText(e, a));
+      const w = Math.max(170, tw(e.name, `700 14px ${FONT}`) + 40, ...rows.map(r => tw(r.name, `12px ${MONO}`) + tw(r.type, `11px ${MONO}`) + 74));
+      const h = 34 + Math.max(1, e.attrs.length) * 22 + 8;
+      G.ent[e.id] = {x:e.x, y:e.y, w, h, shape:'rect'};
+    }
+    // crow's foot has no symbol for a 3+-way relationship, so it keeps a small diamond
+    for (const r of M.rels.filter(r => !binary(r))){
+      G.rel[r.id] = {x:r.x, y:r.y, w:Math.max(96, tw(r.name, `600 12px ${FONT}`) + 44), h:46, shape:'diamond'};
+    }
+  }
+  // isa: one triangle per subclass, between it and its superclass, pointing at the superclass
+  for (const e of M.entities){
+    if (!e.parent || !G.ent[e.parent] || !G.ent[e.id]) continue;
+    const c = G.ent[e.id], p = G.ent[e.parent];
+    if (notation === 'crow'){
+      const from = clip(c, p), to = clip(p, c);
+      G.isa[e.id] = {x:(from.x + to.x) / 2, y:(from.y + to.y) / 2, w:20, h:20, u:unit(sub(to, from)), from, to};
+      continue;
+    }
+    // like the slides: the triangle sits straight above (or beside) the subclass, its apex toward the superclass
+    const u = isaAxis(c, p), h = 44, w = 58;
+    const from = {x:c.x + u.x * c.w / 2, y:c.y + u.y * c.h / 2};
+    const at = along(from, u, 16 + h / 2);
+    G.isa[e.id] = {x:at.x, y:at.y, w, h, u, from, to:clip(p, along(at, u, h / 2))};
+  }
+  return G;
+}
+function crowRowText(e, a){
+  return {key: a.pk ? 'PK' : '', name: a.multi ? `{${a.name}}` : a.derived ? `/${a.name}` : a.name, type: a.type || ''};
+}
+
+/* ================================================================
+   Drawing
+   ================================================================ */
+const PAL = {
+  dark: {bg:'#07070e', text:'#eaeaf5', dim:'#9a9ab0', line:'#8a8aa6', ent:'#8aa2ff', entFill:'#121831', rel:'#ffb547', relFill:'#21190b',
+         attr:'#4ce0a3', attrFill:'#0a1d16', sel:'#ff6ec7', hdr:'#1c2448', key:'#ffd59a', pending:'#35d0ff', isaFill:'#21190b', isa:'#ffb547'},
+  light: {bg:'#ffffff', text:'#15151f', dim:'#55556a', line:'#4a4a5a', ent:'#3346c4', entFill:'#eef1ff', rel:'#b26b00', relFill:'#fff4de',
+         attr:'#1f7a4d', attrFill:'#e8f7ef', sel:'#d63384', hdr:'#dfe5ff', key:'#8a5a00', pending:'#0b7fab', isaFill:'#fff4de', isa:'#b26b00'},
+  // the E/R style of the course slides: lilac entities, grey diamonds and isa triangles, green attributes, black lines
+  er: {bg:'#ffffff', text:'#111111', dim:'#444455', line:'#111111', ent:'#111111', entFill:'#ccccff', rel:'#111111', relFill:'#b3b3b3',
+       attr:'#111111', attrFill:'#33ee33', sel:'#d63384', hdr:'#ccccff', key:'#111111', pending:'#0b7fab', isaFill:'#b3b3b3', isa:'#111111'},
+  // the same slide colours on the dark canvas: shapes keep their fills, lines and arrows turn light
+  erDark: {bg:'#07070e', text:'#111111', dim:'#b4b4cc', line:'#d2d2e6', ent:'#0b0b16', entFill:'#ccccff', rel:'#0b0b16', relFill:'#b3b3b3',
+       attr:'#0b0b16', attrFill:'#33ee33', sel:'#ff6ec7', hdr:'#ccccff', key:'#111111', pending:'#35d0ff', isaFill:'#b3b3b3', isa:'#0b0b16'}
+};
+const ln = (a, b, c, w = 1.6, extra = '') => `<line x1="${f1(a.x)}" y1="${f1(a.y)}" x2="${f1(b.x)}" y2="${f1(b.y)}" stroke="${c}" stroke-width="${w}"${extra}/>`;
+const txt = (x, y, s, c, font, extra = '') => `<text x="${f1(x)}" y="${f1(y)}" fill="${c}" style="font:${font}" text-anchor="middle" dominant-baseline="central"${extra}>${esc(s)}</text>`;
+const diamondPts = (s, k = 1) => `${f1(s.x)},${f1(s.y - s.h / 2 * k)} ${f1(s.x + s.w / 2 * k)},${f1(s.y)} ${f1(s.x)},${f1(s.y + s.h / 2 * k)} ${f1(s.x - s.w / 2 * k)},${f1(s.y)}`;
+const pt = p => `${f1(p.x)},${f1(p.y)}`;
+
+function draw(G, P, sel, pending){
+  const isSel = id => sel && sel.id === id && !sel.attr;
+  return G.notation === 'crow' ? drawCrow(G, P, isSel, pending, sel) : drawChen(G, P, isSel, pending, sel, G.notation);
+}
+// Arrowhead with its tip on an entity; u points away from the entity. "Rounded" = exactly one.
+function arrowHead(tip, u, c, rounded){
+  const n = perp(u), base = along(tip, u, 13), b1 = along(base, n, 6.5), b2 = along(base, n, -6.5);
+  return rounded ? `<path d="M${pt(tip)} L${pt(b1)} Q${pt(along(tip, u, 24))} ${pt(b2)} Z" fill="${c}"/>`
+                 : `<path d="M${pt(tip)} L${pt(b1)} L${pt(b2)} Z" fill="${c}"/>`;
+}
+function isaShapes(G, P, crow){
+  let lines = '', shapes = '';
+  for (const [id, g] of Object.entries(G.isa)){
+    if (crow){   // UML-style generalisation: hollow triangle at the superclass
+      const n = perp(g.u), base = along(g.to, g.u, -16);
+      lines += ln(g.from, base, P.line) + `<path d="M${pt(g.to)} L${pt(along(base, n, 9))} L${pt(along(base, n, -9))} Z" fill="${P.bg}" stroke="${P.line}" stroke-width="1.6"/>`;
+      continue;
+    }
+    const n = perp(g.u), apex = along(g, g.u, g.h / 2), base = along(g, g.u, -g.h / 2);
+    lines += ln(g.to, apex, P.line, 1.5) + ln(base, g.from, P.line, 1.5);
+    const c = along(g, g.u, -g.h / 6);
+    shapes += `<g><path d="M${pt(apex)} L${pt(along(base, n, g.w / 2))} L${pt(along(base, n, -g.w / 2))} Z" fill="${P.isaFill}" stroke="${P.isa}" stroke-width="1.5"/>` +
+      txt(c.x, c.y + 2, 'isa', P.text, `600 12.5px ${FONT}`) + '</g>';
+  }
+  return {lines, shapes};
+}
+function drawChen(G, P, isSel, pending, sel, style){
+  let lines = '', shapes = '', labels = '';
+  const er = style === 'er';
+  // relationship ↔ entity lines
+  for (const r of M.rels){
+    const d = G.rel[r.id], col = isSel(r.id) ? P.sel : P.line;
+    const manyMany = binary(r) && r.ends.every(x => x.max === 'N');
+    const count = {}, seen = {};
+    r.ends.forEach(x => count[x.entity] = (count[x.entity] || 0) + 1);
+    r.ends.forEach((end, i) => {
+      const e = G.ent[end.entity]; if (!e) return;
+      const k = count[end.entity], j = seen[end.entity] = (seen[end.entity] ?? -1) + 1;
+      const u = unit(sub(d, e)), n = perp(u), off = k > 1 ? (j - (k - 1) / 2) * 24 : 0;
+      const p1 = along(clip(e, d), n, off), p2 = along(clip(d, e), n, off);
+      if (er){
+        lines += ln(p1, p2, col, 1.5);
+        if (end.max === '1') lines += arrowHead(p1, u, col, binary(r) && r.ends[1 - i].total);
+      } else {
+        lines += end.total ? ln(along(p1, n, 2.6), along(p2, n, 2.6), col, 1.4) + ln(along(p1, n, -2.6), along(p2, n, -2.6), col, 1.4) : ln(p1, p2, col);
+        const card = end.max === '1' ? '1' : manyMany && i === 0 ? 'M' : 'N';
+        const lp = along(along(p1, u, 15), n, off ? Math.sign(off) * 11 : 11);
+        labels += txt(lp.x, lp.y, card, P.text, `700 12.5px ${FONT}`);
+      }
+      if (end.role){
+        const mid = along({x:(p1.x + p2.x) / 2, y:(p1.y + p2.y) / 2}, n, off ? Math.sign(off) * 12 : -12);
+        labels += txt(mid.x, mid.y, end.role, P.dim, `italic 11px ${FONT}`);
+      }
+    });
+  }
+  const isa = isaShapes(G, P, false);
+  lines += isa.lines; shapes += isa.shapes;
+  // attribute ovals
+  const attrShapes = owner => owner.attrs.map(a => {
+    const g = G.attr[a.id], o = G.ent[owner.id] || G.rel[owner.id];
+    lines += ln(clip(o, g), clip(g, o), P.line, 1.3);
+    const selA = sel && sel.attr === a.id;
+    const st = selA ? P.sel : P.attr, sw = selA ? 2.4 : er ? 1.2 : 1.5;
+    let s = `<g data-k="attr" data-id="${a.id}" data-owner="${owner.id}">`;
+    if (a.multi) s += `<ellipse cx="${f1(g.x)}" cy="${f1(g.y)}" rx="${f1(g.rx + 4)}" ry="${f1(g.ry + 4)}" fill="${P.attrFill}" stroke="${st}" stroke-width="${sw}"/>`;
+    s += `<ellipse cx="${f1(g.x)}" cy="${f1(g.y)}" rx="${f1(g.rx)}" ry="${f1(g.ry)}" fill="${P.attrFill}" stroke="${st}" stroke-width="${sw}"${a.derived ? ' stroke-dasharray="5 4"' : ''}/>`;
+    s += txt(g.x, g.y, a.name, P.text, `12.5px ${FONT}`);
+    if (a.pk && !a.multi && !a.derived){
+      const w = tw(a.name, `12.5px ${FONT}`) / 2;
+      const weakOwner = ent(owner.id) && ent(owner.id).weak;
+      s += ln({x:g.x - w, y:g.y + 8}, {x:g.x + w, y:g.y + 8}, P.text, 1.2, weakOwner ? ' stroke-dasharray="3 2.5"' : '');
+    }
+    return s + '</g>';
+  }).join('');
+  for (const e of M.entities) shapes += attrShapes(e);
+  for (const r of M.rels) shapes += attrShapes(r);
+  for (const e of M.entities){
+    const g = G.ent[e.id], s = isSel(e.id), pend = pending === e.id;
+    const st = s ? P.sel : pend ? P.pending : P.ent, sw = s || pend ? 2.6 : er ? 1.3 : 1.8;
+    shapes += `<g data-k="entity" data-id="${e.id}"><rect x="${f1(g.x - g.w / 2)}" y="${f1(g.y - g.h / 2)}" width="${f1(g.w)}" height="${g.h}" rx="${er ? 0 : 3}" fill="${P.entFill}" stroke="${st}" stroke-width="${sw}"/>` +
+      (e.weak ? `<rect x="${f1(g.x - g.w / 2 + 5)}" y="${f1(g.y - g.h / 2 + 5)}" width="${f1(g.w - 10)}" height="${g.h - 10}" rx="${er ? 0 : 2}" fill="none" stroke="${st}" stroke-width="1.3"/>` : '') +
+      txt(g.x, g.y, e.name, P.text, `${er ? 500 : 700} 14px ${FONT}`) + '</g>';
+  }
+  for (const r of M.rels){
+    const g = G.rel[r.id], s = isSel(r.id);
+    const st = s ? P.sel : P.rel, sw = s ? 2.6 : er ? 1.3 : 1.8;
+    shapes += `<g data-k="rel" data-id="${r.id}"><polygon points="${diamondPts(g)}" fill="${P.relFill}" stroke="${st}" stroke-width="${sw}"/>` +
+      (r.identifying ? `<polygon points="${diamondPts(g, 0.8)}" fill="none" stroke="${st}" stroke-width="1.3"/>` : '') +
+      txt(g.x, g.y, r.name, P.text, `${er ? 500 : 600} 13px ${FONT}`) + '</g>';
+  }
+  return lines + shapes + labels;
+}
+function crowEnd(p, u, max, min, c, bg){
+  const n = perp(u), at = d => along(p, u, d);
+  let s = '';
+  if (max === 'N'){ const a = at(15); s += ln(a, along(p, n, 9), c, 1.6) + ln(a, p, c, 1.6) + ln(a, along(p, n, -9), c, 1.6); }
+  else { const a = at(9); s += ln(along(a, n, 8), along(a, n, -8), c, 1.6); }
+  if (min === null) return s;
+  if (min){ const b = at(21); s += ln(along(b, n, 8), along(b, n, -8), c, 1.6); }
+  else { const o = at(26); s += `<circle cx="${f1(o.x)}" cy="${f1(o.y)}" r="5" fill="${bg}" stroke="${c}" stroke-width="1.6"/>`; }
+  return s;
+}
+function drawCrow(G, P, isSel, pending, sel){
+  let lines = '', boxes = '', labels = '';
+  const pairs = {}, loops = {};
+  const label = (r, x, y, anchor) => {
+    const t = r.name + (r.attrs.length ? ` (${r.attrs.map(a => a.name).join(', ')})` : '');
+    const w = tw(t, `600 12px ${FONT}`) + 14, s = isSel(r.id);
+    const x0 = anchor === 'start' ? x : anchor === 'end' ? x - w : x - w / 2;
+    return `<g data-k="rel" data-id="${r.id}"><rect x="${f1(x0)}" y="${f1(y - 11)}" width="${f1(w)}" height="22" rx="6" fill="${P.bg}" stroke="${s ? P.sel : P.rel}" stroke-width="${s ? 2 : 1.2}"/>` +
+      txt(x0 + w / 2, y, t, s ? P.sel : P.rel, `600 12px ${FONT}`) + '</g>';
+  };
+  for (const r of M.rels){
+    const col = isSel(r.id) ? P.sel : P.line;
+    if (!binary(r)){   // multi-way: diamond, lines to every entity, "many"/"one" marks at the entity ends
+      const d = G.rel[r.id];
+      for (const end of r.ends){
+        const e = G.ent[end.entity]; if (!e) continue;
+        const pa = clip(e, d), pb = clip(d, e);
+        lines += ln(pa, pb, col) + crowEnd(pa, unit(sub(pb, pa)), end.max, null, col, P.bg);
+      }
+      const s = isSel(r.id);
+      boxes += `<g data-k="rel" data-id="${r.id}"><polygon points="${diamondPts(d)}" fill="${P.bg}" stroke="${s ? P.sel : P.rel}" stroke-width="${s ? 2.4 : 1.4}"/>` +
+        txt(d.x, d.y, r.name, s ? P.sel : P.rel, `600 12px ${FONT}`) +
+        (r.attrs.length ? txt(d.x, d.y + d.h / 2 + 12, `(${r.attrs.map(a => a.name).join(', ')})`, P.dim, `11px ${FONT}`) : '') + '</g>';
+      continue;
+    }
+    const [ea, eb] = r.ends;
+    const A = G.ent[ea.entity], B = G.ent[eb.entity]; if (!A || !B) continue;
+    // symbol at an entity's end: max = that end's cardinality, min = 1 when the OTHER entity must participate
+    if (ea.entity === eb.entity){
+      // put the loop on the side of the box with the fewest other lines
+      if (!loops[ea.entity]){
+        const angs = M.rels.filter(q => touches(q, ea.entity) && q.ends.some(x => x.entity !== ea.entity))
+          .flatMap(q => q.ends.filter(x => x.entity !== ea.entity).map(x => G.ent[x.entity])).filter(Boolean).map(o => deg(sub(o, A)));
+        const side = [0, 180, 90, -90].map(d => ({d, s:angs.length ? Math.min(...angs.map(a => angDist(a, d))) : 180}))
+          .reduce((m, c) => c.s > m.s + 1 ? c : m);
+        loops[ea.entity] = {d:side.d, i:-1};
+      }
+      const L = loops[ea.entity], i = ++L.i;
+      const u = {x:Math.round(Math.cos(L.d * Math.PI / 180)), y:Math.round(Math.sin(L.d * Math.PI / 180))}, n = perp(u);
+      const half = u.x ? A.w / 2 : A.h / 2, spanMax = (u.x ? A.h : A.w) / 2 - 8;
+      const out = 58 + i * 46, spread = Math.min(spanMax, 16 + i * 8);
+      const base = along(A, u, half);
+      const p1 = along(base, n, -spread), p2 = along(base, n, spread);
+      const q1 = along(p1, u, out), q2 = along(p2, u, out);
+      lines += `<path d="M${pt(p1)} L${pt(q1)} L${pt(q2)} L${pt(p2)}" fill="none" stroke="${col}" stroke-width="1.6"/>`;
+      lines += crowEnd(p1, u, ea.max, eb.total, col, P.bg) + crowEnd(p2, u, eb.max, ea.total, col, P.bg);
+      const lp = along(base, u, out + (u.x ? 8 : 20));
+      labels += label(r, lp.x, lp.y, u.x > 0 ? 'start' : u.x < 0 ? 'end' : 'middle');
+      continue;
+    }
+    const pkey = [ea.entity, eb.entity].sort().join('|');
+    const list = pairs[pkey] = pairs[pkey] || M.rels.filter(q => binary(q) && q.ends[0].entity !== q.ends[1].entity && [q.ends[0].entity, q.ends[1].entity].sort().join('|') === pkey);
+    const idx = list.indexOf(r), off = (idx - (list.length - 1) / 2) * 30;
+    const n = perp(unit(sub(B, A)));
+    const As = {...A, x:A.x + n.x * off, y:A.y + n.y * off}, Bs = {...B, x:B.x + n.x * off, y:B.y + n.y * off};
+    const pa = clip(As, Bs), pb = clip(Bs, As);
+    lines += ln(pa, pb, col);
+    lines += crowEnd(pa, unit(sub(pb, pa)), ea.max, eb.total, col, P.bg) + crowEnd(pb, unit(sub(pa, pb)), eb.max, ea.total, col, P.bg);
+    const t = 0.5 + (idx - (list.length - 1) / 2) * 0.22;   // stagger labels of parallel lines
+    labels += label(r, pa.x + (pb.x - pa.x) * t, pa.y + (pb.y - pa.y) * t);
+  }
+  lines += isaShapes(G, P, true).lines;
+  for (const e of M.entities){
+    const g = G.ent[e.id], s = isSel(e.id), pend = pending === e.id;
+    const st = s ? P.sel : pend ? P.pending : P.ent, sw = s || pend ? 2.6 : 1.6;
+    const x0 = g.x - g.w / 2, y0 = g.y - g.h / 2;
+    let b = `<g data-k="entity" data-id="${e.id}"><rect x="${f1(x0)}" y="${f1(y0)}" width="${f1(g.w)}" height="${f1(g.h)}" rx="8" fill="${P.entFill}" stroke="${st}" stroke-width="${sw}"${e.weak ? ' stroke-dasharray="7 4"' : ''}/>`;
+    b += `<path d="M${f1(x0)},${f1(y0 + 34)} V${f1(y0 + 8)} Q${f1(x0)},${f1(y0)} ${f1(x0 + 8)},${f1(y0)} H${f1(x0 + g.w - 8)} Q${f1(x0 + g.w)},${f1(y0)} ${f1(x0 + g.w)},${f1(y0 + 8)} V${f1(y0 + 34)} Z" fill="${P.hdr}"/>`;
+    b += ln({x:x0, y:y0 + 34}, {x:x0 + g.w, y:y0 + 34}, st, 1);
+    b += txt(g.x, y0 + 17, e.name + (e.weak ? ' (weak)' : ''), P.text, `700 14px ${FONT}`);
+    e.attrs.forEach((a, i) => {
+      const y = y0 + 34 + 4 + i * 22 + 11, row = crowRowText(e, a), selA = sel && sel.attr === a.id;
+      if (row.key) b += txt(x0 + 20, y, row.key, P.key, `700 10px ${MONO}`);
+      b += `<text x="${f1(x0 + 40)}" y="${f1(y)}" fill="${selA ? P.sel : a.derived ? P.dim : P.text}" style="font:${a.derived ? 'italic ' : ''}12px ${MONO}" dominant-baseline="central"${a.pk ? ` text-decoration="underline"` : ''}>${esc(row.name)}</text>`;
+      b += `<text x="${f1(x0 + g.w - 12)}" y="${f1(y)}" fill="${P.dim}" style="font:11px ${MONO}" text-anchor="end" dominant-baseline="central">${esc(row.type)}</text>`;
+    });
+    if (!e.attrs.length) b += txt(g.x, y0 + 34 + 15, e.parent ? `inherits from ${(ent(e.parent) || {}).name || ''}` : 'no attributes', P.dim, `italic 11px ${FONT}`);
+    boxes += b + '</g>';
+  }
+  return lines + boxes + labels;
+}
+function bbox(G){
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  const add = (x, y, w, h) => { x0 = Math.min(x0, x - w / 2); y0 = Math.min(y0, y - h / 2); x1 = Math.max(x1, x + w / 2); y1 = Math.max(y1, y + h / 2); };
+  Object.values(G.ent).forEach(s => add(s.x, s.y, s.w, s.h));
+  Object.values(G.rel).forEach(s => add(s.x, s.y, s.w, s.h + 30));
+  Object.values(G.attr).forEach(s => add(s.x, s.y, s.rx * 2 + 10, s.ry * 2 + 10));
+  Object.values(G.isa).forEach(s => add(s.x, s.y, s.w, s.h));
+  if (G.notation === 'crow'){   // self-loops and their labels stick out of the box
+    M.rels.forEach(r => { if (binary(r) && r.ends[0].entity === r.ends[1].entity && G.ent[r.ends[0].entity]){ const s = G.ent[r.ends[0].entity]; add(s.x, s.y, s.w + 2 * (70 + tw(r.name, `600 12px ${FONT}`)), s.h + 140); } });
+  }
+  if (x0 === Infinity) return {x:0, y:0, w:800, h:600};
+  return {x:x0 - 40, y:y0 - 40, w:x1 - x0 + 80, h:y1 - y0 + 80};
+}
+
+/* ================================================================
+   ER → relational mapping (Elmasri & Navathe's algorithm)
+   ================================================================ */
+function mapToRelational(){
+  const tables = [], steps = [];
+  const T = new Map();
+  const lower = s => s.toLowerCase();
+  const simple = a => !a.multi && !a.derived;
+  const newTable = (name) => {
+    let n = name, k = 2;
+    while (tables.some(t => lower(t.name) === lower(n))) n = name + '_' + k++;
+    const t = {name:n, cols:[], pk:[], fks:[], uniques:[]};
+    tables.push(t); return t;
+  };
+  const addCol = (t, name, type, extra = {}) => {
+    let n = name, k = 2;
+    while (t.cols.some(c => lower(c.name) === lower(n))) n = name + '_' + k++;
+    const c = {name:n, type, ...extra};
+    t.cols.push(c); return c;
+  };
+  const addFK = (t, ref, o = {}) => {
+    if (!ref.pk.length) return null;
+    const cols = ref.pk.map(pc => {
+      let name = pc === 'id' ? lower(ref.name) + '_id' : pc;
+      if (o.prefix) name = o.prefix + '_' + name;
+      else if (t.cols.some(c => lower(c.name) === lower(name))) name = lower(o.hint || ref.name) + '_' + name;
+      return addCol(t, name, ref.cols.find(c => c.name === pc).type, {fk:true, notNull:!!o.notNull}).name;
+    });
+    t.fks.push({cols, ref:ref.name, refCols:[...ref.pk], onDelete:o.onDelete || null});
+    if (o.unique) t.uniques.push(cols);
+    if (o.pk) t.pk.push(...cols);
+    return cols;
+  };
+  const addAttrs = (t, attrs, asKey) => attrs.filter(simple).forEach(a => {
+    const c = addCol(t, a.name, a.type);
+    if (asKey && a.pk) t.pk.push(c.name);
+  });
+  const code = s => `<code>${esc(s)}</code>`;
+  const cols = cs => cs.map(code).join(', ');
+
+  // 1. strong entities (not weak, not a subclass)
+  for (const e of M.entities.filter(e => !e.weak && !e.parent)){
+    const t = newTable(e.name); T.set(e.id, t);
+    addAttrs(t, e.attrs, true);
+    const skipped = e.attrs.filter(a => a.derived).map(a => a.name);
+    steps.push({r:1, html:`Strong entity <b>${esc(e.name)}</b> becomes table ${code(t.name)} with its simple attributes. ` +
+      (t.pk.length ? `Primary key: ${cols(t.pk)}.` : '<b>It has no key attribute</b>, so the table has no primary key.') +
+      (skipped.length ? ` Derived ${cols(skipped)} ${skipped.length > 1 ? 'are' : 'is'} computed, not stored.` : '')});
+  }
+  // 2. weak entities and 8. subclasses — both borrow a key, so map them once their owner / superclass has a table
+  const identUsed = new Set();
+  const ownerRel = w => M.rels.find(r => r.identifying && binary(r) && (r.ends[0].entity === w.id) !== (r.ends[1].entity === w.id));
+  let pending = M.entities.filter(e => e.weak || e.parent), progress = true;
+  while (pending.length && progress){
+    progress = false;
+    for (const w of [...pending]){
+      if (w.parent){
+        if (!T.has(w.parent)) continue;
+        const sup = T.get(w.parent);
+        const t = newTable(w.name); T.set(w.id, t);
+        const fk = addFK(t, sup, {pk:true, notNull:true, onDelete:'CASCADE'});
+        w.attrs.filter(simple).forEach(a => addCol(t, a.name, a.type));
+        steps.push({r:8, html:`Subclass <b>${esc(w.name)}</b> isa <b>${esc(ent(w.parent).name)}</b>: table ${code(t.name)} gets the superclass key ${fk ? cols(fk) : '(the superclass has none)'} as its primary key ` +
+          `(and a foreign key to ${code(sup.name)}), plus only its own attributes. A ${esc(w.name)} is stored as one row here and one row in ${code(sup.name)}.`});
+      } else {
+        const r = ownerRel(w);
+        if (!r || !T.has(r.ends.find(x => x.entity !== w.id).entity)) continue;
+        const owner = T.get(r.ends.find(x => x.entity !== w.id).entity);
+        const t = newTable(w.name); T.set(w.id, t);
+        const fk = addFK(t, owner, {pk:true, notNull:true, onDelete:'CASCADE', hint:r.name});
+        addAttrs(t, w.attrs, true);
+        r.attrs.filter(simple).forEach(a => addCol(t, a.name, a.type));
+        identUsed.add(r.id);
+        steps.push({r:2, html:`Weak entity <b>${esc(w.name)}</b> becomes ${code(t.name)}. It borrows the owner's key ${fk ? cols(fk) : '(the owner has none)'} through <b>${esc(r.name)}</b>; ` +
+          `primary key = owner key + partial key: ${cols(t.pk)}. Deleting the owner deletes its ${esc(w.name)} rows (ON DELETE CASCADE).`});
+      }
+      pending = pending.filter(x => x !== w); progress = true;
+    }
+  }
+  for (const w of pending){
+    const t = newTable(w.name); T.set(w.id, t);
+    addAttrs(t, w.attrs, true);
+    steps.push({r:w.parent ? 8 : 2, html:w.parent ? `Subclass <b>${esc(w.name)}</b> is in an isa cycle, so it was mapped on its own. See Checks.`
+      : `Weak entity <b>${esc(w.name)}</b> has no identifying relationship to an owner, so it was mapped like a strong entity. See Checks.`});
+  }
+  // 3–5. binary relationships, by type
+  const rels = M.rels.filter(r => !identUsed.has(r.id) && r.ends.every(x => T.has(x.entity)));
+  const two = rels.filter(binary);
+  for (const r of two.filter(r => kind(r) === '1:1')){
+    const [ea, eb] = r.ends;
+    const host = ea.total && !eb.total ? ea : eb.total && !ea.total ? eb : ea, other = host === ea ? eb : ea;
+    const t = T.get(host.entity), ref = T.get(other.entity);
+    const fk = addFK(t, ref, {prefix:other.role || (host.entity === other.entity ? lower(r.name) : ''), hint:r.name, unique:true, notNull:host.total});
+    r.attrs.filter(simple).forEach(a => addCol(t, a.name, a.type));
+    steps.push({r:3, html:`1:1 relationship <b>${esc(r.name)}</b>: foreign key ${fk ? cols(fk) : '—'} → ${code(ref.name)} goes into ${code(t.name)}` +
+      (host.total ? ` because every ${esc(ent(host.entity).name)} takes part (so it is NOT NULL)` : '') + '; it is UNIQUE to keep the ratio 1:1.' +
+      (r.attrs.length ? ` The relationship's attributes go there too.` : '')});
+  }
+  for (const r of two.filter(r => kind(r) === '1:N')){
+    const many = r.ends.find(x => x.max === 'N'), one = r.ends.find(x => x !== many);
+    const t = T.get(many.entity), ref = T.get(one.entity);
+    const fk = addFK(t, ref, {prefix:one.role || (many.entity === one.entity ? lower(r.name) : ''), hint:r.name, notNull:many.total});
+    r.attrs.filter(simple).forEach(a => addCol(t, a.name, a.type));
+    steps.push({r:4, html:`1:N relationship <b>${esc(r.name)}</b>: the N side ${code(t.name)} gets foreign key ${fk ? cols(fk) : '—'} → ${code(ref.name)}` +
+      (many.total ? ' (NOT NULL: total participation)' : '') + '.' + (r.attrs.length ? ' The relationship\'s attributes go there too.' : '')});
+  }
+  for (const r of two.filter(r => kind(r) === 'M:N')){
+    const [ea, eb] = r.ends;
+    const t = newTable(r.name);
+    const self = ea.entity === eb.entity;
+    // when both keys have the same column name, name each copy after its entity (physician_ID, patient_ID)
+    const clash = !self && T.get(ea.entity).pk.some(c => T.get(eb.entity).pk.some(d => lower(c) === lower(d)));
+    const fa = addFK(t, T.get(ea.entity), {pk:true, notNull:true, onDelete:'CASCADE', hint:r.name,
+      prefix:ea.role || (clash ? lower(ent(ea.entity).name) : '')});
+    const fb = addFK(t, T.get(eb.entity), {pk:true, notNull:true, onDelete:'CASCADE', hint:r.name,
+      prefix:eb.role || (self && !ea.role ? lower(r.name) : clash ? lower(ent(eb.entity).name) : '')});
+    r.attrs.filter(simple).forEach(a => addCol(t, a.name, a.type));
+    steps.push({r:5, html:`M:N relationship <b>${esc(r.name)}</b> needs its own table ${code(t.name)}: foreign keys ${cols([...(fa || []), ...(fb || [])])} to both sides together form the primary key.` +
+      (r.attrs.length ? ` Its attributes ${cols(r.attrs.map(a => a.name))} live here.` : '')});
+  }
+  // 7. multi-way relationships: a table with a foreign key to every participant.
+  // An arrow into E means the other participants determine E, so "everything except E" is a key.
+  for (const r of rels.filter(r => !binary(r))){
+    const t = newTable(r.name);
+    const seenE = {};
+    const pkNames = r.ends.map(end => T.get(end.entity).pk.map(lower));
+    const clashes = i => pkNames.some((ns, j) => j !== i && ns.some(n => pkNames[i].includes(n)));
+    const fkOf = r.ends.map((end, i) => {
+      seenE[end.entity] = (seenE[end.entity] || 0) + 1;
+      const base = lower(ent(end.entity).name) + (seenE[end.entity] > 1 ? seenE[end.entity] : '');
+      return addFK(t, T.get(end.entity), {notNull:true, onDelete:'CASCADE', hint:r.name,
+        prefix:end.role || (clashes(i) || seenE[end.entity] > 1 ? base : '')}) || [];
+    });
+    r.attrs.filter(simple).forEach(a => addCol(t, a.name, a.type));
+    const arrows = r.ends.map((x, i) => i).filter(i => r.ends[i].max === '1');
+    const keyWithout = i => fkOf.filter((_, j) => j !== i).flat();
+    const name = i => esc(ent(r.ends[i].entity).name);
+    let why;
+    if (!arrows.length){
+      t.pk.push(...fkOf.flat());
+      why = 'No arrows: any combination of participants can appear, so all the foreign keys together form the primary key.';
+    } else {
+      t.pk.push(...keyWithout(arrows[0]));
+      arrows.slice(1).forEach(i => t.uniques.push(keyWithout(i)));
+      why = arrows.map(i => `${r.ends.map((x, j) => j).filter(j => j !== i).map(name).join(' × ')} → ${name(i)}`).join(', ') + '. ' +
+        `So every participant except ${name(arrows[0])} is a key: primary key ${cols(t.pk)}` +
+        (arrows.length > 1 ? `; the other arrow${arrows.length > 2 ? 's give' : ' gives'} ${arrows.slice(1).map(i => `UNIQUE(${keyWithout(i).map(esc).join(', ')})`).join(', ')}` : '') + '.';
+    }
+    steps.push({r:7, html:`Multi-way relationship <b>${esc(r.name)}</b> connects ${r.ends.length} entities, so it gets its own table ${code(t.name)} with a foreign key to each. ${why}` +
+      (r.attrs.length ? ` Its attributes ${cols(r.attrs.map(a => a.name))} live here.` : '')});
+  }
+  // 6. multivalued attributes
+  for (const e of M.entities){
+    for (const a of e.attrs.filter(a => a.multi)){
+      const owner = T.get(e.id);
+      const t = newTable(e.name + '_' + a.name);
+      const fk = addFK(t, owner, {pk:true, notNull:true, onDelete:'CASCADE'});
+      t.pk.push(addCol(t, a.name, a.type, {notNull:true}).name);
+      steps.push({r:6, html:`Multivalued attribute <b>${esc(e.name)}.${esc(a.name)}</b> gets its own table ${code(t.name)}(${cols(t.cols.map(c => c.name))}): one row per value. Key: ${cols(t.pk)}.${fk ? '' : ' (The owner has no key.)'}`});
+    }
+  }
+  return {tables, steps};
+}
+
+const SQLKW = new Set(('ADD ALL ALTER AND AS ASC BETWEEN BY CASE CHECK COLUMN CONSTRAINT CREATE CROSS DEFAULT DELETE DESC DISTINCT DROP ELSE END ' +
+  'EXCEPT EXISTS FOREIGN FROM FULL GROUP HAVING IN INDEX INNER INSERT INTERSECT INTO IS JOIN KEY LEFT LIKE LIMIT NATURAL NOT NULL OF ON OR ORDER ' +
+  'OUTER PRIMARY REFERENCES RIGHT SELECT SET TABLE THEN TO UNION UNIQUE UPDATE USING VALUES WHEN WHERE WITH GROUP ORDER').split(' '));
+const qi = s => /^[A-Za-z_][A-Za-z0-9_]*$/.test(s) && !SQLKW.has(s.toUpperCase()) ? s : '"' + String(s).replace(/"/g, '""') + '"';
+function toDDL(tables){
+  // referenced tables first where possible (SQLite accepts forward references anyway)
+  const order = [], seen = new Set(), visiting = new Set();
+  const visit = t => {
+    if (seen.has(t) || visiting.has(t)) return;
+    visiting.add(t);
+    t.fks.forEach(fk => { const r = tables.find(x => x.name === fk.ref); if (r && r !== t) visit(r); });
+    visiting.delete(t); seen.add(t); order.push(t);
+  };
+  tables.forEach(visit);
+  return order.map(t => {
+    const single = t.pk.length === 1;
+    const lines = t.cols.map(c => {
+      let s = `  ${qi(c.name)}${c.type ? ' ' + c.type : ''}`;
+      if (single && c.name === t.pk[0]) s += ' PRIMARY KEY';
+      if (c.notNull || t.pk.includes(c.name)) s += ' NOT NULL';
+      return s;
+    });
+    if (t.pk.length > 1) lines.push(`  PRIMARY KEY (${t.pk.map(qi).join(', ')})`);
+    t.uniques.forEach(u => lines.push(`  UNIQUE (${u.map(qi).join(', ')})`));
+    t.fks.forEach(fk => lines.push(`  FOREIGN KEY (${fk.cols.map(qi).join(', ')}) REFERENCES ${qi(fk.ref)} (${fk.refCols.map(qi).join(', ')})${fk.onDelete ? ' ON DELETE ' + fk.onDelete : ''}`));
+    return `CREATE TABLE ${qi(t.name)} (\n${lines.join(',\n')}\n);`;
+  }).join('\n\n');
+}
+
+/* ================================================================
+   Checks
+   ================================================================ */
+function checks(){
+  const out = [];
+  const add = (level, html, target) => out.push({level, html, target});
+  const b = s => `<b>${esc(s)}</b>`;
+  const dupes = (list, what, target) => {
+    const seen = new Map();
+    for (const x of list){ const k = x.name.trim().toLowerCase(); if (seen.has(k)) add('err', `Two ${what} are named ${b(x.name)}.`, target ? target(x) : x.id); else seen.set(k, x); }
+  };
+  dupes([...M.entities, ...M.rels.filter(r => kind(r) === 'M:N' || kind(r) === 'multi-way')], 'tables', null);
+  for (const e of M.entities){
+    if (!e.name.trim()) add('err', 'An entity has no name.', e.id);
+    if (!e.attrs.length && !e.parent) add('warn', `Entity ${b(e.name)} has no attributes.`, e.id);
+    dupes(e.attrs, `attributes of ${esc(e.name)}`, () => e.id);
+    const keys = e.attrs.filter(a => a.pk);
+    keys.filter(a => a.multi || a.derived).forEach(a => add('err', `${b(e.name + '.' + a.name)} is a key but is ${a.multi ? 'multivalued' : 'derived'}. A key must be a stored, single-valued attribute.`, e.id));
+    if (e.parent){
+      const sup = ent(e.parent);
+      if (ancestors(e.id).includes(e.id)) add('err', `${b(e.name)} is in an isa cycle — a class cannot be its own superclass.`, e.id);
+      else if (sup) keys.forEach(a => add('warn', `Subclass ${b(e.name)} inherits its key from ${b(sup.name)}; untick <i>Key</i> on ${b(a.name)}.`, e.id));
+      if (e.weak) add('warn', `${b(e.name)} is both weak and a subclass; it is mapped as a subclass of ${b(sup ? sup.name : '?')}.`, e.id);
+    }
+    else if (!e.weak && !keys.length && e.attrs.length) add('err', `Strong entity ${b(e.name)} has no key attribute. Tick <i>Key</i> on the attribute(s) that identify it.`, e.id);
+    if (e.weak && !e.parent){
+      if (!keys.length) add('warn', `Weak entity ${b(e.name)} has no partial key (discriminator). Tick <i>Key</i> on the attribute that tells its instances apart within one owner.`, e.id);
+      const ids = M.rels.filter(r => r.identifying && touches(r, e.id));
+      if (!ids.length) add('err', `Weak entity ${b(e.name)} needs an identifying relationship to its owner. Connect it and tick <i>Identifying relationship</i>.`, e.id);
+    }
+  }
+  for (const r of M.rels){
+    if (!r.name.trim()) add('err', 'A relationship has no name.', r.id);
+    dupes(r.attrs, `attributes of ${esc(r.name)}`, () => r.id);
+    r.attrs.filter(a => a.pk).forEach(a => add('warn', `Relationship attribute ${b(r.name + '.' + a.name)} is marked as key; relationships are identified by the entities they connect.`, r.id));
+    if (r.identifying && !binary(r)){ add('err', `Identifying relationship ${b(r.name)} must be binary: one weak entity and its owner.`, r.id); continue; }
+    if (r.identifying){
+      const [x, y] = r.ends, ea = ent(x.entity), eb = ent(y.entity);
+      const weakEnd = ea && ea.weak && !(eb && eb.weak) ? x : eb && eb.weak && !(ea && ea.weak) ? y : null;
+      if (x.entity === y.entity) add('err', `Identifying relationship ${b(r.name)} cannot connect an entity to itself.`, r.id);
+      else if (!weakEnd) add('err', `Identifying relationship ${b(r.name)} must connect exactly one weak entity to its owner.`, r.id);
+      else {
+        const owner = weakEnd === x ? y : x;
+        if (!weakEnd.total) add('warn', `In ${b(r.name)}, weak entity ${b(ent(weakEnd.entity).name)} should have total participation: it cannot exist without an owner.`, r.id);
+        if (owner.max !== '1') add('err', `In ${b(r.name)}, each ${b(ent(weakEnd.entity).name)} must have exactly one owner — put an arrow (1) on ${b(ent(owner.entity).name)}'s side.`, r.id);
+      }
+    }
+  }
+  const derived = M.entities.flatMap(e => e.attrs.filter(a => a.derived).map(a => e.name + '.' + a.name));
+  if (derived.length) add('info', `Derived attributes (${derived.map(esc).join(', ')}) are not stored in tables; compute them in a query or a view.`, null);
+  return out;
+}
+const kind = r => !binary(r) ? 'multi-way' : r.ends.every(x => x.max === '1') ? '1:1' : r.ends.every(x => x.max === 'N') ? 'M:N' : '1:N';
+
+/* ================================================================
+   App state, persistence, history
+   ================================================================ */
+const STORE = 'erdlab.v2', OLD_STORE = 'erdlab.v1';
+let notation = 'er', tab = 'edit', sel = null, connect = null;
+const V = {k:1, tx:0, ty:0};
+const H = {past:[], future:[], tag:null, t:0};
+function checkpoint(tag){
+  const now = Date.now();
+  if (tag && tag === H.tag && now - H.t < 1500){ H.t = now; return; }
+  H.past.push(JSON.stringify(M));
+  if (H.past.length > 120) H.past.shift();
+  H.future = []; H.tag = tag || null; H.t = now;
+}
+function undo(){ if (!H.past.length) return; H.future.push(JSON.stringify(M)); M = JSON.parse(H.past.pop()); H.tag = null; fixSel(); renderAll(); }
+function redo(){ if (!H.future.length) return; H.past.push(JSON.stringify(M)); M = JSON.parse(H.future.pop()); H.tag = null; fixSel(); renderAll(); }
+function fixSel(){ if (sel && !ownerOf(sel.id)) sel = null; if (sel && sel.attr && !ownerOf(sel.id).attrs.some(a => a.id === sel.attr)) sel.attr = null; }
+let saveT = null;
+function save(){
+  clearTimeout(saveT);
+  saveT = setTimeout(() => { try { localStorage.setItem(STORE, JSON.stringify({M, notation, V, tab})); } catch (e) {} }, 300);
+}
+function toast(msg){ const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('on'), 2200); }
+function validModel(m){
+  return m && Array.isArray(m.entities) && Array.isArray(m.rels) && m.entities.every(e => e.id && typeof e.name === 'string' && Array.isArray(e.attrs))
+    && m.rels.every(r => r.id && (Array.isArray(r.ends) ? r.ends.length >= 2 : r.a && r.b) && Array.isArray(r.attrs));
+}
+
+/* ================================================================
+   Canvas rendering & interaction
+   ================================================================ */
+const svg = $('#svg'), world = $('#world'), cw = $('#cw');
+let G = null;
+function renderCanvas(){
+  G = layout(notation);
+  world.innerHTML = draw(G, notation === 'er' ? PAL.erDark : PAL.dark, sel, connect && connect.from);
+  applyView();
+  $('#legend').innerHTML = notation === 'er'
+    ? '<b>E/R</b> · ▭ entity · ◇ relationship · ⬭ attribute · <u>key</u> · → arrow = at most one · rounded ➜ = exactly one · no arrow = many · △ isa = subclass'
+    : notation === 'chen'
+    ? '<b>Chen</b> · ▭ entity · ▭▭ weak · ◇ relationship · ◇◇ identifying · ⬭ attribute · <u>key</u> · ◎ multivalued · ⬭⋯ derived · ═ total participation · △ isa'
+    : '<b>Crow\'s foot</b> · ⟨ many · | one · ○ optional (zero) · ‖ mandatory · PK key · {multi} · /derived · dashed box = weak · ▷ isa';
+}
+function applyView(){
+  world.setAttribute('transform', `translate(${f1(V.tx)},${f1(V.ty)}) scale(${V.k.toFixed(4)})`);
+  const g = 22 * V.k;
+  cw.style.backgroundSize = `${g}px ${g}px`;
+  cw.style.backgroundPosition = `${V.tx}px ${V.ty}px`;
+  $('#zLbl').textContent = Math.round(V.k * 100) + '%';
+}
+function fit(){
+  const G2 = layout(notation), b = bbox(G2), r = svg.getBoundingClientRect();
+  if (!r.width || !r.height) return;
+  V.k = Math.max(0.2, Math.min(1.4, Math.min(r.width / b.w, r.height / b.h)));
+  V.tx = (r.width - b.w * V.k) / 2 - b.x * V.k;
+  V.ty = (r.height - b.h * V.k) / 2 - b.y * V.k;
+  applyView(); save();
+}
+function zoomAt(f, cx, cy){
+  const k = Math.max(0.2, Math.min(3, V.k * f));
+  V.tx = cx - (cx - V.tx) * (k / V.k); V.ty = cy - (cy - V.ty) * (k / V.k); V.k = k;
+  applyView(); save();
+}
+const toWorld = e => { const r = svg.getBoundingClientRect(); return {x:(e.clientX - r.left - V.tx) / V.k, y:(e.clientY - r.top - V.ty) / V.k}; };
+let drag = null;
+svg.addEventListener('pointerdown', e => {
+  if (e.button !== 0) return;
+  const t = e.target.closest('[data-k]'), p = toWorld(e);
+  if (connect){
+    if (t && t.dataset.k === 'entity') pickConnect(t.dataset.id);
+    return;
+  }
+  if (t){
+    const k = t.dataset.k, id = t.dataset.id;
+    if (k === 'attr') sel = {id:t.dataset.owner, attr:id};
+    else sel = {id};
+    checkpoint();
+    let orig;
+    if (k === 'attr'){ const g = G.attr[id], o = G.ent[t.dataset.owner] || G.rel[t.dataset.owner]; orig = {dx:g.x - o.x, dy:g.y - o.y}; }
+    else { const o = ownerOf(id); orig = {x:o.x, y:o.y}; }
+    drag = {k, id, owner:t.dataset.owner, p, orig, moved:false};
+    if (tab !== 'edit') tab = 'edit';
+    renderCanvas(); renderPanel();
+  } else {
+    if (sel){ sel = null; renderCanvas(); renderPanel(); }
+    drag = {k:'pan', start:{x:e.clientX, y:e.clientY}, orig:{tx:V.tx, ty:V.ty}};
+    cw.classList.add('panning');
+  }
+  svg.setPointerCapture(e.pointerId);
+});
+svg.addEventListener('pointermove', e => {
+  if (!drag) return;
+  if (drag.k === 'pan'){ V.tx = drag.orig.tx + e.clientX - drag.start.x; V.ty = drag.orig.ty + e.clientY - drag.start.y; applyView(); return; }
+  const p = toWorld(e), dx = p.x - drag.p.x, dy = p.y - drag.p.y;
+  if (!drag.moved && Math.hypot(dx, dy) * V.k < 3) return;
+  drag.moved = true;
+  if (drag.k === 'attr'){
+    const a = ownerOf(drag.owner).attrs.find(a => a.id === drag.id);
+    a.dx = drag.orig.dx + dx; a.dy = drag.orig.dy + dy;
+  } else {
+    const o = ownerOf(drag.id);
+    o.x = drag.orig.x + dx; o.y = drag.orig.y + dy;
+  }
+  renderCanvas();
+});
+const endDrag = () => {
+  if (!drag) return;
+  if (drag.k === 'pan') save();
+  else if (!drag.moved) H.past.pop();
+  else save();
+  drag = null; cw.classList.remove('panning');
+};
+svg.addEventListener('pointerup', endDrag);
+svg.addEventListener('pointercancel', endDrag);
+svg.addEventListener('wheel', e => {
+  e.preventDefault();
+  const r = svg.getBoundingClientRect();
+  zoomAt(Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0015)), e.clientX - r.left, e.clientY - r.top);
+}, {passive:false});
+svg.addEventListener('dblclick', e => {
+  const t = e.target.closest('[data-k]');
+  if (t){ if (t.dataset.k !== 'attr'){ tab = 'edit'; renderPanel(); const i = $('#pbody [data-f="name"]'); if (i){ i.focus(); i.select(); } } return; }
+  addEntity(toWorld(e));
+});
+$('#zIn').onclick = () => { const r = svg.getBoundingClientRect(); zoomAt(1.2, r.width / 2, r.height / 2); };
+$('#zOut').onclick = () => { const r = svg.getBoundingClientRect(); zoomAt(1 / 1.2, r.width / 2, r.height / 2); };
+$('#zFit').onclick = fit;
+
+function viewCenter(){ const r = svg.getBoundingClientRect(); return {x:(r.width / 2 - V.tx) / V.k, y:(r.height / 2 - V.ty) / V.k}; }
+// The nearest point (spiralling out from p) where a new entity and its first attribute won't cover anything.
+function freeSpot(p){
+  const G2 = layout(notation);
+  const boxes = [...Object.values(G2.ent), ...Object.values(G2.rel)].map(s => ({x:s.x, y:s.y, w:s.w, h:s.h}))
+    .concat(Object.values(G2.attr).map(s => ({x:s.x, y:s.y, w:s.rx * 2, h:s.ry * 2})));
+  const W = notation === 'crow' ? 190 : 150, Hh = notation === 'crow' ? 90 : 130;
+  const free = q => boxes.every(b => Math.abs(b.x - q.x) > (b.w + W) / 2 + 16 || Math.abs(b.y - q.y) > (b.h + Hh) / 2 + 16);
+  if (free(p)) return p;
+  for (let r = 60; r <= 1600; r += 60){
+    const steps = Math.ceil(2 * Math.PI * r / 60);
+    for (let i = 0; i < steps; i++){
+      const t = i / steps * 2 * Math.PI, q = {x:p.x + Math.cos(t) * r, y:p.y + Math.sin(t) * r};
+      if (free(q)) return q;
+    }
+  }
+  return p;
+}
+function addEntity(p){
+  checkpoint();
+  let k = M.entities.length + 1; while (M.entities.some(e => e.name === 'Entity' + k)) k++;
+  p = freeSpot(p);
+  const e = {id:uid('e'), name:'Entity' + k, x:p.x, y:p.y, weak:false, attrs:[{id:uid('a'), name:'id', type:'INTEGER', pk:true, multi:false, derived:false}]};
+  M.entities.push(e);
+  sel = {id:e.id}; tab = 'edit';
+  renderAll();
+  const i = $('#pbody [data-f="name"]'); if (i){ i.focus(); i.select(); }
+}
+function startConnect(){
+  if (M.entities.length < 1) return toast('Add an entity first');
+  connect = {from:null};
+  cw.classList.add('connect'); $('#addRel').classList.add('on');
+  $('#bannerText').textContent = 'Click the first entity…';
+  $('#banner').classList.add('on');
+  renderCanvas();
+}
+function stopConnect(){
+  connect = null;
+  cw.classList.remove('connect'); $('#addRel').classList.remove('on'); $('#banner').classList.remove('on');
+  renderCanvas();
+}
+function pickConnect(id){
+  if (!connect.from){
+    connect.from = id;
+    $('#bannerText').textContent = `Now click the second entity (click ${ent(id).name} again for a recursive relationship)…`;
+    renderCanvas();
+    return;
+  }
+  checkpoint();
+  const A = ent(connect.from), B = ent(id);
+  let k = M.rels.length + 1; while (M.rels.some(r => r.name === 'R' + k)) k++;
+  const self = A === B;
+  const r = {id:uid('r'), name:self ? 'R' + k : 'R' + k, x:self ? A.x + 220 : (A.x + B.x) / 2, y:self ? A.y - 120 : (A.y + B.y) / 2, identifying:false,
+    ends:[{entity:A.id, max:'1', total:false, role:''}, {entity:B.id, max:'N', total:false, role:''}], attrs:[]};
+  M.rels.push(r);
+  sel = {id:r.id}; tab = 'edit';
+  stopConnect(); renderAll();
+  const i = $('#pbody [data-f="name"]'); if (i){ i.focus(); i.select(); }
+}
+$('#addEnt').onclick = () => addEntity(viewCenter());
+$('#fabAdd').onclick = () => addEntity(viewCenter());
+$('#addRel').onclick = () => connect ? stopConnect() : startConnect();
+$('#cancelConnect').onclick = stopConnect;
+$('#undo').onclick = undo; $('#redo').onclick = redo;
+$('#notation').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b || b.dataset.n === notation) return;
+  notation = b.dataset.n; renderAll();
+});
+function deleteSelection(){
+  if (!sel) return;
+  checkpoint();
+  const o = ownerOf(sel.id);
+  if (sel.attr) o.attrs = o.attrs.filter(a => a.id !== sel.attr), sel.attr = null;
+  else if (ent(sel.id)){
+    const id = sel.id;
+    M.entities = M.entities.filter(e => e.id !== id);
+    M.entities.forEach(e => { if (e.parent === id) e.parent = null; });
+    M.rels.forEach(r => r.ends = r.ends.filter(x => x.entity !== id));
+    M.rels = M.rels.filter(r => r.ends.length >= 2);
+    sel = null;
+  }
+  else { M.rels = M.rels.filter(r => r.id !== sel.id); sel = null; }
+  renderAll();
+}
+document.addEventListener('keydown', e => {
+  const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !typing){ e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y' && !typing){ e.preventDefault(); redo(); return; }
+  if (typing) return;
+  if (e.key === 'Escape'){ if (connect) stopConnect(); else if (sel){ sel = null; renderCanvas(); renderPanel(); } }
+  else if (e.key === 'Delete' || e.key === 'Backspace'){ e.preventDefault(); deleteSelection(); }
+  else if (e.key.toLowerCase() === 'r' && !e.ctrlKey && !e.metaKey) connect ? stopConnect() : startConnect();
+});
+
+/* ================================================================
+   Panel
+   ================================================================ */
+const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
+function sentence(r, from, to){
+  const A = ent(from.entity), B = ent(to.entity);
+  if (!A || !B) return '';
+  const q = from.total ? (to.max === '1' ? 'exactly one' : 'one or more') : (to.max === '1' ? 'at most one' : 'zero or more');
+  return `Each <b>${esc(A.name)}</b>${from.role ? ` (as ${esc(from.role)})` : ''} — <i>${esc(r.name)}</i> — <b>${q}</b> ${esc(B.name)}${to.role ? ` (as ${esc(to.role)})` : ''}.`;
+}
+function sentencesHTML(r){
+  if (!binary(r)){
+    const nm = x => esc((ent(x.entity) || {}).name || '?');
+    const fds = r.ends.filter(x => x.max === '1').map(t => `${r.ends.filter(x => x !== t).map(nm).join(' × ')} → <b>${nm(t)}</b>`);
+    return `<span class="ratio">${r.ends.length}-way</span><br>` + (fds.length
+      ? fds.join('<br>') + '<br>Each combination on the left of an arrow is related to at most one on its right.'
+      : `No arrows: any combination of ${r.ends.map(nm).join(', ')} can appear.`);
+  }
+  const [x, y] = r.ends;
+  const ratio = x.max === '1' && y.max === '1' ? '1 : 1' : x.max === 'N' && y.max === 'N' ? 'M : N' : x.max === '1' ? '1 : N' : 'N : 1';
+  return `<span class="ratio">${ratio}</span><br>${sentence(r, x, y)}<br>${sentence(r, y, x)}`;
+}
+function attrTable(o, isEnt){
+  const weak = isEnt && o.weak;
+  return `<table class="at"><thead><tr><th>Name</th><th>Type</th>${isEnt ? `<th title="${weak ? 'Partial key (discriminator)' : 'Key attribute'}">${weak ? 'Part. key' : 'Key'}</th><th title="Multivalued">Multi</th><th title="Derived">Derived</th>` : ''}<th></th></tr></thead><tbody>` +
+    o.attrs.map(a => `<tr data-a="${a.id}"${sel && sel.attr === a.id ? ' class="hl"' : ''}><td><input type="text" data-af="name" value="${esc(a.name)}" spellcheck="false"></td>` +
+      `<td><input type="text" class="ty" data-af="type" value="${esc(a.type || '')}" list="types" spellcheck="false"></td>` +
+      (isEnt ? `<td><input type="checkbox" data-af="pk"${a.pk ? ' checked' : ''}></td><td><input type="checkbox" data-af="multi"${a.multi ? ' checked' : ''}></td><td><input type="checkbox" data-af="derived"${a.derived ? ' checked' : ''}></td>` : '') +
+      `<td><button class="x" data-act="delattr" title="Delete attribute">×</button></td></tr>`).join('') +
+    `</tbody></table><button class="btn sm addrow" data-act="addattr">+ Attribute</button>`;
+}
+// Ratio options are read from the selected entity's point of view: "1 : N" = one of this, many of the target.
+const RATIOS = [['1:N', '1', 'N'], ['N:1', 'N', '1'], ['1:1', '1', '1'], ['M:N', 'N', 'N']];
+function ratioLabel(r, me, other){
+  return {'1:N':`1 : N — one ${me} has many ${other}`, 'N:1':`N : 1 — many ${me} share one ${other}`,
+    '1:1':`1 : 1 — one ${me} with one ${other}`, 'M:N':`M : N — many ${me} with many ${other}`}[r];
+}
+function addRelForm(o){
+  const first = M.entities.find(e => e.id !== o.id) || o;
+  return `<div class="addrel"><span class="lbl">Add a relationship from ${esc(o.name)}</span>` +
+    `<div class="row"><select class="inp" data-nr="target" title="Related entity">${M.entities.map(e =>
+      `<option value="${e.id}"${e === first ? ' selected' : ''}>${e.id === o.id ? esc(e.name) + ' (itself)' : esc(e.name)}</option>`).join('')}</select>` +
+    `<input class="inp" data-nr="name" placeholder="name, e.g. works_for" spellcheck="false"></div>` +
+    `<select class="inp" data-nr="ratio">${RATIOS.map(([r]) => `<option value="${r}">${esc(ratioLabel(r, o.name, first.name))}</option>`).join('')}</select>` +
+    `<button class="btn sm" data-act="addrel" style="justify-content:center">+ Add relationship</button></div>`;
+}
+function renderEdit(){
+  const o = sel && ownerOf(sel.id);
+  if (!o){
+    const nK = M.rels.length;
+    return `<div class="help"><div class="stats"><div class="stat"><b>${M.entities.length}</b><span>entities</span></div><div class="stat"><b>${nK}</b><span>relationships</span></div>` +
+      `<div class="stat"><b>${M.entities.reduce((s, e) => s + e.attrs.length, 0) + M.rels.reduce((s, r) => s + r.attrs.length, 0)}</b><span>attributes</span></div></div>` +
+      `<ul><li><b>Double-click</b> the canvas (or <b>▭ Entity</b>) to add an entity.</li><li><b>◇ Relationship</b> or <kbd>R</kbd>, then click two entities (the same one twice for a recursive relationship).</li>` +
+      `<li>Click a shape to edit it here. <b>Drag</b> to move shapes and attribute ovals; drag the background to pan, scroll to zoom.</li>` +
+      `<li><kbd>Delete</kbd> removes the selection, <kbd>Ctrl Z</kbd> undoes.</li>` +
+      `<li>The <b>Relational schema</b> tab maps the diagram to tables step by step; <b>SQL</b> turns it into <code>CREATE TABLE</code> statements.</li></ul>` +
+      `<button class="btn primary" data-act="newent" style="justify-content:center">+ New entity</button>` +
+      (M.entities.length ? `<h4>Entities</h4><div class="rlist">${M.entities.map(e => `<button data-pick="${e.id}">${esc(e.name)} <span class="muted">${e.weak ? 'weak · ' : ''}${plural(e.attrs.length, 'attribute')}</span></button>`).join('')}</div>` : '') +
+      `<p class="hint">Your diagram is kept in this browser. Use <b>Export → JSON</b> to save a copy or share it.</p></div>`;
+  }
+  if (ent(o.id)){
+    const rs = M.rels.filter(r => touches(r, o.id));
+    const subs = M.entities.filter(e => e.parent === o.id);
+    // a superclass can't be the entity itself or one of its subclasses (that would make an isa cycle)
+    const descendants = M.entities.filter(e => ancestors(e.id).includes(o.id)).map(e => e.id);
+    const isaSel = `<label class="field"><span>Subclass of (isa)</span><select class="inp" data-f="parent"><option value="">— none (not a subclass) —</option>` +
+      M.entities.filter(e => e.id !== o.id && !descendants.includes(e.id)).map(e => `<option value="${e.id}"${e.id === o.parent ? ' selected' : ''}>${esc(e.name)}</option>`).join('') +
+      `</select></label>` + (o.parent ? `<p class="hint" style="margin:-6px 0 12px">${esc(o.name)} inherits ${esc(ent(o.parent).name)}'s key and attributes; list only its extra attributes below.</p>` : '') +
+      (subs.length ? `<p class="hint" style="margin:-4px 0 12px">Subclasses: ${subs.map(e => `<b>${esc(e.name)}</b>`).join(', ')}</p>` : '');
+    return `<div class="ih"><span class="kind ent">Entity</span><span class="spacer"></span><button class="btn sm danger" data-act="del">Delete</button></div>` +
+      `<label class="field"><span>Name</span><input class="inp" data-f="name" value="${esc(o.name)}" spellcheck="false"></label>` +
+      `<label class="ck"><input type="checkbox" data-f="weak"${o.weak ? ' checked' : ''}><span><b>Weak entity</b> — has no key of its own; identified through an owner entity and a partial key.</span></label>` +
+      isaSel +
+      `<h4>Attributes</h4>${attrTable(o, true)}` +
+      `<h4>Relationships</h4>${rs.length ? `<div class="rlist">${rs.map(r => { const others = r.ends.filter(x => x.entity !== o.id).map(x => (ent(x.entity) || {}).name).filter(Boolean); return `<button data-pick="${r.id}">${esc(r.name)} <span class="muted">${kind(r)} · ${esc([...new Set(others)].join(', ') || o.name)}${r.identifying ? ' · identifying' : ''}</span></button>`; }).join('')}</div>` : '<p class="hint">None yet.</p>'}` + addRelForm(o);
+  }
+  const er = notation === 'er', multi = !binary(o);
+  const end = (i, e) => `<div class="end"><div class="end-h"><select class="inp" data-ef="entity" data-end="${i}">${M.entities.map(x => `<option value="${x.id}"${x.id === e.entity ? ' selected' : ''}>${esc(x.name)}</option>`).join('')}</select>` +
+    `<select class="inp" data-ef="max" data-end="${i}" title="${multi ? 'Arrow: the other participants together determine at most one of this entity' : 'How many of this entity relate to one instance of the other side'}">` +
+    `<option value="1"${e.max === '1' ? ' selected' : ''}>${er || multi ? '→ one' : '1 (one)'}</option><option value="N"${e.max === 'N' ? ' selected' : ''}>${er || multi ? 'many' : 'N (many)'}</option></select></div>` +
+    (multi ? '' : `<label class="ck"><input type="checkbox" data-ef="total" data-end="${i}"${e.total ? ' checked' : ''}><span><b>Total participation</b> — every ${esc((ent(e.entity) || {}).name || '')} must take part${er ? ' (rounded arrow on the other side)' : ''}</span></label>`) +
+    `<div style="display:flex;gap:6px"><input class="inp" data-ef="role" data-end="${i}" value="${esc(e.role || '')}" placeholder="Role name (optional)" spellcheck="false">` +
+    (o.ends.length > 2 ? `<button class="x" data-act="delend" data-end="${i}" title="Remove this participant">×</button>` : '') + `</div></div>`;
+  return `<div class="ih"><span class="kind rel">Relationship</span><span class="spacer"></span><button class="btn sm danger" data-act="del">Delete</button></div>` +
+    `<label class="field"><span>Name</span><input class="inp" data-f="name" value="${esc(o.name)}" spellcheck="false"></label>` +
+    (multi ? '' : `<label class="ck"><input type="checkbox" data-f="identifying"${o.identifying ? ' checked' : ''}><span><b>Identifying relationship</b> — links a weak entity to its owner</span></label>`) +
+    `<h4>Participants${multi ? ` · ${o.ends.length}-way` : ''}</h4>` +
+    (er || multi ? `<p class="hint" style="margin:-2px 0 8px">“→ one” draws an arrow into that entity: the other participants together determine at most one of it.</p>` : '') +
+    o.ends.map((e, i) => end(i, e)).join('') +
+    `<button class="btn sm addrow" data-act="addend" style="margin:0 0 10px">+ Add a participant (multi-way relationship)</button>` +
+    `<div class="sentences" id="sentences">${sentencesHTML(o)}</div>` +
+    `<h4>Attributes of the relationship</h4>${attrTable(o, false)}`;
+}
+function hlSQL(s){
+  return s.split('\n').map(line => {
+    const i = line.indexOf('--');
+    const code = i < 0 ? line : line.slice(0, i), com = i < 0 ? '' : line.slice(i);
+    return esc(code).replace(/\b(CREATE|TABLE|PRIMARY|FOREIGN|KEY|REFERENCES|NOT|NULL|UNIQUE|ON|DELETE|CASCADE|PRAGMA|INTEGER|TEXT|REAL|DATE|BOOLEAN|VARCHAR|CHAR|DECIMAL)\b/g, '<span class="k">$1</span>') +
+      (com ? `<span class="c">${esc(com)}</span>` : '');
+  }).join('\n');
+}
+function renderPanel(){
+  const C = checks();
+  const errs = C.filter(c => c.level === 'err').length, warns = C.filter(c => c.level === 'warn').length;
+  const n = $('#nChecks');
+  n.textContent = errs || warns || ''; n.className = 'n' + (errs ? ' err' : warns ? ' warn' : '');
+  n.style.display = errs || warns ? '' : 'none';
+  document.querySelectorAll('#ptabs button').forEach(b => b.classList.toggle('on', b.dataset.t === tab));
+  const body = $('#pbody');
+  if (tab === 'edit') body.innerHTML = renderEdit();
+  else if (tab === 'schema'){
+    if (!M.entities.length){ body.innerHTML = '<p class="hint">Add some entities to see the relational schema.</p>'; return; }
+    const {tables, steps} = mapToRelational();
+    body.innerHTML = `<p class="hint" style="margin:0 0 10px">Underlined = primary key, <span style="color:#ffd59a;font-style:italic">italic</span> = foreign key.</p>` +
+      tables.map(t => `<div class="tbl"><span class="tn">${esc(t.name)}</span>(${t.cols.map(c => {
+        const fk = t.fks.find(f => f.cols.includes(c.name));
+        let s = esc(c.name);
+        if (fk) s = `<span class="fk">${s}</span><span class="ref">→${esc(fk.ref)}</span>`;
+        return t.pk.includes(c.name) ? `<u>${s}</u>` : s;
+      }).join(', ')})</div>`).join('') +
+      `<h4>How it was mapped</h4><ol class="steps">${[...steps].sort((x, y) => x.r - y.r).map(s => `<li data-r="${s.r}">${s.html}</li>`).join('')}</ol>` +
+      `<p class="hint" style="margin-top:10px">Numbers follow the ER-to-relational mapping algorithm: 1 strong entities, 2 weak entities, 3 one-to-one, 4 one-to-many, 5 many-to-many, 6 multivalued attributes, 7 multi-way relationships, 8 subclasses (isa).</p>`;
+  }
+  else if (tab === 'sql'){
+    if (!M.entities.length){ body.innerHTML = '<p class="hint">Add some entities to generate SQL.</p>'; return; }
+    const ddl = sqlText();
+    body.innerHTML = `<div class="sqlbar"><button class="btn primary sm" id="openSql">Open in SQL Lab →</button><button class="btn sm" id="copySql">Copy</button><button class="btn sm" id="dlSql">⤓ .sql</button></div>` +
+      (errs ? `<p class="hint" style="color:var(--warn);margin:0 0 10px">⚠ ${plural(errs, 'problem')} in Checks may make this SQL incomplete.</p>` : '') +
+      `<pre class="sql">${hlSQL(ddl)}</pre>`;
+    $('#copySql').onclick = () => navigator.clipboard.writeText(ddl).then(() => toast('SQL copied'), () => toast('Copy failed'));
+    $('#dlSql').onclick = () => download('schema.sql', ddl, 'text/plain');
+    $('#openSql').onclick = () => {
+      try {
+        localStorage.setItem('sqllab.handoff', JSON.stringify({name:'From ERD', sql:ddl,
+          note:'Opened the CREATE TABLE script from the ERD lab in a new tab. Running it adds these tables to the current database; pick "Empty database" first for a clean start.'}));
+        location.href = 'sql.html';
+      } catch (e){ navigator.clipboard.writeText(ddl).then(() => toast('Storage is blocked — SQL copied instead')); }
+    };
+  }
+  else {
+    body.innerHTML = C.length ? C.map((c, i) => `<button class="check ${c.level}" data-ci="${i}"><span class="ic">${c.level === 'err' ? '✕' : c.level === 'warn' ? '!' : 'i'}</span><span>${c.html}</span></button>`).join('')
+      : '<div class="ok">✓ No problems found. The diagram maps cleanly to relations.</div>';
+    body.querySelectorAll('[data-ci]').forEach(b => b.onclick = () => { const t = C[+b.dataset.ci].target; if (t && ownerOf(t)){ sel = {id:t}; tab = 'edit'; renderCanvas(); renderPanel(); } });
+  }
+}
+function sqlText(){
+  const {tables} = mapToRelational();
+  return `-- Generated by the ERD Lab from ${plural(M.entities.length, 'entity').replace('entitys', 'entities')} and ${plural(M.rels.length, 'relationship')}.\n` +
+    `PRAGMA foreign_keys = ON;\n\n` + toDDL(tables) + '\n';
+}
+function renderAll(){ renderCanvas(); renderPanel(); save();
+  document.querySelectorAll('#notation button').forEach(b => b.classList.toggle('on', b.dataset.n === notation));
+  $('#undo').disabled = !H.past.length; $('#redo').disabled = !H.future.length;
+}
+$('#ptabs').addEventListener('click', e => { const b = e.target.closest('button[data-t]'); if (!b) return; tab = b.dataset.t; renderPanel(); save(); });
+
+const pb = $('#pbody');
+pb.addEventListener('click', e => {
+  const pick = e.target.closest('[data-pick]');
+  if (pick){ sel = {id:pick.dataset.pick}; renderCanvas(); renderPanel(); return; }
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  if (b.dataset.act === 'newent') return addEntity(viewCenter());
+  if (!sel) return;
+  const o = ownerOf(sel.id);
+  switch (b.dataset.act){
+    case 'addend': {
+      checkpoint();
+      const used = o.ends.map(x => x.entity);
+      const next = M.entities.find(e => !used.includes(e.id)) || M.entities[0];
+      o.ends.push({entity:next.id, max:'N', total:false, role:''});
+      o.identifying = false;
+      renderAll();
+      break;
+    }
+    case 'delend':
+      if (o.ends.length <= 2) return;
+      checkpoint(); o.ends.splice(+b.dataset.end, 1); renderAll();
+      break;
+    case 'addrel': {
+      const form = b.closest('.addrel');
+      const target = ent(form.querySelector('[data-nr="target"]').value);
+      const [, mine, theirs] = RATIOS.find(r => r[0] === form.querySelector('[data-nr="ratio"]').value);
+      if (!target) return;
+      checkpoint();
+      let name = form.querySelector('[data-nr="name"]').value.trim();
+      if (!name){ let k = M.rels.length + 1; while (M.rels.some(r => r.name === 'R' + k)) k++; name = 'R' + k; }
+      const self = target === o;
+      const r = {id:uid('r'), name, x:self ? o.x + 220 : (o.x + target.x) / 2, y:self ? o.y - 120 : (o.y + target.y) / 2, identifying:false,
+        ends:[{entity:o.id, max:mine, total:false, role:''}, {entity:target.id, max:theirs, total:false, role:''}], attrs:[]};
+      // nudge the diamond off any relationship already sitting between the same pair
+      while (M.rels.some(q => Math.abs(q.x - r.x) < 40 && Math.abs(q.y - r.y) < 40)) r.y += 70;
+      M.rels.push(r);
+      renderAll();
+      toast(`Added ${name}: ${o.name} ${mine === 'N' && theirs === 'N' ? 'M' : mine} : ${theirs} ${target.name}`);
+      break;
+    }
+    case 'del': sel.attr = null; deleteSelection(); break;
+    case 'addattr': {
+      checkpoint();
+      let k = o.attrs.length + 1; while (o.attrs.some(a => a.name === 'attr' + k)) k++;
+      const a = {id:uid('a'), name:'attr' + k, type:'TEXT', pk:false, multi:false, derived:false};
+      o.attrs.push(a); sel.attr = a.id;
+      renderAll();
+      const i = pb.querySelector(`tr[data-a="${a.id}"] [data-af="name"]`); if (i){ i.focus(); i.select(); }
+      break;
+    }
+    case 'delattr': {
+      checkpoint();
+      const id = b.closest('tr').dataset.a;
+      o.attrs = o.attrs.filter(a => a.id !== id);
+      if (sel.attr === id) sel.attr = null;
+      renderAll();
+      break;
+    }
+  }
+});
+pb.addEventListener('input', e => {
+  const t = e.target; if (!sel || t.type === 'checkbox' || t.tagName === 'SELECT') return;
+  const o = ownerOf(sel.id); if (!o) return;
+  if (t.dataset.f === 'name'){ checkpoint('name' + o.id); o.name = t.value; }
+  else if (t.dataset.af){
+    const a = o.attrs.find(a => a.id === t.closest('tr').dataset.a);
+    checkpoint(t.dataset.af + a.id); a[t.dataset.af] = t.value;
+  }
+  else if (t.dataset.ef === 'role'){ checkpoint('role' + t.dataset.end + o.id); o.ends[+t.dataset.end].role = t.value.trim(); }
+  else return;
+  renderCanvas(); save();
+  const s = $('#sentences'); if (s && relOf(o.id)) s.innerHTML = sentencesHTML(o);
+  const C = checks(), errs = C.filter(c => c.level === 'err').length, warns = C.filter(c => c.level === 'warn').length, n = $('#nChecks');
+  n.textContent = errs || warns || ''; n.className = 'n' + (errs ? ' err' : warns ? ' warn' : ''); n.style.display = errs || warns ? '' : 'none';
+});
+pb.addEventListener('change', e => {
+  const t = e.target;
+  if (t.dataset.nr === 'target'){   // refresh the ratio wording for the newly chosen entity
+    const o = ownerOf(sel.id), other = ent(t.value), rs = t.closest('.addrel').querySelector('[data-nr="ratio"]');
+    if (o && other) [...rs.options].forEach(op => { op.textContent = ratioLabel(op.value, o.name, other.name); });
+    return;
+  }
+  if (t.dataset.nr) return;
+  if (!sel || !(t.type === 'checkbox' || t.tagName === 'SELECT')) return;
+  const o = ownerOf(sel.id); if (!o) return;
+  checkpoint();
+  if (t.dataset.f) o[t.dataset.f] = t.type === 'checkbox' ? t.checked : (t.value || null);
+  else if (t.dataset.af) o.attrs.find(a => a.id === t.closest('tr').dataset.a)[t.dataset.af] = t.checked;
+  else if (t.dataset.ef){
+    const end = o.ends[+t.dataset.end];
+    end[t.dataset.ef] = t.type === 'checkbox' ? t.checked : t.value;
+  }
+  renderAll();
+});
+pb.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.target.dataset.nr === 'name'){ e.preventDefault(); e.target.closest('.addrel').querySelector('[data-act="addrel"]').click(); }
+});
+pb.addEventListener('focusin', e => {
+  const tr = e.target.closest('tr[data-a]');
+  if (tr && sel && sel.attr !== tr.dataset.a){ sel.attr = tr.dataset.a; renderCanvas(); pb.querySelectorAll('tr.hl').forEach(x => x.classList.remove('hl')); tr.classList.add('hl'); }
+});
+
+/* ================================================================
+   Files
+   ================================================================ */
+function download(name, data, type){
+  const url = URL.createObjectURL(data instanceof Blob ? data : new Blob([data], {type}));
+  const a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 500);
+}
+function exportSVG(){
+  const G2 = layout(notation), b = bbox(G2), P = notation === 'er' ? PAL.er : PAL.light;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${f1(b.x)} ${f1(b.y)} ${f1(b.w)} ${f1(b.h)}" width="${Math.ceil(b.w)}" height="${Math.ceil(b.h)}">` +
+    `<rect x="${f1(b.x)}" y="${f1(b.y)}" width="${f1(b.w)}" height="${f1(b.h)}" fill="${P.bg}"/>${draw(G2, P, null, null)}</svg>`;
+}
+const fileBase = () => (M.entities[0] ? 'erd-' + M.entities.map(e => e.name).slice(0, 3).join('-') : 'erd').replace(/[^A-Za-z0-9_-]+/g, '_').toLowerCase();
+$('#expSvg').onclick = () => download(fileBase() + '.svg', exportSVG(), 'image/svg+xml');
+$('#expJson').onclick = () => download(fileBase() + '.json', JSON.stringify({format:'erd-lab', version:1, model:M}, null, 2), 'application/json');
+$('#expPng').onclick = () => {
+  const s = exportSVG(), img = new Image();
+  img.onload = () => {
+    const c = document.createElement('canvas'), k = 2;
+    c.width = img.width * k; c.height = img.height * k;
+    const x = c.getContext('2d'); x.scale(k, k); x.drawImage(img, 0, 0);
+    c.toBlob(bl => bl ? download(fileBase() + '.png', bl) : toast('PNG export failed'), 'image/png');
+  };
+  img.onerror = () => toast('PNG export failed');
+  img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(s);
+};
+$('#importBtn').onclick = () => $('#fileIn').click();
+$('#fileIn').addEventListener('change', e => {
+  const file = e.target.files && e.target.files[0]; if (!file) return;
+  const rd = new FileReader();
+  rd.onload = () => {
+    try {
+      const d = JSON.parse(String(rd.result));
+      const m = d.model || d;
+      if (!validModel(m)) throw new Error('not an ERD Lab diagram');
+      checkpoint(); M = normalize(m); M.seq = Math.max(M.seq || 0, ...JSON.stringify(M).match(/"[era](\d+)"/g)?.map(s => +s.replace(/\D/g, '')) || [0]);
+      sel = null; renderAll(); fit(); toast(`Opened ${file.name}`);
+    } catch (err){ toast('Could not open it: ' + err.message); }
+  };
+  rd.readAsText(file);
+  e.target.value = '';
+});
+$('#tpl').addEventListener('change', e => {
+  const k = e.target.value; e.target.value = '';
+  if (!k) return;
+  if (M.entities.length && !confirm('Replace the current diagram? (You can undo with Ctrl+Z.)')) return;
+  checkpoint(); M = TEMPLATES[k](); sel = null; renderAll(); fit();
+});
+
+/* ================================================================
+   Boot
+   ================================================================ */
+(function boot(){
+  let saved = null;
+  try { saved = JSON.parse(localStorage.getItem(STORE)); } catch (e) {}
+  if (!saved){ try { const old = JSON.parse(localStorage.getItem(OLD_STORE)); if (old) saved = {M:old.M, tab:old.tab, V:old.V}; } catch (e) {} }
+  if (saved && validModel(saved.M)){
+    M = normalize(saved.M); notation = ['er', 'chen', 'crow'].includes(saved.notation) ? saved.notation : 'er'; tab = saved.tab || 'edit';
+    if (saved.V) Object.assign(V, saved.V);
+    renderAll();
+  } else {
+    M = TEMPLATES.company();
+    renderAll();
+    requestAnimationFrame(fit);
+  }
+  window.addEventListener('resize', () => applyView());
+})();
+})();
+</script>
+</body>
+</html>

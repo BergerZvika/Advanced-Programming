@@ -1,0 +1,879 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Normalization Lab</title>
+<meta name="description" content="Step-by-step BCNF decomposition and 3NF synthesis from functional dependencies." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg-0:#07070e;
+  --bg-1:#0c0c18;
+  --panel:#0f0f1d;
+  --panel-2:#14142a;
+  --surface:rgba(255,255,255,0.04);
+  --surface-2:rgba(255,255,255,0.08);
+  --border:rgba(255,255,255,0.09);
+  --border-strong:rgba(255,255,255,0.18);
+  --text:#eaeaf5;
+  --text-dim:#9a9ab0;
+  --text-faint:#666680;
+  --accent:#7c5cff;
+  --accent-2:#35d0ff;
+  --sql:#4ce0a3;
+  --warn:#ffb547;
+  --err:#ff6b7a;
+  --pink:#ff6ec7;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+  /* section colors */
+  --s-input:#9a9ab0; --s-keys:#35d0ff; --s-nf:#a98bff; --s-cover:#ffb547; --s-3nf:#4ce0a3; --s-bcnf:#ff6ec7; --s-sum:#eaeaf5;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:var(--bg-0)}
+body{font-family:'Inter',system-ui,sans-serif;color:var(--text);font-size:13.5px}
+a{color:inherit;text-decoration:none}
+button,select,input,textarea{font-family:inherit;color:inherit}
+button{cursor:pointer}
+
+.topbar{display:flex;align-items:center;gap:10px;padding:10px 16px;flex-wrap:wrap;background:linear-gradient(180deg,#0e0e1c,#0a0a15);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:20}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;white-space:nowrap}
+.brand .dot{width:10px;height:10px;border-radius:50%;background:linear-gradient(135deg,var(--s-3nf),var(--s-bcnf));box-shadow:0 0 14px var(--s-bcnf)}
+.brand small{font-family:var(--mono);font-weight:500;font-size:11px;color:var(--text-faint)}
+.spacer{flex:1}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:7px 12px;border-radius:9px;font-size:12.5px;font-weight:600;background:var(--surface);border:1px solid var(--border);transition:background .15s,border-color .15s;white-space:nowrap}
+.btn:hover{background:var(--surface-2);border-color:var(--border-strong)}
+.btn.primary{background:linear-gradient(135deg,#2bbf86,#1f9d6b);border-color:rgba(76,224,163,0.5);color:#04140d}
+.btn.primary:hover{background:linear-gradient(135deg,#4ce0a3,#25b07a)}
+.btn svg{flex:none}
+
+.layout{display:grid;grid-template-columns:360px minmax(0,1fr);min-height:calc(100vh - 53px)}
+.side{background:var(--panel);border-right:1px solid var(--border);padding:16px;display:flex;flex-direction:column;gap:14px}
+.side h3{margin:0;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--text-faint);font-weight:700}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:12px;font-weight:600;color:var(--text-dim)}
+.inp{width:100%;padding:9px 11px;border-radius:9px;background:var(--bg-1);border:1px solid var(--border);font-family:var(--mono);font-size:13px;outline:none}
+.inp:focus{border-color:rgba(76,224,163,0.55)}
+textarea.inp{min-height:150px;resize:vertical;line-height:1.6}
+.hint{font-size:11.5px;color:var(--text-faint);line-height:1.55}
+.hint code{font-family:var(--mono);background:var(--surface-2);padding:0 5px;border-radius:4px;color:var(--text-dim)}
+.ins{display:flex;gap:4px;flex-wrap:wrap}
+.ins button{font-family:var(--mono);font-size:12px;padding:3px 9px;border-radius:7px;background:var(--surface);border:1px solid var(--border)}
+.ins button:hover{border-color:var(--border-strong)}
+.modes{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.modes button{padding:9px 8px;border-radius:9px;border:1px solid var(--border);background:var(--surface);font-weight:600;font-size:12.5px;text-align:left;display:flex;flex-direction:column;gap:2px}
+.modes button small{font-weight:400;color:var(--text-faint);font-size:11px}
+.modes button:hover{border-color:var(--border-strong);background:var(--surface-2)}
+.modes button.main{grid-column:span 2;background:linear-gradient(135deg,rgba(76,224,163,0.16),rgba(255,110,199,0.12));border-color:rgba(76,224,163,0.4)}
+.row{display:flex;gap:6px}
+.row .inp{flex:1}
+.err{color:var(--err);font-size:12px;font-family:var(--mono);white-space:pre-wrap;display:none;padding:8px 10px;border-radius:8px;background:rgba(255,107,122,0.08);border:1px solid rgba(255,107,122,0.3)}
+.err.on{display:block}
+
+/* ---------- step viewer ---------- */
+.viewer{display:flex;flex-direction:column;min-width:0}
+.steps-bar{display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border);background:var(--bg-1);flex-wrap:wrap;position:sticky;top:53px;z-index:10}
+.sctl{display:flex;align-items:center;gap:4px;flex:none}
+.sbtn{width:32px;height:30px;border-radius:8px;border:1px solid var(--border);background:var(--surface);display:inline-flex;align-items:center;justify-content:center}
+.sbtn:hover:not([disabled]){background:var(--surface-2);border-color:var(--border-strong)}
+.sbtn[disabled]{opacity:.35;cursor:default}
+.sbtn.play{color:var(--sql);border-color:rgba(76,224,163,0.4)}
+.sbtn:focus-visible{outline:2px solid var(--sql);outline-offset:1px}
+.scount{font-family:var(--mono);font-size:12px;color:var(--text-dim);min-width:58px;text-align:center}
+.pipe{display:flex;align-items:center;gap:3px;overflow-x:auto;flex:1;min-width:0;scrollbar-width:thin;padding:2px 0}
+.chip{--c:var(--text-faint);font-family:var(--mono);font-size:10.5px;font-weight:600;letter-spacing:.03em;padding:4px 9px;border-radius:999px;border:1px solid color-mix(in srgb,var(--c) 35%,transparent);background:none;color:var(--text-faint);white-space:nowrap}
+.chip:hover{color:var(--text)}
+.chip.done{color:var(--c)}
+.chip.on{background:var(--c);color:#0a0a12;border-color:var(--c)}
+.parr{color:var(--text-faint);font-size:11px}
+.stage{padding:22px 24px 60px;max-width:1100px;width:100%}
+.sec{--c:var(--text-dim);display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--c)}
+.sec::before{content:"";width:8px;height:8px;border-radius:2px;background:var(--c)}
+.stage h2{margin:8px 0 10px;font-size:22px;letter-spacing:-0.01em}
+.stage .lead{color:var(--text-dim);line-height:1.7;max-width:880px;margin:0 0 18px;font-size:14px}
+.stage .lead b{color:var(--text)}
+.box{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:14px;overflow-x:auto}
+.box h4{margin:0 0 10px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-faint)}
+.note{font-size:12.5px;color:var(--text-dim);line-height:1.6;padding:10px 14px;border-left:3px solid var(--warn);background:rgba(255,181,71,0.06);border-radius:0 8px 8px 0;margin:0 0 14px}
+.note.good{border-color:var(--sql);background:rgba(76,224,163,0.06)}
+.note.bad{border-color:var(--err);background:rgba(255,107,122,0.06)}
+
+.set{display:inline-flex;flex-wrap:wrap;gap:3px;vertical-align:middle}
+.a{font-family:var(--mono);font-size:12px;padding:2px 7px;border-radius:6px;background:var(--surface-2);border:1px solid var(--border);color:#dfe3ff;white-space:nowrap}
+.a.hl{background:rgba(76,224,163,0.2);border-color:rgba(76,224,163,0.6);color:#c9ffe7}
+.a.dim{opacity:.35}
+.a.key{text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--warn);text-decoration-thickness:2px}
+.a.rm{background:rgba(255,107,122,0.14);border-color:rgba(255,107,122,0.5);color:#ffc2c9;text-decoration:line-through}
+.empty-set{font-family:var(--mono);color:var(--text-faint)}
+.fd{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}
+.fd .arr{color:var(--warn);font-weight:700}
+.fd.struck{opacity:.45;text-decoration:line-through}
+.fdlist{display:flex;flex-direction:column;gap:7px}
+
+table.t{border-collapse:collapse;width:100%;font-size:12.5px}
+table.t th{text-align:left;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-faint);font-weight:700;padding:6px 10px;border-bottom:1px solid var(--border-strong);white-space:nowrap}
+table.t td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:middle}
+table.t tr.cur td{background:rgba(255,181,71,0.07)}
+.tag{display:inline-block;font-family:var(--mono);font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.tag.ok{color:var(--sql);background:rgba(76,224,163,0.12);border:1px solid rgba(76,224,163,0.35)}
+.tag.bad{color:var(--err);background:rgba(255,107,122,0.12);border:1px solid rgba(255,107,122,0.35)}
+.tag.mid{color:var(--warn);background:rgba(255,181,71,0.12);border:1px solid rgba(255,181,71,0.35)}
+.tag.info{color:var(--accent-2);background:rgba(53,208,255,0.1);border:1px solid rgba(53,208,255,0.35)}
+.nfbadge{font-size:28px;font-weight:800;letter-spacing:-0.02em}
+
+.grid4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.cls{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:10px 12px}
+.cls b{display:block;font-size:12px;margin-bottom:3px}
+.cls p{margin:0 0 8px;font-size:11.5px;color:var(--text-faint);line-height:1.45}
+
+.rels{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+.rel{background:var(--panel);border:1px solid var(--border);border-radius:11px;padding:11px 13px}
+.rel.new{border-color:rgba(76,224,163,0.6);box-shadow:0 0 0 1px rgba(76,224,163,0.25)}
+.rel.gone{opacity:.45}
+.rel.gone .rname{text-decoration:line-through}
+.rel .rname{font-family:var(--mono);font-weight:700;font-size:13px;margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.rel .rfds{margin-top:8px;display:flex;flex-direction:column;gap:4px;font-size:12px}
+.rel .rmeta{margin-top:8px;font-size:11.5px;color:var(--text-faint)}
+
+/* BCNF tree */
+.tree{font-family:var(--mono)}
+.tree ul{list-style:none;margin:0;padding-left:26px;position:relative}
+.tree > ul{padding-left:0}
+.tree li{position:relative;padding:5px 0}
+.tree ul ul li::before{content:"";position:absolute;left:-16px;top:0;bottom:50%;width:14px;border-left:1px solid var(--border-strong);border-bottom:1px solid var(--border-strong);border-bottom-left-radius:6px}
+.tree ul ul li:not(:last-child)::after{content:"";position:absolute;left:-16px;top:50%;bottom:0;border-left:1px solid var(--border-strong)}
+.node{display:inline-flex;flex-direction:column;gap:5px;padding:8px 11px;border-radius:10px;border:1px solid var(--border);background:var(--panel)}
+.node .nh{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px}
+.node .nn{font-weight:700}
+.node .nv{font-size:11.5px;color:var(--text-dim);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.node.cur{border-color:var(--pink);box-shadow:0 0 0 2px rgba(255,110,199,0.25)}
+.node.leaf{border-color:rgba(76,224,163,0.5)}
+.node.pending{border-style:dashed;opacity:.8}
+
+.welcome{padding:40px 24px;max-width:820px;color:var(--text-dim);line-height:1.7}
+.welcome h2{color:var(--text);font-size:24px;margin:0 0 10px}
+.welcome .flow{display:flex;flex-wrap:wrap;gap:6px;margin:16px 0}
+
+@media (max-width:900px){
+  .layout{grid-template-columns:1fr}
+  .side{border-right:none;border-bottom:1px solid var(--border)}
+  .steps-bar{position:static}
+  .stage{padding:18px 16px 50px}
+  .grid4{grid-template-columns:1fr 1fr}
+  .brand small{display:none}
+}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="index.html" title="Back to Databases Lab"><span class="dot"></span>Normalization Lab <small>BCNF · 3NF · step by step</small></a>
+  <span class="spacer"></span>
+  <a class="btn" href="index.html">← Databases</a>
+  <a class="btn" href="../home.html">⌂ Home</a>
+</header>
+
+<div class="layout">
+  <aside class="side">
+    <div class="field">
+      <label for="preset">Start from an example</label>
+      <select class="inp" id="preset"></select>
+    </div>
+    <div class="field">
+      <label for="attrs">Attributes of R</label>
+      <input class="inp" id="attrs" spellcheck="false" placeholder="A, B, C, D, E">
+      <div class="hint">Separate with commas, or write <code>ABCDE</code> for single-letter attributes. Leave empty to take them from the dependencies.</div>
+    </div>
+    <div class="field">
+      <label for="fds">Functional dependencies</label>
+      <textarea class="inp" id="fds" spellcheck="false" placeholder="A -> B&#10;B C -> E"></textarea>
+      <div class="ins" id="ins"><button data-i=" → ">→</button><button data-i=", ">,</button><button data-i="&#10;">new line</button></div>
+      <div class="hint">One dependency per line: <code>A B -> C</code>, <code>AB → CD</code> or <code>StudentID, Course -> Grade</code>.</div>
+    </div>
+    <div class="err" id="err"></div>
+    <div class="field">
+      <label>Calculate step by step</label>
+      <div class="modes">
+        <button class="main" data-mode="all">Full analysis<small>keys → normal form → minimal cover → 3NF → BCNF</small></button>
+        <button data-mode="3nf">3NF synthesis<small>keys, minimal cover, 3NF tables</small></button>
+        <button data-mode="bcnf">BCNF decomposition<small>keys, violations, split tree</small></button>
+        <button data-mode="keys">Keys &amp; normal form<small>closures, candidate keys</small></button>
+        <button data-mode="cover">Minimal cover<small>canonical cover only</small></button>
+      </div>
+    </div>
+    <div class="field">
+      <label for="clX">Attribute closure X⁺</label>
+      <div class="row"><input class="inp" id="clX" spellcheck="false" placeholder="A B"><button class="btn" id="clBtn">X⁺ step by step</button></div>
+    </div>
+  </aside>
+
+  <main class="viewer" id="viewer"></main>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+/* ================================================================
+   Presets
+   ================================================================ */
+const PRESETS = [
+  {name:'Textbook: R(A,B,C,D,E), three keys', attrs:'A, B, C, D, E', fds:'A -> B\nB C -> E\nE D -> A',
+   note:'In 3NF but not in BCNF: every attribute is prime.'},
+  {name:'Address: Street, City → Zip; Zip → City', attrs:'Street, City, Zip', fds:'Street, City -> Zip\nZip -> City',
+   note:'The classic case where BCNF cannot preserve every dependency.'},
+  {name:'Enrollment (1NF only)', attrs:'StudentID, StudentName, CourseID, CourseTitle, Grade',
+   fds:'StudentID -> StudentName\nCourseID -> CourseTitle\nStudentID, CourseID -> Grade',
+   note:'Partial dependencies on part of the key.'},
+  {name:'Employee & department (2NF)', attrs:'EmpID, Name, DeptID, DeptName, Manager',
+   fds:'EmpID -> Name, DeptID\nDeptID -> DeptName, Manager',
+   note:'A transitive dependency through DeptID.'},
+  {name:'Silberschatz: R(A,B,C,G,H,I)', attrs:'A, B, C, G, H, I', fds:'A -> B\nA -> C\nC G -> H\nC G -> I\nB -> H',
+   note:'Key AG; several decompositions to compare.'},
+  {name:'Ullman: Course, Teacher, Hour, Room, Student, Grade', attrs:'C, T, H, R, S, G',
+   fds:'C -> T\nH R -> C\nH T -> R\nC S -> G\nH S -> R', note:'Key HS.'},
+  {name:'Redundant dependencies (minimal cover)', attrs:'A, B, C', fds:'A -> B C\nB -> C\nA -> B\nA B -> C',
+   note:'Shows extraneous attributes and redundant FDs being removed.'},
+  {name:'Already in BCNF: Book', attrs:'ISBN, Title, Year, Publisher', fds:'ISBN -> Title, Year, Publisher',
+   note:'Nothing to fix.'},
+  {name:'Custom (empty)', attrs:'', fds:'', note:''}
+];
+
+/* ================================================================
+   Sets as bitmasks
+   ================================================================ */
+let ATTRS = [];
+const bit = i => 1 << i;
+const ALL = () => ATTRS.length >= 31 ? -1 : (1 << ATTRS.length) - 1;
+function pop(m){ let c = 0; while (m){ m &= m - 1; c++; } return c; }
+function members(m){ const o = []; for (let i = 0; i < ATTRS.length; i++) if (m & bit(i)) o.push(i); return o; }
+const sub = (a, b) => (a & ~b) === 0;          // a ⊆ b
+const single = () => ATTRS.every(a => a.length === 1);
+function txt(m){ const n = members(m).map(i => ATTRS[i]); return n.length ? (single() ? n.join('') : n.join(', ')) : '∅'; }
+function txtR(m){ return '(' + members(m).map(i => ATTRS[i]).join(', ') + ')'; }
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* Attribute chips. opts: hl (highlight), dim (fade), key (underline), rm (struck) */
+function chips(m, o = {}){
+  if (!m) return '<span class="empty-set">∅</span>';
+  return '<span class="set">' + members(m).map(i => {
+    const b = bit(i), c = ['a'];
+    if (o.hl && (o.hl & b)) c.push('hl');
+    if (o.dim && (o.dim & b)) c.push('dim');
+    if (o.key && (o.key & b)) c.push('key');
+    if (o.rm && (o.rm & b)) c.push('rm');
+    return `<span class="${c.join(' ')}">${esc(ATTRS[i])}</span>`;
+  }).join('') + '</span>';
+}
+function fdH(fd, o = {}){
+  return `<span class="fd${o.struck ? ' struck' : ''}">${chips(fd.lhs, o.l || {})}<span class="arr">→</span>${chips(fd.rhs, o.r || {})}</span>`;
+}
+const fdT = fd => txt(fd.lhs) + ' → ' + txt(fd.rhs);
+
+function submasks(mask, withEmpty){
+  const out = [];
+  for (let s = mask; ; s = (s - 1) & mask){ if (s || withEmpty) out.push(s); if (!s) break; }
+  const key = s => members(s);
+  return out.sort((a, b) => {
+    const d = pop(a) - pop(b); if (d) return d;
+    const x = key(a), y = key(b);
+    for (let i = 0; i < x.length; i++) if (x[i] !== y[i]) return x[i] - y[i];
+    return 0;
+  });
+}
+
+/* ================================================================
+   Parsing
+   ================================================================ */
+function splitAttrList(t){
+  t = t.trim();
+  const m = /^[A-Za-z_]\w*\s*\(([\s\S]*)\)\s*$/.exec(t);
+  if (m) t = m[1].trim();
+  if (!t) return [];
+  if (/[,\s]/.test(t)) return t.split(/[\s,]+/).filter(Boolean);
+  if (/^[A-Z]+$/.test(t) && new Set(t).size === t.length) return [...t];
+  return [t];
+}
+function parseInput(attrText, fdText){
+  let names = splitAttrList(attrText);
+  const lines = fdText.split(/\n|;/).map(l => l.replace(/(#|\/\/).*$/, '').trim()).filter(Boolean);
+  const raw = lines.map(line => {
+    const parts = line.split(/\s*(?:->|→|=>|⟶|⇒)\s*/);
+    if (parts.length !== 2 || !parts[0].trim() || !parts[1].trim()) throw new Error(`Can't read "${line}".\nWrite it like:  A B -> C`);
+    return {line, sides: parts.map(p => p.trim())};
+  });
+  const inferred = !names.length;
+  if (inferred){
+    for (const r of raw) for (const side of r.sides) for (const tok of side.split(/[\s,]+/).filter(Boolean)){
+      const letters = /^[A-Z]{2,}$/.test(tok) && new Set(tok).size === tok.length && names.every(n => n.length === 1) && !/[a-z]/.test(fdText);
+      for (const n of (letters ? [...tok] : [tok])) if (!names.includes(n)) names.push(n);
+    }
+  }
+  if (!names.length) throw new Error('Add some attributes or dependencies.');
+  const dup = names.find((n, i) => names.indexOf(n) !== i);
+  if (dup) throw new Error(`Attribute "${dup}" appears twice.`);
+  if (names.length > 20) throw new Error('Please use at most 20 attributes.');
+  ATTRS = names;
+  const sideMask = side => {
+    let m = 0;
+    for (const tok of side.split(/[\s,]+/).filter(Boolean)){
+      let i = ATTRS.indexOf(tok);
+      if (i < 0) i = ATTRS.findIndex(a => a.toLowerCase() === tok.toLowerCase());
+      if (i >= 0){ m |= bit(i); continue; }
+      if (single() && [...tok].every(ch => ATTRS.includes(ch))){ for (const ch of tok) m |= bit(ATTRS.indexOf(ch)); continue; }
+      throw new Error(`Unknown attribute "${tok}".\nAdd it to the attributes of R.`);
+    }
+    return m;
+  };
+  const F = raw.map(r => ({lhs: sideMask(r.sides[0]), rhs: sideMask(r.sides[1]), line: r.line}));
+  return {F, inferred};
+}
+
+/* ================================================================
+   Algorithms
+   ================================================================ */
+function closure(X, F, trace){
+  let res = X, changed = true, round = 0;
+  while (changed){
+    changed = false; round++;
+    for (const fd of F){
+      if (sub(fd.lhs, res) && !sub(fd.rhs, res)){
+        const added = fd.rhs & ~res;
+        res |= fd.rhs; changed = true;
+        if (trace) trace.push({fd, added, res, round});
+      }
+    }
+  }
+  return res;
+}
+function keysOf(R, F){
+  const keys = [];
+  for (const s of submasks(R, false)){
+    if (keys.some(k => sub(k, s))) continue;
+    if (sub(R, closure(s, F))) keys.push(s);
+  }
+  return keys;
+}
+function analyzeKeys(F){
+  const all = ALL();
+  let L = 0, R = 0;
+  F.forEach(fd => { L |= fd.lhs; R |= fd.rhs & ~fd.lhs; });
+  const onlyL = L & ~R, both = L & R, onlyR = R & ~L, none = all & ~L & ~R;
+  const core = onlyL | none;
+  const coreTrace = [];
+  const coreCl = closure(core, F, coreTrace);
+  const tested = [], keys = [];
+  if (coreCl === all) keys.push(core);
+  else {
+    for (const s of submasks(both, false)){
+      const X = core | s;
+      if (keys.some(k => sub(k, X))){ tested.push({X, skip: true}); continue; }
+      const cl = closure(X, F);
+      const isKey = cl === all;
+      tested.push({X, cl, isKey});
+      if (isKey) keys.push(X);
+    }
+  }
+  const prime = keys.reduce((a, k) => a | k, 0);
+  return {onlyL, both, onlyR, none, core, coreCl, coreTrace, tested, keys, prime};
+}
+function splitF(F){
+  const out = [];
+  F.forEach(fd => members(fd.rhs).forEach(i => {
+    if (fd.lhs & bit(i)) return; // trivial
+    if (!out.some(g => g.lhs === fd.lhs && g.rhs === bit(i))) out.push({lhs: fd.lhs, rhs: bit(i)});
+  }));
+  return out;
+}
+function nfCheck(F, K){
+  const all = ALL();
+  const rows = splitF(F).map(fd => {
+    const cl = closure(fd.lhs, F);
+    const superkey = cl === all;
+    const prime = !!(fd.rhs & K.prime);
+    const partial = !superkey && !prime && K.keys.some(k => sub(fd.lhs, k) && fd.lhs !== k);
+    const verdict = superkey ? 'bcnf' : prime ? '3nf' : partial ? 'partial' : 'transitive';
+    return {fd, cl, superkey, prime, partial, verdict};
+  });
+  let nf = 'BCNF';
+  if (rows.some(r => r.verdict !== 'bcnf')) nf = '3NF';
+  if (rows.some(r => r.verdict === 'partial' || r.verdict === 'transitive')) nf = '2NF';
+  if (rows.some(r => r.verdict === 'partial')) nf = '1NF';
+  return {rows, nf};
+}
+function minimalCover(F){
+  const split = [], trivial = [];
+  F.forEach(fd => members(fd.rhs).forEach(i => {
+    const g = {lhs: fd.lhs, rhs: bit(i), from: fd};
+    if (fd.lhs & bit(i)) trivial.push(g);
+    else if (!split.some(x => x.lhs === g.lhs && x.rhs === g.rhs)) split.push(g);
+  }));
+  let G = split.map(x => ({lhs: x.lhs, rhs: x.rhs}));
+  const lhsTests = [];
+  for (const fd of G){
+    if (pop(fd.lhs) < 2) continue;
+    for (const i of members(fd.lhs)){
+      if (pop(fd.lhs) < 2) break;
+      const before = fd.lhs, reduced = fd.lhs & ~bit(i);
+      const cl = closure(reduced, G);
+      const extra = sub(fd.rhs, cl);
+      lhsTests.push({before, rhs: fd.rhs, attr: bit(i), reduced, cl, extra});
+      if (extra) fd.lhs = reduced;
+    }
+  }
+  const afterLhs = [];
+  G.forEach(g => { if (!afterLhs.some(x => x.lhs === g.lhs && x.rhs === g.rhs)) afterLhs.push(g); });
+  G = afterLhs.slice();
+  const redTests = [];
+  for (const fd of afterLhs){
+    const others = G.filter(g => g !== fd);
+    const trace = [];
+    const cl = closure(fd.lhs, others, trace);
+    const red = sub(fd.rhs, cl);
+    redTests.push({fd, cl, red, trace});
+    if (red) G = others;
+  }
+  return {split, trivial, lhsTests, afterLhs, redTests, cover: G};
+}
+function combine(G){
+  const m = new Map();
+  G.forEach(g => m.set(g.lhs, (m.get(g.lhs) || 0) | g.rhs));
+  return [...m].map(([lhs, rhs]) => ({lhs, rhs}));
+}
+function fdsInside(R, G){ return G.filter(g => sub(g.lhs | g.rhs, R)); }
+
+function synth3NF(F, cover, K){
+  const groups = combine(cover);
+  const rels = groups.map((g, i) => ({name: 'R' + (i + 1), attrs: g.lhs | g.rhs, from: g}));
+  const keyIn = rels.find(r => K.keys.some(k => sub(k, r.attrs)));
+  let added = null;
+  if (!keyIn){ added = {name: 'R' + (rels.length + 1), attrs: K.keys[0], key: true}; rels.push(added); }
+  const removed = new Set();
+  rels.forEach((r, i) => rels.forEach((s, j) => {
+    if (i === j || removed.has(j)) return;
+    if (sub(r.attrs, s.attrs) && (r.attrs !== s.attrs || j < i)) removed.add(i);
+  }));
+  const final = rels.filter((r, i) => !removed.has(i));
+  final.forEach(r => { r.keys = keysOf(r.attrs, F); r.bcnf = !findViolation(r.attrs, F, cover); });
+  return {groups, rels, keyIn, added, removed, final};
+}
+
+function findViolation(R, F, prefer){
+  const tried = new Set();
+  const cands = (prefer || []).map(g => g.lhs).filter(x => sub(x, R)).concat(submasks(R, false));
+  for (const X of cands){
+    if (tried.has(X) || X === R) continue;
+    tried.add(X);
+    const full = closure(X, F), cl = full & R;
+    if ((cl & ~X) && cl !== R) return {X, Y: cl & ~X, cl, full};
+  }
+  return null;
+}
+function decomposeBCNF(F, cover){
+  const root = {name: 'R', attrs: ALL(), children: [], created: -1, depth: 0};
+  const nodes = [root], events = [];
+  const todo = [root];
+  while (todo.length){
+    const n = todo.shift();
+    if (events.length > 60) break;
+    const v = findViolation(n.attrs, F, cover);
+    n.resolved = events.length;
+    if (!v){
+      n.leaf = true; n.keys = keysOf(n.attrs, F);
+      events.push({type: 'ok', node: n});
+      continue;
+    }
+    n.v = v;
+    const c1 = {name: n.name === 'R' ? 'R1' : n.name + '.1', attrs: v.cl, children: [], created: events.length, parent: n, depth: n.depth + 1};
+    const c2 = {name: n.name === 'R' ? 'R2' : n.name + '.2', attrs: n.attrs & ~v.Y, children: [], created: events.length, parent: n, depth: n.depth + 1};
+    n.children = [c1, c2];
+    nodes.push(c1, c2);
+    events.push({type: 'split', node: n, v, c1, c2});
+    todo.unshift(c1, c2);
+  }
+  const leaves = nodes.filter(n => n.leaf);
+  // a leaf contained in another leaf adds nothing
+  const final = leaves.filter((r, i) => !leaves.some((s, j) => j !== i && sub(r.attrs, s.attrs) && (r.attrs !== s.attrs || j < i)));
+  const pres = cover.map(fd => ({fd, ok: preserved(fd, final.map(r => r.attrs), F)}));
+  return {root, nodes, events, leaves, final, pres};
+}
+function preserved(fd, rels, F){
+  let Z = fd.lhs, ch = true;
+  while (ch){
+    ch = false;
+    for (const R of rels){
+      const add = closure(Z & R, F) & R;
+      if (add & ~Z){ Z |= add; ch = true; }
+    }
+  }
+  return sub(fd.rhs, Z);
+}
+
+/* ================================================================
+   Step builders
+   ================================================================ */
+const SEC = {
+  input:{name:'Input', c:'var(--s-input)'}, keys:{name:'Keys', c:'var(--s-keys)'}, nf:{name:'Normal form', c:'var(--s-nf)'},
+  cover:{name:'Minimal cover', c:'var(--s-cover)'}, '3nf':{name:'3NF synthesis', c:'var(--s-3nf)'},
+  bcnf:{name:'BCNF decomposition', c:'var(--s-bcnf)'}, sum:{name:'Summary', c:'var(--s-sum)'}, cl:{name:'Closure', c:'var(--s-keys)'}
+};
+const plural = (n, w, ws) => `${n} ${n === 1 ? w : (ws || w + 's')}`;
+
+function traceTable(X, trace, extra = ''){
+  let cur = X;
+  let h = `<table class="t"><thead><tr><th>#</th><th>Dependency used</th><th>Why it applies</th><th>Adds</th><th>Closure so far</th></tr></thead><tbody>
+    <tr><td>0</td><td colspan="3" style="color:var(--text-faint)">start with X itself</td><td>${chips(X, {hl: X})}</td></tr>`;
+  trace.forEach((t, i) => {
+    h += `<tr><td>${i + 1}</td><td>${fdH(t.fd)}</td><td style="color:var(--text-faint);font-size:12px">${chips(t.fd.lhs)} ⊆ closure</td><td>${chips(t.added, {hl: t.added})}</td><td>${chips(t.res, {hl: t.added})}</td></tr>`;
+    cur = t.res;
+  });
+  if (!trace.length) h += `<tr><td colspan="5" style="color:var(--text-faint)">No dependency adds anything new.</td></tr>`;
+  return h + '</tbody></table>' + extra;
+}
+function fdListBox(F, title){
+  return `<div class="box"><h4>${title}</h4><div class="fdlist">${F.map(fd => fdH(fd)).join('')}</div></div>`;
+}
+
+function buildSteps(mode, F){
+  const steps = [];
+  const all = ALL();
+  const K = analyzeKeys(F);
+  const want = s => mode === 'all' || ({'3nf': ['input','keys','cover','3nf'], bcnf: ['input','keys','nf','bcnf'], keys: ['input','keys','nf'], cover: ['input','cover']}[mode] || []).includes(s);
+
+  /* ---- input ---- */
+  steps.push({sec: 'input', label: 'INPUT', title: `R${txtR(all)}`, lead:
+    `The relation has <b>${plural(ATTRS.length, 'attribute')}</b> and <b>${plural(F.length, 'functional dependency', 'functional dependencies')}</b>. ` +
+    `<code>X → Y</code> means: two rows that agree on X must also agree on Y.`,
+    body: `<div class="box"><h4>Attributes</h4>${chips(all)}</div>` + fdListBox(F, 'Functional dependencies (F)')});
+
+  /* ---- keys ---- */
+  if (want('keys')){
+    steps.push({sec: 'keys', label: 'CLASSIFY', title: 'Where does each attribute appear?', lead:
+      'A quick trick before searching for keys. An attribute that <b>never appears on the right</b> of a dependency cannot be derived from anything else, so it must be in <b>every</b> key. An attribute that appears <b>only on the right</b> is always derivable, so it is in <b>no</b> key.',
+      body: `<div class="grid4">
+        <div class="cls"><b>Only on the left</b><p>in every key</p>${chips(K.onlyL)}</div>
+        <div class="cls"><b>In no dependency</b><p>in every key</p>${chips(K.none)}</div>
+        <div class="cls"><b>On both sides</b><p>maybe in a key</p>${chips(K.both)}</div>
+        <div class="cls"><b>Only on the right</b><p>never in a key</p>${chips(K.onlyR)}</div>
+      </div>`});
+    const coreIsKey = K.coreCl === all;
+    steps.push({sec: 'keys', label: 'CORE⁺', title: `Closure of the core: ${txt(K.core)}⁺`, lead:
+      `Start from the attributes that must be in every key and compute their <b>closure</b>: keep applying dependencies whose left side is already inside, until nothing new is added. ` +
+      (coreIsKey ? `The closure is <b>all of R</b>, so <b>${esc(txt(K.core))}</b> is the one and only candidate key.`
+                 : `The closure is not all of R, so we must add attributes from the "both sides" group.`),
+      body: `<div class="box"><h4>${esc(txt(K.core))}⁺</h4>${traceTable(K.core, K.coreTrace)}</div>` +
+        `<div class="note ${coreIsKey ? 'good' : ''}">${esc(txt(K.core))}⁺ = ${chips(K.coreCl)}${coreIsKey ? ' = all attributes ✓' : ' ≠ R, missing ' + chips(all & ~K.coreCl)}</div>`});
+    const shown = K.tested.slice(0, 64);
+    steps.push({sec: 'keys', label: 'KEYS', title: K.keys.length === 1 ? `Candidate key: ${txt(K.keys[0])}` : `${K.keys.length} candidate keys`, lead:
+      (K.tested.length ? `Try the core plus combinations of the "both sides" attributes, smallest first. A combination whose closure is all of R is a <b>superkey</b>; if it contains no smaller key it is a <b>candidate key</b>. Supersets of a key are skipped. ` : '') +
+      `Attributes that belong to some candidate key are called <b>prime</b>: ${chips(K.prime, {key: K.prime})}.`,
+      body: (K.tested.length ? `<div class="box"><h4>Search</h4><table class="t"><thead><tr><th>Try X</th><th>X⁺</th><th>Result</th></tr></thead><tbody>` +
+        shown.map(t => t.skip
+          ? `<tr><td>${chips(t.X)}</td><td style="color:var(--text-faint)">—</td><td><span class="tag info">contains a key, skip</span></td></tr>`
+          : `<tr class="${t.isKey ? 'cur' : ''}"><td>${chips(t.X)}</td><td>${chips(t.cl, {dim: all & ~t.cl})}</td><td>${t.isKey ? '<span class="tag ok">candidate key</span>' : '<span class="tag bad">not all of R</span>'}</td></tr>`).join('') +
+        (K.tested.length > shown.length ? `<tr><td colspan="3" style="color:var(--text-faint)">… ${K.tested.length - shown.length} more combinations</td></tr>` : '') +
+        '</tbody></table></div>' : '') +
+        `<div class="box"><h4>Candidate keys</h4><div class="fdlist">${K.keys.map(k => chips(k, {key: k})).join('')}</div></div>`});
+  }
+
+  /* ---- normal form ---- */
+  let NF = null;
+  if (want('nf')){
+    NF = nfCheck(F, K);
+    const lab = {bcnf: '<span class="tag ok">OK for BCNF</span>', '3nf': '<span class="tag mid">3NF only: right side is prime</span>',
+      partial: '<span class="tag bad">partial dependency (breaks 2NF)</span>', transitive: '<span class="tag bad">transitive (breaks 3NF)</span>'};
+    steps.push({sec: 'nf', label: 'NF CHECK', title: `R is in ${NF.nf}`, lead:
+      'Check every dependency <code>X → A</code>. <b>BCNF</b> needs X to be a superkey. <b>3NF</b> also allows it when A is prime (part of some key). ' +
+      '<b>2NF</b> forbids a non-prime attribute depending on <i>part</i> of a key. The relation is in the highest form that every dependency satisfies.',
+      body: `<div class="box"><table class="t"><thead><tr><th>X → A</th><th>X⁺</th><th>X superkey?</th><th>A prime?</th><th>Verdict</th></tr></thead><tbody>` +
+        NF.rows.map(r => `<tr><td>${fdH(r.fd)}</td><td>${chips(r.cl, {dim: all & ~r.cl})}</td><td>${r.superkey ? '<span class="tag ok">yes</span>' : '<span class="tag bad">no</span>'}</td><td>${r.prime ? '<span class="tag ok">yes</span>' : '<span class="tag info">no</span>'}</td><td>${lab[r.verdict]}</td></tr>`).join('') +
+        `</tbody></table></div><div class="box"><h4>Highest normal form</h4><span class="nfbadge" style="color:${NF.nf === 'BCNF' ? 'var(--sql)' : NF.nf === '3NF' ? 'var(--warn)' : 'var(--err)'}">${NF.nf}</span></div>`});
+  }
+
+  /* ---- minimal cover ---- */
+  let MC = null;
+  if (want('cover') || want('3nf') || want('bcnf')){
+    MC = minimalCover(F);
+  }
+  if (want('cover')){
+    steps.push({sec: 'cover', label: 'SPLIT', title: 'Step 1: one attribute on each right side', lead:
+      'Rewrite <code>X → AB</code> as <code>X → A</code> and <code>X → B</code>, and drop trivial dependencies like <code>AB → A</code>. This does not change what F says, it just makes the next steps easier.',
+      body: `<div class="box"><h4>Split dependencies (${MC.split.length})</h4><div class="fdlist">${MC.split.map(g => fdH(g)).join('')}</div></div>` +
+        (MC.trivial.length ? `<div class="box"><h4>Dropped as trivial</h4><div class="fdlist">${MC.trivial.map(g => fdH(g, {struck: true})).join('')}</div></div>` : '')});
+    steps.push({sec: 'cover', label: 'LEFT SIDES', title: 'Step 2: remove extra attributes on the left', lead:
+      'For each dependency with more than one attribute on the left, try removing one attribute B. If A is still in the closure of what is left, B was <b>extraneous</b> and can go.',
+      body: MC.lhsTests.length
+        ? `<div class="box"><table class="t"><thead><tr><th>Dependency</th><th>Try without</th><th>Closure of the rest</th><th>Result</th></tr></thead><tbody>` +
+          MC.lhsTests.map(t => `<tr class="${t.extra ? 'cur' : ''}"><td>${fdH({lhs: t.before, rhs: t.rhs}, {l: {rm: t.extra ? t.attr : 0}})}</td><td>${chips(t.attr)}</td><td>${chips(t.reduced)}⁺ = ${chips(t.cl, {hl: t.rhs & t.cl})}</td><td>${t.extra ? `<span class="tag ok">${esc(txt(t.rhs))} still reached, remove ${esc(txt(t.attr))}</span>` : `<span class="tag info">needed</span>`}</td></tr>`).join('') +
+          '</tbody></table></div>'
+        : '<div class="note good">Every left side has a single attribute, so there is nothing to remove.</div>'});
+    steps.push({sec: 'cover', label: 'REDUNDANT', title: 'Step 3: remove redundant dependencies', lead:
+      'For each dependency <code>X → A</code>, hide it and compute X⁺ using only the others. If A still appears, the dependency follows from the rest and is <b>redundant</b>.',
+      body: `<div class="box"><table class="t"><thead><tr><th>Dependency</th><th>X⁺ without it</th><th>Result</th></tr></thead><tbody>` +
+        MC.redTests.map(t => `<tr class="${t.red ? 'cur' : ''}"><td>${fdH(t.fd, {struck: t.red})}</td><td>${chips(t.cl, {hl: t.fd.rhs & t.cl})}</td><td>${t.red ? '<span class="tag ok">redundant, remove</span>' : '<span class="tag info">keep</span>'}</td></tr>`).join('') +
+        '</tbody></table></div>'});
+    steps.push({sec: 'cover', label: 'COVER', title: `Minimal cover: ${plural(MC.cover.length, 'dependency', 'dependencies')}`, lead:
+      'This is the <b>minimal (canonical) cover</b>: it says exactly the same as F, with single attributes on the right, no extra attributes on the left and no redundant dependencies. Below, dependencies with the same left side are also shown combined.',
+      body: fdListBox(MC.cover, 'Minimal cover') + fdListBox(combine(MC.cover), 'Combined by left side')});
+  }
+
+  /* ---- 3NF synthesis ---- */
+  if (want('3nf')){
+    const S = synth3NF(F, MC.cover, K);
+    if (!want('cover')) steps.push({sec: 'cover', label: 'COVER', title: 'Minimal cover', lead: '3NF synthesis starts from a minimal cover of F (run <b>Minimal cover</b> to see how it is computed).',
+      body: fdListBox(combine(MC.cover), 'Minimal cover, combined by left side')});
+    const relCard = (r, o = {}) => `<div class="rel${o.cls ? ' ' + o.cls : ''}"><div class="rname">${esc(r.name)}${esc(txtR(r.attrs))}${o.tag || ''}</div>${chips(r.attrs, {key: (r.keys || []).reduce((a, k) => a | k, 0)})}` +
+      (o.fds !== false ? `<div class="rfds">${fdsInside(r.attrs, combine(MC.cover)).map(g => fdH(g)).join('') || '<span style="color:var(--text-faint)">no dependencies inside</span>'}</div>` : '') +
+      (o.meta ? `<div class="rmeta">${o.meta}</div>` : '') + '</div>';
+    steps.push({sec: '3nf', label: '3NF TABLES', title: 'One table per left side', lead:
+      'For each group <code>X → A₁…Aₙ</code> in the minimal cover, create a table with columns X ∪ {A₁…Aₙ}, where X is its key. Every dependency now lives inside some table, so the design is <b>dependency preserving</b>.',
+      body: `<div class="rels">${S.rels.filter(r => !r.key).map(r => relCard(r, {meta: 'from ' + esc(fdT(r.from)) + ' · key ' + esc(txt(r.from.lhs))})).join('')}</div>`});
+    steps.push({sec: '3nf', label: '3NF KEY', title: S.added ? `Add a table for the key ${txt(S.added.attrs)}` : 'A table already contains a key', lead:
+      'For the decomposition to be <b>lossless</b> (joining the tables gives back exactly R), at least one table must contain a candidate key of R. ' +
+      (S.added ? 'None does, so we add one more table holding a candidate key.' : `<b>${esc(S.keyIn.name)}</b> contains the key ${chips(K.keys.find(k => sub(k, S.keyIn.attrs)), {key: -1})}, so nothing is added.`),
+      body: `<div class="rels">${S.rels.map(r => relCard(r, {cls: r === S.added ? 'new' : '', tag: r === S.added ? '<span class="tag ok">added</span>' : r === S.keyIn ? '<span class="tag info">contains a key</span>' : ''})).join('')}</div>`});
+    const finalHtml = `<div class="rels">${S.final.map(r => relCard(r, {meta: `keys: ${r.keys.map(k => esc(txt(k))).join(' · ')} · ${r.bcnf ? '<span style="color:var(--sql)">also in BCNF</span>' : '<span style="color:var(--warn)">3NF but not BCNF</span>'}`})).join('')}</div>`;
+    steps.push({sec: '3nf', label: '3NF RESULT', title: `3NF: ${plural(S.final.length, 'table')}`, lead:
+      (S.removed.size ? 'Finally remove any table whose columns are all contained in another table (it adds nothing). ' : 'No table is contained in another, so all of them stay. ') +
+      'The result is in <b>3NF</b>, <b>lossless</b>, and <b>dependency preserving</b>. Underlined attributes are keys.',
+      body: (S.removed.size ? `<div class="box"><h4>Removed (contained in another table)</h4><div class="rels">${S.rels.filter((r, i) => S.removed.has(i)).map(r => relCard(r, {cls: 'gone', fds: false})).join('')}</div></div>` : '') +
+        finalHtml + (S.final.some(r => !r.bcnf) ? '<div class="note">Some tables are in 3NF but not BCNF. That is the price of keeping every dependency; BCNF may have to give one up.</div>' : '')});
+    steps.s3 = S;
+  }
+
+  /* ---- BCNF decomposition ---- */
+  if (want('bcnf')){
+    const B = decomposeBCNF(F, MC.cover);
+    B.events.forEach((ev, i) => {
+      const n = ev.node, tree = treeHtml(B, i);
+      if (ev.type === 'split'){
+        const v = ev.v;
+        steps.push({sec: 'bcnf', label: 'SPLIT ' + n.name, title: `${n.name}${txtR(n.attrs)} violates BCNF`, lead:
+          `In ${esc(n.name)} we find <code>${esc(txt(v.X))} → ${esc(txt(v.Y))}</code>, but ${esc(txt(v.X))} is <b>not a superkey</b> of ${esc(n.name)} (its closure inside ${esc(n.name)} is only ${chips(v.cl)}). ` +
+          `Split ${esc(n.name)} into <b>${esc(ev.c1.name)}</b> = ${esc(txt(v.X))} ∪ ${esc(txt(v.Y))} (where ${esc(txt(v.X))} is a key) and <b>${esc(ev.c2.name)}</b> = ${esc(n.name)} − ${esc(txt(v.Y))}. ` +
+          `They share ${esc(txt(v.X))}, which is a key of ${esc(ev.c1.name)}, so the split is <b>lossless</b>.`,
+          body: `<div class="box"><h4>${esc(txt(v.X))}⁺ (using all of F)</h4>${chips(v.full, {hl: v.Y, dim: v.full & ~n.attrs})}</div>` +
+            `<div class="box"><h4>Decomposition tree</h4>${tree}</div>`});
+      } else {
+        steps.push({sec: 'bcnf', label: n.name + ' ✓', title: `${n.name}${txtR(n.attrs)} is in BCNF`, lead:
+          `No subset X of ${esc(n.name)}'s attributes determines more of ${esc(n.name)} without determining all of it, so every dependency that holds inside ${esc(n.name)} has a superkey on the left. ` +
+          `Key${n.keys.length > 1 ? 's' : ''}: ${n.keys.map(k => chips(k, {key: k})).join(' ')}.`,
+          body: `<div class="box"><h4>Decomposition tree</h4>${tree}</div>`});
+      }
+    });
+    const lost = B.pres.filter(p => !p.ok);
+    steps.push({sec: 'bcnf', label: 'BCNF RESULT', title: `BCNF: ${plural(B.final.length, 'table')}`, lead:
+      'The leaves of the tree are the BCNF tables. Every split was lossless, so the whole decomposition is <b>lossless</b>. ' +
+      'Now check whether each dependency of the minimal cover can still be enforced from the tables alone (the standard test: grow X using closures restricted to each table).' +
+      (B.events.filter(e => e.type === 'split').length > 1 ? ' Note: choosing a different violation at some step can give a different, equally valid result.' : ''),
+      body: `<div class="rels">${B.final.map(r => `<div class="rel"><div class="rname">${esc(r.name)}${esc(txtR(r.attrs))}</div>${chips(r.attrs, {key: r.keys.reduce((a, k) => a | k, 0)})}<div class="rmeta">keys: ${r.keys.map(k => esc(txt(k))).join(' · ')}</div></div>`).join('')}</div>` +
+        `<div class="box" style="margin-top:14px"><h4>Dependency preservation</h4><table class="t"><tbody>${B.pres.map(p => `<tr><td>${fdH(p.fd)}</td><td>${p.ok ? '<span class="tag ok">preserved</span>' : '<span class="tag bad">lost</span>'}</td></tr>`).join('')}</tbody></table></div>` +
+        (lost.length ? `<div class="note bad">${plural(lost.length, 'dependency is', 'dependencies are')} lost: ${lost.map(p => '<code>' + esc(fdT(p.fd)) + '</code>').join(', ')}. To enforce ${lost.length === 1 ? 'it' : 'them'} you would have to join tables (or check in application code).</div>`
+                     : '<div class="note good">Every dependency is preserved.</div>')});
+    steps.bc = B;
+  }
+
+  /* ---- summary ---- */
+  if (mode === 'all'){
+    const S = steps.s3, B = steps.bc, lost = B.pres.filter(p => !p.ok).length;
+    steps.push({sec: 'sum', label: 'SUMMARY', title: '3NF vs BCNF', lead:
+      `R was in <b>${NF.nf}</b>. Both decompositions are lossless. ` + (lost ? `BCNF removes all redundancy caused by dependencies but <b>loses ${lost}</b>; 3NF keeps every dependency but may leave a little redundancy.` : 'Here BCNF also keeps every dependency, so it is the better choice.'),
+      body: `<div class="box"><table class="t"><thead><tr><th></th><th>3NF synthesis</th><th>BCNF decomposition</th></tr></thead><tbody>
+        <tr><td>Tables</td><td>${S.final.map(r => '<code>' + esc(r.name + txtR(r.attrs)) + '</code>').join('<br>')}</td><td>${B.final.map(r => '<code>' + esc(r.name + txtR(r.attrs)) + '</code>').join('<br>')}</td></tr>
+        <tr><td>Lossless join</td><td><span class="tag ok">yes</span></td><td><span class="tag ok">yes</span></td></tr>
+        <tr><td>Dependency preserving</td><td><span class="tag ok">yes</span></td><td>${lost ? `<span class="tag bad">no, ${lost} lost</span>` : '<span class="tag ok">yes</span>'}</td></tr>
+        <tr><td>All tables in BCNF</td><td>${S.final.every(r => r.bcnf) ? '<span class="tag ok">yes</span>' : '<span class="tag mid">not all</span>'}</td><td><span class="tag ok">yes</span></td></tr>
+      </tbody></table></div>`});
+  }
+  return steps;
+}
+
+function treeHtml(B, at){
+  const ev = B.events[at];
+  const node = n => {
+    if (n.created > at) return '';
+    const resolved = n.resolved != null && n.resolved <= at;
+    const cur = ev.node === n;
+    let cls = 'node' + (cur ? ' cur' : '') + (resolved && n.leaf ? ' leaf' : '') + (!resolved ? ' pending' : '');
+    let h = `<li><div class="${cls}"><div class="nh"><span class="nn">${esc(n.name)}</span>${chips(n.attrs, {key: resolved && n.leaf ? n.keys.reduce((a, k) => a | k, 0) : 0})}` +
+      (resolved && n.leaf ? '<span class="tag ok">BCNF</span>' : resolved ? '' : '<span class="tag info">to check</span>') + '</div>';
+    if (resolved && n.v) h += `<div class="nv">violates: <span class="fd">${chips(n.v.X)}<span class="arr">→</span>${chips(n.v.Y)}</span></div>`;
+    h += '</div>';
+    if (resolved && n.children.length) h += '<ul>' + n.children.map(node).join('') + '</ul>';
+    return h + '</li>';
+  };
+  return `<div class="tree"><ul>${node(B.root)}</ul></div>`;
+}
+
+function closureSteps(X, F){
+  const trace = [];
+  const res = closure(X, F, trace);
+  const steps = [{sec: 'cl', label: 'START', title: `Compute ${txt(X)}⁺`, lead:
+    'The <b>closure</b> X⁺ is every attribute that X determines. Start with X itself, then repeatedly apply any dependency whose left side is already inside, until nothing changes.',
+    body: `<div class="box"><h4>Start</h4>${chips(X, {hl: X})}</div>` + fdListBox(F, 'Dependencies')}];
+  trace.forEach((t, i) => {
+    steps.push({sec: 'cl', label: 'ADD ' + txt(t.added), title: `Apply ${fdT(t.fd)}`, lead:
+      `${chips(t.fd.lhs)} is already in the closure, so everything it determines joins in: ${chips(t.added, {hl: t.added})}.`,
+      body: `<div class="box"><h4>Closure after step ${i + 1}</h4>${chips(t.res, {hl: t.added})}</div><div class="box"><h4>Dependencies</h4><div class="fdlist">${F.map(fd => fdH(fd, {l: sub(fd.lhs, t.res) ? {hl: fd.lhs} : {}})).join('')}</div></div>`});
+  });
+  const isKey = res === ALL();
+  steps.push({sec: 'cl', label: 'RESULT', title: `${txt(X)}⁺ = ${txt(res)}`, lead:
+    'No dependency adds anything new, so we are done. ' + (isKey ? `X⁺ contains every attribute, so <b>${esc(txt(X))} is a superkey</b>.` : `X⁺ is missing ${chips(ALL() & ~res)}, so ${esc(txt(X))} is not a superkey.`),
+    body: `<div class="box">${traceTable(X, trace)}</div>`});
+  return steps;
+}
+
+/* ================================================================
+   Viewer
+   ================================================================ */
+const SVG = d => `<svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true">${d}</svg>`;
+const ICON = {
+  first: SVG('<rect x="2" y="3" width="2" height="10" rx=".5"/><path d="M14 3v10L5 8z"/>'),
+  last: SVG('<rect x="12" y="3" width="2" height="10" rx=".5"/><path d="M2 3v10l9-5z"/>'),
+  prev: SVG('<path d="M12 3v10L3 8z"/>'), next: SVG('<path d="M4 3v10l9-5z"/>'),
+  play: SVG('<path d="M3 2.5v11L13.5 8z"/>'),
+  pause: SVG('<rect x="3" y="3" width="3.5" height="10" rx=".8"/><rect x="9.5" y="3" width="3.5" height="10" rx=".8"/>')
+};
+let V = null, timer = null;
+const $ = s => document.querySelector(s);
+
+function stopPlay(){ if (timer){ clearInterval(timer); timer = null; } }
+function render(){
+  const el = $('#viewer');
+  if (!V){
+    el.innerHTML = `<div class="welcome"><h2>Normalize a relation, one step at a time</h2>
+      <p>Pick an example (or type your own attributes and functional dependencies), then choose what to calculate. Every step explains what is happening and why, and you can move forward and back with the buttons or the arrow keys.</p>
+      <div class="flow">${['keys','nf','cover','3nf','bcnf'].map(s => `<span class="sec" style="--c:${SEC[s].c}">${SEC[s].name}</span>`).join('<span class="parr">›</span>')}</div>
+      <p><b>3NF synthesis</b> always keeps every dependency and is lossless. <b>BCNF decomposition</b> removes all dependency-based redundancy and is lossless, but may lose a dependency. The full analysis computes both and compares them.</p></div>`;
+    return;
+  }
+  const st = V.steps[V.i], last = V.steps.length - 1;
+  const chipsBar = V.steps.map((s, j) => `<button class="chip${j === V.i ? ' on' : j < V.i ? ' done' : ''}" style="--c:${SEC[s.sec].c}" data-j="${j}" title="${esc(s.title)}">${esc(s.label)}</button>`).join('<span class="parr">›</span>');
+  el.innerHTML = `<div class="steps-bar">
+      <div class="sctl">
+        <button class="sbtn" data-x="first" title="First (Home)" ${V.i === 0 ? 'disabled' : ''}>${ICON.first}</button>
+        <button class="sbtn" data-x="prev" title="Back (←)" ${V.i === 0 ? 'disabled' : ''}>${ICON.prev}</button>
+        <span class="scount">${V.i + 1} / ${V.steps.length}</span>
+        <button class="sbtn" data-x="next" title="Forward (→)" ${V.i === last ? 'disabled' : ''}>${ICON.next}</button>
+        <button class="sbtn" data-x="last" title="Last (End)" ${V.i === last ? 'disabled' : ''}>${ICON.last}</button>
+        <button class="sbtn play" data-x="play" title="Play / pause (Space)">${timer ? ICON.pause : ICON.play}</button>
+      </div>
+      <div class="pipe">${chipsBar}</div>
+    </div>
+    <div class="stage">
+      <span class="sec" style="--c:${SEC[st.sec].c}">${SEC[st.sec].name}</span>
+      <h2>${esc(st.title)}</h2>
+      <p class="lead">${st.lead}</p>
+      ${st.body}
+    </div>`;
+  const on = el.querySelector('.chip.on');
+  if (on) on.scrollIntoView({block: 'nearest', inline: 'center'});
+}
+function go(j){
+  if (!V) return;
+  V.i = Math.max(0, Math.min(V.steps.length - 1, j));
+  if (V.i === V.steps.length - 1) stopPlay();
+  render();
+}
+function togglePlay(){
+  if (timer){ stopPlay(); render(); return; }
+  if (V.i >= V.steps.length - 1) V.i = 0;
+  timer = setInterval(() => go(V.i + 1), 2600);
+  render();
+}
+$('#viewer').addEventListener('click', e => {
+  const b = e.target.closest('[data-x]');
+  if (b){
+    const a = b.dataset.x;
+    if (a === 'play') togglePlay();
+    else { stopPlay(); go(a === 'first' ? 0 : a === 'last' ? Infinity : V.i + (a === 'next' ? 1 : -1)); }
+    const again = document.querySelector(`[data-x="${a}"]`);
+    if (again && !again.disabled) again.focus();
+    else { const nb = document.querySelector('.sctl .sbtn:not([disabled])'); if (nb) nb.focus(); }
+    return;
+  }
+  const c = e.target.closest('[data-j]');
+  if (c){ stopPlay(); go(+c.dataset.j); }
+});
+document.addEventListener('keydown', e => {
+  if (!V || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
+  const k = e.key;
+  if (k === 'ArrowRight'){ stopPlay(); go(V.i + 1); }
+  else if (k === 'ArrowLeft'){ stopPlay(); go(V.i - 1); }
+  else if (k === 'Home'){ stopPlay(); go(0); }
+  else if (k === 'End'){ stopPlay(); go(Infinity); }
+  else if (k === ' ' && e.target.tagName !== 'BUTTON') togglePlay();
+  else return;
+  e.preventDefault();
+});
+
+/* ================================================================
+   Controls
+   ================================================================ */
+const LS = {
+  get(k, d){ try { const v = localStorage.getItem('normlab.' + k); return v == null ? d : JSON.parse(v); } catch(e){ return d; } },
+  set(k, v){ try { localStorage.setItem('normlab.' + k, JSON.stringify(v)); } catch(e){} }
+};
+function showErr(msg){ const el = $('#err'); el.textContent = msg || ''; el.classList.toggle('on', !!msg); }
+function read(){
+  showErr('');
+  LS.set('input', {attrs: $('#attrs').value, fds: $('#fds').value});
+  try {
+    const r = parseInput($('#attrs').value, $('#fds').value);
+    if (r.inferred) $('#attrs').value = ATTRS.join(', ');
+    return r.F;
+  } catch(err){ showErr(err.message); return null; }
+}
+function run(mode){
+  const F = read();
+  if (!F) return;
+  if (!F.length && mode !== 'keys'){ showErr('Add at least one functional dependency.'); return; }
+  stopPlay();
+  V = {steps: buildSteps(mode, F), i: 0};
+  render();
+  if (innerWidth <= 900) $('#viewer').scrollIntoView({behavior: 'smooth'});
+  const first = document.querySelector('.sctl [data-x="next"]'); if (first) first.focus({preventScroll: true});
+}
+document.querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => run(b.dataset.mode)));
+$('#clBtn').addEventListener('click', () => {
+  const F = read();
+  if (!F) return;
+  let X = 0;
+  try {
+    for (const tok of $('#clX').value.split(/[\s,]+/).filter(Boolean)){
+      let i = ATTRS.indexOf(tok);
+      if (i < 0) i = ATTRS.findIndex(a => a.toLowerCase() === tok.toLowerCase());
+      if (i >= 0){ X |= bit(i); continue; }
+      if (single() && [...tok].every(ch => ATTRS.includes(ch))){ for (const ch of tok) X |= bit(ATTRS.indexOf(ch)); continue; }
+      throw new Error(`Unknown attribute "${tok}".`);
+    }
+    if (!X) throw new Error('Type the attributes of X first, e.g. A B');
+  } catch(err){ showErr(err.message); return; }
+  stopPlay();
+  V = {steps: closureSteps(X, F), i: 0};
+  render();
+});
+$('#clX').addEventListener('keydown', e => { if (e.key === 'Enter') $('#clBtn').click(); });
+$('#ins').addEventListener('click', e => {
+  const b = e.target.closest('[data-i]'); if (!b) return;
+  const ta = $('#fds'), s = ta.selectionStart, t = b.dataset.i;
+  ta.setRangeText(t, s, ta.selectionEnd, 'end'); ta.focus();
+});
+
+$('#preset').innerHTML = PRESETS.map((p, i) => `<option value="${i}">${esc(p.name)}</option>`).join('');
+$('#preset').addEventListener('change', () => {
+  const p = PRESETS[+$('#preset').value];
+  $('#attrs').value = p.attrs; $('#fds').value = p.fds;
+  showErr(''); LS.set('preset', +$('#preset').value);
+  V = null; stopPlay(); render();
+});
+const saved = LS.get('input', null), sp = LS.get('preset', 0);
+$('#preset').value = String(sp);
+if (saved){ $('#attrs').value = saved.attrs; $('#fds').value = saved.fds; }
+else { $('#attrs').value = PRESETS[0].attrs; $('#fds').value = PRESETS[0].fds; }
+render();
+})();
+</script>
+</body>
+</html>

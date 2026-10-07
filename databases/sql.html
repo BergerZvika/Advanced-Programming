@@ -1,0 +1,3099 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>SQL Lab</title>
+<meta name="description" content="An in-browser SQL IDE backed by SQLite compiled to WebAssembly." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/sql/sql.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/sql-hint.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/comment/comment.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/selection/active-line.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/runmode/runmode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.js"></script>
+<style>
+:root{
+  --bg-0:#07070e;
+  --bg-1:#0c0c18;
+  --panel:#0f0f1d;
+  --panel-2:#14142a;
+  --surface:rgba(255,255,255,0.04);
+  --surface-2:rgba(255,255,255,0.08);
+  --border:rgba(255,255,255,0.09);
+  --border-strong:rgba(255,255,255,0.18);
+  --text:#eaeaf5;
+  --text-dim:#9a9ab0;
+  --text-faint:#666680;
+  --accent:#7c5cff;
+  --accent-2:#35d0ff;
+  --sql:#4ce0a3;
+  --warn:#ffb547;
+  --err:#ff6b7a;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{
+  font-family:'Inter',system-ui,sans-serif;color:var(--text);background:var(--bg-0);
+  display:flex;flex-direction:column;overflow:hidden;font-size:13.5px;
+}
+a{color:inherit;text-decoration:none}
+button,select,input{font-family:inherit;color:inherit}
+button{cursor:pointer}
+
+/* ---------- top bar ---------- */
+.topbar{
+  display:flex;align-items:center;gap:10px;padding:10px 16px;flex-wrap:wrap;
+  background:linear-gradient(180deg,#0e0e1c,#0a0a15);border-bottom:1px solid var(--border);
+}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;margin-right:6px;white-space:nowrap}
+.brand .dot{width:10px;height:10px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--sql));box-shadow:0 0 14px var(--sql)}
+.brand small{font-family:var(--mono);font-weight:500;font-size:11px;color:var(--text-faint)}
+.spacer{flex:1}
+.btn{
+  display:inline-flex;align-items:center;gap:7px;padding:7px 12px;border-radius:9px;font-size:12.5px;font-weight:600;
+  background:var(--surface);border:1px solid var(--border);transition:background .15s,border-color .15s,transform .15s;white-space:nowrap;
+}
+.btn:hover{background:var(--surface-2);border-color:var(--border-strong)}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:linear-gradient(135deg,#2bbf86,#1f9d6b);border-color:rgba(76,224,163,0.5);color:#04140d}
+.btn.primary:hover{background:linear-gradient(135deg,#4ce0a3,#25b07a)}
+.btn kbd{font-family:var(--mono);font-size:10px;opacity:.75;padding:1px 5px;border-radius:4px;background:rgba(0,0,0,0.18)}
+.btn.icon{padding:7px 9px}
+.sel{padding:7px 10px;border-radius:9px;background:var(--panel-2);border:1px solid var(--border);font-size:12.5px}
+.sep{width:1px;height:22px;background:var(--border)}
+#sidebarToggle{display:none}
+
+/* ---------- layout ---------- */
+.main{flex:1;display:flex;min-height:0}
+.sidebar{
+  width:290px;flex:none;display:flex;flex-direction:column;background:var(--panel);border-right:1px solid var(--border);min-height:0;
+}
+.stabs{display:flex;border-bottom:1px solid var(--border)}
+.stabs button{flex:1;padding:10px 4px;background:none;border:none;border-bottom:2px solid transparent;color:var(--text-dim);font-size:12px;font-weight:600;letter-spacing:.04em}
+.stabs button.on{color:var(--text);border-bottom-color:var(--sql)}
+.spane{flex:1;overflow:auto;padding:10px 8px 20px;display:none}
+.spane.on{display:block}
+.spane h4{margin:14px 8px 6px;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--text-faint);font-weight:700}
+.spane h4:first-child{margin-top:4px}
+.empty{color:var(--text-faint);font-size:12.5px;padding:8px}
+
+.tbl{border-radius:8px;margin-bottom:2px}
+.tbl-head{display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:8px;cursor:pointer;user-select:none}
+.tbl-head:hover{background:var(--surface)}
+.tbl-head .chev{width:12px;color:var(--text-faint);font-size:10px;transition:transform .15s}
+.tbl.open .chev{transform:rotate(90deg)}
+.tbl-head .ico{font-size:12px;color:var(--sql)}
+.tbl-head .ico.view{color:var(--accent-2)}
+.tbl-head .nm{font-family:var(--mono);font-size:12.5px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis}
+.tbl-head .cnt{font-family:var(--mono);font-size:10.5px;color:var(--text-faint)}
+.tbl-head .peek{opacity:0;border:none;background:var(--surface-2);border-radius:6px;padding:2px 7px;font-size:10px;color:var(--sql)}
+.tbl-head:hover .peek{opacity:1}
+.cols{display:none;padding:2px 0 6px 26px}
+.tbl.open .cols{display:block}
+.col{display:flex;align-items:center;gap:6px;padding:3px 8px;border-radius:6px;font-family:var(--mono);font-size:11.5px;cursor:pointer}
+.col:hover{background:var(--surface)}
+.col .cn{flex:1;color:#d6d6ea}
+.col .ct{color:var(--text-faint);font-size:10.5px}
+.col .k{font-size:9px;font-weight:700;padding:0 4px;border-radius:3px}
+.col .k.pk{color:#ffd166;border:1px solid rgba(255,209,102,0.4)}
+.col .k.fk{color:var(--accent-2);border:1px solid rgba(53,208,255,0.4)}
+.misc{font-family:var(--mono);font-size:11.5px;color:var(--text-dim);padding:3px 10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+.ex-group{margin-bottom:6px}
+.about-ds{margin:2px 4px 10px;padding:9px 11px;border-radius:9px;background:rgba(76,224,163,0.07);border:1px solid rgba(76,224,163,0.22);font-size:12px;line-height:1.5;color:var(--text-dim)}
+.about-ds b{display:block;color:var(--text);font-size:12.5px;margin-bottom:2px}
+.ex{display:block;width:100%;text-align:left;background:none;border:1px solid transparent;border-radius:8px;padding:7px 10px;margin:1px 0}
+.ex:hover{background:var(--surface);border-color:var(--border)}
+.ex b{display:block;font-size:12.5px;font-weight:600}
+.ex span{display:block;font-size:11.5px;color:var(--text-faint);margin-top:2px;line-height:1.4}
+
+.hist{display:block;width:100%;text-align:left;background:none;border:1px solid transparent;border-radius:8px;padding:7px 10px;margin:1px 0}
+.hist:hover{background:var(--surface);border-color:var(--border)}
+.hist code{display:block;font-family:var(--mono);font-size:11.5px;color:#d6d6ea;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hist small{display:flex;gap:8px;font-size:10.5px;color:var(--text-faint);margin-top:3px;font-family:var(--mono)}
+.hist small .ok{color:var(--sql)} .hist small .bad{color:var(--err)}
+
+/* ---------- work area ---------- */
+.work{flex:1;display:flex;flex-direction:column;min-width:0;min-height:0}
+.etabs{display:flex;align-items:stretch;background:var(--bg-1);border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:thin}
+.etab{display:flex;align-items:center;gap:8px;padding:8px 10px 8px 14px;border-right:1px solid var(--border);color:var(--text-dim);font-size:12.5px;cursor:pointer;white-space:nowrap;user-select:none;border-top:2px solid transparent}
+.etab.on{background:var(--panel);color:var(--text);border-top-color:var(--sql)}
+.etab .x{border:none;background:none;color:var(--text-faint);font-size:14px;line-height:1;padding:0 3px;border-radius:4px}
+.etab .x:hover{background:var(--surface-2);color:var(--text)}
+.etab-add{border:none;background:none;color:var(--text-dim);padding:0 14px;font-size:17px}
+.etab-add:hover{color:var(--text)}
+.editor{flex:0 0 46%;min-height:90px;position:relative;background:var(--panel)}
+.editor .CodeMirror{position:absolute;inset:0;height:auto}
+
+.splitter{flex:none;height:7px;cursor:row-resize;background:var(--bg-1);border-top:1px solid var(--border);border-bottom:1px solid var(--border);position:relative;touch-action:none}
+.splitter::after{content:"";position:absolute;left:50%;top:2px;width:40px;height:2px;margin-left:-20px;border-radius:2px;background:var(--border-strong)}
+.splitter:hover::after,.splitter.drag::after{background:var(--sql)}
+
+.results{flex:1;display:flex;flex-direction:column;min-height:70px;background:var(--bg-0)}
+.rtabs{display:flex;align-items:center;gap:4px;padding:6px 10px;border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:thin}
+.rtab{padding:5px 11px;border-radius:7px;border:1px solid transparent;background:none;color:var(--text-dim);font-size:12px;font-weight:600;white-space:nowrap}
+.rtab:hover{background:var(--surface)}
+.rtab.on{background:var(--surface-2);border-color:var(--border-strong);color:var(--text)}
+.rtab.err{color:var(--err)}
+.rtab .n{font-family:var(--mono);font-weight:500;color:var(--text-faint);margin-left:5px}
+.rtools{margin-left:auto;display:flex;gap:6px;align-items:center}
+.rbody{flex:1;overflow:auto;position:relative}
+.rfoot{display:flex;gap:16px;padding:5px 12px;border-top:1px solid var(--border);font-family:var(--mono);font-size:11px;color:var(--text-faint);background:var(--bg-1);flex-wrap:wrap}
+.rfoot .ok{color:var(--sql)} .rfoot .bad{color:var(--err)}
+
+table.grid{border-collapse:separate;border-spacing:0;font-family:var(--mono);font-size:12px;min-width:100%}
+table.grid th{
+  position:sticky;top:0;z-index:1;background:#13132a;text-align:left;font-weight:600;color:#cfd3ff;
+  padding:7px 12px;border-bottom:1px solid var(--border-strong);border-right:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none
+}
+table.grid th:hover{background:#1a1a36}
+table.grid th .ar{color:var(--sql);margin-left:4px}
+table.grid td{padding:5px 12px;border-bottom:1px solid rgba(255,255,255,0.05);border-right:1px solid rgba(255,255,255,0.04);white-space:nowrap;max-width:420px;overflow:hidden;text-overflow:ellipsis}
+table.grid tr:hover td{background:rgba(124,92,255,0.07)}
+table.grid td.rn,table.grid th.rn{color:var(--text-faint);text-align:right;background:var(--bg-1);cursor:default;position:sticky;left:0}
+table.grid th.rn{z-index:2;background:#13132a}
+table.grid td.num{text-align:right;color:#f7b267}
+table.grid td.null{color:var(--text-faint);font-style:italic}
+table.grid td.blob{color:#c792ea}
+.trunc{padding:8px 12px;color:var(--warn);font-size:12px;font-family:var(--mono)}
+
+.msgs{padding:10px 14px;font-family:var(--mono);font-size:12px;line-height:1.6}
+.msg{display:flex;gap:10px;padding:4px 0;border-bottom:1px dashed rgba(255,255,255,0.05)}
+.msg .t{color:var(--text-faint);flex:none}
+.msg .b{white-space:pre-wrap;word-break:break-word}
+.msg.ok .b{color:var(--sql)}
+.msg.err .b{color:var(--err)}
+.msg.info .b{color:var(--text-dim)}
+.msg .q{color:var(--text-faint)}
+
+.welcome{padding:26px 22px;color:var(--text-dim);max-width:760px;line-height:1.65}
+.welcome h2{color:var(--text);margin:0 0 8px;font-size:18px}
+.welcome kbd{font-family:var(--mono);font-size:11px;padding:2px 6px;border-radius:5px;background:var(--surface-2);border:1px solid var(--border)}
+.welcome ul{padding-left:18px;margin:10px 0}
+
+.statusbar{display:flex;gap:16px;align-items:center;padding:4px 14px;background:#0a0a15;border-top:1px solid var(--border);font-family:var(--mono);font-size:11px;color:var(--text-faint);white-space:nowrap;overflow:hidden}
+.statusbar .live{color:var(--sql)}
+.statusbar .live::before{content:"●";margin-right:6px}
+.statusbar .right{margin-left:auto;display:flex;gap:16px}
+
+.loading{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(7,7,14,0.9);z-index:50;font-family:var(--mono);color:var(--text-dim);flex-direction:column;gap:14px}
+.loading .spin{width:28px;height:28px;border-radius:50%;border:3px solid var(--border-strong);border-top-color:var(--sql);animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ---------- CodeMirror theme ---------- */
+.CodeMirror{background:var(--panel);color:#e4e4f4;font-family:var(--mono);font-size:13.5px;line-height:1.6}
+.CodeMirror-gutters{background:var(--panel);border-right:1px solid var(--border)}
+.CodeMirror-linenumber{color:#4a4a66}
+.CodeMirror-cursor{border-left:2px solid var(--sql)}
+.CodeMirror-selected{background:rgba(124,92,255,0.28)!important}
+.CodeMirror-focused .CodeMirror-selected{background:rgba(124,92,255,0.34)!important}
+.CodeMirror-activeline-background{background:rgba(255,255,255,0.035)}
+.CodeMirror-matchingbracket{color:var(--sql)!important;text-decoration:underline}
+.cm-keyword{color:#c792ea;font-weight:600}
+.cm-builtin{color:#82aaff}
+.cm-type{color:#82aaff}
+.cm-atom{color:#f78c6c}
+.cm-number{color:#f78c6c}
+.cm-string,.cm-string-2{color:#c3e88d}
+.cm-comment{color:#5d6285;font-style:italic}
+.cm-operator{color:#89ddff}
+.cm-variable-2{color:#ffcb6b}
+.cm-bracket{color:#a6accd}
+.cm-err-line{background:rgba(255,107,122,0.14)}
+.cm-run-flash{background:rgba(76,224,163,0.22);transition:background .6s}
+.CodeMirror-hints{background:#14142a;border:1px solid var(--border-strong);border-radius:8px;box-shadow:0 14px 40px -10px rgba(0,0,0,0.7);font-family:var(--mono);font-size:12.5px;padding:4px;z-index:60}
+.CodeMirror-hint{color:#d6d6ea;border-radius:5px;padding:3px 8px}
+li.CodeMirror-hint-active{background:rgba(76,224,163,0.22);color:#fff}
+
+/* ---------- step-by-step ---------- */
+.btn.step{border-color:rgba(255,181,71,0.45);color:#ffd79a}
+.btn.step:hover{background:rgba(255,181,71,0.12)}
+.steps{position:absolute;inset:0;display:flex;flex-direction:column;min-height:0}
+.steps-bar{display:flex;align-items:center;gap:12px;padding:8px 12px;border-bottom:1px solid var(--border);background:var(--bg-1);flex-wrap:wrap}
+.sctl{display:flex;align-items:center;gap:4px;flex:none}
+.sbtn{width:32px;height:30px;border-radius:8px;border:1px solid var(--border);background:var(--surface);font-size:12px;display:inline-flex;align-items:center;justify-content:center}
+.sbtn:hover:not([disabled]){background:var(--surface-2);border-color:var(--border-strong)}
+.sbtn[disabled]{opacity:.35;cursor:default}
+.sbtn.play{color:var(--sql);border-color:rgba(76,224,163,0.4)}
+.sbtn:focus-visible{outline:2px solid var(--sql);outline-offset:1px}
+.scount{font-family:var(--mono);font-size:12px;color:var(--text-dim);min-width:54px;text-align:center}
+.pipe{display:flex;align-items:center;gap:3px;overflow-x:auto;flex:1;min-width:0;scrollbar-width:thin;padding:2px 0}
+.chip{font-family:var(--mono);font-size:10.5px;font-weight:600;letter-spacing:.04em;padding:4px 9px;border-radius:999px;border:1px solid var(--border);background:none;color:var(--text-faint);white-space:nowrap}
+.chip:hover{border-color:var(--border-strong);color:var(--text)}
+.chip.done{color:var(--sql);border-color:rgba(76,224,163,0.3)}
+.chip.on{background:var(--warn);color:#1a1000;border-color:var(--warn)}
+.parr{color:var(--text-faint);font-size:12px}
+.step-info{padding:12px 16px;border-bottom:1px solid var(--border);display:grid;gap:7px;background:linear-gradient(180deg,rgba(255,181,71,0.05),transparent)}
+.step-title{display:flex;align-items:center;gap:10px;font-weight:700;font-size:14.5px}
+.step-title .clause{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:6px;background:rgba(255,181,71,0.16);border:1px solid rgba(255,181,71,0.45);color:#ffd79a;white-space:nowrap}
+.step-info p{margin:0;color:var(--text-dim);line-height:1.6;max-width:980px}
+.step-info code{font-family:var(--mono);font-size:12px;background:var(--surface-2);padding:1px 6px;border-radius:5px;color:#e4e4f4}
+.step-meta{display:flex;gap:14px;font-family:var(--mono);font-size:11.5px;color:var(--text-faint);flex-wrap:wrap;align-items:center}
+.step-meta b{color:var(--text)}
+.step-meta .scode{color:#c9b6ff;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.legend{display:inline-flex;gap:12px;flex-wrap:wrap}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.legend i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.step-table{flex:1;overflow:auto;min-height:0}
+.step-err{padding:14px 16px;color:var(--err);font-family:var(--mono);font-size:12px}
+table.grid tr.s-drop td:not(.rn){opacity:.4;text-decoration:line-through;text-decoration-color:rgba(255,107,122,0.8)}
+table.grid tr.s-drop td.rn:first-child{box-shadow:inset 3px 0 0 var(--err)}
+table.grid tr.s-pad td.rn:first-child{box-shadow:inset 3px 0 0 var(--warn)}
+table.grid tr.s-pad td.null{color:var(--warn)}
+table.grid tr.s-new td{background:rgba(76,224,163,0.10)}
+table.grid tr.s-new td.rn:first-child{box-shadow:inset 3px 0 0 var(--sql)}
+table.grid tr.s-hit td{background:rgba(53,208,255,0.08)}
+table.grid tr.s-hit td.rn:first-child{box-shadow:inset 3px 0 0 var(--accent-2)}
+table.grid tr.grp td{background:hsla(var(--gh),70%,60%,0.09)}
+table.grid td.gcell{color:hsl(var(--gh),80%,72%);font-weight:600;box-shadow:inset 3px 0 0 hsl(var(--gh),70%,60%);position:static}
+table.grid td.chg{background:rgba(255,181,71,0.22)!important;color:#ffe2b0}
+.cm-step-mark{background:rgba(255,181,71,0.20);border-bottom:2px solid var(--warn)}
+
+.btn svg{flex:none}
+@media (max-width:1500px){ .topbar .btn kbd{display:none} }
+@media (max-width:1640px){ .topbar .btn.icon .lbl{display:none} }
+@media (max-width:1180px){ .topbar .brand small{display:none} }
+@media (max-width:700px){
+  .steps{position:static}
+  .step-table{overflow:visible}
+  .steps-bar{gap:8px}
+  .pipe{flex-basis:100%}
+}
+@media (max-width:900px){
+  #sidebarToggle{display:inline-flex}
+  .sidebar{position:fixed;top:0;bottom:0;left:0;z-index:40;width:min(300px,86vw);transform:translateX(-100%);transition:transform .2s ease;box-shadow:20px 0 50px rgba(0,0,0,0.6)}
+  body.side-open .sidebar{transform:none}
+  .brand small,.btn .lbl,.statusbar .hide-sm{display:none}
+  .topbar{padding:8px 16px}
+}
+
+/* ---------- 📖 Commands reference ---------- */
+.btn.ref-open{border-color:rgba(53,208,255,0.45);color:#bfefff}
+.ref-back{position:fixed;inset:0;background:rgba(3,3,8,0.55);z-index:70;opacity:0;pointer-events:none;transition:opacity .2s}
+.ref-back.on{opacity:1;pointer-events:auto}
+.ref{position:fixed;top:0;right:0;bottom:0;width:min(620px,100vw);background:var(--panel);border-left:1px solid var(--border-strong);z-index:71;
+  transform:translateX(100%);transition:transform .22s ease;display:flex;flex-direction:column;box-shadow:-30px 0 60px rgba(0,0,0,0.5);visibility:hidden}
+.ref.on{transform:none;visibility:visible}
+.ref-head{padding:14px 16px 10px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:10px;flex:none}
+.ref-title{display:flex;align-items:center;gap:10px}
+.ref-title h2{margin:0;font-size:16px}
+.ref-title .n{font-family:var(--mono);font-size:11px;color:var(--text-faint)}
+.ref-title .x{margin-left:auto;background:none;border:1px solid var(--border);border-radius:8px;color:var(--text-dim);width:32px;height:30px;font-size:16px;cursor:pointer}
+.ref-title .x:hover{color:var(--text);border-color:var(--border-strong)}
+.ref-search{width:100%;padding:9px 12px;border-radius:9px;background:var(--bg-1);border:1px solid var(--border);color:var(--text);font:13px var(--mono);outline:none}
+.ref-search:focus{border-color:rgba(53,208,255,0.55)}
+.ref-cats{display:flex;gap:5px;flex-wrap:wrap}
+.ref-cats button{font-size:11.5px;padding:4px 10px;border-radius:999px;background:var(--surface);border:1px solid var(--border);color:var(--text-dim);cursor:pointer;font-family:inherit}
+.ref-cats button:hover{color:var(--text);border-color:var(--border-strong)}
+.ref-cats button.on{background:rgba(53,208,255,0.16);border-color:rgba(53,208,255,0.5);color:#d6f6ff}
+.ref-note{font-size:12px;color:var(--text-faint);line-height:1.5;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ref-note b{color:var(--text-dim)}
+.ref-note button{font-size:11.5px;padding:3px 9px;border-radius:7px;background:rgba(76,224,163,0.12);border:1px solid rgba(76,224,163,0.4);color:var(--sql);cursor:pointer;font-family:inherit}
+.ref-body{flex:1;overflow-y:auto;padding:12px 16px 40px}
+.ref-cat{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--text-faint);font-weight:700;margin:16px 0 8px}
+.ref-cat:first-child{margin-top:2px}
+.ref-card{border:1px solid var(--border);border-radius:11px;background:var(--bg-1);padding:11px 13px;margin-bottom:9px}
+.ref-card h3{margin:0;font-size:13.5px;font-family:var(--mono);color:#c792ea;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ref-card h3 .mod{font-family:'Inter',sans-serif;font-size:10px;font-weight:700;letter-spacing:.06em;color:var(--warn);background:rgba(255,181,71,0.12);border:1px solid rgba(255,181,71,0.35);padding:1px 7px;border-radius:5px}
+.ref-card p{margin:5px 0 7px;font-size:12.5px;color:var(--text-dim);line-height:1.55}
+.ref-syn{font-family:var(--mono);font-size:11.5px;color:var(--text-faint);margin-bottom:7px;white-space:pre-wrap}
+.ref-ex{position:relative;margin:0;padding:9px 11px;border-radius:8px;background:var(--bg-0);border:1px solid var(--border);font-family:var(--mono);font-size:12px;line-height:1.55;white-space:pre-wrap;overflow-x:auto;color:var(--text)}
+.ref-acts{display:flex;gap:6px;margin-top:8px}
+.ref-acts button{font-size:11.5px;padding:4px 10px;border-radius:7px;background:var(--surface);border:1px solid var(--border);color:var(--text-dim);cursor:pointer;font-family:inherit}
+.ref-acts button:hover{color:var(--text);border-color:var(--border-strong)}
+.ref-acts button.run{background:rgba(76,224,163,0.12);border-color:rgba(76,224,163,0.4);color:var(--sql)}
+.ref-empty{color:var(--text-faint);padding:20px 4px;font-size:13px}
+.ref-card mark{background:rgba(53,208,255,0.25);color:inherit;border-radius:3px}
+</style>
+</head>
+<body>
+<div class="loading" id="loading"><div class="spin"></div><div id="loadingMsg">loading SQLite (WebAssembly)…</div></div>
+
+<header class="topbar">
+  <button class="btn icon" id="sidebarToggle" title="Schema / examples / history">☰</button>
+  <a class="brand" href="index.html" title="Back to Databases Lab"><span class="dot"></span>SQL Lab <small>SQLite · WASM</small></a>
+  <button class="btn primary" id="runBtn" title="Run selection or the whole editor">▶ <span class="lbl">Run</span> <kbd>Ctrl ↵</kbd></button>
+  <button class="btn" id="runCurBtn" title="Run only the statement under the cursor">▸ <span class="lbl">Run statement</span> <kbd>⇧ Ctrl ↵</kbd></button>
+  <button class="btn step" id="stepBtn" title="Walk through how the statement under the cursor is executed, clause by clause"><svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M2 3v10l8-5z"/><rect x="11" y="3" width="2.5" height="10" rx=".6"/></svg> <span class="lbl">Step-by-step</span> <kbd>Alt ↵</kbd></button>
+  <button class="btn" id="explainBtn" title="EXPLAIN QUERY PLAN for the statement under the cursor">⌕ <span class="lbl">Explain</span></button>
+  <button class="btn ref-open" id="refBtn" title="Every SQL command with a short example (F1)"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M2 3.2C3.8 2.4 6 2.5 8 3.6v9.6C6 12.1 3.8 12 2 12.8z M14 3.2c-1.8-.8-4-.7-6 .4v9.6c2-1.1 4.2-1.2 6-.4z" stroke-linejoin="round"/></svg> <span class="lbl">Commands</span></button>
+  <span class="sep"></span>
+  <select class="sel" id="dataset" title="Choose a database schema to practice on"></select>
+  <button class="btn" id="resetBtn" title="Discard all changes and reload the chosen database">↺ <span class="lbl">Reset DB</span></button>
+  <span class="spacer"></span>
+  <button class="btn icon" id="importBtn" title="Open a .sqlite / .db file">⤒ <span class="lbl">Open .db</span></button>
+  <button class="btn icon" id="exportBtn" title="Download the database as a .sqlite file">⤓ <span class="lbl">Save .db</span></button>
+  <a class="btn icon" href="index.html" title="Back to Databases Lab">← <span class="lbl">Databases</span></a>
+  <a class="btn icon" href="../home.html" title="Home">⌂ <span class="lbl">Home</span></a>
+  <input type="file" id="fileIn" accept=".sqlite,.sqlite3,.db,.db3,application/x-sqlite3,application/vnd.sqlite3" hidden>
+</header>
+
+
+<div class="ref-back" id="refBack"></div>
+<aside class="ref" id="ref" aria-label="SQL commands" aria-hidden="true">
+  <div class="ref-head">
+    <div class="ref-title"><h2>SQL commands</h2><span class="n" id="refCount"></span><button class="x" id="refClose" title="Close (Esc)">×</button></div>
+    <input class="ref-search" id="refSearch" placeholder="Search: join, group, null, insert…" spellcheck="false" autocomplete="off">
+    <div class="ref-cats" id="refCats"></div>
+    <div class="ref-note" id="refNote"></div>
+  </div>
+  <div class="ref-body" id="refBody"></div>
+</aside>
+<div class="main">
+  <aside class="sidebar" id="sidebar">
+    <div class="stabs">
+      <button data-p="schema" class="on">Schema</button>
+      <button data-p="examples">Examples</button>
+      <button data-p="history">History</button>
+    </div>
+    <div class="spane on" id="p-schema"></div>
+    <div class="spane" id="p-examples"></div>
+    <div class="spane" id="p-history"></div>
+  </aside>
+
+  <section class="work">
+    <div class="etabs" id="etabs"></div>
+    <div class="editor" id="editorWrap"></div>
+    <div class="splitter" id="splitter" title="Drag to resize"></div>
+    <div class="results">
+      <div class="rtabs" id="rtabs"></div>
+      <div class="rbody" id="rbody"></div>
+      <div class="rfoot" id="rfoot"></div>
+    </div>
+  </section>
+</div>
+
+<footer class="statusbar">
+  <span class="live" id="sbEngine">SQLite</span>
+  <span id="sbPos">Ln 1, Col 1</span>
+  <span class="hide-sm" id="sbTables"></span>
+  <div class="right">
+    <span class="hide-sm" id="sbSize"></span>
+    <span id="sbSaved"></span>
+  </div>
+</footer>
+
+<script>
+(function(){
+'use strict';
+
+/* ================================================================
+   Sample data
+   ================================================================ */
+const COMPANY_SQL = `
+PRAGMA foreign_keys = ON;
+
+CREATE TABLE departments (
+  dept_id   INTEGER PRIMARY KEY,
+  name      TEXT    NOT NULL UNIQUE,
+  location  TEXT    NOT NULL,
+  budget    INTEGER NOT NULL CHECK (budget >= 0)
+);
+
+CREATE TABLE employees (
+  emp_id     INTEGER PRIMARY KEY,
+  first_name TEXT    NOT NULL,
+  last_name  TEXT    NOT NULL,
+  email      TEXT    NOT NULL UNIQUE,
+  dept_id    INTEGER REFERENCES departments(dept_id),
+  manager_id INTEGER REFERENCES employees(emp_id),
+  title      TEXT    NOT NULL,
+  salary     INTEGER NOT NULL,
+  hire_date  TEXT    NOT NULL
+);
+
+CREATE TABLE projects (
+  project_id INTEGER PRIMARY KEY,
+  name       TEXT    NOT NULL,
+  dept_id    INTEGER NOT NULL REFERENCES departments(dept_id),
+  start_date TEXT    NOT NULL,
+  end_date   TEXT,
+  budget     INTEGER NOT NULL
+);
+
+CREATE TABLE assignments (
+  emp_id     INTEGER NOT NULL REFERENCES employees(emp_id),
+  project_id INTEGER NOT NULL REFERENCES projects(project_id),
+  role       TEXT    NOT NULL,
+  hours      INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (emp_id, project_id)
+);
+
+INSERT INTO departments VALUES
+  (1,'Engineering','Tel Aviv',2500000),
+  (2,'Data Science','Tel Aviv',1200000),
+  (3,'Sales','New York',900000),
+  (4,'Marketing','London',650000),
+  (5,'HR','Tel Aviv',300000),
+  (6,'Legal','New York',400000);
+
+INSERT INTO employees VALUES
+  (1,'Dana','Levi','dana.levi@acme.io',1,NULL,'CTO',52000,'2015-03-01'),
+  (2,'Omer','Cohen','omer.cohen@acme.io',1,1,'Engineering Manager',38000,'2016-07-15'),
+  (3,'Noa','Friedman','noa.f@acme.io',1,2,'Senior Engineer',31000,'2017-01-09'),
+  (4,'Yossi','Mizrahi','yossi.m@acme.io',1,2,'Engineer',24000,'2020-05-04'),
+  (5,'Maya','Katz','maya.katz@acme.io',1,2,'Engineer',23500,'2021-09-12'),
+  (6,'Eitan','Peretz','eitan.p@acme.io',1,2,'Junior Engineer',17000,'2023-02-20'),
+  (7,'Tamar','Shapiro','tamar.s@acme.io',2,1,'Head of Data',41000,'2016-11-01'),
+  (8,'Avi','Biton','avi.biton@acme.io',2,7,'Data Scientist',29000,'2019-04-17'),
+  (9,'Shira','Dahan','shira.d@acme.io',2,7,'Data Scientist',27500,'2021-03-08'),
+  (10,'Ido','Azulay','ido.a@acme.io',2,7,'ML Engineer',30500,'2022-06-01'),
+  (11,'Sarah','Miller','sarah.m@acme.io',3,NULL,'VP Sales',45000,'2016-02-10'),
+  (12,'John','Davis','john.d@acme.io',3,11,'Account Executive',21000,'2019-08-19'),
+  (13,'Emily','Brown','emily.b@acme.io',3,11,'Account Executive',22500,'2020-10-05'),
+  (14,'Michael','Wilson','michael.w@acme.io',3,11,'Sales Rep',15500,'2023-01-16'),
+  (15,'Olivia','Taylor','olivia.t@acme.io',4,11,'Marketing Lead',26000,'2018-05-21'),
+  (16,'James','Clark','james.c@acme.io',4,15,'Content Writer',16000,'2022-03-14'),
+  (17,'Rivka','Ben-David','rivka.bd@acme.io',5,1,'HR Manager',24000,'2017-09-25'),
+  (18,'Lior','Golan','lior.g@acme.io',5,17,'Recruiter',14500,'2024-01-08'),
+  (19,'Gal','Avraham','gal.a@acme.io',NULL,1,'Contractor',19000,'2024-06-01'),
+  (20,'Ron','Segal','ron.s@acme.io',1,3,'Engineer',25500,'2021-11-29');
+
+INSERT INTO projects VALUES
+  (1,'Checkout Revamp',1,'2024-01-10','2024-09-30',400000),
+  (2,'Mobile App v3',1,'2024-04-01',NULL,650000),
+  (3,'Churn Prediction',2,'2024-02-15','2024-08-01',180000),
+  (4,'Recommendation Engine',2,'2024-07-01',NULL,320000),
+  (5,'EMEA Expansion',3,'2024-03-01',NULL,250000),
+  (6,'Brand Refresh',4,'2023-10-01','2024-04-15',120000),
+  (7,'Onboarding Portal',5,'2024-05-20',NULL,60000);
+
+INSERT INTO assignments VALUES
+  (2,1,'Lead',320),(3,1,'Developer',610),(4,1,'Developer',540),(20,1,'Developer',380),
+  (2,2,'Lead',210),(5,2,'Developer',700),(6,2,'Developer',460),(3,2,'Reviewer',90),
+  (7,3,'Lead',150),(8,3,'Analyst',520),(9,3,'Analyst',480),
+  (7,4,'Lead',120),(10,4,'ML Engineer',640),(8,4,'Analyst',210),(4,4,'Developer',160),
+  (11,5,'Lead',260),(12,5,'Sales',410),(13,5,'Sales',450),
+  (15,6,'Lead',300),(16,6,'Writer',390),
+  (17,7,'Lead',140),(18,7,'Coordinator',220),(6,7,'Developer',130);
+`;
+
+function shopSQL(){
+  // Deterministic pseudo-random generator so the dataset is identical every reset.
+  let s = 20260101;
+  const rnd = () => (s = (s * 1103515245 + 12345) % 2147483648) / 2147483648;
+  const pick = a => a[Math.floor(rnd() * a.length)];
+
+  const customers = [
+    ['Alice Morgan','alice@mail.com','Boston','USA','2023-01-14'],
+    ['Ben Carter','ben.c@mail.com','Chicago','USA','2023-02-03'],
+    ['Chloe Martin','chloe@mail.fr','Paris','France','2023-03-22'],
+    ['David Rosen','drosen@mail.co.il','Haifa','Israel','2023-04-10'],
+    ['Elena Rossi','elena.r@mail.it','Milan','Italy','2023-05-01'],
+    ['Felix Wagner','felix@mail.de','Berlin','Germany','2023-06-18'],
+    ['Grace Lee','grace.lee@mail.com','Seattle','USA','2023-08-09'],
+    ['Hana Sato','hana@mail.jp','Tokyo','Japan','2023-09-30'],
+    ['Itai Shalom','itai@mail.co.il','Tel Aviv','Israel','2024-01-12'],
+    ['Julia Novak','julia.n@mail.cz','Prague','Czechia','2024-02-27'],
+    ['Kevin Brooks','kbrooks@mail.com','Austin','USA','2024-05-05'],
+    ['Lena Fischer','lena.f@mail.de','Munich','Germany','2024-07-19']
+  ];
+  const products = [
+    ['Mechanical Keyboard','Peripherals',119.0,42],['Wireless Mouse','Peripherals',39.9,120],
+    ['27" Monitor','Displays',289.0,18],['34" Ultrawide','Displays',499.0,7],
+    ['USB-C Hub','Accessories',49.5,85],['Laptop Stand','Accessories',34.0,60],
+    ['Noise-Cancelling Headphones','Audio',229.0,25],['USB Microphone','Audio',89.0,30],
+    ['1TB NVMe SSD','Storage',79.0,64],['4TB External HDD','Storage',109.0,22],
+    ['Webcam 1080p','Peripherals',59.0,0],['Desk Lamp','Accessories',27.5,48]
+  ];
+  const statuses = ['delivered','delivered','delivered','shipped','processing','cancelled'];
+  const q = v => v === null ? 'NULL' : typeof v === 'number' ? String(v) : "'" + String(v).replace(/'/g,"''") + "'";
+
+  let out = `
+CREATE TABLE customers (
+  customer_id INTEGER PRIMARY KEY,
+  name        TEXT NOT NULL,
+  email       TEXT NOT NULL UNIQUE,
+  city        TEXT,
+  country     TEXT NOT NULL,
+  joined      TEXT NOT NULL
+);
+
+CREATE TABLE products (
+  product_id INTEGER PRIMARY KEY,
+  name       TEXT NOT NULL,
+  category   TEXT NOT NULL,
+  price      REAL NOT NULL CHECK (price > 0),
+  stock      INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE orders (
+  order_id    INTEGER PRIMARY KEY,
+  customer_id INTEGER NOT NULL REFERENCES customers(customer_id),
+  order_date  TEXT NOT NULL,
+  status      TEXT NOT NULL CHECK (status IN ('processing','shipped','delivered','cancelled'))
+);
+
+CREATE TABLE order_items (
+  order_id   INTEGER NOT NULL REFERENCES orders(order_id),
+  product_id INTEGER NOT NULL REFERENCES products(product_id),
+  quantity   INTEGER NOT NULL CHECK (quantity > 0),
+  unit_price REAL    NOT NULL,
+  PRIMARY KEY (order_id, product_id)
+);
+`;
+  out += 'INSERT INTO customers VALUES\n' + customers.map((c,i) => '  (' + [i+1, ...c].map(q).join(',') + ')').join(',\n') + ';\n';
+  out += 'INSERT INTO products VALUES\n' + products.map((p,i) => '  (' + [i+1, ...p].map(q).join(',') + ')').join(',\n') + ';\n';
+
+  const orders = [], items = [];
+  for (let id = 1; id <= 40; id++){
+    // Customers 10-12 never order much; customer 12 never orders at all.
+    const cust = 1 + Math.floor(rnd() * 11);
+    const month = 1 + Math.floor(rnd() * 12);
+    const day = 1 + Math.floor(rnd() * 28);
+    const date = '2024-' + String(month).padStart(2,'0') + '-' + String(day).padStart(2,'0');
+    orders.push([id, cust, date, month >= 11 ? pick(['processing','shipped']) : pick(statuses)]);
+    const n = 1 + Math.floor(rnd() * 3), used = new Set();
+    for (let k = 0; k < n; k++){
+      const pid = 1 + Math.floor(rnd() * products.length);
+      if (used.has(pid)) continue;
+      used.add(pid);
+      items.push([id, pid, 1 + Math.floor(rnd() * 3), products[pid-1][2]]);
+    }
+  }
+  orders.sort((a,b) => a[2] < b[2] ? -1 : a[2] > b[2] ? 1 : 0).forEach((o,i) => { o.old = o[0]; o[0] = i + 1; });
+  const remap = new Map(orders.map(o => [o.old, o[0]]));
+  items.forEach(it => { it[0] = remap.get(it[0]); });
+  items.sort((a,b) => a[0] - b[0] || a[1] - b[1]);
+  out += 'INSERT INTO orders VALUES\n' + orders.map(o => '  (' + o.slice(0,4).map(q).join(',') + ')').join(',\n') + ';\n';
+  out += 'INSERT INTO order_items VALUES\n' + items.map(it => '  (' + it.map(q).join(',') + ')').join(',\n') + ';\n';
+  return out;
+}
+
+const STARTER_SQL = `
+CREATE TABLE pets (
+  id      INTEGER PRIMARY KEY,
+  name    TEXT    NOT NULL,
+  species TEXT    NOT NULL,
+  age     INTEGER,
+  owner   TEXT
+);
+
+INSERT INTO pets VALUES
+  (1,'Rex','dog',5,'Dana'),
+  (2,'Mitzi','cat',3,'Omer'),
+  (3,'Bubbles','fish',1,'Noa'),
+  (4,'Luna','dog',2,'Dana'),
+  (5,'Shadow','cat',8,'Avi'),
+  (6,'Kiwi','bird',4,NULL),
+  (7,'Max','dog',10,'Maya'),
+  (8,'Nala','cat',1,'Omer');
+`;
+
+const SCHOOL_SQL = `
+CREATE TABLE students (
+  student_id INTEGER PRIMARY KEY,
+  name       TEXT    NOT NULL,
+  age        INTEGER,
+  city       TEXT
+);
+
+CREATE TABLE courses (
+  course_id INTEGER PRIMARY KEY,
+  title     TEXT    NOT NULL,
+  credits   INTEGER NOT NULL
+);
+
+CREATE TABLE enrollments (
+  student_id INTEGER NOT NULL REFERENCES students(student_id),
+  course_id  INTEGER NOT NULL REFERENCES courses(course_id),
+  grade      INTEGER CHECK (grade BETWEEN 0 AND 100),
+  PRIMARY KEY (student_id, course_id)
+);
+
+INSERT INTO students VALUES
+  (1,'Dana',21,'Tel Aviv'),
+  (2,'Omer',23,'Haifa'),
+  (3,'Noa',20,'Tel Aviv'),
+  (4,'Avi',25,'Jerusalem'),
+  (5,'Maya',22,'Haifa'),
+  (6,'Yossi',19,'Tel Aviv'),
+  (7,'Shira',24,'Jerusalem'),
+  (8,'Ido',22,NULL);
+
+INSERT INTO courses VALUES
+  (1,'Intro to Programming',4),
+  (2,'Databases',3),
+  (3,'Algorithms',4),
+  (4,'Linear Algebra',5),
+  (5,'Machine Learning',3);
+
+INSERT INTO enrollments VALUES
+  (1,1,92),(1,2,88),
+  (2,1,75),(2,3,81),
+  (3,2,95),(3,4,67),
+  (4,1,58),(4,3,90),
+  (5,2,84),(5,4,72),
+  (6,1,100),(6,2,NULL),
+  (7,3,77),(7,4,88);
+`;
+
+const LIBRARY_SQL = `
+CREATE TABLE authors (
+  author_id INTEGER PRIMARY KEY,
+  name      TEXT NOT NULL,
+  country   TEXT
+);
+
+CREATE TABLE books (
+  book_id   INTEGER PRIMARY KEY,
+  title     TEXT    NOT NULL,
+  author_id INTEGER NOT NULL REFERENCES authors(author_id),
+  genre     TEXT    NOT NULL,
+  year      INTEGER,
+  copies    INTEGER NOT NULL DEFAULT 1
+);
+
+CREATE TABLE members (
+  member_id INTEGER PRIMARY KEY,
+  name      TEXT NOT NULL,
+  joined    TEXT NOT NULL
+);
+
+CREATE TABLE loans (
+  loan_id     INTEGER PRIMARY KEY,
+  book_id     INTEGER NOT NULL REFERENCES books(book_id),
+  member_id   INTEGER NOT NULL REFERENCES members(member_id),
+  loan_date   TEXT    NOT NULL,
+  return_date TEXT            -- NULL = not returned yet
+);
+
+INSERT INTO authors VALUES
+  (1,'George Orwell','UK'),
+  (2,'Jane Austen','UK'),
+  (3,'Gabriel García Márquez','Colombia'),
+  (4,'Haruki Murakami','Japan'),
+  (5,'Toni Morrison','USA'),
+  (6,'J.R.R. Tolkien','UK');
+
+INSERT INTO books VALUES
+  (1,'1984',1,'Dystopia',1949,3),
+  (2,'Animal Farm',1,'Satire',1945,2),
+  (3,'Pride and Prejudice',2,'Romance',1813,2),
+  (4,'Emma',2,'Romance',1815,1),
+  (5,'One Hundred Years of Solitude',3,'Magical realism',1967,2),
+  (6,'Norwegian Wood',4,'Literary fiction',1987,1),
+  (7,'Kafka on the Shore',4,'Magical realism',2002,1),
+  (8,'Beloved',5,'Literary fiction',1987,2),
+  (9,'The Hobbit',6,'Fantasy',1937,4),
+  (10,'The Fellowship of the Ring',6,'Fantasy',1954,2);
+
+INSERT INTO members VALUES
+  (1,'Rachel','2023-01-10'),
+  (2,'Daniel','2023-03-05'),
+  (3,'Leah','2023-06-21'),
+  (4,'Moshe','2024-02-14'),
+  (5,'Tal','2024-08-30');
+
+INSERT INTO loans VALUES
+  (1,1,1,'2024-09-01','2024-09-15'),
+  (2,9,1,'2024-10-02',NULL),
+  (3,3,2,'2024-09-10','2024-09-30'),
+  (4,1,2,'2024-10-05',NULL),
+  (5,5,3,'2024-08-20','2024-09-05'),
+  (6,9,3,'2024-09-12','2024-09-25'),
+  (7,6,4,'2024-10-01',NULL),
+  (8,9,4,'2024-10-08',NULL),
+  (9,10,1,'2024-09-20','2024-10-01'),
+  (10,1,3,'2024-10-10',NULL);
+`;
+
+const MOVIES_SQL = `
+CREATE TABLE movies (
+  movie_id INTEGER PRIMARY KEY,
+  title    TEXT    NOT NULL,
+  year     INTEGER NOT NULL,
+  genre    TEXT    NOT NULL,
+  minutes  INTEGER
+);
+
+CREATE TABLE people (
+  person_id INTEGER PRIMARY KEY,
+  name      TEXT NOT NULL
+);
+
+CREATE TABLE credits (
+  movie_id  INTEGER NOT NULL REFERENCES movies(movie_id),
+  person_id INTEGER NOT NULL REFERENCES people(person_id),
+  job       TEXT    NOT NULL CHECK (job IN ('director','actor')),
+  character TEXT,
+  PRIMARY KEY (movie_id, person_id, job)
+);
+
+CREATE TABLE ratings (
+  movie_id  INTEGER NOT NULL REFERENCES movies(movie_id),
+  user_name TEXT    NOT NULL,
+  stars     INTEGER NOT NULL CHECK (stars BETWEEN 1 AND 5),
+  PRIMARY KEY (movie_id, user_name)
+);
+
+INSERT INTO movies VALUES
+  (1,'The Matrix',1999,'Sci-Fi',136),
+  (2,'Inception',2010,'Sci-Fi',148),
+  (3,'Interstellar',2014,'Sci-Fi',169),
+  (4,'The Dark Knight',2008,'Action',152),
+  (5,'Toy Story',1995,'Animation',81),
+  (6,'Up',2009,'Animation',96),
+  (7,'Parasite',2019,'Thriller',132),
+  (8,'Finding Nemo',2003,'Animation',100);
+
+INSERT INTO people VALUES
+  (1,'Lana Wachowski'),(2,'Lilly Wachowski'),(3,'Christopher Nolan'),(4,'John Lasseter'),
+  (5,'Pete Docter'),(6,'Bong Joon-ho'),(7,'Andrew Stanton'),(8,'Keanu Reeves'),
+  (9,'Carrie-Anne Moss'),(10,'Leonardo DiCaprio'),(11,'Michael Caine'),(12,'Matthew McConaughey'),
+  (13,'Anne Hathaway'),(14,'Christian Bale'),(15,'Heath Ledger'),(16,'Tom Hanks'),
+  (17,'Tim Allen'),(18,'Song Kang-ho'),(19,'Ed Asner'),(20,'Albert Brooks'),(21,'Ellen DeGeneres');
+
+INSERT INTO credits VALUES
+  (1,1,'director',NULL),(1,2,'director',NULL),(1,8,'actor','Neo'),(1,9,'actor','Trinity'),
+  (2,3,'director',NULL),(2,10,'actor','Cobb'),(2,11,'actor','Miles'),
+  (3,3,'director',NULL),(3,12,'actor','Cooper'),(3,13,'actor','Brand'),(3,11,'actor','Professor Brand'),
+  (4,3,'director',NULL),(4,14,'actor','Bruce Wayne'),(4,15,'actor','Joker'),(4,11,'actor','Alfred'),
+  (5,4,'director',NULL),(5,16,'actor','Woody'),(5,17,'actor','Buzz Lightyear'),
+  (6,5,'director',NULL),(6,19,'actor','Carl Fredricksen'),
+  (7,6,'director',NULL),(7,18,'actor','Kim Ki-taek'),
+  (8,7,'director',NULL),(8,20,'actor','Marlin'),(8,21,'actor','Dory');
+
+INSERT INTO ratings VALUES
+  (1,'alice',5),(1,'ben',4),(1,'chen',5),
+  (2,'alice',4),(2,'dina',5),
+  (3,'ben',5),(3,'chen',4),(3,'dina',3),
+  (4,'alice',5),(4,'ben',5),(4,'dina',4),
+  (5,'chen',4),(5,'dina',5),
+  (6,'alice',3),(6,'ben',4),
+  (7,'chen',5),(7,'dina',4);
+`;
+
+const DATASETS = {
+  starter: {name:'Starter · 1 table', tables:'pets',
+    desc:'One small table of pets. The easiest place to start: SELECT, WHERE, ORDER BY, COUNT.', sql:() => STARTER_SQL},
+  school:  {name:'School · 3 tables', tables:'students, courses, enrollments',
+    desc:'Students, courses, and who is enrolled in what (with grades). Great for a first JOIN.', sql:() => SCHOOL_SQL},
+  library: {name:'Library · 4 tables', tables:'authors, books, members, loans',
+    desc:'Books, their authors, library members and loans. Loans that are still out have no return date (NULL).', sql:() => LIBRARY_SQL},
+  movies:  {name:'Movies · 4 tables', tables:'movies, people, credits, ratings',
+    desc:'Movies, the people who made them (directors and actors), and user ratings from 1 to 5 stars.', sql:() => MOVIES_SQL},
+  shop:    {name:'Shop · 4 tables', tables:'customers, products, orders, order_items',
+    desc:'An online store: customers place orders, and each order has several items.', sql:() => shopSQL() + 'CREATE INDEX idx_orders_customer ON orders(customer_id);'},
+  company: {name:'Company · 4 tables', tables:'departments, employees, projects, assignments',
+    desc:'Departments, employees (with managers), projects and who works on what. Includes a view and an index.', sql:() => COMPANY_SQL + `
+CREATE VIEW employee_overview AS
+SELECT e.emp_id, e.first_name || ' ' || e.last_name AS full_name, e.title,
+       d.name AS department, m.first_name || ' ' || m.last_name AS manager, e.salary
+FROM employees e
+LEFT JOIN departments d ON d.dept_id = e.dept_id
+LEFT JOIN employees  m ON m.emp_id  = e.manager_id;
+
+CREATE INDEX idx_employees_dept ON employees(dept_id);
+`},
+  empty:   {name:'Empty database', tables:'',
+    desc:'No tables at all. Create your own with CREATE TABLE.', sql:() => ''}
+};
+const DEFAULT_DATASET = 'school';
+
+const WELCOME_SQL = `-- Welcome to the SQL Lab!  This is a real SQLite database running in your browser.
+-- Press Ctrl+Enter (Cmd+Enter on Mac) to run everything, or select some text to run just that.
+-- Alt+Enter shows step by step how the statement under the cursor is executed.
+-- Pick another database (Starter, Library, Movies, …) from the menu at the top.
+
+SELECT name, age, city
+FROM students
+WHERE age >= 21
+ORDER BY age;
+
+-- Who takes which course, and with what grade?
+SELECT s.name, c.title, e.grade
+FROM enrollments e
+JOIN students s ON s.student_id = e.student_id
+JOIN courses  c ON c.course_id  = e.course_id
+ORDER BY s.name;
+`;
+
+/* ================================================================
+   Examples
+   ================================================================ */
+const BUSINESS_EXAMPLES = [
+  { group:'Basics', items:[
+    ['Select everything','The simplest query: every column, every row.',
+`SELECT * FROM departments;`],
+    ['Columns, aliases & expressions','Choose columns, compute new ones, rename with AS.',
+`SELECT first_name || ' ' || last_name AS full_name,
+       title,
+       salary,
+       salary * 12 AS yearly_salary
+FROM employees;`],
+    ['Sort & limit','Top 5 earners. ORDER BY ... DESC, then LIMIT.',
+`SELECT first_name, last_name, salary
+FROM employees
+ORDER BY salary DESC
+LIMIT 5;`],
+    ['DISTINCT','Unique values only.',
+`SELECT DISTINCT location FROM departments ORDER BY location;`]
+  ]},
+  { group:'Filtering', items:[
+    ['WHERE with AND / OR','Combine conditions; parentheses matter.',
+`SELECT first_name, title, salary, dept_id
+FROM employees
+WHERE (dept_id = 1 OR dept_id = 2)
+  AND salary >= 25000;`],
+    ['LIKE, IN, BETWEEN','Pattern matching, lists and ranges.',
+`SELECT first_name, last_name, title, hire_date
+FROM employees
+WHERE title LIKE '%Engineer%'
+  AND dept_id IN (1, 2)
+  AND hire_date BETWEEN '2019-01-01' AND '2022-12-31';`],
+    ['IS NULL','NULL is not equal to anything — not even NULL. Use IS NULL.',
+`-- Who has no department?  (= NULL would return nothing!)
+SELECT first_name, last_name, title FROM employees WHERE dept_id IS NULL;
+
+-- Who has no manager?
+SELECT first_name, last_name, title FROM employees WHERE manager_id IS NULL;`],
+    ['CASE expressions','If/else inside a query.',
+`SELECT first_name, salary,
+       CASE
+         WHEN salary >= 40000 THEN 'executive'
+         WHEN salary >= 25000 THEN 'senior'
+         ELSE 'regular'
+       END AS band
+FROM employees
+ORDER BY salary DESC;`]
+  ]},
+  { group:'Aggregation', items:[
+    ['COUNT, SUM, AVG, MIN, MAX','Summarize a whole table into one row.',
+`SELECT COUNT(*)            AS employees,
+       SUM(salary)         AS payroll,
+       ROUND(AVG(salary))  AS avg_salary,
+       MIN(hire_date)      AS first_hire,
+       MAX(hire_date)      AS latest_hire
+FROM employees;`],
+    ['GROUP BY','One summary row per group.',
+`SELECT dept_id, COUNT(*) AS headcount, ROUND(AVG(salary)) AS avg_salary
+FROM employees
+GROUP BY dept_id
+ORDER BY headcount DESC;`],
+    ['HAVING','Filter groups (WHERE filters rows, HAVING filters groups).',
+`SELECT dept_id, COUNT(*) AS headcount
+FROM employees
+GROUP BY dept_id
+HAVING COUNT(*) >= 3;`],
+    ['GROUP_CONCAT','Collapse a group into a list.',
+`SELECT d.name, GROUP_CONCAT(e.first_name, ', ') AS team
+FROM departments d
+JOIN employees e ON e.dept_id = d.dept_id
+GROUP BY d.name;`]
+  ]},
+  { group:'Joins', items:[
+    ['INNER JOIN','Only rows that match on both sides.',
+`SELECT e.first_name, e.last_name, d.name AS department, d.location
+FROM employees e
+INNER JOIN departments d ON d.dept_id = e.dept_id;`],
+    ['LEFT JOIN','Keep every row on the left, NULLs where there is no match.',
+`-- Departments and how many people they have (Legal has none!)
+SELECT d.name, COUNT(e.emp_id) AS headcount
+FROM departments d
+LEFT JOIN employees e ON e.dept_id = d.dept_id
+GROUP BY d.name
+ORDER BY headcount;`],
+    ['Self join','Join a table to itself: each employee with their manager.',
+`SELECT e.first_name || ' ' || e.last_name AS employee,
+       m.first_name || ' ' || m.last_name AS manager
+FROM employees e
+LEFT JOIN employees m ON m.emp_id = e.manager_id
+ORDER BY manager;`],
+    ['Many-to-many','employees ↔ projects through the assignments table.',
+`SELECT p.name AS project, e.first_name, a.role, a.hours
+FROM assignments a
+JOIN employees e ON e.emp_id = a.emp_id
+JOIN projects  p ON p.project_id = a.project_id
+ORDER BY p.name, a.hours DESC;`],
+    ['Orders with totals','Four tables, one revenue figure per order.',
+`SELECT o.order_id, o.order_date, c.name AS customer, o.status,
+       ROUND(SUM(oi.quantity * oi.unit_price), 2) AS total
+FROM orders o
+JOIN customers   c  ON c.customer_id = o.customer_id
+JOIN order_items oi ON oi.order_id   = o.order_id
+GROUP BY o.order_id
+ORDER BY o.order_date;`]
+  ]},
+  { group:'Subqueries & CTEs', items:[
+    ['Scalar subquery','Compare each row to a single computed value.',
+`SELECT first_name, salary
+FROM employees
+WHERE salary > (SELECT AVG(salary) FROM employees);`],
+    ['Correlated subquery','Earns more than their own department\'s average.',
+`SELECT e.first_name, e.dept_id, e.salary
+FROM employees e
+WHERE e.salary > (
+  SELECT AVG(x.salary) FROM employees x WHERE x.dept_id = e.dept_id
+);`],
+    ['EXISTS / NOT EXISTS','Customers who never ordered.',
+`SELECT c.name, c.country
+FROM customers c
+WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.customer_id);`],
+    ['WITH (CTE)','Name a sub-result and reuse it like a table.',
+`WITH revenue AS (
+  SELECT o.customer_id, SUM(oi.quantity * oi.unit_price) AS total
+  FROM orders o JOIN order_items oi ON oi.order_id = o.order_id
+  WHERE o.status <> 'cancelled'
+  GROUP BY o.customer_id
+)
+SELECT c.name, c.country, ROUND(r.total, 2) AS revenue
+FROM revenue r JOIN customers c USING (customer_id)
+ORDER BY revenue DESC
+LIMIT 5;`],
+    ['Recursive CTE: org chart','Walk the manager tree from the top down.',
+`WITH RECURSIVE chain(emp_id, name, depth, path) AS (
+  SELECT emp_id, first_name, 0, first_name
+  FROM employees WHERE manager_id IS NULL
+  UNION ALL
+  SELECT e.emp_id, e.first_name, c.depth + 1, c.path || ' → ' || e.first_name
+  FROM employees e JOIN chain c ON e.manager_id = c.emp_id
+)
+SELECT substr('                ', 1, depth * 2) || name AS org_chart, depth, path
+FROM chain
+ORDER BY path;`]
+  ]},
+  { group:'Window functions', items:[
+    ['RANK within a group','Rank salaries inside each department.',
+`SELECT first_name, dept_id, salary,
+       RANK() OVER (PARTITION BY dept_id ORDER BY salary DESC) AS rank_in_dept
+FROM employees
+WHERE dept_id IS NOT NULL
+ORDER BY dept_id, rank_in_dept;`],
+    ['Running total','Cumulative revenue by month.',
+`WITH monthly AS (
+  SELECT substr(o.order_date, 1, 7) AS month,
+         SUM(oi.quantity * oi.unit_price) AS revenue
+  FROM orders o JOIN order_items oi ON oi.order_id = o.order_id
+  WHERE o.status <> 'cancelled'
+  GROUP BY month
+)
+SELECT month,
+       ROUND(revenue, 2) AS revenue,
+       ROUND(SUM(revenue) OVER (ORDER BY month), 2) AS running_total
+FROM monthly;`],
+    ['LAG / LEAD','Compare each row to the previous one.',
+`SELECT first_name, hire_date,
+       LAG(hire_date) OVER (ORDER BY hire_date) AS previous_hire,
+       julianday(hire_date) - julianday(LAG(hire_date) OVER (ORDER BY hire_date)) AS days_between
+FROM employees;`]
+  ]},
+  { group:'Changing data', items:[
+    ['INSERT','Add rows, then look at them.',
+`INSERT INTO departments (name, location, budget)
+VALUES ('Security', 'Tel Aviv', 500000);
+
+SELECT * FROM departments;`],
+    ['UPDATE','Give Engineering a 5% raise.',
+`UPDATE employees
+SET salary = ROUND(salary * 1.05)
+WHERE dept_id = 1;
+
+SELECT first_name, salary FROM employees WHERE dept_id = 1;`],
+    ['DELETE','Remove rows matching a condition.',
+`DELETE FROM assignments WHERE hours < 150;
+
+SELECT COUNT(*) AS remaining_assignments FROM assignments;`],
+    ['UPSERT','Insert, or update if the key already exists.',
+`INSERT INTO products (product_id, name, category, price, stock)
+VALUES (1, 'Mechanical Keyboard', 'Peripherals', 119.0, 10)
+ON CONFLICT(product_id) DO UPDATE SET stock = stock + excluded.stock;
+
+SELECT * FROM products WHERE product_id = 1;`],
+    ['Transaction + ROLLBACK','Changes inside a rolled-back transaction disappear.',
+`BEGIN;
+UPDATE employees SET salary = 0;
+SELECT SUM(salary) AS payroll_during_transaction FROM employees;
+ROLLBACK;
+
+SELECT SUM(salary) AS payroll_after_rollback FROM employees;`],
+    ['Constraint violation','Watch the database refuse bad data.',
+`-- budget has CHECK (budget >= 0), so this fails:
+INSERT INTO departments (name, location, budget) VALUES ('Broke', 'Nowhere', -1);`]
+  ]},
+  { group:'Schema', items:[
+    ['CREATE TABLE','Constraints: PRIMARY KEY, NOT NULL, UNIQUE, CHECK, DEFAULT, FOREIGN KEY.',
+`CREATE TABLE IF NOT EXISTS reviews (
+  review_id  INTEGER PRIMARY KEY,
+  product_id INTEGER NOT NULL REFERENCES products(product_id),
+  rating     INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 5),
+  body       TEXT,
+  created_at TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+
+INSERT INTO reviews (product_id, rating, body) VALUES
+  (1, 5, 'Clicky and great'),
+  (3, 4, 'Sharp picture'),
+  (1, 3, NULL);
+
+SELECT * FROM reviews;`],
+    ['ALTER TABLE','Add a column to an existing table.',
+`ALTER TABLE employees ADD COLUMN remote INTEGER NOT NULL DEFAULT 0;
+UPDATE employees SET remote = 1 WHERE emp_id IN (5, 9, 16);
+SELECT first_name, remote FROM employees;`],
+    ['Views','A saved query you can SELECT from (try the existing employee_overview).',
+`SELECT * FROM employee_overview WHERE department = 'Engineering';`],
+    ['Indexes & EXPLAIN','See how SQLite plans to run a query, before and after an index.',
+`EXPLAIN QUERY PLAN
+SELECT * FROM order_items WHERE product_id = 3;
+
+CREATE INDEX IF NOT EXISTS idx_items_product ON order_items(product_id);
+
+EXPLAIN QUERY PLAN
+SELECT * FROM order_items WHERE product_id = 3;`],
+    ['Inspect the schema','SQLite keeps its own catalog in sqlite_schema.',
+`SELECT type, name, tbl_name FROM sqlite_schema ORDER BY type, name;
+
+PRAGMA table_info(employees);
+PRAGMA foreign_key_list(assignments);`]
+  ]}
+];
+
+// The company and shop examples share one list; split it by the tables each example uses.
+const SHOP_TABLES = /\b(customers|products|orders|order_items|reviews)\b/i;
+function pickExamples(list, keep){
+  return list.map(g => ({group: g.group, items: g.items.filter(it => keep(SHOP_TABLES.test(it[2])))})).filter(g => g.items.length);
+}
+
+const EXAMPLE_SETS = {
+  starter: [
+    { group:'Reading data', items:[
+      ['See the whole table','SELECT * means "every column".',
+`SELECT * FROM pets;`],
+      ['Pick some columns','List only the columns you need.',
+`SELECT name, species FROM pets;`],
+      ['Filter with WHERE','Only the dogs.',
+`SELECT * FROM pets WHERE species = 'dog';`],
+      ['Two conditions','Cats younger than 5: both must be true (AND).',
+`SELECT name, age FROM pets
+WHERE species = 'cat' AND age < 5;`],
+      ['Sort with ORDER BY','Oldest first (DESC = descending).',
+`SELECT name, age FROM pets ORDER BY age DESC;`],
+      ['Top 3 with LIMIT','The three youngest pets.',
+`SELECT name, age FROM pets ORDER BY age LIMIT 3;`],
+      ['Missing values','A pet without an owner. Use IS NULL, not = NULL.',
+`SELECT * FROM pets WHERE owner IS NULL;`]
+    ]},
+    { group:'Counting & grouping', items:[
+      ['COUNT','How many pets are there?',
+`SELECT COUNT(*) AS total_pets FROM pets;`],
+      ['GROUP BY','How many of each species?',
+`SELECT species, COUNT(*) AS how_many
+FROM pets
+GROUP BY species
+ORDER BY how_many DESC;`],
+      ['AVG per group','Average age of each species.',
+`SELECT species, ROUND(AVG(age), 1) AS avg_age
+FROM pets
+GROUP BY species;`],
+      ['HAVING','Owners with more than one pet.',
+`SELECT owner, COUNT(*) AS pets
+FROM pets
+GROUP BY owner
+HAVING COUNT(*) > 1;`]
+    ]},
+    { group:'Changing data', items:[
+      ['INSERT','Add a new pet.',
+`INSERT INTO pets (name, species, age, owner)
+VALUES ('Coco', 'rabbit', 2, 'Noa');
+
+SELECT * FROM pets;`],
+      ['UPDATE','Happy birthday, Rex!',
+`UPDATE pets SET age = age + 1 WHERE name = 'Rex';
+
+SELECT * FROM pets WHERE name = 'Rex';`],
+      ['DELETE','Remove the fish.',
+`DELETE FROM pets WHERE species = 'fish';
+
+SELECT * FROM pets;`]
+    ]}
+  ],
+
+  school: [
+    { group:'Basics', items:[
+      ['All students','Every column of the students table.',
+`SELECT * FROM students;`],
+      ['Columns & sorting','Names and ages, youngest first.',
+`SELECT name, age FROM students ORDER BY age;`],
+      ['WHERE','Students who live in Haifa.',
+`SELECT name, age FROM students WHERE city = 'Haifa';`],
+      ['AND / OR','From Tel Aviv or Haifa, and at least 21.',
+`SELECT name, age, city
+FROM students
+WHERE (city = 'Tel Aviv' OR city = 'Haifa')
+  AND age >= 21;`],
+      ['LIKE','Names that end with "a".',
+`SELECT name FROM students WHERE name LIKE '%a';`],
+      ['IS NULL','Whose city is unknown?',
+`SELECT name FROM students WHERE city IS NULL;`],
+      ['IN & BETWEEN','A list of values, and a range.',
+`SELECT name, age, city
+FROM students
+WHERE city IN ('Haifa', 'Jerusalem')
+  AND age BETWEEN 22 AND 25;`]
+    ]},
+    { group:'Aggregation', items:[
+      ['COUNT, MIN, MAX, AVG','Summarize the whole students table.',
+`SELECT COUNT(*) AS students, MIN(age) AS youngest, MAX(age) AS oldest, ROUND(AVG(age), 1) AS avg_age
+FROM students;`],
+      ['GROUP BY','How many students in each city?',
+`SELECT city, COUNT(*) AS students
+FROM students
+GROUP BY city
+ORDER BY students DESC;`],
+      ['Average grade per course','AVG ignores NULL grades (a course still in progress).',
+`SELECT course_id, COUNT(*) AS enrolled, ROUND(AVG(grade), 1) AS avg_grade
+FROM enrollments
+GROUP BY course_id;`],
+      ['HAVING','Courses with more than 2 students.',
+`SELECT course_id, COUNT(*) AS enrolled
+FROM enrollments
+GROUP BY course_id
+HAVING COUNT(*) > 2;`]
+    ]},
+    { group:'Joins', items:[
+      ['JOIN two tables','Each enrollment with the student\'s name.',
+`SELECT s.name, e.course_id, e.grade
+FROM enrollments e
+JOIN students s ON s.student_id = e.student_id;`],
+      ['JOIN three tables','Student name, course title and grade.',
+`SELECT s.name, c.title, e.grade
+FROM enrollments e
+JOIN students s ON s.student_id = e.student_id
+JOIN courses  c ON c.course_id  = e.course_id
+ORDER BY c.title, e.grade DESC;`],
+      ['LEFT JOIN: students without courses','Keep every student; NULL where there is no match.',
+`SELECT s.name, e.course_id
+FROM students s
+LEFT JOIN enrollments e ON e.student_id = s.student_id
+WHERE e.course_id IS NULL;`],
+      ['LEFT JOIN: course sizes','Every course, including one nobody takes.',
+`SELECT c.title, COUNT(e.student_id) AS enrolled
+FROM courses c
+LEFT JOIN enrollments e ON e.course_id = c.course_id
+GROUP BY c.title
+ORDER BY enrolled DESC;`],
+      ['Grades with course names','Join, then group: average grade per course title.',
+`SELECT c.title, ROUND(AVG(e.grade), 1) AS avg_grade, MAX(e.grade) AS best
+FROM courses c
+JOIN enrollments e ON e.course_id = c.course_id
+GROUP BY c.title
+ORDER BY avg_grade DESC;`]
+    ]},
+    { group:'Subqueries', items:[
+      ['Older than average','A query inside a query.',
+`SELECT name, age
+FROM students
+WHERE age > (SELECT AVG(age) FROM students);`],
+      ['IN (subquery)','Students who scored 90 or more somewhere.',
+`SELECT name
+FROM students
+WHERE student_id IN (SELECT student_id FROM enrollments WHERE grade >= 90);`],
+      ['Top student per course','Correlated subquery: compare with the best grade in the same course.',
+`SELECT c.title, s.name, e.grade
+FROM enrollments e
+JOIN students s ON s.student_id = e.student_id
+JOIN courses  c ON c.course_id  = e.course_id
+WHERE e.grade = (SELECT MAX(x.grade) FROM enrollments x WHERE x.course_id = e.course_id);`]
+    ]},
+    { group:'Changing data', items:[
+      ['Add a student','INSERT a row, then look at the table.',
+`INSERT INTO students (name, age, city) VALUES ('Lior', 20, 'Eilat');
+
+SELECT * FROM students;`],
+      ['Enroll in a course','Ido joins Machine Learning.',
+`INSERT INTO enrollments (student_id, course_id, grade) VALUES (8, 5, NULL);
+
+SELECT * FROM enrollments WHERE student_id = 8;`],
+      ['Update a grade','Yossi finished Databases with 91.',
+`UPDATE enrollments SET grade = 91 WHERE student_id = 6 AND course_id = 2;
+
+SELECT * FROM enrollments WHERE student_id = 6;`],
+      ['Break a rule','grade has a CHECK (0 to 100), so this is refused.',
+`UPDATE enrollments SET grade = 120 WHERE student_id = 1 AND course_id = 1;`]
+    ]}
+  ],
+
+  library: [
+    { group:'Basics', items:[
+      ['All books','Every book in the library.',
+`SELECT * FROM books;`],
+      ['Old books','Published before 1950, oldest first.',
+`SELECT title, year FROM books WHERE year < 1950 ORDER BY year;`],
+      ['Books per genre','GROUP BY with COUNT and SUM.',
+`SELECT genre, COUNT(*) AS titles, SUM(copies) AS copies
+FROM books
+GROUP BY genre
+ORDER BY titles DESC;`]
+    ]},
+    { group:'Joins', items:[
+      ['Books with their authors','JOIN on author_id.',
+`SELECT b.title, a.name AS author, b.year
+FROM books b
+JOIN authors a ON a.author_id = b.author_id
+ORDER BY a.name, b.year;`],
+      ['Who has what right now','Loans with no return date are still out.',
+`SELECT m.name AS member, b.title, l.loan_date
+FROM loans l
+JOIN members m ON m.member_id = l.member_id
+JOIN books   b ON b.book_id   = l.book_id
+WHERE l.return_date IS NULL
+ORDER BY l.loan_date;`],
+      ['Members who never borrowed','LEFT JOIN + IS NULL.',
+`SELECT m.name, m.joined
+FROM members m
+LEFT JOIN loans l ON l.member_id = m.member_id
+WHERE l.loan_id IS NULL;`],
+      ['Most borrowed books','Count loans per book.',
+`SELECT b.title, COUNT(*) AS times_borrowed
+FROM loans l
+JOIN books b ON b.book_id = l.book_id
+GROUP BY b.title
+ORDER BY times_borrowed DESC
+LIMIT 3;`]
+    ]},
+    { group:'More', items:[
+      ['Authors with several books','HAVING filters the groups.',
+`SELECT a.name, COUNT(*) AS books
+FROM authors a
+JOIN books b ON b.author_id = a.author_id
+GROUP BY a.name
+HAVING COUNT(*) > 1;`],
+      ['Copies available','Copies owned minus copies currently out.',
+`SELECT b.title, b.copies,
+       b.copies - (SELECT COUNT(*) FROM loans l
+                   WHERE l.book_id = b.book_id AND l.return_date IS NULL) AS available
+FROM books b
+ORDER BY available;`],
+      ['Never borrowed','NOT EXISTS.',
+`SELECT title FROM books b
+WHERE NOT EXISTS (SELECT 1 FROM loans l WHERE l.book_id = b.book_id);`],
+      ['Loan length in days','Date math with julianday().',
+`SELECT l.loan_id, b.title,
+       julianday(l.return_date) - julianday(l.loan_date) AS days
+FROM loans l JOIN books b ON b.book_id = l.book_id
+WHERE l.return_date IS NOT NULL
+ORDER BY days DESC;`],
+      ['Return a book','UPDATE the loan with today\'s date.',
+`UPDATE loans SET return_date = date('now') WHERE loan_id = 2;
+
+SELECT * FROM loans WHERE loan_id = 2;`]
+    ]}
+  ],
+
+  movies: [
+    { group:'Basics', items:[
+      ['All movies by year','ORDER BY year.',
+`SELECT title, year, genre FROM movies ORDER BY year;`],
+      ['Long sci-fi','Two conditions.',
+`SELECT title, minutes FROM movies
+WHERE genre = 'Sci-Fi' AND minutes > 140;`],
+      ['Per genre','Count and average length.',
+`SELECT genre, COUNT(*) AS movies, ROUND(AVG(minutes)) AS avg_minutes
+FROM movies
+GROUP BY genre;`],
+      ['Movies per decade','Group by a computed value.',
+`SELECT (year / 10) * 10 AS decade, COUNT(*) AS movies
+FROM movies
+GROUP BY decade
+ORDER BY decade;`]
+    ]},
+    { group:'Joins', items:[
+      ['Directors','Three tables: movies → credits → people.',
+`SELECT m.title, p.name AS director
+FROM movies m
+JOIN credits c ON c.movie_id  = m.movie_id AND c.job = 'director'
+JOIN people  p ON p.person_id = c.person_id
+ORDER BY m.title;`],
+      ['Cast of a movie','Actors and the characters they played.',
+`SELECT p.name, c.character
+FROM credits c
+JOIN people p ON p.person_id = c.person_id
+JOIN movies m ON m.movie_id  = c.movie_id
+WHERE m.title = 'Interstellar' AND c.job = 'actor';`],
+      ['Average rating','AVG per movie, best first.',
+`SELECT m.title, ROUND(AVG(r.stars), 2) AS avg_stars, COUNT(*) AS votes
+FROM movies m
+JOIN ratings r ON r.movie_id = m.movie_id
+GROUP BY m.title
+ORDER BY avg_stars DESC;`],
+      ['Not rated yet','LEFT JOIN finds movies without ratings.',
+`SELECT m.title
+FROM movies m
+LEFT JOIN ratings r ON r.movie_id = m.movie_id
+WHERE r.movie_id IS NULL;`]
+    ]},
+    { group:'More', items:[
+      ['People in several movies','HAVING COUNT(DISTINCT …) > 1.',
+`SELECT p.name, COUNT(DISTINCT c.movie_id) AS movies
+FROM people p
+JOIN credits c ON c.person_id = p.person_id
+GROUP BY p.name
+HAVING COUNT(DISTINCT c.movie_id) > 1;`],
+      ['Best movie per genre','Window function RANK() inside a CTE.',
+`WITH scored AS (
+  SELECT m.genre, m.title, AVG(r.stars) AS avg_stars
+  FROM movies m JOIN ratings r ON r.movie_id = m.movie_id
+  GROUP BY m.movie_id
+)
+SELECT genre, title, ROUND(avg_stars, 2) AS avg_stars
+FROM (SELECT *, RANK() OVER (PARTITION BY genre ORDER BY avg_stars DESC) AS rnk FROM scored)
+WHERE rnk = 1;`],
+      ['Nolan films, rated','Filter on a person, then aggregate.',
+`SELECT m.title, m.year, ROUND(AVG(r.stars), 2) AS avg_stars
+FROM people p
+JOIN credits c ON c.person_id = p.person_id AND c.job = 'director'
+JOIN movies  m ON m.movie_id  = c.movie_id
+LEFT JOIN ratings r ON r.movie_id = m.movie_id
+WHERE p.name = 'Christopher Nolan'
+GROUP BY m.movie_id
+ORDER BY m.year;`],
+      ['Rate a movie','INSERT a rating, or change it if it exists (upsert).',
+`INSERT INTO ratings (movie_id, user_name, stars) VALUES (8, 'alice', 5)
+ON CONFLICT(movie_id, user_name) DO UPDATE SET stars = excluded.stars;
+
+SELECT * FROM ratings WHERE movie_id = 8;`]
+    ]}
+  ],
+
+  shop: [
+    { group:'Basics', items:[
+      ['Low stock','Products with fewer than 20 left.',
+`SELECT name, category, stock FROM products WHERE stock < 20 ORDER BY stock;`],
+      ['Products per category','Count and average price.',
+`SELECT category, COUNT(*) AS products, ROUND(AVG(price), 2) AS avg_price
+FROM products
+GROUP BY category;`],
+      ['Orders by status','How many orders in each state?',
+`SELECT status, COUNT(*) AS orders FROM orders GROUP BY status;`],
+      ['Best sellers','Units sold per product.',
+`SELECT p.name, SUM(oi.quantity) AS units
+FROM order_items oi
+JOIN products p ON p.product_id = oi.product_id
+GROUP BY p.name
+ORDER BY units DESC
+LIMIT 5;`]
+    ]}
+  ].concat(pickExamples(BUSINESS_EXAMPLES, isShop => isShop)),
+
+  company: pickExamples(BUSINESS_EXAMPLES, isShop => !isShop),
+
+  empty: [
+    { group:'Build your own', items:[
+      ['Your first table','CREATE TABLE, INSERT, then SELECT.',
+`CREATE TABLE friends (
+  id    INTEGER PRIMARY KEY,
+  name  TEXT NOT NULL,
+  phone TEXT
+);
+
+INSERT INTO friends (name, phone) VALUES
+  ('Dana', '050-1234567'),
+  ('Omer', NULL);
+
+SELECT * FROM friends;`],
+      ['A related table','A FOREIGN KEY links two tables; JOIN reads them together.',
+`CREATE TABLE IF NOT EXISTS friends (id INTEGER PRIMARY KEY, name TEXT NOT NULL, phone TEXT);
+CREATE TABLE birthdays (
+  friend_id INTEGER REFERENCES friends(id),
+  day       TEXT NOT NULL
+);
+
+INSERT INTO friends (name) SELECT 'Noa' WHERE NOT EXISTS (SELECT 1 FROM friends);
+INSERT INTO birthdays SELECT id, '2000-05-17' FROM friends LIMIT 1;
+
+SELECT f.name, b.day FROM friends f JOIN birthdays b ON b.friend_id = f.id;`],
+      ['Change the structure','ALTER TABLE adds a column.',
+`CREATE TABLE IF NOT EXISTS friends (id INTEGER PRIMARY KEY, name TEXT NOT NULL, phone TEXT);
+ALTER TABLE friends ADD COLUMN city TEXT;
+
+PRAGMA table_info(friends);`]
+    ]}
+  ]
+};
+
+function currentDataset(){ return LS.get('dataset', DEFAULT_DATASET); }
+
+/* ================================================================
+   Helpers
+   ================================================================ */
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const LS = {
+  get(k, d){ try { const v = localStorage.getItem('sqllab.' + k); return v == null ? d : JSON.parse(v); } catch(e){ return d; } },
+  set(k, v){ try { localStorage.setItem('sqllab.' + k, JSON.stringify(v)); return true; } catch(e){ return false; } },
+  del(k){ try { localStorage.removeItem('sqllab.' + k); } catch(e){} }
+};
+const now = () => new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+const fmtMs = ms => ms < 1 ? ms.toFixed(2) + ' ms' : ms < 100 ? ms.toFixed(1) + ' ms' : Math.round(ms) + ' ms';
+const fmtBytes = b => b < 1024 ? b + ' B' : b < 1048576 ? (b/1024).toFixed(1) + ' KB' : (b/1048576).toFixed(2) + ' MB';
+function u8ToB64(u8){ let s = ''; for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000)); return btoa(s); }
+function b64ToU8(b64){ const s = atob(b64), u8 = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) u8[i] = s.charCodeAt(i); return u8; }
+function download(name, data, type){
+  const url = URL.createObjectURL(new Blob([data], {type}));
+  const a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 500);
+}
+
+/* Split SQL into statement ranges, respecting quotes, comments and CREATE TRIGGER ... END bodies. */
+function splitStatements(sql){
+  const out = [];
+  let start = 0, i = 0;
+  const n = sql.length;
+  while (i < n){
+    const c = sql[i], c2 = sql[i+1];
+    if (c === '-' && c2 === '-'){ while (i < n && sql[i] !== '\n') i++; continue; }
+    if (c === '/' && c2 === '*'){ const e = sql.indexOf('*/', i + 2); i = e < 0 ? n : e + 2; continue; }
+    if (c === "'" || c === '"' || c === '`' || c === '['){
+      const close = c === '[' ? ']' : c; i++;
+      while (i < n){ if (sql[i] === close){ if (sql[i+1] === close && close !== ']'){ i += 2; continue; } break; } i++; }
+      i++; continue;
+    }
+    if (c === ';'){
+      const text = sql.slice(start, i);
+      const isTrigger = /^\s*(?:--[^\n]*\n\s*|\/\*[\s\S]*?\*\/\s*)*CREATE\s+(?:TEMP(?:ORARY)?\s+)?TRIGGER\b/i.test(text);
+      if (!isTrigger || /\bEND\s*$/i.test(text)){ out.push({from:start, to:i + 1}); start = i + 1; }
+    }
+    i++;
+  }
+  if (sql.slice(start).trim()) out.push({from:start, to:n});
+  return out.filter(r => stripComments(sql.slice(r.from, r.to)).trim().replace(/;$/, '').trim());
+}
+function stripComments(s){ return s.replace(/--[^\n]*/g, '').replace(/\/\*[\s\S]*?\*\//g, ''); }
+
+/* ================================================================
+   State
+   ================================================================ */
+let SQL = null, db = null, cm = null;
+let tabs = LS.get('tabs', null);
+let activeTab = LS.get('active', 0);
+let history = LS.get('history', []);
+let results = [];            // [{kind:'rows'|'msgs', ...}]
+let activeResult = 0;
+let messages = [];           // [{t, kind, text, q}]
+let sortState = {col:-1, dir:1};
+let schemaTables = {};
+let dirtySave = false;
+
+if (!Array.isArray(tabs) || !tabs.length) tabs = [{name:'Query 1', sql:WELCOME_SQL}];
+if (activeTab >= tabs.length) activeTab = 0;
+
+/* ================================================================
+   Database lifecycle
+   ================================================================ */
+function loadDataset(kind){
+  if (db) db.close();
+  db = new SQL.Database();
+  const sql = DATASETS[kind] ? DATASETS[kind].sql() : '';
+  if (sql) db.exec(sql);
+  db.exec('PRAGMA foreign_keys = ON;');
+  LS.set('dataset', kind);
+}
+// sql.js export() closes and reopens the connection, which would roll back an open BEGIN.
+function inTransaction(){
+  try { db.exec('BEGIN; ROLLBACK;'); return false; }
+  catch(e){ return /within a transaction/i.test(e.message); }
+}
+function persistDb(){
+  if (inTransaction()){ setSaved('transaction open · not saved until COMMIT', true); return; }
+  try {
+    const data = db.export();
+    // sql.js export() resets foreign_keys; turn it back on.
+    db.exec('PRAGMA foreign_keys = ON;');
+    if (data.length > 3 * 1048576){ LS.del('db'); setSaved('too large to autosave', true); return; }
+    const ok = LS.set('db', u8ToB64(data));
+    setSaved(ok ? 'saved in this browser' : 'not saved (storage unavailable)', !ok);
+    $('#sbSize').textContent = fmtBytes(data.length);
+  } catch(e){ setSaved('not saved', true); }
+}
+function setSaved(text, warn){ const el = $('#sbSaved'); el.textContent = text; el.style.color = warn ? 'var(--warn)' : ''; }
+
+/* ================================================================
+   Editor tabs
+   ================================================================ */
+function saveTabs(){ tabs[activeTab].sql = cm.getValue(); LS.set('tabs', tabs); LS.set('active', activeTab); }
+function renderTabs(){
+  const el = $('#etabs');
+  el.innerHTML = tabs.map((t, i) =>
+    `<div class="etab${i === activeTab ? ' on' : ''}" data-i="${i}" title="Double-click to rename"><span class="nm">${esc(t.name)}</span>` +
+    (tabs.length > 1 ? `<button class="x" data-x="${i}" title="Close">×</button>` : '') + '</div>'
+  ).join('') + '<button class="etab-add" id="addTab" title="New query tab">+</button>';
+}
+function switchTab(i){
+  saveTabs();
+  activeTab = i;
+  cm.setValue(tabs[i].sql);
+  cm.clearHistory();
+  renderTabs();
+  LS.set('active', activeTab);
+  cm.focus();
+}
+function addTab(name, sql){
+  saveTabs();
+  tabs.push({name, sql});
+  activeTab = tabs.length - 1;
+  cm.setValue(sql); cm.clearHistory();
+  renderTabs(); saveTabs(); cm.focus();
+}
+$('#etabs').addEventListener('click', e => {
+  const x = e.target.closest('[data-x]');
+  if (x){
+    e.stopPropagation();
+    const i = +x.dataset.x;
+    saveTabs();
+    tabs.splice(i, 1);
+    if (activeTab >= i && activeTab > 0) activeTab--;
+    cm.setValue(tabs[activeTab].sql); cm.clearHistory();
+    renderTabs(); saveTabs();
+    return;
+  }
+  if (e.target.id === 'addTab'){
+    let k = tabs.length + 1;
+    while (tabs.some(t => t.name === 'Query ' + k)) k++;
+    addTab('Query ' + k, '');
+    return;
+  }
+  const t = e.target.closest('.etab');
+  if (t && +t.dataset.i !== activeTab) switchTab(+t.dataset.i);
+});
+$('#etabs').addEventListener('dblclick', e => {
+  const t = e.target.closest('.etab'); if (!t) return;
+  const i = +t.dataset.i;
+  const name = prompt('Rename tab', tabs[i].name);
+  if (name && name.trim()){ tabs[i].name = name.trim().slice(0, 40); renderTabs(); saveTabs(); }
+});
+
+/* ================================================================
+   Execution
+   ================================================================ */
+const MAX_ROWS = 5000;
+
+function cellOut(v){
+  if (v === null || v === undefined) return {cls:'null', text:'NULL'};
+  if (v instanceof Uint8Array){
+    const hex = Array.from(v.slice(0, 24), b => b.toString(16).padStart(2,'0')).join('');
+    return {cls:'blob', text:"x'" + hex + (v.length > 24 ? '…' : '') + "' (" + v.length + ' B)'};
+  }
+  if (typeof v === 'number') return {cls:'num', text:String(v)};
+  return {cls:'', text:String(v)};
+}
+
+function execute(sql, baseOffset, label){
+  clearErrorMark();
+  const runResults = [];
+  const runMsgs = [];
+  const t0all = performance.now();
+  let failed = false, wrote = false, count = 0;
+  let pos = 0;
+  const it = db.iterateStatements(sql);
+  try {
+    for (;;){
+      pos = sql.length - it.getRemainingSQL().length;
+      const step = it.next();
+      if (step.done) break;
+      const stmt = step.value;
+      const text = stripComments(stmt.getSQL()).trim();
+      const t0 = performance.now();
+      const cols = stmt.getColumnNames();
+      const rows = [];
+      let total = 0;
+      while (stmt.step()){ total++; if (rows.length < MAX_ROWS) rows.push(stmt.get()); }
+      const ms = performance.now() - t0;
+      count++;
+      if (cols.length){
+        runResults.push({kind:'rows', cols, rows, total, ms, sql:text, plan:/^\s*EXPLAIN\s+QUERY\s+PLAN/i.test(text)});
+        runMsgs.push({t:now(), kind:'ok', text:`${total} row${total === 1 ? '' : 's'} returned in ${fmtMs(ms)}`, q:text});
+      } else {
+        const changed = db.getRowsModified();
+        const isDml = /^\s*(INSERT|UPDATE|DELETE|REPLACE|UPSERT|WITH)\b/i.test(text);
+        if (!/^\s*(SELECT|PRAGMA|EXPLAIN)\b/i.test(text)) wrote = true;
+        runMsgs.push({t:now(), kind:'ok', text: isDml ? `${changed} row${changed === 1 ? '' : 's'} affected (${fmtMs(ms)})` : `OK (${fmtMs(ms)})`, q:text});
+      }
+    }
+  } catch(err){
+    failed = true;
+    wrote = true; // earlier statements in the batch may have changed data
+    // Skip whitespace and comments so the error points at the statement itself.
+    let p = pos;
+    for (;;){
+      while (p < sql.length && /\s/.test(sql[p])) p++;
+      if (sql.startsWith('--', p)){ const e = sql.indexOf('\n', p); p = e < 0 ? sql.length : e + 1; continue; }
+      if (sql.startsWith('/*', p)){ const e = sql.indexOf('*/', p + 2); p = e < 0 ? sql.length : e + 2; continue; }
+      break;
+    }
+    const line = cm.posFromIndex(baseOffset + p).line;
+    markErrorLine(line);
+    runMsgs.push({t:now(), kind:'err', text:`Error at line ${line + 1}: ${err.message}`, q:sql.slice(p).split(/;\s*/)[0].slice(0, 200)});
+    if (inTransaction()) runMsgs.push({t:now(), kind:'info', text:'A transaction is still open. Run COMMIT to keep its changes or ROLLBACK to undo them.'});
+  }
+  const totalMs = performance.now() - t0all;
+  if (!count && !failed) runMsgs.push({t:now(), kind:'info', text:'Nothing to run.'});
+
+  messages = runMsgs.concat(messages).slice(0, 300);
+  results = runResults;
+  activeResult = failed || !runResults.length ? -1 : runResults.length - 1;
+  if (runResults.length > 1 && !failed) activeResult = 0;
+  sortState = {col:-1, dir:1};
+  renderResults({count, failed, totalMs});
+
+  const trimmed = sql.trim();
+  if (trimmed){
+    if (history.length && history[0].sql === trimmed) history.shift();
+    history.unshift({sql:trimmed, ts:Date.now(), ok:!failed, ms:Math.round(totalMs), label});
+    history = history.slice(0, 100);
+    LS.set('history', history);
+    renderHistory();
+  }
+  if (wrote){ refreshSchema(); persistDb(); }
+}
+
+function runAll(){
+  const sel = cm.getSelection();
+  if (sel.trim()){
+    const from = cm.indexFromPos(cm.getCursor('from'));
+    execute(sel, from, 'selection');
+  } else {
+    execute(cm.getValue(), 0, 'all');
+  }
+}
+function currentStatement(){
+  const sql = cm.getValue();
+  const idx = cm.indexFromPos(cm.getCursor());
+  const ranges = splitStatements(sql);
+  if (!ranges.length) return null;
+  let r = ranges.find(r => idx >= r.from && idx <= r.to);
+  if (!r){ // cursor in whitespace between statements: use the nearest one before it
+    r = ranges.filter(r => r.to <= idx).pop() || ranges[0];
+  }
+  return {sql:sql.slice(r.from, r.to), from:r.from, to:r.to};
+}
+function flash(from, to){
+  const m = cm.markText(cm.posFromIndex(from), cm.posFromIndex(to), {className:'cm-run-flash'});
+  setTimeout(() => m.clear(), 450);
+}
+function runCurrent(){
+  const st = currentStatement();
+  if (!st) return;
+  flash(st.from, st.to);
+  execute(st.sql, st.from, 'statement');
+}
+function explainCurrent(){
+  const st = currentStatement();
+  if (!st) return;
+  const body = st.sql.replace(/^\s*EXPLAIN\s+(QUERY\s+PLAN\s+)?/i, '');
+  const lead = st.sql.length - st.sql.replace(/^\s+/, '').length;
+  flash(st.from, st.to);
+  const prefix = 'EXPLAIN QUERY PLAN ';
+  execute(prefix + body.trim(), Math.max(0, st.from + lead - prefix.length), 'explain');
+}
+
+let errMark = null;
+function markErrorLine(line){ errMark = cm.addLineClass(line, 'background', 'cm-err-line'); }
+function clearErrorMark(){ if (errMark){ cm.removeLineClass(errMark, 'background', 'cm-err-line'); errMark = null; } }
+
+/* ================================================================
+   Results rendering
+   ================================================================ */
+let lastRun = null;
+function renderResults(run){
+  if (run) lastRun = run;
+  const tabsEl = $('#rtabs');
+  let h = results.map((r, i) =>
+    `<button class="rtab${i === activeResult ? ' on' : ''}" data-r="${i}">${r.kind === 'steps' ? 'Step-by-step' : r.plan ? 'Plan' : 'Result'} ${results.length > 1 ? i + 1 : ''}<span class="n">${r.total}</span></button>`
+  ).join('');
+  const errs = messages.length && messages[0].kind === 'err' && lastRun && lastRun.failed;
+  h += `<button class="rtab${activeResult === -1 ? ' on' : ''}${errs ? ' err' : ''}" data-r="-1">Messages</button>`;
+  h += `<div class="rtools">${activeResult >= 0 && results[activeResult] && results[activeResult].kind !== 'steps' ? '<button class="btn" id="csvBtn" title="Download this result as CSV">⤓ CSV</button>' : ''}${activeResult === -1 && messages.length ? '<button class="btn" id="clearMsgs">Clear</button>' : ''}</div>`;
+  tabsEl.innerHTML = h;
+
+  const body = $('#rbody');
+  if (activeResult >= 0 && results[activeResult]){
+    const r = results[activeResult];
+    if (r.kind === 'steps'){
+      body.innerHTML = renderSteps();
+      const on = body.querySelector('.chip.on');
+      if (on) on.scrollIntoView({block: 'nearest', inline: 'center'});
+      // Bring the first affected row into view (e.g. the rows an UPDATE touches).
+      const st = stepper.steps[stepper.i], box = body.querySelector('.step-table');
+      const tr = box && (box.querySelector('tr.s-hit, tr.s-new, tr.s-pad') || (st.label === 'DELETE' && box.querySelector('tr.s-drop')));
+      if (tr && tr.offsetTop + tr.offsetHeight > box.clientHeight) box.scrollTop = tr.offsetTop - 40;
+    }
+    else if (r.plan) body.innerHTML = renderPlan(r);
+    else body.innerHTML = renderGrid(r);
+  } else if (messages.length){
+    body.innerHTML = (lastRun ? '' : welcomeHtml()) + '<div class="msgs">' + messages.map(m =>
+      `<div class="msg ${m.kind}"><span class="t">${m.t}</span><span class="b">${esc(m.text)}${m.q ? '\n<span class="q">' + esc(m.q.length > 160 ? m.q.slice(0, 160) + '…' : m.q) + '</span>' : ''}</span></div>`
+    ).join('') + '</div>';
+  } else {
+    body.innerHTML = welcomeHtml();
+  }
+
+  if (stepsShown()) markStep(); else { clearStepMarks(); stopPlay(); }
+  const foot = $('#rfoot');
+  if (stepsShown()){
+    const st = stepper.steps[stepper.i];
+    foot.innerHTML = `<span class="ok">step-by-step</span><span>step ${stepper.i + 1} of ${stepper.steps.length}: ${esc(st.label)}</span>` +
+      (st.after != null ? `<span>${st.after} row${st.after === 1 ? '' : 's'}</span>` : '') + '<span>← → to move · space to play</span>';
+  } else if (lastRun){
+    const r = results[activeResult];
+    foot.innerHTML =
+      `<span class="${lastRun.failed ? 'bad' : 'ok'}">${lastRun.failed ? '✕ failed' : '✓ success'}</span>` +
+      `<span>${lastRun.count} statement${lastRun.count === 1 ? '' : 's'}</span>` +
+      `<span>${fmtMs(lastRun.totalMs)}</span>` +
+      (r && r.cols ? `<span>${r.total} row${r.total === 1 ? '' : 's'} × ${r.cols.length} col${r.cols.length === 1 ? '' : 's'}</span>` : '');
+  } else foot.innerHTML = '<span>ready</span>';
+}
+function renderGrid(r){
+  let rows = r.rows;
+  if (sortState.col >= 0){
+    const c = sortState.col, d = sortState.dir;
+    rows = rows.slice().sort((a, b) => {
+      const x = a[c], y = b[c];
+      if (x === y) return 0;
+      if (x === null) return -d; if (y === null) return d;
+      if (typeof x === 'number' && typeof y === 'number') return (x - y) * d;
+      return String(x).localeCompare(String(y), undefined, {numeric:true}) * d;
+    });
+  }
+  let h = '<table class="grid"><thead><tr><th class="rn">#</th>' + r.cols.map((c, i) =>
+    `<th data-c="${i}" title="Sort by ${esc(c)}">${esc(c)}${sortState.col === i ? '<span class="ar">' + (sortState.dir > 0 ? '▲' : '▼') + '</span>' : ''}</th>`
+  ).join('') + '</tr></thead><tbody>';
+  for (let i = 0; i < rows.length; i++){
+    h += '<tr><td class="rn">' + (i + 1) + '</td>';
+    for (const v of rows[i]){ const o = cellOut(v); h += `<td class="${o.cls}" title="${esc(o.text)}">${esc(o.text)}</td>`; }
+    h += '</tr>';
+  }
+  h += '</tbody></table>';
+  if (!rows.length) h += '<div class="trunc" style="color:var(--text-faint)">(no rows)</div>';
+  if (r.total > r.rows.length) h += `<div class="trunc">Showing the first ${r.rows.length.toLocaleString()} of ${r.total.toLocaleString()} rows. Add a LIMIT to see the rest.</div>`;
+  return h;
+}
+function renderPlan(r){
+  // EXPLAIN QUERY PLAN columns: id, parent, notused, detail
+  const ci = r.cols.indexOf('id'), cp = r.cols.indexOf('parent'), cd = r.cols.indexOf('detail');
+  if (ci < 0 || cp < 0 || cd < 0) return renderGrid(r);
+  const kids = new Map();
+  r.rows.forEach(row => { const p = row[cp]; if (!kids.has(p)) kids.set(p, []); kids.get(p).push(row); });
+  let out = '';
+  const walk = (pid, depth) => (kids.get(pid) || []).forEach(row => {
+    const d = String(row[cd]);
+    const color = /^SCAN/.test(d) ? 'var(--warn)' : /^SEARCH/.test(d) ? 'var(--sql)' : '#cfd3ff';
+    out += `<div style="padding:3px 0 3px ${depth * 22}px;color:${color}">${depth ? '└─ ' : ''}${esc(d)}</div>`;
+    walk(row[ci], depth + 1);
+  });
+  walk(0, 0);
+  return `<div class="msgs"><div style="color:var(--text-faint);margin-bottom:8px">-- ${esc(r.sql.replace(/\s+/g, ' ').slice(0, 140))}</div>${out}
+    <div style="margin-top:12px;color:var(--text-faint)"><span style="color:var(--warn)">SCAN</span> = reads the whole table · <span style="color:var(--sql)">SEARCH</span> = uses an index or key to jump straight to rows</div></div>`;
+}
+function welcomeHtml(){
+  return `<div class="welcome"><h2>Run a query to see results here</h2>
+  <ul>
+    <li><kbd>Ctrl</kbd> + <kbd>Enter</kbd> runs the selection, or the whole editor if nothing is selected.</li>
+    <li><kbd>Shift</kbd> + <kbd>Ctrl</kbd> + <kbd>Enter</kbd> runs just the statement under the cursor.</li>
+    <li><b>Step-by-step</b> (<kbd>Alt</kbd> + <kbd>Enter</kbd>) walks through how the statement under the cursor is executed: FROM → JOIN → WHERE → GROUP BY → HAVING → SELECT → ORDER BY → LIMIT, with the table after each clause. Use ◀ ▶ or the arrow keys.</li>
+    <li><kbd>Ctrl</kbd> + <kbd>Space</kbd> autocompletes keywords, tables and columns. <kbd>Ctrl</kbd> + <kbd>/</kbd> toggles a comment.</li>
+    <li>The <b>Schema</b> panel lists every table; click a column to insert its name, or <b>▶ rows</b> to preview a table.</li>
+    <li>Your database and tabs are kept in this browser. <b>Reset DB</b> brings back the sample data.</li>
+  </ul></div>`;
+}
+$('#rtabs').addEventListener('click', e => {
+  const b = e.target.closest('[data-r]');
+  if (b){ activeResult = +b.dataset.r; sortState = {col:-1, dir:1}; renderResults(); return; }
+  if (e.target.closest('#csvBtn')) exportCsv();
+  if (e.target.closest('#clearMsgs')){ messages = []; renderResults(); }
+});
+$('#rbody').addEventListener('click', e => {
+  const th = e.target.closest('th[data-c]');
+  if (!th) return;
+  const c = +th.dataset.c;
+  sortState = sortState.col === c ? (sortState.dir > 0 ? {col:c, dir:-1} : {col:-1, dir:1}) : {col:c, dir:1};
+  $('#rbody').innerHTML = renderGrid(results[activeResult]);
+});
+function exportCsv(){
+  const r = results[activeResult]; if (!r) return;
+  const q = v => { if (v === null) return ''; if (v instanceof Uint8Array) v = cellOut(v).text; const s = String(v); return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+  const csv = [r.cols.map(q).join(',')].concat(r.rows.map(row => row.map(q).join(','))).join('\r\n');
+  download('result.csv', csv, 'text/csv');
+}
+
+/* ================================================================
+   Schema explorer
+   ================================================================ */
+const openTables = new Set(LS.get('openTables', []));
+function q1(sql){ const r = db.exec(sql); return r.length ? r[0].values : []; }
+function datasetOptions(){
+  const ds = currentDataset();
+  $('#dataset').innerHTML = Object.entries(DATASETS).map(([k, d]) => `<option value="${k}">${esc(d.name)}</option>`).join('') +
+    (ds === 'custom' ? '<option value="custom">Opened file</option>' : '');
+  $('#dataset').value = ds;
+}
+function aboutDataset(){
+  const ds = currentDataset(), d = DATASETS[ds];
+  if (!d) return '<div class="about-ds"><b>Opened file</b><span>A database you loaded from disk.</span></div>';
+  return `<div class="about-ds"><b>${esc(d.name)}</b><span>${esc(d.desc)}</span></div>`;
+}
+function refreshSchema(){
+  const objs = q1("SELECT type, name, tbl_name, sql FROM sqlite_schema WHERE name NOT LIKE 'sqlite_%' ORDER BY type, name");
+  const tables = objs.filter(o => o[0] === 'table'), views = objs.filter(o => o[0] === 'view');
+  const idx = objs.filter(o => o[0] === 'index'), trg = objs.filter(o => o[0] === 'trigger');
+  schemaTables = {};
+
+  const tblHtml = (name, isView) => {
+    let cols = [], fks = [], cnt = '';
+    try { cols = q1(`PRAGMA table_info("${name.replace(/"/g,'""')}")`); } catch(e){}
+    try { fks = q1(`PRAGMA foreign_key_list("${name.replace(/"/g,'""')}")`).map(f => f[3]); } catch(e){}
+    try { cnt = q1(`SELECT COUNT(*) FROM "${name.replace(/"/g,'""')}"`)[0][0]; } catch(e){ cnt = '?'; }
+    schemaTables[name] = cols.map(c => c[1]);
+    const open = openTables.has(name) ? ' open' : '';
+    return `<div class="tbl${open}" data-t="${esc(name)}">
+      <div class="tbl-head"><span class="chev">▶</span><span class="ico${isView ? ' view' : ''}">${isView ? '◇' : '▦'}</span>
+        <span class="nm" title="${esc(name)}">${esc(name)}</span><span class="cnt">${cnt}</span>
+        <button class="peek" data-peek="${esc(name)}" title="SELECT * FROM ${esc(name)} LIMIT 100">▶ rows</button></div>
+      <div class="cols">${cols.map(c =>
+        `<div class="col" data-ins="${esc(c[1])}" title="Click to insert"><span class="cn">${esc(c[1])}</span>` +
+        (c[5] ? '<span class="k pk">PK</span>' : '') + (fks.includes(c[1]) ? '<span class="k fk">FK</span>' : '') +
+        `<span class="ct">${esc((c[2] || 'ANY').toLowerCase())}${c[3] ? ' !' : ''}</span></div>`).join('')}</div></div>`;
+  };
+
+  let h = aboutDataset() + '<h4>Tables · ' + tables.length + '</h4>';
+  h += tables.length ? tables.map(t => tblHtml(t[1], false)).join('') : '<div class="empty">No tables yet. Try a CREATE TABLE.</div>';
+  if (views.length) h += '<h4>Views · ' + views.length + '</h4>' + views.map(v => tblHtml(v[1], true)).join('');
+  if (idx.length) h += '<h4>Indexes · ' + idx.length + '</h4>' + idx.map(i => `<div class="misc" title="${esc(i[3] || '')}">⚡ ${esc(i[1])} <span style="color:var(--text-faint)">on ${esc(i[2])}</span></div>`).join('');
+  if (trg.length) h += '<h4>Triggers · ' + trg.length + '</h4>' + trg.map(t => `<div class="misc" title="${esc(t[3] || '')}">↯ ${esc(t[1])} <span style="color:var(--text-faint)">on ${esc(t[2])}</span></div>`).join('');
+  $('#p-schema').innerHTML = h;
+
+  if (cm) cm.setOption('hintOptions', {tables: schemaTables, completeSingle: false});
+  $('#sbTables').textContent = tables.length + ' table' + (tables.length === 1 ? '' : 's') + (views.length ? ', ' + views.length + ' view' + (views.length === 1 ? '' : 's') : '');
+}
+$('#p-schema').addEventListener('click', e => {
+  const peek = e.target.closest('[data-peek]');
+  if (peek){
+    const n = peek.dataset.peek;
+    execute(`SELECT * FROM "${n.replace(/"/g,'""')}" LIMIT 100;`, 0, 'preview');
+    closeSidebarMobile();
+    return;
+  }
+  const col = e.target.closest('[data-ins]');
+  if (col){ cm.replaceSelection(col.dataset.ins); cm.focus(); return; }
+  const head = e.target.closest('.tbl-head');
+  if (head){
+    const t = head.parentElement, n = t.dataset.t;
+    t.classList.toggle('open');
+    if (t.classList.contains('open')) openTables.add(n); else openTables.delete(n);
+    LS.set('openTables', [...openTables]);
+  }
+});
+
+/* ================================================================
+   Examples & history panels
+   ================================================================ */
+function examplesFor(){ return EXAMPLE_SETS[currentDataset()] || []; }
+function renderExamples(){
+  const ds = currentDataset(), list = examplesFor();
+  $('#p-examples').innerHTML = (list.length
+      ? `<div class="empty" style="padding:4px 8px 6px">Examples for the <b>${esc(DATASETS[ds].name.split(' ·')[0])}</b> database. Click one to open and run it in an <b>Example</b> tab.</div>`
+      : '<div class="empty">Examples are written for the built-in databases. Pick one from the menu at the top.</div>') +
+    list.map((g, gi) => `<div class="ex-group"><h4>${esc(g.group)}</h4>` +
+      g.items.map((it, ii) => `<button class="ex" data-ex="${gi}.${ii}"><b>${esc(it[0])}</b><span>${esc(it[1])}</span></button>`).join('') + '</div>'
+    ).join('');
+}
+$('#p-examples').addEventListener('click', e => {
+  const b = e.target.closest('[data-ex]'); if (!b) return;
+  const [gi, ii] = b.dataset.ex.split('.').map(Number);
+  const [title, desc, sql] = examplesFor()[gi].items[ii];
+  const text = `-- ${title}: ${desc}\n${sql}\n`;
+  const ei = tabs.findIndex(t => t.name === 'Example');
+  if (ei >= 0){
+    if (ei !== activeTab) switchTab(ei);
+    cm.setValue(text); cm.clearHistory(); saveTabs();
+  } else addTab('Example', text);
+  closeSidebarMobile();
+  runAll();
+});
+function renderHistory(){
+  const el = $('#p-history');
+  if (!history.length){ el.innerHTML = '<div class="empty">Queries you run will appear here.</div>'; return; }
+  el.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;padding:0 8px 6px"><h4 style="margin:4px 0">Recent · ' + history.length + '</h4><button class="btn" id="clearHist" style="padding:4px 9px;font-size:11px">Clear</button></div>' +
+    history.map((h, i) => {
+      const d = new Date(h.ts);
+      return `<button class="hist" data-h="${i}" title="${esc(h.sql.slice(0, 600))}"><code>${esc(h.sql.replace(/\s+/g, ' ').slice(0, 120))}</code>
+        <small><span class="${h.ok ? 'ok' : 'bad'}">${h.ok ? '✓' : '✕'}</span><span>${d.toLocaleDateString([], {month:'short', day:'numeric'})} ${d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span><span>${h.ms} ms</span></small></button>`;
+    }).join('');
+}
+$('#p-history').addEventListener('click', e => {
+  if (e.target.closest('#clearHist')){ history = []; LS.set('history', history); renderHistory(); return; }
+  const b = e.target.closest('[data-h]'); if (!b) return;
+  const h = history[+b.dataset.h];
+  const cur = cm.getValue();
+  cm.replaceRange((cur && !cur.endsWith('\n') ? '\n\n' : cur ? '\n' : '') + h.sql + '\n', CodeMirror.Pos(cm.lastLine()));
+  cm.setCursor(CodeMirror.Pos(cm.lastLine()));
+  cm.focus();
+  closeSidebarMobile();
+});
+
+document.querySelector('.stabs').addEventListener('click', e => {
+  const b = e.target.closest('[data-p]'); if (!b) return;
+  document.querySelectorAll('.stabs button').forEach(x => x.classList.toggle('on', x === b));
+  document.querySelectorAll('.spane').forEach(p => p.classList.toggle('on', p.id === 'p-' + b.dataset.p));
+  LS.set('pane', b.dataset.p);
+});
+function closeSidebarMobile(){ document.body.classList.remove('side-open'); }
+$('#sidebarToggle').addEventListener('click', e => { e.stopPropagation(); document.body.classList.toggle('side-open'); });
+document.addEventListener('click', e => {
+  if (document.body.classList.contains('side-open') && !e.target.closest('#sidebar') && !e.target.closest('#sidebarToggle')) closeSidebarMobile();
+});
+
+/* ================================================================
+   Step-by-step execution
+   Breaks a statement into its logical processing order and asks
+   SQLite for the intermediate table after each clause.
+   ================================================================ */
+const AGG_FNS = new Set(['COUNT','SUM','AVG','MIN','MAX','TOTAL','GROUP_CONCAT','STRING_AGG','JSON_GROUP_ARRAY','JSON_GROUP_OBJECT']);
+const JOIN_W = new Set(['NATURAL','LEFT','RIGHT','FULL','OUTER','INNER','CROSS']);
+const SRC_STOP = new Set(['ON','USING','JOIN','LEFT','RIGHT','FULL','INNER','OUTER','CROSS','NATURAL','WHERE','GROUP','HAVING','ORDER','LIMIT','WINDOW','UNION','INTERSECT','EXCEPT','INDEXED','NOT']);
+const ALIAS_BLOCK = new Set(['AND','OR','NOT','IS','IN','LIKE','GLOB','REGEXP','MATCH','BETWEEN','THEN','ELSE','WHEN','CASE','ESCAPE','COLLATE','DISTINCT','SELECT','CAST','AS','ALL']);
+const NOT_ALIAS = new Set(['END','NULL','TRUE','FALSE','CURRENT_DATE','CURRENT_TIME','CURRENT_TIMESTAMP','ISNULL','NOTNULL','ASC','DESC']);
+
+function tokenize(sql){
+  const toks = [];
+  let i = 0, depth = 0;
+  const n = sql.length;
+  while (i < n){
+    const c = sql[i], c2 = sql[i+1];
+    if (/\s/.test(c)){ i++; continue; }
+    if (c === '-' && c2 === '-'){ while (i < n && sql[i] !== '\n') i++; continue; }
+    if (c === '/' && c2 === '*'){ const e = sql.indexOf('*/', i + 2); i = e < 0 ? n : e + 2; continue; }
+    const s = i;
+    let t;
+    if (c === "'" || c === '"' || c === '`'){
+      i++;
+      while (i < n){ if (sql[i] === c){ if (sql[i+1] === c){ i += 2; continue; } break; } i++; }
+      i++; t = c === "'" ? 's' : 'q';
+    } else if (c === '['){ const e = sql.indexOf(']', i); i = e < 0 ? n : e + 1; t = 'q'; }
+    else if (/[A-Za-z_]/.test(c)){ while (i < n && /[A-Za-z0-9_$]/.test(sql[i])) i++; t = 'w'; }
+    else if (/[0-9]/.test(c) || (c === '.' && /[0-9]/.test(c2))){
+      const m = /^(?:0x[0-9a-f]+|(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?)/i.exec(sql.slice(i));
+      i += m ? m[0].length : 1; t = 'n';
+    } else {
+      const m = /^(?:\|\||<<|>>|<=|>=|==|!=|<>|->>|->)/.exec(sql.slice(i, i + 3));
+      i += m ? m[0].length : 1; t = 'p';
+    }
+    const v = sql.slice(s, i);
+    if (v === ')') depth--;
+    toks.push({t, v, u: t === 'w' ? v.toUpperCase() : v, s, e: i, d: depth});
+    if (v === '(') depth++;
+  }
+  return toks;
+}
+const isKw = (t, ...w) => !!t && t.t === 'w' && w.includes(t.u);
+function unq(v){
+  const c = v[0];
+  if (c === '"' || c === '`') return v.slice(1, -1).split(c + c).join(c);
+  if (c === '[') return v.slice(1, -1);
+  if (c === "'") return v.slice(1, -1).replace(/''/g, "'");
+  return v;
+}
+function matchParen(T, i){
+  for (let j = i + 1; j < T.length; j++) if (T[j].v === ')' && T[j].d === T[i].d) return j;
+  throw new Error('Unbalanced parentheses');
+}
+const qi = s => '"' + String(s).replace(/"/g, '""') + '"';
+const short = (t, n = 140) => { const s = String(t).replace(/\s+/g, ' ').trim(); return s.length > n ? s.slice(0, n) + '…' : s; };
+const code = (t, n) => '<code>' + esc(short(t, n)) + '</code>';
+const plural = (n, w) => `<b>${n}</b> ${w}${n === 1 ? '' : 's'}`;
+const keyOf = row => row.map(v => v instanceof Uint8Array ? 'b:' + Array.from(v).join(',') : typeof v + ':' + v).join('\u0001');
+
+function runQ(sql, cap = 1000){
+  const st = db.prepare(sql);
+  try {
+    const cols = st.getColumnNames(), rows = [];
+    let total = 0;
+    while (st.step()){ total++; if (rows.length < cap) rows.push(st.get()); if (total >= 200000) break; }
+    return {cols, rows, total};
+  } finally { st.free(); }
+}
+function mkStep(res){
+  const st = {cols: res.cols.slice(), rows: res.rows, total: res.total, ranges: []};
+  const ki = st.cols.indexOf('__keep'), gi = st.cols.indexOf('__grp');
+  if (ki >= 0) st.status = st.rows.map(r => r[ki] ? 'keep' : 'drop');
+  if (gi >= 0) st.group = st.rows.map(r => r[gi]);
+  return st;
+}
+function safeStep(fn){
+  try { return fn(); }
+  catch(e){ return {cols: [], rows: [], total: 0, ranges: [], error: e.message}; }
+}
+const kept = st => st.status ? st.status.filter(s => s === 'keep' || s === 'pad').length : st.total;
+const visRows = st => {
+  const vi = st.cols.map((c, i) => i).filter(i => !st.cols[i].startsWith('__'));
+  return st.rows.filter((r, j) => !st.status || st.status[j] !== 'drop').map(r => vi.map(i => r[i]));
+};
+const visCols = st => st.cols.filter(c => !c.startsWith('__'));
+
+/* ---------- parsing ---------- */
+function analyzeSql(sql){
+  let T = tokenize(sql);
+  const semi = T.findIndex(t => t.v === ';' && t.d === 0);
+  if (semi >= 0) T = T.slice(0, semi);
+  if (!T.length) throw new Error('Nothing to step through.');
+  const A = {sql, toks: T, withText: '', ctes: [], recursive: false};
+  let i = 0;
+  if (isKw(T[0], 'WITH')){
+    i = 1;
+    if (isKw(T[i], 'RECURSIVE')){ A.recursive = true; i++; }
+    for (;;){
+      const nameTok = T[i];
+      if (!nameTok) throw new Error('Could not read the WITH clause.');
+      let j = i + 1;
+      if (T[j] && T[j].v === '(') j = matchParen(T, j) + 1;
+      if (!isKw(T[j], 'AS')) throw new Error('Could not read the WITH clause.');
+      j++;
+      if (isKw(T[j], 'NOT')) j++;
+      if (isKw(T[j], 'MATERIALIZED')) j++;
+      if (!T[j] || T[j].v !== '(') throw new Error('Could not read the WITH clause.');
+      const close = matchParen(T, j);
+      A.ctes.push({name: unq(nameTok.v), s: nameTok.s, e: T[close].e, body: sql.slice(T[j].e, T[close].s)});
+      i = close + 1;
+      if (T[i] && T[i].v === ','){ i++; continue; }
+      break;
+    }
+    A.withText = sql.slice(T[0].s, T[i - 1].e);
+  }
+  A.mainStart = i;
+  const head = T[i];
+  if (!head) throw new Error('Expected a statement after WITH.');
+  A.kind = isKw(head, 'SELECT') ? 'select' : isKw(head, 'INSERT', 'REPLACE', 'UPDATE', 'DELETE') ? 'dml' : 'other';
+  return A;
+}
+
+function splitTop(T, a, b){
+  const out = [];
+  let s = a;
+  for (let k = a; k < b; k++) if (T[k].v === ',' && T[k].d === 0){ out.push([s, k]); s = k + 1; }
+  if (s < b) out.push([s, b]);
+  return out;
+}
+
+function parseCore(A, a, b){
+  const T = A.toks, sql = A.sql;
+  const C = {start: T[a].s, end: T[b - 1].e};
+  const marks = [];
+  for (let k = a; k < b; k++){
+    const t = T[k];
+    if (t.d !== 0 || t.t !== 'w') continue;
+    if (k === a && t.u === 'SELECT') marks.push({n: 'select', k, body: k + 1});
+    else if (['FROM','WHERE','HAVING','WINDOW','LIMIT'].includes(t.u)) marks.push({n: t.u.toLowerCase(), k, body: k + 1});
+    else if ((t.u === 'GROUP' || t.u === 'ORDER') && isKw(T[k + 1], 'BY')) marks.push({n: t.u === 'GROUP' ? 'groupBy' : 'orderBy', k, body: k + 2});
+  }
+  if (!marks.length || marks[0].n !== 'select') throw new Error('Expected SELECT.');
+  marks.forEach((m, j) => {
+    const endK = j + 1 < marks.length ? marks[j + 1].k : b;
+    let body = m.body;
+    if (m.n === 'select' && isKw(T[body], 'DISTINCT', 'ALL')){ C.distinct = T[body].u === 'DISTINCT'; body++; }
+    if (body >= endK) throw new Error('Empty ' + m.n.toUpperCase() + ' clause.');
+    C[m.n] = {a: body, b: endK, text: sql.slice(T[body].s, T[endK - 1].e), textS: T[body].s, end: T[endK - 1].e, range: [T[m.k].s, T[endK - 1].e]};
+  });
+  C.select.items = splitTop(T, C.select.a, C.select.b).map(([x, y]) => {
+    const text = sql.slice(T[x].s, T[y - 1].e);
+    const last = T[y - 1], prev = y - 2 >= x ? T[y - 2] : null;
+    if (prev && isKw(prev, 'AS')) return {text, alias: unq(last.v), expr: sql.slice(T[x].s, prev.s).trim()};
+    if (prev && (last.t === 'q' || (last.t === 'w' && !NOT_ALIAS.has(last.u))) && prev.v !== '.' &&
+        (prev.t !== 'p' || prev.v === ')') && !(prev.t === 'w' && ALIAS_BLOCK.has(prev.u)))
+      return {text, alias: unq(last.v), expr: sql.slice(T[x].s, prev.e).trim()};
+    return {text, alias: null, expr: text};
+  });
+  if (C.groupBy) C.groupBy.items = splitTop(T, C.groupBy.a, C.groupBy.b).map(([x, y]) => sql.slice(T[x].s, T[y - 1].e));
+  if (C.limit) Object.assign(C.limit, parseLimit(A, C.limit.a, C.limit.b));
+  return C;
+}
+function parseLimit(A, a, b){
+  const T = A.toks, sql = A.sql, sl = (x, y) => sql.slice(T[x].s, T[y - 1].e);
+  for (let k = a; k < b; k++){
+    if (T[k].d !== 0) continue;
+    if (isKw(T[k], 'OFFSET')) return {lim: sl(a, k), off: sl(k + 1, b)};
+    if (T[k].v === ',') return {lim: sl(k + 1, b), off: sl(a, k)};
+  }
+  return {lim: sl(a, b), off: null};
+}
+
+function parseFrom(A, a, b){
+  const T = A.toks, sql = A.sql, segs = [];
+  let k = a;
+  while (k < b){
+    const segS = T[k].s;
+    let op = 'FROM';
+    if (segs.length){
+      if (T[k].v === ','){ op = ','; k++; }
+      else {
+        const s0 = k;
+        while (k < b && T[k].t === 'w' && JOIN_W.has(T[k].u)) k++;
+        if (!isKw(T[k], 'JOIN')) throw new Error('Unsupported FROM clause');
+        k++;
+        op = T.slice(s0, k).map(t => t.u).filter(u => u !== 'OUTER').join(' ');
+        if (op === 'INNER JOIN') op = 'JOIN';
+      }
+    }
+    const srcS = k;
+    let ref = null, isSub = false;
+    if (T[k].v === '('){ k = matchParen(T, k) + 1; isSub = true; }
+    else {
+      k++;
+      while (k < b && T[k].v === '.') k += 2;
+      if (k < b && T[k].v === '('){ ref = unq(T[k - 1].v); k = matchParen(T, k) + 1; }
+      else ref = unq(T[k - 1].v);
+    }
+    const srcE = k;
+    let alias = null;
+    if (isKw(T[k], 'AS')){ alias = unq(T[k + 1].v); k += 2; }
+    else if (k < b && (T[k].t === 'q' || (T[k].t === 'w' && !SRC_STOP.has(T[k].u)))){ alias = unq(T[k].v); k++; }
+    if (isKw(T[k], 'INDEXED')) k += 3;
+    else if (isKw(T[k], 'NOT') && isKw(T[k + 1], 'INDEXED')) k += 2;
+    let on = null, using = null;
+    if (isKw(T[k], 'ON')){
+      const s = ++k;
+      while (k < b && !(T[k].d === 0 && (T[k].v === ',' || (T[k].t === 'w' && (JOIN_W.has(T[k].u) || T[k].u === 'JOIN'))))) k++;
+      on = sql.slice(T[s].s, T[k - 1].e);
+    } else if (isKw(T[k], 'USING')){
+      const close = matchParen(T, k + 1);
+      using = sql.slice(T[k + 2].s, T[close].s).trim();
+      k = close + 1;
+    }
+    segs.push({op, src: sql.slice(T[srcS].s, T[srcE - 1].e), srcText: sql.slice(T[srcS].s, T[k - 1].e).split(/\s+(?:ON|USING)\b/i)[0],
+      ref: alias || (isSub ? null : ref), alias, isSub, on, using, end: T[k - 1].e, range: [segS, T[k - 1].e]});
+  }
+  return segs;
+}
+
+function aggCalls(A, a, b){
+  const T = A.toks, out = [], subs = [];
+  for (let k = a; k < b; k++) if (T[k].v === '(' && isKw(T[k + 1], 'SELECT', 'WITH', 'VALUES')) subs.push([k, matchParen(T, k)]);
+  for (let k = a; k < b; k++){
+    const t = T[k];
+    if (t.t !== 'w' || !AGG_FNS.has(t.u) || !T[k + 1] || T[k + 1].v !== '(') continue;
+    if (subs.some(([x, y]) => k > x && k < y)) continue;
+    const close = matchParen(T, k + 1);
+    let end = close;
+    if (isKw(T[close + 1], 'FILTER') && T[close + 2] && T[close + 2].v === '(') end = matchParen(T, close + 2);
+    if (isKw(T[end + 1], 'OVER')) continue;
+    if ((t.u === 'MIN' || t.u === 'MAX') && T.slice(k + 2, close).some(x => x.v === ',' && x.d === T[k + 1].d + 1)) continue;
+    out.push(A.sql.slice(t.s, T[end].e));
+    k = end;
+  }
+  return out;
+}
+
+/* ---------- step builders ---------- */
+function orderStep(W, querySql, prevRows, orderText, range){
+  const st = safeStep(() => {
+    const res = runQ(W + querySql);
+    const pos = new Map();
+    (prevRows || []).forEach((r, i) => { const k = keyOf(r); if (!pos.has(k)) pos.set(k, []); pos.get(k).push(i + 1); });
+    const s = mkStep(res);
+    s.cols = ['was #'].concat(res.cols);
+    s.rows = res.rows.map(r => { const q = pos.get(keyOf(r)); return [q && q.length ? q.shift() : null].concat(r); });
+    s.plain = res.rows;
+    s.plainCols = res.cols;
+    return s;
+  });
+  return Object.assign(st, {label: 'ORDER BY', title: 'Sort the rows', code: 'ORDER BY ' + orderText, ranges: [range],
+    before: st.total, after: st.total,
+    html: `Sort the ${plural(st.total, 'row')} by ${code(orderText)}. <code>ASC</code> (the default) puts the smallest first, <code>DESC</code> the largest; in SQLite NULLs come first when ascending. The <b>was #</b> column shows each row's position before sorting.`});
+}
+function limitStep(cols, rows, L, hasOrder){
+  const st = safeStep(() => {
+    const v = runQ('SELECT (' + L.lim + ')' + (L.off ? ', (' + L.off + ')' : '')).rows[0];
+    const lim = Number(v[0]), off = Math.max(0, Number(v[1] || 0));
+    return {cols, rows, total: rows.length, lim, off,
+      status: rows.map((r, i) => i < off || (lim >= 0 && i >= off + lim) ? 'drop' : 'keep')};
+  });
+  const k = kept(st);
+  return Object.assign(st, {label: 'LIMIT', title: 'Keep only some rows', code: 'LIMIT ' + L.lim + (L.off ? ' OFFSET ' + L.off : ''), ranges: [L.range],
+    before: st.total, after: k,
+    html: (st.off ? `Skip the first <b>${st.off}</b> rows (OFFSET), then keep` : 'Keep') + ` at most <b>${st.lim}</b> rows; the rest are thrown away. ${plural(k, 'row')} remain.` +
+      (hasOrder ? '' : ' <span style="color:var(--warn)">Without ORDER BY the database may return any rows it likes.</span>')});
+}
+
+function buildCore(A, W, a, b, steps){
+  const T = A.toks, sql = A.sql;
+  const C = parseCore(A, a, b);
+  const fromSql = C.from ? ' FROM ' + C.from.text : '';
+  const whereSql = C.where ? ' WHERE ' + C.where.text : '';
+  let proj = '*';
+  const srcCols = new Set();
+
+  /* FROM + JOINs */
+  if (C.from){
+    let segs = null;
+    try { segs = parseFrom(A, C.from.a, C.from.b); } catch(e){ segs = null; }
+    if (segs){
+      let qualify = segs.every(g => g.ref);
+      const all = [];
+      let prev = 0;
+      segs.forEach((g, idx) => {
+        let cols = [];
+        try { cols = runQ(W + 'SELECT * FROM ' + g.src + ' LIMIT 0').cols; } catch(e){ qualify = false; }
+        cols.forEach(c => srcCols.add(c.toLowerCase()));
+        const startCol = all.length;
+        cols.forEach(c => all.push({ref: g.ref, col: c}));
+        const p = qualify ? all.map(x => qi(x.ref) + '.' + qi(x.col) + ' AS ' + qi(x.ref + '.' + x.col)).join(', ') : '*';
+        let n = null;
+        try { n = runQ(W + 'SELECT COUNT(*) FROM ' + g.src).rows[0][0]; } catch(e){}
+        const st = safeStep(() => {
+          const res = runQ(W + 'SELECT ' + p + ' FROM ' + sql.slice(C.from.textS, g.end));
+          const s = mkStep(res);
+          if (idx > 0 && qualify && /LEFT|RIGHT|FULL/.test(g.op)){
+            const nullIn = (row, x, y) => y > x && row.slice(x, y).every(v => v === null);
+            s.status = res.rows.map(row =>
+              (/LEFT|FULL/.test(g.op) && nullIn(row, startCol, all.length)) || (/RIGHT|FULL/.test(g.op) && nullIn(row, 0, startCol)) ? 'pad' : 'keep');
+          }
+          return s;
+        });
+        const name = g.isSub ? 'the subquery' : '<b>' + esc(g.src) + '</b>';
+        const nick = g.alias ? ` (nicknamed <b>${esc(g.alias)}</b>)` : '';
+        const pads = st.status ? st.status.filter(s => s === 'pad').length : 0;
+        let html;
+        if (idx === 0){
+          html = (g.isSub ? 'Run the subquery in FROM and use its result as a table' : 'Everything starts with FROM: read every row of ' + name) +
+            `${nick}: ${plural(st.total, 'row')}. Nothing is filtered or chosen yet; that comes later.`;
+        } else if (g.op === ',' || g.op === 'CROSS JOIN'){
+          html = `Combine every row so far (${prev}) with every row of ${name}${nick} (${n ?? '?'}): ${prev} × ${n ?? '?'} = ${plural(st.total, 'row')}. ` +
+            (g.op === ',' ? 'A comma in FROM is a cross join; the matching condition is usually applied later in WHERE.' : '');
+        } else {
+          const cond = g.on ? 'the condition ' + code(g.on) + ' is true' : g.using ? 'the columns ' + code(g.using) + ' are equal' : 'all same-named columns are equal';
+          html = `Pair each of the ${prev} rows so far with each of the ${n ?? '?'} rows of ${name}${nick}${n != null ? ` (${prev * n} combinations)` : ''} and keep only the pairs where ${cond}: ${plural(st.total, 'row')}.`;
+          if (/LEFT/.test(g.op)) html += ` A <b>LEFT</b> join also keeps left rows that found no partner, filling the right side with NULL (<span style="color:var(--warn)">amber</span>): ${pads} such row${pads === 1 ? '' : 's'}.`;
+          if (/RIGHT/.test(g.op)) html += ` A <b>RIGHT</b> join also keeps unmatched rows from ${name}, with NULL on the left (<span style="color:var(--warn)">amber</span>): ${pads}.`;
+          if (/FULL/.test(g.op)) html += ` A <b>FULL</b> join keeps unmatched rows from both sides, NULL-padded (<span style="color:var(--warn)">amber</span>): ${pads}.`;
+          if (g.op === 'JOIN') html += ' Rows without a partner disappear.';
+        }
+        Object.assign(st, {label: idx === 0 ? 'FROM' : g.op === ',' ? 'CROSS JOIN' : g.op,
+          title: idx === 0 ? 'Read the source table' : 'Join ' + (g.isSub ? 'a subquery' : g.src),
+          code: idx === 0 ? 'FROM ' + g.srcText : sql.slice(g.range[0], g.range[1]),
+          ranges: [idx === 0 ? [C.from.range[0], g.range[1]] : g.range],
+          before: idx === 0 ? null : prev, after: st.total, html});
+        steps.push(st);
+        prev = st.total || 0;
+      });
+      proj = qualify ? all.map(x => qi(x.ref) + '.' + qi(x.col) + ' AS ' + qi(x.ref + '.' + x.col)).join(', ') : '*';
+    } else {
+      const st = safeStep(() => mkStep(runQ(W + 'SELECT *' + fromSql)));
+      steps.push(Object.assign(st, {label: 'FROM', title: 'Build the source rows', code: 'FROM ' + C.from.text, ranges: [C.from.range], after: st.total,
+        html: `FROM produces the rows everything else works on: ${plural(st.total, 'row')}.`}));
+    }
+  }
+
+  /* WHERE */
+  if (C.where){
+    const st = safeStep(() => mkStep(runQ(W + `SELECT ${proj}, CASE WHEN (${C.where.text}) THEN 1 ELSE 0 END AS __keep${fromSql}`)));
+    const k = kept(st);
+    steps.push(Object.assign(st, {label: 'WHERE', title: 'Filter rows', code: 'WHERE ' + C.where.text, ranges: [C.where.range], before: st.total, after: k,
+      html: `Test ${code(C.where.text)} on each of the ${plural(st.total, 'row')}. A row stays only if the condition is <b>true</b>; false or NULL removes it (struck through). ${plural(k, 'row')} remain.`}));
+  }
+
+  /* GROUP BY / implicit aggregate / HAVING */
+  const aggs = aggCalls(A, C.select.a, C.select.b);
+  const grouped = !!C.groupBy || aggs.length > 0 || !!C.having;
+  let gbItems = [];
+  if (grouped){
+    const aliasMap = {};
+    C.select.items.forEach(it => { if (it.alias) aliasMap[it.alias.toLowerCase()] = it.expr; });
+    gbItems = C.groupBy ? C.groupBy.items.map(g => {
+      const t = g.trim();
+      if (/^\d+$/.test(t) && C.select.items[+t - 1]) return C.select.items[+t - 1].expr;
+      const k = unq(t).toLowerCase();
+      return aliasMap[k] && !srcCols.has(k) ? aliasMap[k] : t;
+    }) : [];
+    const keys = gbItems.join(', ');
+    const keyCols = gbItems.map(g => `(${g}) AS ${qi('⟨' + short(g, 30) + '⟩')}`);
+    const st = safeStep(() => gbItems.length
+      ? mkStep(runQ(W + `SELECT dense_rank() OVER (ORDER BY ${keys}) AS __grp, ${keyCols.join(', ')}, ${proj}${fromSql}${whereSql} ORDER BY ${keys}`))
+      : mkStep(runQ(W + `SELECT 1 AS __grp, ${proj}${fromSql}${whereSql}`)));
+    const g = st.group && st.group.length ? Math.max(...st.group) : (gbItems.length ? 0 : 1);
+    if (gbItems.length){
+      steps.push(Object.assign(st, {label: 'GROUP BY', title: 'Group rows', code: 'GROUP BY ' + C.groupBy.text, ranges: [C.groupBy.range], before: st.total, after: g,
+        html: `Put rows that share the same ${gbItems.map(x => code(x, 40)).join(', ')} into one group. Each colored band is a group (the ⟨key⟩ column${gbItems.length > 1 ? 's show' : ' shows'} what they share): ${plural(g, 'group')}. From here on, each group will become <b>one</b> output row.`}));
+    } else {
+      steps.push(Object.assign(st, {label: 'AGGREGATE', title: 'All rows form one group', code: aggs.join(', ') || 'HAVING', ranges: [C.select.range], before: st.total, after: 1,
+        html: `The query uses aggregate functions (${aggs.map(x => code(x, 40)).join(', ') || 'in HAVING'}) but has no GROUP BY, so all ${plural(st.total, 'row')} are treated as <b>a single group</b> and the result will be exactly one row.`}));
+    }
+    if (C.having){
+      const hAggs = [...new Set(aggCalls(A, C.having.a, C.having.b))];
+      const cols = keyCols.concat(hAggs.map(x => `${x} AS ${qi(short(x, 40))}`));
+      cols.push(`CASE WHEN (${C.having.text}) THEN 1 ELSE 0 END AS __keep`);
+      const gb = gbItems.length ? ` GROUP BY ${keys} ORDER BY ${keys}` : '';
+      const hs = safeStep(() => {
+        const s = mkStep(runQ(W + `SELECT ${cols.join(', ')}${fromSql}${whereSql}${gb}`));
+        s.group = s.rows.map((r, i) => i + 1);
+        return s;
+      });
+      const k = kept(hs);
+      steps.push(Object.assign(hs, {label: 'HAVING', title: 'Filter groups', code: 'HAVING ' + C.having.text, ranges: [C.having.range], before: hs.total, after: k,
+        html: `Now that rows are grouped, test ${code(C.having.text)} on each group (one row per group here). HAVING filters <b>groups</b>, just like WHERE filtered <b>rows</b>. ${plural(k, 'group')} remain.`}));
+    }
+  }
+
+  /* SELECT list */
+  const stop = C.orderBy ? C.orderBy.range[0] : C.limit ? C.limit.range[0] : C.end;
+  const selSql = 'SELECT ' + C.select.text + ' ' + sql.slice(C.select.end, stop);
+  const ss = safeStep(() => mkStep(runQ(W + selSql)));
+  const items = C.select.items.slice(0, 8).map(it => code(it.text, 50)).join(', ') + (C.select.items.length > 8 ? ', …' : '');
+  const hasWindow = /\bOVER\b/i.test(C.select.text);
+  steps.push(Object.assign(ss, {label: 'SELECT', title: 'Choose and compute the output columns', code: 'SELECT ' + C.select.text, ranges: [C.select.range], after: ss.total,
+    html: grouped
+      ? `Build the output columns: ${items}. This runs <b>once per group</b>: plain columns come from the group's shared values and the aggregates summarize the rows inside each group. Result: ${plural(ss.total, 'row')} × ${visCols(ss).length} columns.`
+      : `Build the output columns: ${items}. Columns that are not listed are dropped, expressions are calculated, and <code>AS</code> gives them a name. Note that SELECT runs <b>after</b> FROM and WHERE, even though it is written first.` +
+        (hasWindow ? ' Window functions (<code>OVER …</code>) are computed here, looking across the rows that survived WHERE.' : '')}));
+  let curCols = ss.cols, curRows = ss.rows;
+
+  /* DISTINCT */
+  if (C.distinct){
+    const seen = new Set();
+    const status = curRows.map(r => { const k = keyOf(r); if (seen.has(k)) return 'drop'; seen.add(k); return 'keep'; });
+    const st = {cols: curCols, rows: curRows, total: curRows.length, status};
+    const k = kept(st);
+    steps.push(Object.assign(st, {label: 'DISTINCT', title: 'Remove duplicate rows', code: 'SELECT DISTINCT', ranges: [C.select.range], before: st.total, after: k,
+      html: `DISTINCT keeps only the first copy of rows that are identical in <b>every</b> output column; the duplicates are struck through. ${plural(k, 'row')} remain.`}));
+    curRows = visRows(st);
+  }
+
+  /* ORDER BY */
+  if (C.orderBy){
+    const st = orderStep(W, sql.slice(C.start, C.limit ? C.limit.range[0] : C.end), curRows, C.orderBy.text, C.orderBy.range);
+    steps.push(st);
+    if (!st.error){ curCols = st.plainCols; curRows = st.plain; }
+  }
+
+  /* LIMIT / OFFSET */
+  if (C.limit){
+    C.limit.range = C.limit.range || [0, 0];
+    steps.push(limitStep(curCols, curRows, C.limit, !!C.orderBy));
+  }
+}
+
+function buildCompound(A, W, parts, ops, steps){
+  const T = A.toks, sql = A.sql;
+  const [la, lb] = parts[parts.length - 1];
+  let tailK = lb;
+  for (let k = la; k < lb; k++){
+    const t = T[k];
+    if (t.d === 0 && t.t === 'w' && ((t.u === 'ORDER' && isKw(T[k + 1], 'BY')) || t.u === 'LIMIT')){ tailK = k; break; }
+  }
+  parts[parts.length - 1] = [la, tailK];
+  const partRes = [];
+  parts.forEach(([a, b], i) => {
+    const text = sql.slice(T[a].s, T[b - 1].e);
+    const st = safeStep(() => mkStep(runQ(W + text)));
+    steps.push(Object.assign(st, {label: 'PART ' + (i + 1), title: `Run SELECT #${i + 1} on its own`, code: text, ranges: [[T[a].s, T[b - 1].e]], after: st.total,
+      html: `A compound query first runs each SELECT separately. Part ${i + 1} returns ${plural(st.total, 'row')}.`}));
+    partRes.push(st);
+  });
+  const cols = partRes[0].cols;
+  let acc = (partRes[0].rows || []).map(r => ({r, from: 1}));
+  ops.forEach((o, i) => {
+    const right = (partRes[i + 1].rows || []).map(r => ({r, from: i + 2}));
+    const rset = new Set(right.map(x => keyOf(x.r)));
+    const seen = new Set();
+    let rows, status, html;
+    const once = x => { const k = keyOf(x.r); if (seen.has(k)) return false; seen.add(k); return true; };
+    if (o.op === 'UNION ALL'){ rows = acc.concat(right); status = rows.map(() => 'keep'); html = 'UNION ALL simply stacks the rows of both sides, keeping duplicates.'; }
+    else if (o.op === 'UNION'){ rows = acc.concat(right); status = rows.map(x => once(x) ? 'keep' : 'drop'); html = 'UNION stacks both sides and removes duplicate rows (struck through).'; }
+    else if (o.op === 'INTERSECT'){ rows = acc; status = rows.map(x => rset.has(keyOf(x.r)) && once(x) ? 'keep' : 'drop'); html = `INTERSECT keeps only rows that also appear in part ${i + 2}.`; }
+    else { rows = acc; status = rows.map(x => !rset.has(keyOf(x.r)) && once(x) ? 'keep' : 'drop'); html = `EXCEPT removes every row that also appears in part ${i + 2}.`; }
+    const st = {cols: ['from part'].concat(cols), rows: rows.map(x => [x.from].concat(x.r)), total: rows.length, status, ranges: [[o.s, o.e]], label: o.op, title: 'Combine the parts', code: o.op};
+    st.before = st.total; st.after = kept(st);
+    st.html = html + ` ${plural(st.after, 'row')} remain.`;
+    steps.push(st);
+    acc = rows.filter((x, j) => status[j] === 'keep');
+  });
+  let curCols = cols, curRows = acc.map(x => x.r);
+  if (tailK < lb){
+    let limK = lb, hasOrder = false;
+    for (let k = tailK; k < lb; k++) if (T[k].d === 0 && isKw(T[k], 'LIMIT')){ limK = k; break; }
+    if (isKw(T[tailK], 'ORDER')){
+      hasOrder = true;
+      const ordText = sql.slice(T[tailK + 2].s, T[limK - 1].e);
+      const st = orderStep(W, sql.slice(T[A.mainStart].s, T[limK - 1].e), curRows, ordText, [T[tailK].s, T[limK - 1].e]);
+      steps.push(st);
+      if (!st.error){ curCols = st.plainCols; curRows = st.plain; }
+    }
+    if (limK < lb){
+      const L = parseLimit(A, limK + 1, lb);
+      L.range = [T[limK].s, T[lb - 1].e];
+      steps.push(limitStep(curCols, curRows, L, hasOrder));
+    }
+  }
+}
+
+function buildDml(A, W, steps){
+  const T = A.toks, sql = A.sql;
+  let k = A.mainStart;
+  const verb = T[k].u;
+  k++;
+  if ((verb === 'INSERT' || verb === 'UPDATE') && isKw(T[k], 'OR')) k += 2;
+  if ((verb === 'INSERT' || verb === 'REPLACE') && isKw(T[k], 'INTO')) k++;
+  if (verb === 'DELETE' && isKw(T[k], 'FROM')) k++;
+  const nameS = k;
+  k++;
+  if (T[k] && T[k].v === '.') k += 2;
+  const tbl = sql.slice(T[nameS].s, T[k - 1].e);
+  const tblRange = [T[A.mainStart].s, T[k - 1].e];
+
+  let where = null, set = null, hasFrom = false, srcK = -1;
+  const endAt = (j, words) => { let e = j; while (e < T.length && !(T[e].d === 0 && T[e].t === 'w' && words.includes(T[e].u))) e++; return e; };
+  for (let j = k; j < T.length; j++){
+    const t = T[j];
+    if (t.d !== 0 || t.t !== 'w') continue;
+    if (verb === 'UPDATE' && t.u === 'SET' && !set){ const e = endAt(j + 1, ['FROM','WHERE','RETURNING','ORDER','LIMIT']); set = {text: sql.slice(T[j + 1].s, T[e - 1].e), range: [t.s, T[e - 1].e]}; }
+    if (verb === 'UPDATE' && t.u === 'FROM') hasFrom = true;
+    if ((verb === 'UPDATE' || verb === 'DELETE') && t.u === 'WHERE'){ const e = endAt(j + 1, ['RETURNING','ORDER','LIMIT']); where = {text: sql.slice(T[j + 1].s, T[e - 1].e), range: [t.s, T[e - 1].e]}; break; }
+    if ((verb === 'INSERT' || verb === 'REPLACE') && srcK < 0 && ['SELECT','VALUES','WITH'].includes(t.u)) srcK = j;
+  }
+
+  let before;
+  try { before = runQ(W + `SELECT rowid AS __rid, * FROM ${tbl}`, 5000); }
+  catch(e){ throw new Error(`Step-by-step needs to read ${tbl}: ${e.message}`); }
+  const ridIdx = 0;
+
+  // Simulate inside a savepoint, then roll back: the preview never changes data.
+  let after, changes, err = null;
+  db.exec('SAVEPOINT __sqllab_step');
+  try {
+    db.run(sql);
+    changes = db.getRowsModified();
+    after = runQ(`SELECT rowid AS __rid, * FROM ${tbl}`, 5000);
+  } catch(e){ err = e; }
+  finally { db.exec('ROLLBACK TO __sqllab_step; RELEASE __sqllab_step'); }
+  if (err) throw err;
+
+  const bMap = new Map(before.rows.map(r => [r[ridIdx], r]));
+  const aMap = new Map(after.rows.map(r => [r[ridIdx], r]));
+
+  steps.push({label: 'TABLE', title: 'The target table, before', cols: before.cols, rows: before.rows, total: before.total, ranges: [tblRange], code: tbl, after: before.total,
+    html: `${verb} changes one table, <b>${esc(tbl)}</b>. This is what it looks like right now: ${plural(before.total, 'row')}.`});
+
+  if (verb === 'UPDATE' || verb === 'DELETE'){
+    let match;
+    if (where && !hasFrom){
+      try { match = new Set(runQ(W + `SELECT rowid FROM ${tbl} WHERE ${where.text}`, 1e6).rows.map(r => r[0])); } catch(e){ match = null; }
+    } else if (!where) match = new Set(before.rows.map(r => r[ridIdx]));
+    if (!match){
+      match = new Set(before.rows.filter(r => verb === 'DELETE' ? !aMap.has(r[ridIdx]) : keyOf(r) !== keyOf(aMap.get(r[ridIdx]) || [])).map(r => r[ridIdx]));
+    }
+    steps.push({label: 'WHERE', title: `Find the rows to ${verb === 'DELETE' ? 'delete' : 'update'}`, cols: before.cols, rows: before.rows, total: before.total,
+      status: before.rows.map(r => match.has(r[ridIdx]) ? 'hit' : 'drop'), ranges: where ? [where.range] : [tblRange], code: where ? 'WHERE ' + where.text : '(no WHERE)',
+      before: before.total, after: match.size,
+      html: where
+        ? `Test ${code(where.text)} on every row. ${plural(match.size, 'row')} match (<span style="color:var(--accent-2)">highlighted</span>); the others will not be touched.`
+        : `<span style="color:var(--warn)">There is no WHERE clause, so <b>every</b> row (${before.total}) is affected!</span>`});
+  }
+
+  const note = ` <b>${changes}</b> row${changes === 1 ? '' : 's'} affected. <span style="color:var(--warn)">This is only a preview; nothing was changed. Press <b>Run</b> to apply it.</span>`;
+  if (verb === 'UPDATE'){
+    const changed = new Set();
+    after.rows.forEach((r, i) => { const b = bMap.get(r[ridIdx]); if (!b) return; r.forEach((v, c) => { if (keyOf([v]) !== keyOf([b[c]])) changed.add(i + ':' + c); }); });
+    const rowsHit = new Set([...changed].map(x => +x.split(':')[0]));
+    steps.push({label: 'SET', title: 'Write the new values', cols: after.cols, rows: after.rows, total: after.total, changed,
+      status: after.rows.map((r, i) => rowsHit.has(i) ? 'hit' : 'keep'), ranges: set ? [set.range] : [], code: set ? 'SET ' + set.text : 'SET',
+      html: `For each matched row, compute ${set ? code(set.text) : 'the SET expressions'} and store the result. Changed cells are highlighted.` + note});
+  } else if (verb === 'DELETE'){
+    steps.push({label: 'DELETE', title: 'Remove the matched rows', cols: before.cols, rows: before.rows, total: before.total,
+      status: before.rows.map(r => aMap.has(r[ridIdx]) ? 'keep' : 'drop'), ranges: [[T[A.mainStart].s, sql.length]], code: 'DELETE',
+      before: before.total, after: after.total,
+      html: `The matched rows are removed (struck through). ${plural(after.total, 'row')} are left in the table.` + note});
+  } else {
+    if (srcK >= 0){
+      let e = srcK;
+      while (e < T.length && !(T[e].d === 0 && (isKw(T[e], 'RETURNING') || (isKw(T[e], 'ON') && isKw(T[e + 1], 'CONFLICT'))))) e++;
+      const srcText = sql.slice(T[srcK].s, T[e - 1].e);
+      const st = safeStep(() => mkStep(runQ((T[srcK].u === 'WITH' ? '' : W) + srcText)));
+      if (!st.error) steps.push(Object.assign(st, {label: T[srcK].u === 'VALUES' ? 'VALUES' : 'SELECT', title: 'Produce the new rows', code: srcText, ranges: [[T[srcK].s, T[e - 1].e]], after: st.total,
+        html: `First the ${T[srcK].u === 'VALUES' ? 'VALUES list' : 'query'} produces the rows to insert: ${plural(st.total, 'row')}.`}));
+    }
+    const removed = before.rows.filter(r => !aMap.has(r[ridIdx]));
+    const rows = after.rows.concat(removed);
+    const status = after.rows.map(r => bMap.has(r[ridIdx]) ? (keyOf(r) === keyOf(bMap.get(r[ridIdx])) ? 'keep' : 'hit') : 'new').concat(removed.map(() => 'drop'));
+    const added = status.filter(s => s === 'new').length;
+    steps.push({label: verb, title: 'Add the rows to the table', cols: after.cols, rows, total: rows.length, status, ranges: [[T[A.mainStart].s, sql.length]], code: verb,
+      before: before.total, after: after.total,
+      html: `${plural(added, 'new row')} are added (<span style="color:var(--sql)">green</span>)` +
+        (removed.length ? `; ${removed.length} conflicting row${removed.length === 1 ? ' was' : 's were'} replaced (struck through)` : '') + '.' + note});
+  }
+}
+
+function buildSteps(text){
+  const A = analyzeSql(text);
+  const W = A.withText ? A.withText + ' ' : '';
+  const steps = [];
+  if (A.kind === 'other') throw new Error('Step-by-step works on SELECT, INSERT, UPDATE and DELETE statements.');
+  A.ctes.forEach(c => {
+    const st = safeStep(() => mkStep(runQ(A.withText + ' SELECT * FROM ' + qi(c.name))));
+    const rec = A.recursive && new RegExp('\\b' + c.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i').test(c.body);
+    steps.push(Object.assign(st, {label: 'WITH ' + c.name, title: `Build the temporary table ${c.name}`, code: c.name + ' AS (…)', ranges: [[c.s, c.e]], after: st.total,
+      html: `WITH defines a named, temporary result that the rest of the query can use like a table. <b>${esc(c.name)}</b> has ${plural(st.total, 'row')}.` +
+        (rec ? ' It is <b>recursive</b>: the first SELECT (the anchor) produces the starting rows, then the part after UNION runs again and again on the rows from the previous round until no new rows appear.' : '')}));
+  });
+  if (A.kind === 'dml'){ buildDml(A, W, steps); return steps; }
+
+  const T = A.toks, parts = [], ops = [];
+  let ps = A.mainStart;
+  for (let k = A.mainStart; k < T.length; k++){
+    const t = T[k];
+    if (t.d !== 0 || !isKw(t, 'UNION', 'INTERSECT', 'EXCEPT')) continue;
+    parts.push([ps, k]);
+    let op = t.u;
+    if (t.u === 'UNION' && isKw(T[k + 1], 'ALL')){ op = 'UNION ALL'; k++; }
+    ops.push({op, s: t.s, e: T[k].e});
+    ps = k + 1;
+  }
+  parts.push([ps, T.length]);
+  if (parts.length === 1) buildCore(A, W, A.mainStart, T.length, steps);
+  else buildCompound(A, W, parts, ops, steps);
+
+  const fin = safeStep(() => mkStep(runQ(text)));
+  steps.push(Object.assign(fin, {label: 'RESULT', title: 'Final result', code: short(text, 80), ranges: [], after: fin.total,
+    html: `This is exactly what <b>Run</b> returns: ${plural(fin.total, 'row')}.`}));
+  return steps;
+}
+
+/* ---------- stepper UI ---------- */
+let stepper = null, stepMarks = [], stepTimer = null;
+function clearStepMarks(){ stepMarks.forEach(m => m.clear()); stepMarks = []; }
+function stopPlay(){ if (stepTimer){ clearInterval(stepTimer); stepTimer = null; } }
+const stepsShown = () => !!(results[activeResult] && results[activeResult].kind === 'steps');
+
+function stepThrough(){
+  let text, from;
+  const sel = cm.getSelection();
+  if (sel.trim()){ text = sel; from = cm.indexFromPos(cm.getCursor('from')); }
+  else { const st = currentStatement(); if (!st) return; text = st.sql; from = st.from; }
+  const rs = splitStatements(text);
+  if (!rs.length) return;
+  from += rs[0].from;
+  text = text.slice(rs[0].from, rs[0].to);
+  clearErrorMark();
+  stopPlay();
+  const t0 = performance.now();
+  let steps;
+  try {
+    db.prepare(text).free();            // surfaces syntax / schema errors first
+    steps = buildSteps(text);
+  } catch(err){
+    const lead = text.length - text.replace(/^(\s|--[^\n]*\n|\/\*[\s\S]*?\*\/)*/, '').length;
+    const line = cm.posFromIndex(from + lead).line;
+    markErrorLine(line);
+    messages.unshift({t: now(), kind: 'err', text: `Step-by-step, line ${line + 1}: ${err.message}`, q: short(text, 200)});
+    results = []; activeResult = -1;
+    renderResults({count: 1, failed: true, totalMs: performance.now() - t0});
+    return;
+  }
+  flash(from, from + text.length);
+  stepper = {steps, i: 0, from, len: text.length, stale: false};
+  results = [{kind: 'steps', total: steps.length, cols: []}];
+  activeResult = 0;
+  messages.unshift({t: now(), kind: 'ok', text: `Step-by-step: ${steps.length} steps.`, q: short(text, 200)});
+  const trimmed = text.trim();
+  if (history.length && history[0].sql === trimmed) history.shift();
+  history.unshift({sql: trimmed, ts: Date.now(), ok: true, ms: Math.round(performance.now() - t0), label: 'steps'});
+  history = history.slice(0, 100); LS.set('history', history); renderHistory();
+  // Give the step view room if the editor is taking most of the height.
+  const ed = $('#editorWrap'), work = document.querySelector('.work');
+  if (ed.getBoundingClientRect().height > work.getBoundingClientRect().height * 0.5){ ed.style.flexBasis = '38%'; cm.refresh(); }
+  renderResults({count: 1, failed: false, totalMs: performance.now() - t0});
+}
+function stepGo(j){
+  if (!stepper) return;
+  stepper.i = Math.max(0, Math.min(stepper.steps.length - 1, j));
+  if (stepper.i === stepper.steps.length - 1) stopPlay();
+  renderResults();
+}
+function togglePlay(){
+  if (stepTimer){ stopPlay(); renderResults(); return; }
+  if (stepper.i >= stepper.steps.length - 1) stepper.i = 0;
+  stepTimer = setInterval(() => stepGo(stepper.i + 1), 2200);
+  renderResults();
+}
+function markStep(){
+  clearStepMarks();
+  if (!stepper || stepper.stale) return;
+  const st = stepper.steps[stepper.i];
+  st.ranges.forEach(([s, e]) => {
+    if (e <= s) return;
+    stepMarks.push(cm.markText(cm.posFromIndex(stepper.from + s), cm.posFromIndex(stepper.from + e), {className: 'cm-step-mark'}));
+  });
+  if (st.ranges[0]) cm.scrollIntoView(cm.posFromIndex(stepper.from + st.ranges[0][0]), 40);
+}
+function renderStepTable(st){
+  const vi = st.cols.map((c, i) => i).filter(i => !st.cols[i].startsWith('__'));
+  const n = Math.min(st.rows.length, 1000);
+  let h = '<table class="grid"><thead><tr><th class="rn">#</th>' + (st.group ? '<th class="rn">grp</th>' : '') +
+    vi.map(i => `<th style="cursor:default">${esc(st.cols[i])}</th>`).join('') + '</tr></thead><tbody>';
+  for (let r = 0; r < n; r++){
+    const row = st.rows[r], s = st.status ? st.status[r] : 'keep';
+    const g = st.group ? st.group[r] : null;
+    h += `<tr class="s-${s}${g != null ? ' grp' : ''}"${g != null ? ` style="--gh:${(g * 67) % 360}"` : ''}><td class="rn">${r + 1}</td>` +
+      (g != null ? `<td class="rn gcell">${g}</td>` : '');
+    for (const i of vi){
+      const o = cellOut(row[i]);
+      const chg = st.changed && st.changed.has(r + ':' + i) ? ' chg' : '';
+      h += `<td class="${o.cls}${chg}" title="${esc(o.text)}">${esc(o.text)}</td>`;
+    }
+    h += '</tr>';
+  }
+  h += '</tbody></table>';
+  if (!st.rows.length) h += '<div class="trunc" style="color:var(--text-faint)">(no rows)</div>';
+  if (st.total > n) h += `<div class="trunc">Showing the first ${n.toLocaleString()} of ${st.total.toLocaleString()} rows.</div>`;
+  return h;
+}
+function renderSteps(){
+  const S = stepper, st = S.steps[S.i], last = S.steps.length - 1;
+  const chips = S.steps.map((s, j) => `<button class="chip${j === S.i ? ' on' : j < S.i ? ' done' : ''}" data-sj="${j}" title="${esc(s.title || '')}">${esc(s.label)}</button>`).join('<span class="parr">›</span>');
+  const statuses = new Set(st.status || []);
+  const legend = [
+    statuses.has('drop') && '<span><i style="background:var(--err)"></i>removed</span>',
+    statuses.has('pad') && '<span><i style="background:var(--warn)"></i>no match → NULLs</span>',
+    statuses.has('hit') && '<span><i style="background:var(--accent-2)"></i>affected</span>',
+    statuses.has('new') && '<span><i style="background:var(--sql)"></i>new</span>',
+    st.group && '<span><i style="background:linear-gradient(90deg,#e66,#6e6,#66e)"></i>one color per group</span>',
+    st.changed && st.changed.size && '<span><i style="background:#ffb547"></i>changed value</span>'
+  ].filter(Boolean).join('');
+  const counts = st.before != null && st.after != null && st.before !== st.after
+    ? `<span><b>${st.before}</b> → <b>${st.after}</b> rows</span>` : st.after != null ? `<span><b>${st.after}</b> rows</span>` : '';
+  return `<div class="steps">
+    <div class="steps-bar">
+      <div class="sctl">
+        <button class="sbtn" data-sx="first" title="First step (Home)" ${S.i === 0 ? 'disabled' : ''}><svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><rect x="2" y="3" width="2" height="10" rx=".5"/><path d="M14 3v10L5 8z"/></svg></button>
+        <button class="sbtn" data-sx="prev" title="Previous step (←)" ${S.i === 0 ? 'disabled' : ''}><svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M12 3v10L3 8z"/></svg></button>
+        <span class="scount">${S.i + 1} / ${S.steps.length}</span>
+        <button class="sbtn" data-sx="next" title="Next step (→)" ${S.i === last ? 'disabled' : ''}><svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M4 3v10l9-5z"/></svg></button>
+        <button class="sbtn" data-sx="last" title="Last step (End)" ${S.i === last ? 'disabled' : ''}><svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><rect x="12" y="3" width="2" height="10" rx=".5"/><path d="M2 3v10l9-5z"/></svg></button>
+        <button class="sbtn play" data-sx="play" title="Play / pause (Space)">${stepTimer ? '<svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><rect x="3" y="3" width="3.5" height="10" rx=".8"/><rect x="9.5" y="3" width="3.5" height="10" rx=".8"/></svg>' : '<svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M3 2.5v11L13.5 8z"/></svg>'}</button>
+      </div>
+      <div class="pipe" id="pipe">${chips}</div>
+    </div>
+    <div class="step-info">
+      <div class="step-title"><span class="clause">${esc(st.label)}</span>${esc(st.title || '')}</div>
+      <p>${st.html || ''}</p>
+      <div class="step-meta">${counts}${st.code ? `<span class="scode">${esc(short(st.code, 160))}</span>` : ''}${legend ? `<span class="legend">${legend}</span>` : ''}</div>
+    </div>
+    <div class="step-table">${st.error ? `<div class="step-err">Could not build this intermediate table: ${esc(st.error)}</div>` : renderStepTable(st)}</div>
+  </div>`;
+}
+$('#rbody').addEventListener('click', e => {
+  const b = e.target.closest('[data-sx]');
+  if (b){
+    const a = b.dataset.sx;
+    if (a === 'play') togglePlay();
+    else { stopPlay(); stepGo(a === 'first' ? 0 : a === 'last' ? Infinity : stepper.i + (a === 'next' ? 1 : -1)); }
+    const again = document.querySelector(`[data-sx="${a}"]`);
+    if (again && !again.disabled) again.focus(); else { const nb = document.querySelector('.steps-bar .sbtn:not([disabled])'); if (nb) nb.focus(); }
+    return;
+  }
+  const c = e.target.closest('[data-sj]');
+  if (c){ stopPlay(); stepGo(+c.dataset.sj); }
+});
+document.addEventListener('keydown', e => {
+  if (!stepsShown() || !stepper) return;
+  if (e.target.closest && (e.target.closest('.CodeMirror') || /^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName))) return;
+  const k = e.key;
+  if (k === 'ArrowRight'){ stopPlay(); stepGo(stepper.i + 1); }
+  else if (k === 'ArrowLeft'){ stopPlay(); stepGo(stepper.i - 1); }
+  else if (k === 'Home'){ stopPlay(); stepGo(0); }
+  else if (k === 'End'){ stopPlay(); stepGo(Infinity); }
+  else if (k === ' ' && e.target.tagName !== 'BUTTON'){ togglePlay(); }
+  else return;
+  e.preventDefault();
+});
+
+/* ================================================================
+   SQL command reference (Commands button). Examples run on the School database.
+   Each entry: [name, what it does, syntax, example, modifies?]
+   ================================================================ */
+const SQL_REF = [
+  {cat:'Query', items:[
+    ['SELECT', 'Choose which columns to show.', 'SELECT col1, col2 FROM table;',
+     'SELECT name, age FROM students;'],
+    ['SELECT *', 'Show every column.', 'SELECT * FROM table;',
+     'SELECT * FROM courses;'],
+    ['AS (alias)', 'Rename a column or table in the result. Columns can be expressions.', 'SELECT expr AS name FROM table AS t;',
+     'SELECT name AS student, age * 12 AS months FROM students;'],
+    ['DISTINCT', 'Remove duplicate rows from the result.', 'SELECT DISTINCT col FROM table;',
+     'SELECT DISTINCT city FROM students;']
+  ]},
+  {cat:'Filter', items:[
+    ['WHERE', 'Keep only the rows that match a condition.', 'SELECT … FROM table WHERE condition;',
+     'SELECT name, age FROM students WHERE age >= 22;'],
+    ['AND · OR · NOT', 'Combine conditions. AND binds tighter than OR, so use parentheses.', 'WHERE a AND (b OR NOT c)',
+     "SELECT name FROM students\nWHERE city = 'Haifa' AND NOT age > 22;"],
+    ['IN', 'Match any value in a list (or in a subquery).', 'WHERE col IN (v1, v2, …)',
+     "SELECT name, city FROM students WHERE city IN ('Haifa', 'Jerusalem');"],
+    ['BETWEEN', 'Match a range, both ends included.', 'WHERE col BETWEEN low AND high',
+     'SELECT name, age FROM students WHERE age BETWEEN 20 AND 22;'],
+    ['LIKE', 'Match text patterns: % = any characters, _ = exactly one.', "WHERE col LIKE 'pattern'",
+     "SELECT name FROM students WHERE name LIKE 'S%' OR name LIKE '_o%';"],
+    ['IS NULL · IS NOT NULL', 'Test for a missing value. "= NULL" never matches.', 'WHERE col IS NULL',
+     'SELECT name FROM students WHERE city IS NULL;']
+  ]},
+  {cat:'Sort & limit', items:[
+    ['ORDER BY', 'Sort the result. ASC is the default, DESC reverses. Several keys break ties.', 'ORDER BY col1 DESC, col2',
+     'SELECT name, age FROM students ORDER BY age DESC, name;'],
+    ['LIMIT · OFFSET', 'Return only the first N rows, optionally skipping some first.', 'LIMIT n OFFSET skip',
+     'SELECT name, age FROM students ORDER BY age DESC LIMIT 3 OFFSET 1;']
+  ]},
+  {cat:'Aggregate', items:[
+    ['COUNT', 'Count rows. COUNT(col) skips NULLs; COUNT(DISTINCT col) counts different values.', 'COUNT(*) · COUNT(col) · COUNT(DISTINCT col)',
+     'SELECT COUNT(*), COUNT(city), COUNT(DISTINCT city) FROM students;'],
+    ['SUM · AVG · MIN · MAX', 'Total, average, smallest and largest. NULLs are ignored.', 'SUM(col) · AVG(col) · MIN(col) · MAX(col)',
+     'SELECT AVG(grade), MIN(grade), MAX(grade), SUM(grade) FROM enrollments;'],
+    ['GROUP BY', 'Split rows into groups and compute one aggregate row per group.', 'SELECT col, AGG(x) FROM table GROUP BY col;',
+     'SELECT city, COUNT(*) AS students FROM students GROUP BY city;'],
+    ['HAVING', 'Filter groups (WHERE filters rows before grouping; HAVING filters after).', 'GROUP BY col HAVING condition',
+     'SELECT course_id, AVG(grade) AS avg_grade\nFROM enrollments\nGROUP BY course_id\nHAVING AVG(grade) > 80;'],
+    ['GROUP_CONCAT', 'Join the values of a group into one text (SQLite).', "GROUP_CONCAT(col, ', ')",
+     "SELECT city, GROUP_CONCAT(name, ', ') AS names FROM students GROUP BY city;"]
+  ]},
+  {cat:'Join', items:[
+    ['JOIN (INNER)', 'Combine rows of two tables that match on a condition.', 'FROM a JOIN b ON a.x = b.x',
+     'SELECT s.name, c.title, e.grade\nFROM enrollments e\nJOIN students s ON s.student_id = e.student_id\nJOIN courses  c ON c.course_id  = e.course_id;'],
+    ['LEFT JOIN', 'Keep every row of the left table; missing matches become NULL.', 'FROM a LEFT JOIN b ON …',
+     'SELECT s.name, e.course_id\nFROM students s\nLEFT JOIN enrollments e ON e.student_id = s.student_id\nORDER BY e.course_id;'],
+    ['RIGHT · FULL JOIN', 'Keep every row of the right table (RIGHT) or of both (FULL).', 'FROM a RIGHT JOIN b ON … · FULL JOIN',
+     'SELECT c.title, e.student_id\nFROM enrollments e\nRIGHT JOIN courses c ON c.course_id = e.course_id\nWHERE e.student_id IS NULL;'],
+    ['CROSS JOIN', 'Every row of one table with every row of the other.', 'FROM a CROSS JOIN b',
+     'SELECT s.name, c.title FROM students s CROSS JOIN courses c LIMIT 6;'],
+    ['USING · NATURAL JOIN', 'Shorthand when the joined columns have the same name.', 'FROM a JOIN b USING (col) · a NATURAL JOIN b',
+     'SELECT name, course_id, grade FROM students JOIN enrollments USING (student_id);'],
+    ['Self join', 'Join a table to itself with two aliases.', 'FROM t a JOIN t b ON …',
+     'SELECT a.name, b.name, a.city\nFROM students a JOIN students b\n  ON a.city = b.city AND a.student_id < b.student_id;']
+  ]},
+  {cat:'Subquery & WITH', items:[
+    ['IN (subquery)', 'Filter with the result of another query.', 'WHERE col IN (SELECT …)',
+     'SELECT name FROM students\nWHERE student_id IN (SELECT student_id FROM enrollments WHERE grade >= 90);'],
+    ['EXISTS · NOT EXISTS', 'True when the subquery returns at least one row (or none).', 'WHERE [NOT] EXISTS (SELECT 1 FROM … WHERE …)',
+     'SELECT name FROM students s\nWHERE NOT EXISTS (SELECT 1 FROM enrollments e WHERE e.student_id = s.student_id);'],
+    ['Scalar subquery', 'A subquery that returns one value, used like a column.', 'SELECT col, (SELECT AGG(…) FROM …) FROM …',
+     'SELECT name, age, (SELECT ROUND(AVG(age), 1) FROM students) AS avg_age FROM students;'],
+    ['Subquery in FROM', 'Query the result of another query as if it were a table.', 'SELECT … FROM (SELECT …) AS t',
+     'SELECT city, n FROM (\n  SELECT city, COUNT(*) AS n FROM students GROUP BY city\n) AS t\nWHERE n > 1;'],
+    ['WITH (CTE)', 'Name a subquery first, then use it like a table.', 'WITH name AS (SELECT …) SELECT … FROM name;',
+     'WITH avg_by_student AS (\n  SELECT student_id, AVG(grade) AS avg_grade FROM enrollments GROUP BY student_id\n)\nSELECT s.name, a.avg_grade\nFROM avg_by_student a JOIN students s USING (student_id)\nORDER BY a.avg_grade DESC;'],
+    ['WITH RECURSIVE', 'A CTE that refers to itself, e.g. to generate a sequence.', 'WITH RECURSIVE r(x) AS (base UNION ALL step) SELECT …',
+     'WITH RECURSIVE n(x) AS (\n  SELECT 1\n  UNION ALL\n  SELECT x + 1 FROM n WHERE x < 5\n)\nSELECT x, x * x AS square FROM n;']
+  ]},
+  {cat:'Set operations', items:[
+    ['UNION · UNION ALL', 'Rows from either query. UNION removes duplicates; UNION ALL keeps them.', 'SELECT … UNION [ALL] SELECT …',
+     'SELECT city FROM students WHERE age < 21\nUNION\nSELECT city FROM students WHERE age > 23;'],
+    ['INTERSECT', 'Rows that appear in both queries.', 'SELECT … INTERSECT SELECT …',
+     'SELECT student_id FROM enrollments WHERE course_id = 1\nINTERSECT\nSELECT student_id FROM enrollments WHERE course_id = 2;'],
+    ['EXCEPT', 'Rows of the first query that are not in the second.', 'SELECT … EXCEPT SELECT …',
+     'SELECT student_id FROM students\nEXCEPT\nSELECT student_id FROM enrollments;']
+  ]},
+  {cat:'Expressions & functions', items:[
+    ['CASE', 'If / else inside a query.', 'CASE WHEN cond THEN v1 … ELSE v END',
+     "SELECT student_id, grade,\n  CASE WHEN grade >= 90 THEN 'A'\n       WHEN grade >= 80 THEN 'B'\n       ELSE 'C' END AS letter\nFROM enrollments;"],
+    ['COALESCE · IFNULL', 'Use the first value that is not NULL.', 'COALESCE(a, b, …)',
+     "SELECT name, COALESCE(city, 'unknown') AS city FROM students;"],
+    ['Text functions', 'Upper/lower case, length, part of a text, and || to join texts.', 'UPPER · LOWER · LENGTH · SUBSTR · TRIM · REPLACE · ||',
+     "SELECT UPPER(name), LENGTH(name), SUBSTR(name, 1, 2), name || ' (' || city || ')' FROM students;"],
+    ['Math', 'Rounding, absolute value, remainder and arithmetic.', 'ROUND(x, digits) · ABS(x) · a % b',
+     'SELECT ROUND(AVG(grade), 1) AS avg, ABS(-5), 17 % 5, 7 / 2, 7 / 2.0 FROM enrollments;'],
+    ['Date & time', 'SQLite stores dates as text; these functions compute with them.', "DATE · TIME · DATETIME · STRFTIME('%Y', …)",
+     "SELECT DATE('now') AS today, DATE('now', '+7 days') AS next_week, STRFTIME('%Y', 'now') AS year;"],
+    ['CAST', 'Convert a value to another type.', 'CAST(x AS INTEGER | REAL | TEXT)',
+     "SELECT CAST('42' AS INTEGER) + 1, CAST(7 AS REAL) / 2, CAST(3.9 AS INTEGER);"],
+    ['Window: ROW_NUMBER · RANK', 'Number or rank rows without collapsing them into groups.', 'RANK() OVER (ORDER BY col)',
+     'SELECT name, age,\n  ROW_NUMBER() OVER (ORDER BY age DESC) AS row_no,\n  RANK()       OVER (ORDER BY age DESC) AS rnk\nFROM students;'],
+    ['Window: PARTITION BY', 'An aggregate per group, shown on every row of the group.', 'AGG(x) OVER (PARTITION BY col)',
+     'SELECT course_id, student_id, grade,\n  ROUND(AVG(grade) OVER (PARTITION BY course_id), 1) AS course_avg\nFROM enrollments;']
+  ]},
+  {cat:'Change data', items:[
+    ['INSERT', 'Add a new row.', 'INSERT INTO table (cols) VALUES (values);',
+     "INSERT INTO students (name, age, city) VALUES ('Tal', 20, 'Eilat');\nSELECT * FROM students WHERE name = 'Tal';", true],
+    ['INSERT many rows', 'Add several rows in one statement.', 'INSERT INTO table (cols) VALUES (…), (…);',
+     "INSERT INTO courses (title, credits) VALUES ('Networks', 3), ('Compilers', 4);\nSELECT * FROM courses;", true],
+    ['INSERT … SELECT', 'Insert the result of a query.', 'INSERT INTO table (cols) SELECT …;',
+     "INSERT OR IGNORE INTO enrollments (student_id, course_id)\nSELECT student_id, 5 FROM students WHERE city = 'Haifa';\nSELECT * FROM enrollments WHERE course_id = 5;", true],
+    ['UPDATE', 'Change values in existing rows. Without WHERE it changes every row!', 'UPDATE table SET col = value WHERE condition;',
+     "UPDATE students SET city = 'Tel Aviv' WHERE name = 'Ido';\nSELECT name, city FROM students WHERE name = 'Ido';", true],
+    ['DELETE', 'Remove rows. Without WHERE it removes every row!', 'DELETE FROM table WHERE condition;',
+     'DELETE FROM enrollments WHERE grade IS NULL;\nSELECT COUNT(*) FROM enrollments;', true],
+    ['UPSERT (ON CONFLICT)', 'Insert, or update the existing row when the key already exists.', 'INSERT … ON CONFLICT(key) DO UPDATE SET …',
+     "INSERT INTO courses (course_id, title, credits) VALUES (2, 'Databases', 4)\nON CONFLICT(course_id) DO UPDATE SET credits = excluded.credits;\nSELECT * FROM courses WHERE course_id = 2;", true],
+    ['RETURNING', 'Show the rows an INSERT, UPDATE or DELETE changed.', '… RETURNING cols;',
+     'UPDATE students SET age = age + 1 WHERE city = \'Haifa\' RETURNING name, age;', true]
+  ]},
+  {cat:'Tables & schema', items:[
+    ['CREATE TABLE', 'Define a new table with column types and constraints.', 'CREATE TABLE name (col TYPE constraints, …);',
+     'CREATE TABLE IF NOT EXISTS teachers (\n  teacher_id INTEGER PRIMARY KEY,\n  name       TEXT NOT NULL,\n  email      TEXT UNIQUE,\n  salary     REAL CHECK (salary > 0)\n);\nPRAGMA table_info(teachers);', true],
+    ['PRIMARY KEY · FOREIGN KEY', 'A key identifies each row; a foreign key must match a key in another table.', 'PRIMARY KEY (cols) · FOREIGN KEY (col) REFERENCES t(col)',
+     'CREATE TABLE IF NOT EXISTS teaches (\n  teacher_id INTEGER REFERENCES teachers(teacher_id),\n  course_id  INTEGER REFERENCES courses(course_id),\n  PRIMARY KEY (teacher_id, course_id)\n);\nPRAGMA foreign_key_list(teaches);', true],
+    ['CREATE TABLE … AS', 'Create a table from the result of a query.', 'CREATE TABLE name AS SELECT …;',
+     "CREATE TABLE IF NOT EXISTS haifa_students AS\nSELECT * FROM students WHERE city = 'Haifa';\nSELECT * FROM haifa_students;", true],
+    ['ALTER TABLE', 'Add or rename a column, or rename the table.', 'ALTER TABLE t ADD COLUMN col TYPE · RENAME COLUMN a TO b · RENAME TO t2',
+     'CREATE TABLE IF NOT EXISTS demo (id INTEGER PRIMARY KEY);\nALTER TABLE demo ADD COLUMN note TEXT;\nPRAGMA table_info(demo);\nDROP TABLE demo;', true],
+    ['DROP TABLE', 'Delete a table and all its rows.', 'DROP TABLE [IF EXISTS] name;',
+     'CREATE TABLE IF NOT EXISTS scratch (x INTEGER);\nDROP TABLE IF EXISTS scratch;', true],
+    ['CREATE INDEX', 'Speed up searches on a column (see the plan with Explain).', 'CREATE INDEX name ON table (cols);',
+     'CREATE INDEX IF NOT EXISTS idx_students_city ON students (city);\nEXPLAIN QUERY PLAN SELECT * FROM students WHERE city = \'Haifa\';', true],
+    ['CREATE VIEW', 'Save a query under a name and use it like a table.', 'CREATE VIEW name AS SELECT …;',
+     'CREATE VIEW IF NOT EXISTS honor_roll AS\nSELECT s.name, e.grade FROM students s JOIN enrollments e USING (student_id) WHERE e.grade >= 90;\nSELECT * FROM honor_roll;', true],
+    ['CREATE TRIGGER', 'Run statements automatically when rows change.', 'CREATE TRIGGER name AFTER INSERT ON t BEGIN … END;',
+     "CREATE TABLE IF NOT EXISTS signups (name TEXT, at TEXT);\nCREATE TRIGGER IF NOT EXISTS log_signup AFTER INSERT ON students\nBEGIN\n  INSERT INTO signups VALUES (NEW.name, DATETIME('now'));\nEND;\nINSERT INTO students (name, age, city) VALUES ('Lior', 21, 'Haifa');\nSELECT * FROM signups;", true]
+  ]},
+  {cat:'Transactions', items:[
+    ['BEGIN · COMMIT · ROLLBACK', 'Group changes so they all happen, or none do. ROLLBACK undoes them.', 'BEGIN; … COMMIT;  or  BEGIN; … ROLLBACK;',
+     'BEGIN;\nDELETE FROM enrollments;\nSELECT COUNT(*) AS during FROM enrollments;\nROLLBACK;\nSELECT COUNT(*) AS after_rollback FROM enrollments;']
+  ]}
+];
+
+let refCat = 'All';
+const REF_FLAT = SQL_REF.flatMap((g, gi) => g.items.map((it, ii) => ({cat:g.cat, gi, ii, name:it[0], desc:it[1], syn:it[2], ex:it[3], mod:!!it[4]})));
+function hlCode(code){
+  const el = document.createElement('div');
+  if (window.CodeMirror && CodeMirror.runMode) CodeMirror.runMode(code, 'text/x-sqlite', el); else el.textContent = code;
+  return el.innerHTML;
+}
+function renderRefNote(){
+  const ds = currentDataset();
+  $('#refNote').innerHTML = ds === 'school'
+    ? 'Examples use the <b>School</b> database (students, courses, enrollments). <b>Run</b> opens them in a <b>Reference</b> tab.'
+    : 'Examples use the <b>School</b> database (students, courses, enrollments). <button id="refSchool">Load School database</button>';
+  const b = $('#refSchool');
+  if (b) b.onclick = () => {
+    if (!confirm('Switch to the School database? The current database and your changes to it will be replaced.')) return;
+    switchDataset('school', 'Loaded'); renderRefNote();
+  };
+}
+function renderRef(){
+  const q = $('#refSearch').value.trim().toLowerCase();
+  const words = q.split(/\s+/).filter(Boolean);
+  const match = r => (refCat === 'All' || r.cat === refCat) &&
+    words.every(w => (r.name + ' ' + r.desc + ' ' + r.syn + ' ' + r.ex + ' ' + r.cat).toLowerCase().includes(w));
+  const list = REF_FLAT.filter(match);
+  $('#refCats').innerHTML = ['All', ...SQL_REF.map(g => g.cat)].map(c =>
+    `<button data-cat="${esc(c)}" class="${c === refCat ? 'on' : ''}">${esc(c)}</button>`).join('');
+  $('#refCount').textContent = list.length === REF_FLAT.length ? `${REF_FLAT.length} commands` : `${list.length} of ${REF_FLAT.length}`;
+  const mark = s => { let h = esc(s); for (const w of words) h = h.replace(new RegExp(w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/&/g, '&amp;').replace(/</g, '&lt;'), 'gi'), m => `<mark>${m}</mark>`); return h; };
+  let html = '', last = null;
+  for (const r of list){
+    if (r.cat !== last){ html += `<div class="ref-cat">${esc(r.cat)}</div>`; last = r.cat; }
+    html += `<div class="ref-card"><h3>${mark(r.name)}${r.mod ? '<span class="mod" title="Changes the database. Reset DB restores the original data.">changes data</span>' : ''}</h3>` +
+      `<p>${mark(r.desc)}</p><div class="ref-syn">${esc(r.syn)}</div><pre class="ref-ex cm-s-default">${hlCode(r.ex)}</pre>` +
+      `<div class="ref-acts"><button class="run" data-run="${r.gi}.${r.ii}">▶ Run</button><button data-ins="${r.gi}.${r.ii}">Insert at cursor</button><button data-copy="${r.gi}.${r.ii}">Copy</button></div></div>`;
+  }
+  $('#refBody').innerHTML = html || '<div class="ref-empty">No command matches that search.</div>';
+}
+function openRef(){
+  renderRefNote(); renderRef();
+  $('#ref').classList.add('on'); $('#refBack').classList.add('on'); $('#ref').setAttribute('aria-hidden', 'false');
+  setTimeout(() => $('#refSearch').focus(), 60);
+}
+function closeRef(){
+  $('#ref').classList.remove('on'); $('#refBack').classList.remove('on'); $('#ref').setAttribute('aria-hidden', 'true');
+  cm.focus();
+}
+const refItem = key => { const [gi, ii] = key.split('.').map(Number); return REF_FLAT.find(r => r.gi === gi && r.ii === ii); };
+$('#refBtn').addEventListener('click', () => $('#ref').classList.contains('on') ? closeRef() : openRef());
+$('#refClose').addEventListener('click', closeRef);
+$('#refBack').addEventListener('click', closeRef);
+$('#refSearch').addEventListener('input', renderRef);
+$('#refSearch').addEventListener('keydown', e => { if (e.key === 'Escape'){ e.stopPropagation(); if (e.target.value){ e.target.value = ''; renderRef(); } else closeRef(); } });
+$('#refCats').addEventListener('click', e => { const b = e.target.closest('[data-cat]'); if (!b) return; refCat = b.dataset.cat; renderRef(); });
+$('#refBody').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.run){
+    const r = refItem(b.dataset.run), text = `-- ${r.name}: ${r.desc}\n${r.ex}\n`;
+    const ri = tabs.findIndex(t => t.name === 'Reference');
+    if (ri >= 0){ if (ri !== activeTab) switchTab(ri); cm.setValue(text); cm.clearHistory(); saveTabs(); }
+    else addTab('Reference', text);
+    closeRef();
+    runAll();
+  } else if (b.dataset.ins){
+    const r = refItem(b.dataset.ins);
+    closeRef();
+    cm.replaceSelection(r.ex + '\n');
+    cm.focus();
+  } else if (b.dataset.copy){
+    const r = refItem(b.dataset.copy);
+    navigator.clipboard.writeText(r.ex).then(() => { b.textContent = 'Copied ✓'; setTimeout(() => b.textContent = 'Copy', 1200); });
+  }
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'F1'){ e.preventDefault(); $('#ref').classList.contains('on') ? closeRef() : openRef(); }
+  else if (e.key === 'Escape' && $('#ref').classList.contains('on')) closeRef();
+});
+
+/* ================================================================
+   Toolbar
+   ================================================================ */
+$('#runBtn').addEventListener('click', () => { runAll(); cm.focus(); });
+$('#runCurBtn').addEventListener('click', () => { runCurrent(); cm.focus(); });
+$('#explainBtn').addEventListener('click', () => { explainCurrent(); cm.focus(); });
+$('#stepBtn').addEventListener('click', () => stepThrough());
+function switchDataset(kind, verb){
+  loadDataset(kind);
+  datasetOptions(); refreshSchema(); renderExamples(); persistDb();
+  const d = DATASETS[kind];
+  messages.unshift({t:now(), kind:'info', text: kind === 'empty' ? 'Started a new empty database.' : `${verb} the ${d.name} database: ${d.tables}.`});
+  results = []; activeResult = -1; renderResults();
+}
+$('#dataset').addEventListener('change', () => {
+  const kind = $('#dataset').value, d = DATASETS[kind];
+  if (!d) return;
+  if (!confirm(`Switch to the ${d.name} database? The current database and your changes to it will be replaced.`)){ datasetOptions(); return; }
+  switchDataset(kind, 'Loaded');
+});
+$('#resetBtn').addEventListener('click', () => {
+  const kind = currentDataset();
+  if (!DATASETS[kind]){ alert('This database was opened from a file. Pick a built-in database from the menu to start over.'); return; }
+  if (!confirm(`Reset the ${DATASETS[kind].name} database to its original data? Your changes will be lost.`)) return;
+  switchDataset(kind, 'Reset');
+});
+$('#exportBtn').addEventListener('click', () => {
+  if (inTransaction()){ alert('A transaction is open. Run COMMIT or ROLLBACK first.'); return; }
+  const data = db.export();
+  db.exec('PRAGMA foreign_keys = ON;');
+  download('sql-lab.sqlite', data, 'application/vnd.sqlite3');
+});
+$('#importBtn').addEventListener('click', () => $('#fileIn').click());
+$('#fileIn').addEventListener('change', async e => {
+  const f = e.target.files[0]; e.target.value = '';
+  if (!f) return;
+  try {
+    const u8 = new Uint8Array(await f.arrayBuffer());
+    const next = new SQL.Database(u8);
+    next.exec('SELECT COUNT(*) FROM sqlite_schema'); // throws if not a SQLite file
+    db.close(); db = next;
+    db.exec('PRAGMA foreign_keys = ON;');
+    LS.set('dataset', 'custom');
+    datasetOptions(); refreshSchema(); renderExamples(); persistDb();
+    messages.unshift({t:now(), kind:'ok', text:`Opened ${f.name} (${fmtBytes(u8.length)}).`});
+  } catch(err){
+    messages.unshift({t:now(), kind:'err', text:`Could not open ${f.name}: ${err.message}`});
+  }
+  results = []; activeResult = -1; renderResults();
+});
+
+/* ================================================================
+   Splitter
+   ================================================================ */
+(function(){
+  const sp = $('#splitter'), ed = $('#editorWrap'), work = document.querySelector('.work');
+  const saved = LS.get('split', null);
+  if (saved) ed.style.flexBasis = saved;
+  sp.addEventListener('pointerdown', e => {
+    sp.setPointerCapture(e.pointerId); sp.classList.add('drag');
+    const top = ed.getBoundingClientRect().top, totalH = work.getBoundingClientRect().bottom - top;
+    const move = ev => {
+      const pct = Math.min(85, Math.max(15, (ev.clientY - top) / totalH * 100));
+      ed.style.flexBasis = pct + '%'; cm && cm.refresh();
+    };
+    const up = () => {
+      sp.classList.remove('drag'); sp.removeEventListener('pointermove', move); sp.removeEventListener('pointerup', up);
+      LS.set('split', ed.style.flexBasis);
+    };
+    sp.addEventListener('pointermove', move); sp.addEventListener('pointerup', up);
+  });
+})();
+
+/* ================================================================
+   Boot
+   ================================================================ */
+function initEditor(){
+  const mac = /Mac|iPhone|iPad/.test(navigator.platform);
+  const extra = {
+    'Ctrl-Enter': runAll, 'Cmd-Enter': runAll,
+    'Shift-Ctrl-Enter': runCurrent, 'Shift-Cmd-Enter': runCurrent,
+    'Alt-Enter': () => stepThrough(),
+    'Ctrl-Space': 'autocomplete',
+    'Ctrl-/': 'toggleComment', 'Cmd-/': 'toggleComment',
+    'Ctrl-S': () => saveTabs(), 'Cmd-S': () => saveTabs(),
+    'Tab': c => c.somethingSelected() ? c.indentSelection('add') : c.replaceSelection('  ')
+  };
+  cm = CodeMirror($('#editorWrap'), {
+    value: tabs[activeTab].sql,
+    mode: 'text/x-sqlite',
+    lineNumbers: true,
+    indentUnit: 2, tabSize: 2,
+    matchBrackets: true,
+    autoCloseBrackets: true,
+    styleActiveLine: true,
+    extraKeys: extra,
+    hintOptions: {tables: {}, completeSingle: false}
+  });
+  if (mac){
+    document.querySelectorAll('.btn kbd').forEach(k => { k.textContent = k.textContent.replace('Ctrl', '⌘'); });
+  }
+  let saveT;
+  cm.on('change', () => { clearErrorMark(); if (stepper && !stepper.stale){ stepper.stale = true; clearStepMarks(); } clearTimeout(saveT); saveT = setTimeout(saveTabs, 400); });
+  cm.on('cursorActivity', () => { const p = cm.getCursor(); $('#sbPos').textContent = `Ln ${p.line + 1}, Col ${p.ch + 1}`; });
+  cm.on('inputRead', (c, change) => {
+    if (c.state.completionActive || change.origin !== '+input') return;
+    const ch = change.text[0];
+    if (ch === '.') { c.showHint({completeSingle:false}); return; }
+    if (!/^\w$/.test(ch)) return;
+    const tok = c.getTokenAt(c.getCursor());
+    if (tok.type === 'comment' || tok.type === 'string') return;
+    if (/^\w{2,}$/.test(tok.string)) c.showHint({completeSingle:false});
+  });
+}
+
+async function boot(){
+  try {
+    SQL = await initSqlJs({locateFile: f => 'https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/' + f});
+  } catch(err){
+    $('#loadingMsg').innerHTML = 'Could not load SQLite: ' + esc(err.message) + '<br>Check your internet connection and reload.';
+    $('#loading .spin').style.display = 'none';
+    return;
+  }
+  initEditor();
+
+  let ds = LS.get('dataset', DEFAULT_DATASET);
+  if (ds === 'sample') ds = 'company';             // older versions had one combined sample
+  const saved = LS.get('db', null);
+  let restored = false;
+  if (saved){
+    try { db = new SQL.Database(b64ToU8(saved)); db.exec('SELECT 1 FROM sqlite_schema LIMIT 1; PRAGMA foreign_keys = ON;'); restored = true; }
+    catch(e){ db = null; }
+  }
+  if (!restored) loadDataset(DATASETS[ds] ? ds : DEFAULT_DATASET);
+  else LS.set('dataset', ds);
+  datasetOptions();
+
+  $('#sbEngine').textContent = 'SQLite ' + q1('SELECT sqlite_version()')[0][0];
+  refreshSchema();
+  renderTabs();
+  renderExamples();
+  renderHistory();
+  const pane = LS.get('pane', 'schema');
+  const pb = document.querySelector(`.stabs [data-p="${pane}"]`); if (pb) pb.click();
+  messages.push({t:now(), kind:'info', text: restored ? 'Restored your database from the last session.' : `Loaded the ${DATASETS[currentDataset()].name} database: ${DATASETS[currentDataset()].tables}. Pick another one from the menu at the top.`});
+  // The Relational Algebra lab hands over its SQL translation through localStorage.
+  const handoff = LS.get('handoff', null);
+  if (handoff && handoff.sql){
+    LS.del('handoff');
+    addTab(String(handoff.name || 'From RA').slice(0, 40), String(handoff.sql));
+    messages.push({t:now(), kind:'info', text: handoff.note ? String(handoff.note) :
+      'Opened the SQL translated from the Relational Algebra lab in a new tab. Press Run: its relations are inlined with WITH, so your tables are not changed.'});
+  }
+  activeResult = -1;
+  renderResults();
+  persistDb();
+  $('#loading').remove();
+  cm.refresh(); cm.focus();
+  cm.setCursor(CodeMirror.Pos(cm.lastLine()));
+}
+boot();
+})();
+</script>
+</body>
+</html>

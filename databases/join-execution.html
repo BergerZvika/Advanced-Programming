@@ -1,0 +1,1066 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Join Execution Lab</title>
+<meta name="description" content="Watch nested loop, block nested loop, index nested loop, sort-merge and hash join run page by page, with the I/O cost of each." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg-0:#07070e;
+  --bg-1:#0c0c18;
+  --panel:#0f0f1d;
+  --panel-2:#14142a;
+  --surface:rgba(255,255,255,0.04);
+  --surface-2:rgba(255,255,255,0.08);
+  --border:rgba(255,255,255,0.09);
+  --border-strong:rgba(255,255,255,0.18);
+  --text:#eaeaf5;
+  --text-dim:#9a9ab0;
+  --text-faint:#666680;
+  --accent:#7c5cff;
+  --accent-2:#35d0ff;
+  --sql:#4ce0a3;
+  --warn:#ffb547;
+  --err:#ff6b7a;
+  --pink:#ff6ec7;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+  --bar:#7c9cff;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:var(--bg-0)}
+body{font-family:'Inter',system-ui,sans-serif;color:var(--text);font-size:13.5px}
+a{color:inherit;text-decoration:none}
+button,select,input,textarea{font-family:inherit;color:inherit}
+button{cursor:pointer}
+
+.topbar{display:flex;align-items:center;gap:10px;padding:10px 16px;flex-wrap:wrap;background:linear-gradient(180deg,#0e0e1c,#0a0a15);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:20}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;white-space:nowrap}
+.brand .dot{width:10px;height:10px;border-radius:50%;background:linear-gradient(135deg,#ed7d31,#00b0f0);box-shadow:0 0 14px #00b0f0}
+.brand small{font-family:var(--mono);font-weight:500;font-size:11px;color:var(--text-faint)}
+.spacer{flex:1}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:7px 12px;border-radius:9px;font-size:12.5px;font-weight:600;background:var(--surface);border:1px solid var(--border);transition:background .15s,border-color .15s;white-space:nowrap}
+.btn:hover{background:var(--surface-2);border-color:var(--border-strong)}
+.btn.sm{padding:5px 10px;font-size:12px}
+
+.algos{display:flex;gap:4px;padding:10px 16px;border-bottom:1px solid var(--border);background:var(--bg-1);overflow-x:auto;position:sticky;top:53px;z-index:15}
+.algos button{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 14px;font-weight:600;font-size:13px;color:var(--text-dim);white-space:nowrap;display:flex;flex-direction:column;align-items:flex-start;gap:1px}
+.algos button small{font-family:var(--mono);font-size:10.5px;font-weight:500;color:var(--text-faint)}
+.algos button:hover{color:var(--text);border-color:var(--border-strong)}
+.algos button.on{background:rgba(0,176,240,0.14);border-color:rgba(0,176,240,0.55);color:#e2f7ff}
+.algos button.on small{color:#9fdcf3}
+
+.layout{display:grid;grid-template-columns:300px minmax(0,1fr);min-height:calc(100vh - 115px)}
+.side{background:var(--panel);border-right:1px solid var(--border);padding:16px;display:flex;flex-direction:column;gap:14px}
+.side h3{margin:0;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--text-faint);font-weight:700}
+.presets{display:flex;flex-direction:column;gap:6px}
+.presets button{text-align:left;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:8px 10px;font-size:12.5px;font-weight:600}
+.presets button small{display:block;font-weight:400;color:var(--text-faint);font-size:11px;margin-top:2px}
+.presets button:hover{border-color:var(--border-strong)}
+.presets button.on{border-color:rgba(0,176,240,0.55);background:rgba(0,176,240,0.08)}
+.rels{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label,.field > span{font-size:12px;font-weight:600;color:var(--text-dim)}
+.inp{width:100%;padding:7px 9px;border-radius:8px;background:var(--bg-1);border:1px solid var(--border);font-family:var(--mono);font-size:12.5px;outline:none}
+.inp:focus{border-color:rgba(0,176,240,0.55)}
+textarea.inp{min-height:140px;resize:vertical;line-height:1.5}
+.hint{font-size:11.5px;color:var(--text-faint);line-height:1.55}
+.hint code{font-family:var(--mono);background:var(--surface-2);padding:0 5px;border-radius:4px;color:var(--text-dim)}
+.num{display:flex;align-items:center;gap:8px}
+.num span{flex:1;font-size:12.5px;font-weight:600;color:var(--text-dim)}
+.num span small{display:block;font-weight:400;color:var(--text-faint);font-size:11px}
+.stepper{display:flex;align-items:center;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.stepper button{width:28px;height:28px;background:var(--surface);border:none;font-size:15px;color:var(--text-dim)}
+.stepper button:hover{background:var(--surface-2);color:var(--text)}
+.stepper b{min-width:30px;text-align:center;font-family:var(--mono);font-size:13px}
+.ck{display:flex;align-items:flex-start;gap:8px;font-size:12.5px;color:var(--text-dim);cursor:pointer;line-height:1.45}
+.ck input{margin-top:2px;accent-color:#00b0f0}
+.seg{display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.seg button{flex:1;background:var(--surface);border:none;padding:6px 8px;font-size:12px;font-weight:600;color:var(--text-dim)}
+.seg button+button{border-left:1px solid var(--border)}
+.seg button.on{background:rgba(0,176,240,0.16);color:#e2f7ff}
+.err{color:var(--err);font-size:12px;font-family:var(--mono);white-space:pre-wrap}
+.opt{display:flex;flex-direction:column;gap:10px;padding:10px;border-radius:10px;border:1px dashed var(--border-strong)}
+.opt:empty{display:none}
+
+/* ---------- data builder ---------- */
+.modes button{padding:8px 8px;font-size:12.5px}
+.builder{display:flex;flex-direction:column;gap:10px}
+.gen{border:1px solid var(--border);border-radius:11px;padding:10px;background:var(--bg-1);display:flex;flex-direction:column;gap:8px}
+.gen-h{font-size:12px;font-weight:700;color:var(--text)}
+.gen-row{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.gen-row label{display:flex;flex-direction:column;gap:3px;font-size:10.5px;color:var(--text-faint);font-weight:600}
+.gen-row .inp{padding:5px 7px;font-size:12.5px;color:var(--text)}
+.gen-go{justify-content:center;background:rgba(0,176,240,0.14);border-color:rgba(0,176,240,0.45);color:#d6f6ff}
+.ed{border:1px solid var(--border);border-radius:11px;background:var(--bg-1);overflow:hidden}
+.ed-h{display:flex;align-items:center;gap:7px;padding:8px 10px;border-bottom:1px solid var(--border);background:var(--surface)}
+.ed-h .rel{width:24px;height:24px;border-radius:7px;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;font-family:var(--mono);background:var(--text);color:#0a0a14}
+.ed-h b{font-size:13px}
+.ed-h .chip{margin-left:auto}
+.ed-h button{background:none;border:1px solid var(--border);border-radius:6px;font-size:11px;padding:2px 7px;color:var(--text-dim)}
+.ed-h button:hover{color:var(--text);border-color:var(--border-strong)}
+.ed-cols,.ed-row{display:grid;grid-template-columns:20px 1fr 1fr 22px;gap:4px;align-items:center;padding:0 8px}
+.ed-cols{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-faint);font-weight:800;padding-top:6px;padding-bottom:3px}
+.ed-body{max-height:230px;overflow-y:auto;padding-bottom:6px}
+.ed-row{padding-top:2px;padding-bottom:2px}
+.ed-row .pg{width:8px;height:100%;min-height:22px;border-radius:3px;justify-self:center}
+.ed-row input{width:100%;min-width:0;padding:4px 7px;border-radius:6px;background:var(--bg-0);border:1px solid var(--border);font-family:var(--mono);font-size:12.5px;outline:none;color:var(--text)}
+.ed-row input:focus{border-color:rgba(0,176,240,0.6)}
+.ed-row input.bad{border-color:var(--err)}
+.ed-row .x{background:none;border:none;color:var(--text-faint);font-size:14px;line-height:1;padding:2px;border-radius:5px}
+.ed-row .x:hover{color:var(--err);background:rgba(255,107,122,0.12)}
+.ed-add{width:calc(100% - 16px);margin:2px 8px 8px;padding:5px;border-radius:7px;border:1px dashed var(--border-strong);background:none;font-size:12px;color:var(--text-dim)}
+.ed-add:hover{color:var(--text);border-color:rgba(0,176,240,0.6)}
+.paste summary{cursor:pointer;font-size:12px;color:var(--text-faint);font-weight:600}
+.paste[open] summary{margin-bottom:8px}
+.slider{display:flex;flex-direction:column;gap:6px}
+.sl-h{display:flex;align-items:center;gap:10px}
+.sl-h span{flex:1;font-size:12.5px;font-weight:600;color:var(--text-dim)}
+.sl-h span small{display:block;font-weight:400;color:var(--text-faint);font-size:11px}
+.sl-h b{font-family:var(--mono);font-size:20px;font-weight:800;color:#9fdcf3;min-width:28px;text-align:right}
+.slider input{width:100%;accent-color:#00b0f0}
+.preview{border:1px solid var(--border);border-radius:11px;padding:10px;background:var(--bg-1);display:flex;flex-direction:column;gap:8px}
+.pv-row{display:grid;grid-template-columns:62px 1fr;gap:8px;align-items:center}
+.pv-row > span{font-size:11.5px;color:var(--text-dim);font-weight:600}
+.pv-row > span small{display:block;font-family:var(--mono);color:var(--text-faint);font-weight:500;font-size:10.5px}
+.pv-blocks{display:flex;flex-wrap:wrap;gap:3px}
+.pv-blocks i{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:20px;padding:0 4px;border-radius:5px;font-style:normal;font-family:var(--mono);font-size:10px;font-weight:700;color:#0a0a14}
+.pv-blocks i.fr{background:none;border:1.5px dashed rgba(169,139,255,0.6);color:#cbb9ff}
+
+/* ---------- main ---------- */
+.main{min-width:0;padding:16px 20px 60px;display:flex;flex-direction:column;gap:14px}
+.head{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap}
+.head .what{flex:1;min-width:280px}
+.head h1{margin:0 0 4px;font-size:20px;letter-spacing:-0.01em}
+.head p{margin:0;color:var(--text-dim);line-height:1.6;max-width:780px}
+.cost{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:10px 14px;min-width:300px;display:flex;flex-direction:column;gap:6px}
+.cost .f{font-family:var(--mono);font-size:12.5px;color:var(--text-dim)}
+.cost .f b{color:var(--text)}
+.io{display:flex;gap:14px;flex-wrap:wrap;font-family:var(--mono);font-size:12px;color:var(--text-faint)}
+.io b{color:var(--text);font-size:15px}
+.io .tot b{color:var(--sql)}
+
+.controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:8px 12px;position:sticky;top:122px;z-index:10}
+.cbtn{width:36px;height:32px;border-radius:8px;border:1px solid var(--border);background:var(--surface);font-size:14px;color:var(--text-dim);display:inline-flex;align-items:center;justify-content:center}
+.cbtn:hover:not([disabled]){background:var(--surface-2);color:var(--text)}
+.cbtn[disabled]{opacity:.35;cursor:default}
+.cbtn.play{width:58px;font-size:12px;font-weight:700;color:var(--sql);border-color:rgba(76,224,163,0.45)}
+.scount{font-family:var(--mono);font-size:12px;color:var(--text-dim);min-width:72px;text-align:center}
+#scrub{flex:1;min-width:120px;accent-color:#00b0f0}
+.speed{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--text-faint)}
+.speed input{width:90px;accent-color:#00b0f0}
+
+.explain{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,360px);gap:12px}
+.narr{background:var(--panel);border:1px solid var(--border);border-left:3px solid #00b0f0;border-radius:12px;padding:12px 14px;line-height:1.65;color:var(--text-dim);font-size:13.5px;min-height:74px}
+.narr b{color:var(--text)}
+.narr code{font-family:var(--mono);font-size:12.5px;background:var(--surface-2);padding:1px 6px;border-radius:5px;color:var(--text)}
+.narr .ok{color:var(--sql);font-weight:700}
+.narr .no{color:var(--err);font-weight:700}
+.narr .warn{display:block;margin-top:6px;color:var(--warn)}
+.code{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:10px 0;font-family:var(--mono);font-size:12px;line-height:1.55}
+.code div{padding:2px 14px;color:var(--text-faint);white-space:pre-wrap;border-left:3px solid transparent}
+.code div.on{background:rgba(0,176,240,0.12);border-left-color:#00b0f0;color:var(--text)}
+.code .ln{display:inline-block;width:18px;color:var(--text-faint)}
+
+.stage{display:grid;grid-template-columns:minmax(0,1.15fr) 30px minmax(0,1.25fr) 30px minmax(0,0.9fr);gap:8px;align-items:start}
+.col{--ac:#00b0f0;background:linear-gradient(180deg,color-mix(in srgb,var(--ac) 7%,var(--panel)),var(--panel) 120px);border:1px solid var(--border);border-top:3px solid var(--ac);border-radius:14px;padding:14px;min-width:0}
+.col.disk{--ac:#00b0f0}.col.memc{--ac:#a98bff}.col.outc{--ac:#4ce0a3}
+.colh{display:flex;align-items:center;gap:11px;margin-bottom:14px}
+.colh .ic{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex:none;color:var(--ac);
+  background:color-mix(in srgb,var(--ac) 16%,transparent);border:1px solid color-mix(in srgb,var(--ac) 40%,transparent)}
+.colh h2{margin:0;font-size:17px;font-weight:800;letter-spacing:-0.01em;color:var(--text);line-height:1.15}
+.colh small{display:block;font-size:11.5px;color:var(--text-faint);font-weight:500;margin-top:1px}
+.colh .badge{margin-left:auto;font-family:var(--mono);font-size:11px;font-weight:700;padding:4px 9px;border-radius:999px;white-space:nowrap;
+  color:color-mix(in srgb,var(--ac) 70%,white);background:color-mix(in srgb,var(--ac) 14%,transparent);border:1px solid color-mix(in srgb,var(--ac) 35%,transparent)}
+.colh .badge:empty{display:none}
+.flow{align-self:start;margin-top:120px;position:sticky;top:200px;display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--text-faint);font-size:9.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;transition:color .25s}
+.flow svg{width:26px;height:26px;padding:5px;border-radius:50%;border:1px solid var(--border-strong);background:var(--panel);transition:all .25s}
+.flow.on{color:var(--fc)}
+.flow.on svg{color:#08080f;background:var(--fc);border-color:var(--fc);box-shadow:0 0 18px var(--fc)}
+.flow.read{--fc:#00b0f0}.flow.write{--fc:#4ce0a3}
+
+.files{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.fhead{display:flex;align-items:center;gap:7px;margin-bottom:8px;flex-wrap:wrap}
+.fhead .rel{width:26px;height:26px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;font-family:var(--mono);background:var(--text);color:#0a0a14}
+.fhead b{font-size:14px;font-weight:800}
+.chip{font-family:var(--mono);font-size:10.5px;color:var(--text-dim);background:var(--surface-2);border:1px solid var(--border);padding:1px 7px;border-radius:999px}
+.chip.warn{color:var(--warn);background:rgba(255,181,71,0.12);border-color:rgba(255,181,71,0.35);font-family:'Inter',sans-serif;font-weight:700}
+.colhead{display:grid;grid-template-columns:1fr 1fr;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-faint);padding:0 12px 4px 14px;font-weight:800}
+.pages{display:flex;flex-direction:column;gap:7px}
+.page{--pc:#888;border-radius:10px;border:1px solid color-mix(in srgb,var(--pc) 45%,transparent);border-left:4px solid var(--pc);
+  background:color-mix(in srgb,var(--pc) 11%,var(--bg-1));overflow:hidden;transition:box-shadow .25s,transform .25s,opacity .25s}
+.page .ph{font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:color-mix(in srgb,var(--pc) 75%,white);padding:5px 9px 4px 10px;display:flex;align-items:center;gap:6px}
+.page .ph .st{margin-left:auto;font-size:9.5px;letter-spacing:.04em;padding:1px 7px;border-radius:999px;font-weight:800}
+.page .ph .st.rd{background:#fff;color:#0a0a14;animation:blink 1s ease-in-out infinite}
+.page .ph .st.im{border:1px solid color-mix(in srgb,var(--pc) 80%,white);color:color-mix(in srgb,var(--pc) 70%,white)}
+@keyframes blink{50%{opacity:.55}}
+.page.reading{box-shadow:0 0 0 2px #fff,0 0 22px color-mix(in srgb,var(--pc) 85%,transparent);transform:translateX(4px)}
+.page.inmem{box-shadow:0 0 0 1px color-mix(in srgb,var(--pc) 85%,white)}
+.rec{display:grid;grid-template-columns:1fr 1fr;font-family:var(--mono);font-size:12.5px;padding:3px 10px;border-top:1px solid color-mix(in srgb,var(--pc) 14%,transparent);transition:background .2s}
+.rec span:first-child{color:var(--text-dim)}
+.rec span:last-child{font-weight:700;color:var(--text)}
+.rec.hot{background:rgba(255,255,255,0.16);box-shadow:inset 3px 0 0 #fff}
+.rec.hit{background:rgba(76,224,163,0.28);box-shadow:inset 3px 0 0 var(--sql)}
+.rec.hit span{color:#d9ffef}
+.rec.miss{background:rgba(255,107,122,0.2);box-shadow:inset 3px 0 0 var(--err)}
+.parts{margin-top:14px;border-top:1px solid var(--border);padding-top:12px}
+.parts h4{margin:0 0 8px;font-size:13px;color:var(--text);font-weight:800}
+.prow{display:grid;grid-template-columns:44px repeat(auto-fill,minmax(78px,1fr));gap:6px;align-items:start;margin-bottom:7px}
+.prow > b{font-family:var(--mono);font-size:12px;color:var(--text-dim);padding-top:5px;font-weight:800}
+
+.mem{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:9px}
+.frame{border:1.5px dashed var(--border-strong);border-radius:12px;padding:7px;min-height:104px;display:flex;flex-direction:column;gap:6px;background:var(--bg-1)}
+.frame .fl{display:flex;align-items:baseline;gap:6px}
+.frame .fl b{font-size:12.5px;font-weight:800;color:var(--text)}
+.frame .fl small{font-size:9.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-faint)}
+.frame .fl i{margin-left:auto;font-style:normal;font-family:var(--mono);font-size:11px;color:var(--text-dim)}
+.frame.used{border-style:solid;border-color:color-mix(in srgb,var(--fc,#a98bff) 45%,transparent);background:color-mix(in srgb,var(--fc,#a98bff) 7%,var(--bg-1))}
+.frame.outf{--fc:#4ce0a3}
+.frame.fresh{animation:pop .6s ease}
+@keyframes pop{0%{box-shadow:0 0 0 4px rgba(0,176,240,0.75)}100%{box-shadow:0 0 0 0 rgba(0,176,240,0)}}
+.frame .free{margin:auto;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:var(--text-faint);font-style:italic}
+.frame .free b{font-style:normal;font-size:18px;opacity:.5}
+.frame .page{border-radius:8px}
+.frame .outbuf{font-family:var(--mono);font-size:12px;color:#c9ffe7;line-height:1.6;font-weight:600}
+.memnote{margin-top:12px;font-size:12px;color:var(--text-dim);line-height:1.5;padding:8px 11px;border-radius:9px;background:var(--surface);border-left:3px solid #a98bff}
+.aux{margin-top:14px;border-top:1px solid var(--border);padding-top:12px}
+.aux h4{margin:0 0 8px;font-size:13px;color:var(--text);font-weight:800;display:flex;gap:8px;align-items:baseline}
+.aux h4 small{font-weight:500;color:var(--text-faint);font-size:11px}
+.ht{display:flex;flex-direction:column;gap:4px;font-family:var(--mono);font-size:12px}
+.ht div{display:flex;gap:10px;padding:5px 9px;border-radius:8px;background:var(--surface);border:1px solid var(--border)}
+.ht div b{color:#9fdcf3;min-width:58px;font-weight:800}
+.ht div.on{background:rgba(0,176,240,0.18);border-color:rgba(0,176,240,0.6);box-shadow:inset 3px 0 0 #00b0f0}
+.ht span{color:var(--text-dim)}
+
+table.out{width:100%;border-collapse:separate;border-spacing:0;font-family:var(--mono);font-size:13px;border:1px solid var(--border);border-radius:10px;overflow:hidden}
+table.out th{text-align:left;font-family:'Inter',sans-serif;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--text);font-weight:800;padding:8px 10px;background:rgba(76,224,163,0.1);border-bottom:1px solid rgba(76,224,163,0.3)}
+table.out td{padding:6px 10px;border-bottom:1px solid var(--border)}
+table.out tr:last-child td{border-bottom:none}
+table.out tr:nth-child(even) td{background:rgba(255,255,255,0.02)}
+table.out td:last-child{font-weight:700}
+table.out tr.new td{background:rgba(76,224,163,0.2);color:#d9ffef;animation:slidein .45s ease}
+@keyframes slidein{from{transform:translateX(-8px);opacity:0}to{transform:none;opacity:1}}
+.out-empty{display:flex;flex-direction:column;align-items:center;gap:6px;padding:26px 8px;border:1.5px dashed var(--border-strong);border-radius:12px;color:var(--text-faint);font-size:12.5px;text-align:center}
+.out-empty b{font-size:22px;opacity:.5;font-weight:400}
+
+/* ---------- compare ---------- */
+.cmp{display:grid;grid-template-columns:minmax(0,1fr);gap:14px}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px 16px}
+.card h2{margin:0 0 10px;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--text-faint);font-weight:700}
+.params{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.params label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--text-dim);font-weight:600}
+.params label small{font-weight:400;color:var(--text-faint);font-size:11px}
+.params .inp{font-size:13px}
+.pbtns{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+table.ct{width:100%;border-collapse:collapse;font-size:12.5px}
+table.ct th{text-align:left;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-faint);padding:6px 10px;border-bottom:1px solid var(--border-strong);font-weight:700}
+table.ct td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top;color:var(--text-dim)}
+table.ct td:first-child{color:var(--text);font-weight:600;white-space:nowrap}
+table.ct td.mono{font-family:var(--mono);font-size:12px}
+table.ct td.ccost{font-family:var(--mono);color:var(--text);text-align:right;white-space:nowrap;font-weight:600}
+table.ct tr.best td.ccost::after{content:"  ★ cheapest";color:var(--sql);font-family:'Inter',sans-serif;font-size:11px;font-weight:700}
+.chart{display:flex;flex-direction:column;gap:8px;position:relative}
+.bar-row{display:grid;grid-template-columns:170px minmax(0,1fr) 120px;gap:10px;align-items:center;cursor:default}
+.bar-row .lbl{font-size:12.5px;color:var(--text-dim);text-align:right}
+.bar-row .track{height:22px;position:relative}
+.bar-row .b{position:absolute;left:0;top:3px;bottom:3px;background:var(--bar);border-radius:0 4px 4px 0;min-width:2px;transition:width .3s}
+.bar-row:hover .b{filter:brightness(1.2)}
+.bar-row:hover .lbl{color:var(--text)}
+.bar-row .v{font-family:var(--mono);font-size:12px;color:var(--text)}
+.bar-row .v small{color:var(--text-faint);display:block;font-size:10.5px}
+.axisnote{display:flex;align-items:center;gap:10px;font-size:11.5px;color:var(--text-faint);margin-top:6px}
+.tip{position:fixed;pointer-events:none;background:var(--panel-2);border:1px solid var(--border-strong);border-radius:8px;padding:8px 10px;font-size:12px;line-height:1.5;color:var(--text-dim);z-index:50;display:none;max-width:320px;box-shadow:0 10px 30px rgba(0,0,0,0.5)}
+.tip b{color:var(--text)}
+.tip code{font-family:var(--mono);font-size:11.5px;color:var(--text)}
+
+@media (max-width:1250px){
+  .stage{grid-template-columns:1fr 1fr;gap:12px}
+  .stage .flow{display:none}
+  .stage .col.outc{grid-column:span 2}
+}
+@media (max-width:900px){
+  .layout{grid-template-columns:1fr}
+  .side{border-right:none;border-bottom:1px solid var(--border)}
+  .stage{grid-template-columns:1fr}
+  .stage .col.outc{grid-column:auto}
+  .explain{grid-template-columns:1fr}
+  .controls{top:auto;position:static}
+  .algos{top:auto;position:static}
+  .main{padding:14px 16px 50px}
+  .brand small{display:none}
+  .bar-row{grid-template-columns:110px minmax(0,1fr) 90px}
+}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="index.html" title="Back to Databases Lab"><span class="dot"></span>Join Execution Lab <small>R ⋈ S · pages · memory · I/O cost</small></a>
+  <span class="spacer"></span>
+  <a class="btn" href="index.html">← Databases</a>
+  <a class="btn" href="../home.html">⌂ Home</a>
+</header>
+
+<nav class="algos" id="algos"></nav>
+
+<div class="layout">
+  <aside class="side">
+    <h3>Data</h3>
+    <div class="seg modes" id="modeSeg"><button data-mode="examples">Examples</button><button data-mode="custom">✎ Build your own</button></div>
+    <div id="exPanel" class="presets-wrap">
+      <div class="presets" id="presets"></div>
+      <div class="hint">Want your own data? Switch to <b style="color:var(--text)">Build your own</b>.</div>
+    </div>
+    <div id="buildPanel" class="builder">
+      <div class="gen">
+        <div class="gen-h">Generate random data</div>
+        <div class="gen-row">
+          <label>R records<input class="inp" type="number" id="genR" min="1" max="40" value="8"></label>
+          <label>S records<input class="inp" type="number" id="genS" min="1" max="40" value="6"></label>
+          <label>JC values<input class="inp" type="number" id="genV" min="1" max="20" value="4"></label>
+        </div>
+        <button class="btn sm gen-go" id="genGo">⟳ Generate</button>
+      </div>
+      <div class="ed" id="edR"></div>
+      <div class="ed" id="edS"></div>
+      <details class="paste"><summary>Paste as text</summary>
+        <div class="rels">
+          <div class="field"><label for="rIn">R (Id JC)</label><textarea class="inp" id="rIn" spellcheck="false"></textarea></div>
+          <div class="field"><label for="sIn">S (Id JC)</label><textarea class="inp" id="sIn" spellcheck="false"></textarea></div>
+        </div>
+        <div class="hint">One record per line: <code>Id JC</code>.</div>
+      </details>
+    </div>
+    <div class="err" id="dataErr"></div>
+    <h3>Disk &amp; memory</h3>
+    <div class="slider"><div class="sl-h"><span>Records per page<small>how many tuples fit in one disk page</small></span><b id="Pv"></b></div>
+      <input type="range" id="Pr" min="1" max="8" step="1"></div>
+    <div class="slider"><div class="sl-h"><span>Memory frames M<small>buffer pages available in RAM</small></span><b id="Mv"></b></div>
+      <input type="range" id="Mr" min="3" max="12" step="1"></div>
+    <div class="preview" id="preview"></div>
+    <label class="ck"><input type="checkbox" id="detail" checked><span>Show every comparison <small style="color:var(--text-faint)">(off = one step per page)</small></span></label>
+    <div class="opt" id="opts"></div>
+  </aside>
+
+  <main class="main" id="main"></main>
+</div>
+<div class="tip" id="tip"></div>
+
+<script>
+(function(){
+'use strict';
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt = n => Number.isFinite(n) ? Math.round(n).toLocaleString('en-US') : '∞';
+const ceil = Math.ceil;
+
+/* ================================================================
+   Settings & data
+   ================================================================ */
+const PRESETS = {
+  slide: {name:'Slide example', sub:'3 records per page, M = 4', P:3, M:4,
+    R:'1 1\n3 1\n5 1\n2 2\n4 2\n6 2', S:'1 1\n2 2\n3 3\n4 4\n5 5'},
+  tricky: {name:'Tricky example', sub:'1 record per page: one R tuple meets many S pages', P:1, M:5,
+    R:'1 1\n3 1\n5 1\n2 2\n4 2\n6 2', S:'1 1\n2 2\n3 3\n4 4\n5 5'},
+  bigger: {name:'Bigger, unsorted', sub:'12 × 10 records, 2 per page', P:2, M:4,
+    R:'1 4\n2 1\n3 7\n4 3\n5 1\n6 5\n7 2\n8 4\n9 6\n10 3\n11 8\n12 2', S:'1 3\n2 4\n3 9\n4 1\n5 2\n6 6\n7 4\n8 8\n9 5\n10 7'}
+};
+const ALGOS = [
+  {id:'nlj', name:'Nested loop', sub:'B(R) + B(R)·B(S)'},
+  {id:'bnlj', name:'Block nested loop', sub:'B(R) + ⌈B(R)/(M−2)⌉·B(S)'},
+  {id:'inlj', name:'Index nested loop', sub:'index on S.JC'},
+  {id:'smj', name:'Sort-merge', sub:'(2k+1)·[B(R)+B(S)]'},
+  {id:'hash', name:'Hash join', sub:'3·[B(R)+B(S)]'},
+  {id:'cmp', name:'Compare costs', sub:'all formulas side by side'}
+];
+const DEFAULT = {algo:'nlj', mode:'examples', preset:'slide', P:3, M:4, R:PRESETS.slide.R, S:PRESETS.slide.S, detail:true,
+  clustered:true, c:1, sorted:false, k:2};
+let CFG = (() => { try { return {...DEFAULT, ...JSON.parse(localStorage.getItem('joinlab.v1') || '{}')}; } catch (e){ return {...DEFAULT}; } })();
+const save = () => { try { localStorage.setItem('joinlab.v1', JSON.stringify(CFG)); } catch (e) {} };
+
+const keyOf = t => /^-?\d+(\.\d+)?$/.test(t) ? +t : t;
+function parseRel(text, rel){
+  const out = [];
+  text.split('\n').forEach((line, i) => {
+    const t = line.trim(); if (!t) return;
+    const parts = t.split(/[\s,;|]+/);
+    if (parts.length < 2) throw new Error(`${rel} line ${i + 1}: write "Id JC", e.g. "3 1"`);
+    if (parts[0] === '?' || parts[1] === '?') throw new Error(`${rel} record ${i + 1}: fill in both Id and JC`);
+    out.push({rel, id:keyOf(parts[0]), k:keyOf(parts[1]), uid:rel + out.length});
+  });
+  if (!out.length) throw new Error(`${rel} has no records`);
+  return out;
+}
+const paginate = (recs, P) => { const pages = []; for (let i = 0; i < recs.length; i += P) pages.push(recs.slice(i, i + P)); return pages; };
+const cmpKey = (a, b) => typeof a === typeof b ? (a < b ? -1 : a > b ? 1 : 0) : String(a) < String(b) ? -1 : 1;
+const sortByKey = recs => [...recs].sort((a, b) => cmpKey(a.k, b.k) || cmpKey(a.id, b.id));
+// slide-style page colours (orange, yellow, green, blue, light blue, amber, grey …)
+const PAGE_COLORS = ['#ed7d31', '#ffd966', '#70ad47', '#00b0f0', '#9dc3e6', '#ffc000', '#a5a5a5', '#c55a9b', '#5b9bd5', '#b4c7e7'];
+const pageColor = (rel, i) => PAGE_COLORS[(i + (rel === 'S' ? 0 : 0)) % PAGE_COLORS.length];
+
+/* ================================================================
+   Trace builder: every algorithm produces a list of snapshots
+   ================================================================ */
+function makeTrace(M){
+  const steps = [], OUT = [];
+  const st = {reads:0, writes:0, mem:Array(M).fill(null), hot:{}, reading:null, ht:null, htKey:null, idx:null, view:null, parts:null, phase:''};
+  const cloneMem = m => m.map(f => f && {...f, recs:[...f.recs]});
+  return {
+    st, OUT, steps,
+    push(line, text, extra = {}){
+      steps.push({line, text, reads:st.reads, writes:st.writes, mem:cloneMem(st.mem), hot:{...st.hot}, reading:st.reading,
+        ht:st.ht, htKey:st.htKey, idx:st.idx, view:st.view && {...st.view}, phase:st.phase, outN:OUT.length,
+        parts:st.parts && {R:st.parts.R.map(p => p.map(pg => [...pg])), S:st.parts.S.map(p => p.map(pg => [...pg]))}, ...extra});
+      st.reading = null;
+    }
+  };
+}
+const recTxt = r => `${r.rel}(${esc(r.id)}, ${esc(r.k)})`;
+const frame = (role, label, recs, color) => ({role, label, recs, color});
+const outFrame = (n, P) => frame('out', 'Output', [], null);
+
+/* ---------- 1. nested loop join ---------- */
+function traceNLJ(R, S, P, M, detail){
+  const T = makeTrace(M), st = T.st, Rp = paginate(R, P), Sp = paginate(S, P);
+  st.mem[M - 1] = outFrame();
+  T.push(0, `<b>Nested loop join.</b> R is the outer relation and S the inner one. We need only 3 frames: one for a page of R, one for a page of S and one output buffer.`);
+  Rp.forEach((rp, i) => {
+    st.reads++; st.reading = {rel:'R', page:i};
+    st.mem[0] = frame('R', `R page ${i + 1}`, rp, pageColor('R', i)); st.mem[1] = null; st.hot = {};
+    T.push(1, `Read <b>page ${i + 1} of R</b> into memory (I/O #${st.reads}).`);
+    Sp.forEach((sp, j) => {
+      st.reads++; st.reading = {rel:'S', page:j};
+      st.mem[1] = frame('S', `S page ${j + 1}`, sp, pageColor('S', j)); st.hot = {};
+      T.push(2, `Read <b>page ${j + 1} of S</b> (I/O #${st.reads}).` + (i > 0 && j === 0 ? ` For every page of R we scan <b>all of S again</b> — that is the B(R)·B(S) term.` : ''));
+      if (detail){
+        for (const r of rp) for (const s of sp){
+          const hit = r.k === s.k; if (hit) T.OUT.push({r, s});
+          st.hot = {[r.uid]:hit ? 'hit' : 'miss', [s.uid]:hit ? 'hit' : 'miss'};
+          T.push(hit ? 4 : 3, `Compare ${recTxt(r)} with ${recTxt(s)}: JC ${esc(r.k)} ${hit ? '=' : '≠'} ${esc(s.k)} → ${hit ? '<span class="ok">match, output the pair</span>' : '<span class="no">no match</span>'}.`);
+        }
+      } else {
+        const hits = []; for (const r of rp) for (const s of sp) if (r.k === s.k){ hits.push({r, s}); T.OUT.push({r, s}); }
+        st.hot = Object.fromEntries(hits.flatMap(h => [[h.r.uid, 'hit'], [h.s.uid, 'hit']]));
+        T.push(4, `Compare all ${rp.length * sp.length} pairs of these two pages: ${hits.length ? `<span class="ok">${hits.length} match${hits.length > 1 ? 'es' : ''}</span>` : '<span class="no">no matches</span>'}.`);
+      }
+    });
+  });
+  st.hot = {}; st.mem = st.mem.map((f, i) => i === M - 1 ? f : null);
+  return finish(T, 'nlj');
+}
+
+/* ---------- 2. block nested loop join ---------- */
+function traceBNLJ(R, S, P, M, detail){
+  const T = makeTrace(M), st = T.st, Rp = paginate(R, P), Sp = paginate(S, P), b = Math.max(1, M - 2);
+  st.mem[M - 1] = outFrame();
+  T.push(0, `<b>Block nested loop join.</b> M = ${M}, so <b>M − 2 = ${b}</b> frame${b > 1 ? 's hold' : ' holds'} a block of R, 1 frame is the input buffer for S and 1 is the output buffer. Every block of R costs one scan of S.`);
+  for (let start = 0, blk = 1; start < Rp.length; start += b, blk++){
+    for (let f = 0; f < b; f++) st.mem[f] = null;
+    st.mem[b] = null; st.ht = null; st.hot = {};
+    const block = Rp.slice(start, start + b);
+    block.forEach((rp, f) => {
+      st.reads++; st.reading = {rel:'R', page:start + f};
+      st.mem[f] = frame('R', `R page ${start + f + 1}`, rp, pageColor('R', start + f));
+      T.push(1, `Block ${blk}: read <b>page ${start + f + 1} of R</b> into frame ${f + 1} (I/O #${st.reads}).`);
+    });
+    const recs = block.flat(), ht = new Map();
+    for (const r of recs){ if (!ht.has(r.k)) ht.set(r.k, []); ht.get(r.k).push(r); }
+    st.ht = [...ht.entries()].map(([k, rs]) => ({k, ids:rs.map(r => r.id), uids:rs.map(r => r.uid)}));
+    T.push(1, `Build a <b>hash table on JC</b> for the ${recs.length} tuples of this block, so each S tuple finds its partners at once.`);
+    Sp.forEach((sp, j) => {
+      st.reads++; st.reading = {rel:'S', page:j}; st.htKey = null;
+      st.mem[b] = frame('S', `S page ${j + 1}`, sp, pageColor('S', j)); st.hot = {};
+      T.push(2, `Read <b>page ${j + 1} of S</b> into the input buffer (I/O #${st.reads}).`);
+      const probe = list => {
+        const hits = [];
+        for (const s of list) for (const r of ht.get(s.k) || []){ hits.push({r, s}); T.OUT.push({r, s}); }
+        return hits;
+      };
+      if (detail){
+        for (const s of sp){
+          const hits = probe([s]);
+          st.htKey = s.k;
+          st.hot = {[s.uid]:hits.length ? 'hit' : 'miss', ...Object.fromEntries(hits.map(h => [h.r.uid, 'hit']))};
+          T.push(hits.length ? 4 : 3, `Probe the hash table with ${recTxt(s)}: ` + (hits.length ? `<span class="ok">JC ${esc(s.k)} → ${hits.map(h => recTxt(h.r)).join(', ')}</span>, output ${hits.length} pair${hits.length > 1 ? 's' : ''}.` : `<span class="no">no R tuple in this block has JC ${esc(s.k)}</span>.`));
+        }
+      } else {
+        const hits = probe(sp);
+        st.hot = Object.fromEntries(hits.flatMap(h => [[h.r.uid, 'hit'], [h.s.uid, 'hit']]));
+        T.push(4, `Probe the hash table with every tuple of the page: ${hits.length ? `<span class="ok">${hits.length} match${hits.length > 1 ? 'es' : ''}</span>` : '<span class="no">no matches</span>'}.`);
+      }
+    });
+  }
+  st.hot = {}; st.ht = null; st.htKey = null;
+  return finish(T, 'bnlj');
+}
+
+/* ---------- 3. index nested loop join ---------- */
+function traceINLJ(R, S, P, M, detail, clustered, c){
+  const T = makeTrace(M), st = T.st, Rp = paginate(R, P);
+  const Sfile = clustered ? sortByKey(S) : S, Sp = paginate(Sfile, P);
+  const pageOf = new Map(); Sp.forEach((pg, i) => pg.forEach(s => pageOf.set(s.uid, i)));
+  const idx = new Map(); for (const s of Sfile){ if (!idx.has(s.k)) idx.set(s.k, []); idx.get(s.k).push(s); }
+  st.view = {S:clustered ? 'sorted' : 'orig'};
+  st.idx = [...idx.entries()].sort((a, b) => cmpKey(a[0], b[0])).map(([k, ss]) => ({k, ids:ss.map(s => s.id), pages:[...new Set(ss.map(s => pageOf.get(s.uid) + 1))]}));
+  st.mem[M - 1] = outFrame();
+  T.push(0, `<b>Index nested loop join</b> with a ${clustered ? '<b>clustered</b>' : '<b>unclustered</b>'} index on <code>S.JC</code>. ` +
+    (clustered ? 'Clustered: S is stored in JC order, so all tuples with the same JC sit on adjacent pages and we read only those pages.' :
+     'Unclustered: S is stored in its own order; each matching tuple can be on a different page, so we count one page read per matching tuple.') +
+    ` Searching the index costs <b>${c}</b> I/O each time (0 = in memory, 1 = hash index, 2–4 = B+ tree).`);
+  Rp.forEach((rp, i) => {
+    st.reads++; st.reading = {rel:'R', page:i}; st.hot = {}; st.htKey = null;
+    st.mem[0] = frame('R', `R page ${i + 1}`, rp, pageColor('R', i)); st.mem[1] = null;
+    T.push(1, `Read <b>page ${i + 1} of R</b> (I/O #${st.reads}).`);
+    for (const r of rp){
+      st.reads += c; st.htKey = r.k; st.hot = {[r.uid]:'hot'};
+      const ms = idx.get(r.k) || [];
+      T.push(3, `Search the index for <code>JC = ${esc(r.k)}</code> (for ${recTxt(r)}): +${c} I/O. ` + (ms.length ? `It points to ${ms.length} tuple${ms.length > 1 ? 's' : ''} of S on page${new Set(ms.map(s => pageOf.get(s.uid))).size > 1 ? 's' : ''} ${[...new Set(ms.map(s => pageOf.get(s.uid) + 1))].join(', ')}.` : '<span class="no">No S tuple has this JC — nothing to read.</span>'));
+      if (!ms.length) continue;
+      const fetches = clustered ? [...new Set(ms.map(s => pageOf.get(s.uid)))].map(p => ({p, ss:ms.filter(s => pageOf.get(s.uid) === p)})) : ms.map(s => ({p:pageOf.get(s.uid), ss:[s]}));
+      for (const f of fetches){
+        st.reads++; st.reading = {rel:'S', page:f.p};
+        st.mem[1] = frame('S', `S page ${f.p + 1}`, Sp[f.p], pageColor('S', f.p));
+        st.hot = {[r.uid]:'hit', ...Object.fromEntries(f.ss.map(s => [s.uid, 'hit']))};
+        f.ss.forEach(s => T.OUT.push({r, s}));
+        T.push(4, `Read <b>page ${f.p + 1} of S</b> (I/O #${st.reads}) and output ${f.ss.map(s => `<span class="ok">(${esc(r.id)}, ${esc(s.id)})</span>`).join(', ')}.` +
+          (clustered ? '' : ' Unclustered: this read is for one tuple only, even if the same page is read again later.'));
+      }
+    }
+  });
+  st.hot = {}; st.htKey = null;
+  return finish(T, 'inlj', {idx:st.idx});
+}
+
+/* ---------- 4. sort-merge join ---------- */
+function traceSMJ(R, S, P, M, detail, presorted, k){
+  const T = makeTrace(M), st = T.st;
+  const Rs = sortByKey(R), Ss = sortByKey(S), Rp = paginate(Rs, P), Sp = paginate(Ss, P);
+  const BR = paginate(R, P).length, BS = paginate(S, P).length;
+  st.view = {R:'orig', S:'orig'};
+  if (!presorted){
+    st.phase = 'Sort';
+    T.push(0, `<b>Sort-merge join.</b> Phase 1: sort both relations by JC with external merge sort. Each pass reads and writes the whole relation; we assume <b>k = ${k}</b> passes, so sorting costs <b>2·B·k</b>.`);
+    st.reads += BR * k; st.writes += BR * k; st.view.R = 'sorted';
+    T.push(0, `Sort R: ${k} passes × (read + write ${BR} page${BR > 1 ? 's' : ''}) = 2·${BR}·${k} = <b>${2 * BR * k} I/O</b>. R is now stored in JC order.`);
+    st.reads += BS * k; st.writes += BS * k; st.view.S = 'sorted';
+    T.push(0, `Sort S: 2·${BS}·${k} = <b>${2 * BS * k} I/O</b>. Now the merge phase reads each sorted relation once more.`);
+  } else {
+    st.view = {R:'sorted', S:'sorted'};
+    T.push(0, `<b>Sort-merge join</b> on relations that are <b>already sorted</b> by JC, so only the merge phase is paid: B(R) + B(S) at most.`);
+  }
+  st.phase = 'Merge';
+  // memory holds the R pages and S pages that can still meet a future page of the other relation
+  let inR = [], inS = [], nr = 0, ns = 0;
+  const outSlot = M - 1;
+  const lastKey = pg => Sp[pg] ? Sp[pg][Sp[pg].length - 1].k : null;
+  const lastR = pg => Rp[pg][Rp[pg].length - 1].k, lastS = pg => Sp[pg][Sp[pg].length - 1].k;
+  const layoutMem = () => {
+    st.mem = Array(M).fill(null);
+    const list = [...inR.map(p => frame('R', `R page ${p + 1}`, Rp[p], pageColor('R', p))), ...inS.map(p => frame('S', `S page ${p + 1}`, Sp[p], pageColor('S', p)))];
+    list.slice(0, M - 1).forEach((f, i) => st.mem[i] = f);
+    st.overflow = list.length > M - 1 ? list.slice(M - 1) : null;
+    st.mem[outSlot] = outFrame();
+  };
+  const joinNew = (rel, p) => {
+    const hits = [];
+    if (rel === 'R'){ for (const q of inS) for (const r of Rp[p]) for (const s of Sp[q]) if (r.k === s.k) hits.push({r, s}); }
+    else { for (const q of inR) for (const r of Rp[q]) for (const s of Sp[p]) if (r.k === s.k) hits.push({r, s}); }
+    hits.forEach(h => T.OUT.push(h));
+    return hits;
+  };
+  const evict = () => {
+    const sMax = inS.length ? lastS(Math.max(...inS)) : null, rMax = inR.length ? lastR(Math.max(...inR)) : null;
+    const gone = [];
+    if (sMax !== null) inR = inR.filter(p => { if (cmpKey(lastR(p), sMax) < 0 && p !== Math.max(...inR)){ gone.push(`R page ${p + 1}`); return false; } return true; });
+    if (rMax !== null) inS = inS.filter(p => { if (cmpKey(lastS(p), rMax) < 0 && p !== Math.max(...inS)){ gone.push(`S page ${p + 1}`); return false; } return true; });
+    return gone;
+  };
+  const read = (rel, why) => {
+    const p = rel === 'R' ? nr++ : ns++;
+    (rel === 'R' ? inR : inS).push(p);
+    st.reads++; st.reading = {rel, page:p};
+    layoutMem(); st.hot = {};
+    const over = st.overflow ? `<span class="warn">⚠ ${inR.length + inS.length} pages must stay in memory but only M − 1 = ${M - 1} frames are free. A real system would have to re-read pages here.</span>` : '';
+    T.push(why ? 3 : 1, `${why ? why + ' → ' : ''}read <b>page ${p + 1} of ${rel}</b> (I/O #${st.reads}).` + over);
+    // join the new page with every page of the other relation still in memory, THEN drop what can't match any more
+    const hits = joinNew(rel, p);
+    const gone = evict();
+    st.hot = Object.fromEntries(hits.flatMap(h => [[h.r.uid, 'hit'], [h.s.uid, 'hit']]));
+    const drop = gone.length ? ` ${gone.join(' and ')} can no longer match anything that comes later, so ${gone.length > 1 ? 'they are' : 'it is'} dropped from memory.` : '';
+    if (hits.length || drop || detail){
+      T.push(2, (hits.length ? `Output all the matches between the new page and the ${rel === 'R' ? 'S' : 'R'} pages in memory: ${hits.map(h => `<span class="ok">(${esc(h.r.id)}, ${esc(h.s.id)})</span>`).join(', ')}.` : 'No new matches with the pages in memory.') + drop);
+    }
+    if (gone.length){ layoutMem(); }
+  };
+  read('R'); read('S');
+  for (;;){
+    const moreR = nr < Rp.length, moreS = ns < Sp.length;
+    const lr = lastR(Math.max(...inR)), ls = lastS(Math.max(...inS));
+    if (moreR && moreS){
+      const c = cmpKey(lr, ls);
+      if (c < 0) read('R', `The last JC of R (${esc(lr)}) is smaller than the last JC of S (${esc(ls)})`);
+      else read('S', `The last JC of R (${esc(lr)}) is ${c > 0 ? 'larger than' : 'equal to'} the last JC of S (${esc(ls)}), so read S`);
+    } else if (moreS && inR.some(p => cmpKey(lastR(p), ls) >= 0)) read('S', `R is finished, but its page in memory still has JC ${esc(lr)} ≥ ${esc(ls)}`);
+    else if (moreR && inS.some(p => cmpKey(lastS(p), lr) >= 0)) read('R', `S is finished, but its page in memory still has JC ${esc(ls)} ≥ ${esc(lr)}`);
+    else break;
+  }
+  const leftR = Rp.length - nr, leftS = Sp.length - ns;
+  st.hot = {}; st.reading = null;
+  T.push(4, `Reached the end of ${nr >= Rp.length ? 'R' : 'S'}` + (leftR || leftS ? `; the remaining ${leftR ? `${leftR} page${leftR > 1 ? 's' : ''} of R` : `${leftS} page${leftS > 1 ? 's' : ''} of S`} cannot match anything, so ${leftR + leftS > 1 ? 'they are' : 'it is'} never read.` : '.') +
+    ` The merge phase read ${nr + ns} page${nr + ns > 1 ? 's' : ''}; the formula assumes the worst case B(R) + B(S) = ${Rp.length + Sp.length}.`);
+  return finish(T, 'smj');
+}
+
+/* ---------- 5. hash join ---------- */
+const h1 = (k, n) => { const v = typeof k === 'number' ? Math.abs(Math.trunc(k)) : [...String(k)].reduce((a, c) => a + c.charCodeAt(0), 0); return v % n; };
+function traceHash(R, S, P, M, detail){
+  const T = makeTrace(M), st = T.st, Rp = paginate(R, P), Sp = paginate(S, P), n = Math.max(1, M - 1);
+  st.parts = {R:Array.from({length:n}, () => []), S:Array.from({length:n}, () => [])};
+  st.phase = 'Partition';
+  T.push(0, `<b>Hash join.</b> Step 1 partitions R and S with <code>h1(JC) = JC mod ${n}</code> into M − 1 = ${n} buckets: 1 frame is the input buffer and ${n} frame${n > 1 ? 's are' : ' is an'} output buffer${n > 1 ? 's' : ''}, one per bucket. A tuple of R<sub>i</sub> can only match tuples of S<sub>i</sub>.`);
+  const partition = (rel, pages) => {
+    const buf = Array.from({length:n}, () => []);
+    const show = () => { for (let b = 0; b < n; b++) st.mem[b + 1] = frame('buf', `bucket ${b}`, buf[b], PAGE_COLORS[(b + 3) % PAGE_COLORS.length]); };
+    pages.forEach((pg, i) => {
+      st.reads++; st.reading = {rel, page:i};
+      st.mem[0] = frame(rel, `${rel} page ${i + 1}`, pg, pageColor(rel, i)); show(); st.hot = {};
+      T.push(1, `Read <b>page ${i + 1} of ${rel}</b> into the input buffer (I/O #${st.reads}).`);
+      const flushed = [];
+      for (const t of pg){
+        const b = h1(t.k, n);
+        buf[b].push(t);
+        let wrote = '';
+        if (buf[b].length === P){ st.parts[rel][b].push(buf[b]); buf[b] = []; st.writes++; wrote = ` The bucket's buffer is full, so it is <b>written to disk</b> as a page of ${rel}<sub>${b}</sub> (write #${st.writes}).`; flushed.push(b); }
+        show();
+        if (detail){ st.hot = {[t.uid]:'hot'}; T.push(wrote ? 3 : 2, `${recTxt(t)}: h1(${esc(t.k)}) = ${esc(t.k)} mod ${n} = <b>${b}</b> → bucket ${b}.${wrote}`); }
+      }
+      if (!detail){ st.hot = {}; T.push(flushed.length ? 3 : 2, `Hash each tuple of the page into its bucket.` + (flushed.length ? ` Full buffer${flushed.length > 1 ? 's' : ''} for bucket${flushed.length > 1 ? 's' : ''} ${flushed.join(', ')} written to disk.` : '')); }
+    });
+    const rest = buf.map((b, i) => [b, i]).filter(([b]) => b.length);
+    rest.forEach(([b, i]) => { st.parts[rel][i].push(b); st.writes++; });
+    buf.forEach((b, i) => buf[i] = []); show(); st.mem[0] = null; st.hot = {};
+    if (rest.length) T.push(3, `End of ${rel}: write the ${rest.length} partly filled buffer${rest.length > 1 ? 's' : ''} to disk (${rest.length} write${rest.length > 1 ? 's' : ''}). Partitioning ${rel} read B(${rel}) = ${pages.length} and wrote about the same.`);
+  };
+  partition('R', Rp); partition('S', Sp);
+  st.phase = 'Join partitions';
+  st.mem = Array(M).fill(null); st.mem[M - 1] = outFrame();
+  T.push(4, `Step 2: for each bucket i, read the whole R<sub>i</sub> into memory (it must fit in M − 2 = ${Math.max(1, M - 2)} frames), build a hash table on it with a second function h2, then stream S<sub>i</sub> through one input frame and probe.`);
+  for (let b = 0; b < n; b++){
+    const rParts = st.parts.R[b], sParts = st.parts.S[b];
+    st.mem = Array(M).fill(null); st.mem[M - 1] = outFrame(); st.ht = null; st.htKey = null; st.hot = {};
+    if (!rParts.length || !sParts.length){
+      T.push(4, `Bucket ${b}: ${!rParts.length && !sParts.length ? 'both partitions are empty' : `R<sub>${b}</sub> ${rParts.length ? 'has tuples' : 'is empty'}, S<sub>${b}</sub> ${sParts.length ? 'has tuples' : 'is empty'}`} — no matches are possible.` +
+        (rParts.length || sParts.length ? ` (A real system still reads the non-empty one; the formula counts every page once.)` : ''));
+      st.reads += rParts.length + sParts.length;
+      continue;
+    }
+    const cap = Math.max(1, M - 2);
+    rParts.forEach((pg, i) => {
+      st.reads++;
+      if (i < cap) st.mem[i] = frame('Rb', `R${b} page ${i + 1}`, pg, PAGE_COLORS[(b + 3) % PAGE_COLORS.length]);
+      T.push(5, `Read page ${i + 1} of <b>R<sub>${b}</sub></b> into memory (I/O #${st.reads}).` + (i >= cap ? `<span class="warn">⚠ R<sub>${b}</sub> needs more than M − 2 = ${cap} frames — this bucket would need another partitioning pass.</span>` : ''));
+    });
+    const ht = new Map(); for (const r of rParts.flat()){ if (!ht.has(r.k)) ht.set(r.k, []); ht.get(r.k).push(r); }
+    st.ht = [...ht.entries()].map(([k, rs]) => ({k, ids:rs.map(r => r.id), uids:rs.map(r => r.uid)}));
+    T.push(5, `Build a hash table (h2) on JC for R<sub>${b}</sub>.`);
+    sParts.forEach((pg, i) => {
+      st.reads++;
+      st.mem[M - 2] = frame('Sb', `S${b} page ${i + 1}`, pg, PAGE_COLORS[(b + 3) % PAGE_COLORS.length]); st.hot = {}; st.htKey = null;
+      T.push(6, `Read page ${i + 1} of <b>S<sub>${b}</sub></b> into the input buffer (I/O #${st.reads}).`);
+      const probe = list => { const hits = []; for (const s of list) for (const r of ht.get(s.k) || []){ hits.push({r, s}); T.OUT.push({r, s}); } return hits; };
+      if (detail) for (const s of pg){
+        const hits = probe([s]); st.htKey = s.k;
+        st.hot = {[s.uid]:hits.length ? 'hit' : 'miss', ...Object.fromEntries(hits.map(h => [h.r.uid, 'hit']))};
+        T.push(7, `Probe with ${recTxt(s)}: ` + (hits.length ? `<span class="ok">${hits.map(h => `(${esc(h.r.id)}, ${esc(s.id)})`).join(', ')}</span>` : `<span class="no">no R tuple in bucket ${b} has JC ${esc(s.k)}</span>`) + '.');
+      } else {
+        const hits = probe(pg);
+        st.hot = Object.fromEntries(hits.flatMap(h => [[h.r.uid, 'hit'], [h.s.uid, 'hit']]));
+        T.push(7, `Probe with every tuple of the page: ${hits.length ? `<span class="ok">${hits.length} match${hits.length > 1 ? 'es' : ''}</span>` : '<span class="no">no matches</span>'}.`);
+      }
+    });
+  }
+  st.hot = {}; st.ht = null; st.htKey = null;
+  return finish(T, 'hash');
+}
+
+function finish(T, algo, extra){
+  const s = T.st, f = FORMULAS[algo](STATS());
+  T.push(-1, `<b>Done.</b> ${T.OUT.length} result tuple${T.OUT.length === 1 ? '' : 's'}. This run used <b>${s.reads} reads${s.writes ? ` + ${s.writes} writes = ${s.reads + s.writes} I/O` : ' I/O'}</b>; the formula gives <b>${fmt(f.value)}</b>.` +
+    (s.reads + s.writes !== Math.round(f.value) ? ` ${f.diff || ''}` : ' They agree.') + ' Writing the output is not counted, as on the slides.', extra);
+  return {steps:T.steps, OUT:T.OUT};
+}
+
+/* ================================================================
+   Cost formulas (slides' notation)
+   ================================================================ */
+let DATA = null;
+function STATS(){
+  const {R, S} = DATA, P = CFG.P, M = CFG.M;
+  const V = (recs) => new Set(recs.map(r => r.k)).size;
+  return {BR:ceil(R.length / P), BS:ceil(S.length / P), TR:R.length, TS:S.length, M, VR:V(R), VS:V(S), c:CFG.c, k:CFG.k, BI:1, presorted:CFG.sorted, clustered:CFG.clustered};
+}
+const FORMULAS = {
+  nlj: s => ({general:'B(R) + B(R)·B(S)', plugged:`${s.BR} + ${s.BR}·${s.BS}`, value:s.BR + s.BR * s.BS}),
+  bnlj: s => { const b = Math.max(1, s.M - 2); return {general:'B(R) + ⌈B(R)/(M−2)⌉·B(S)', plugged:`${s.BR} + ⌈${s.BR}/${b}⌉·${s.BS}`, value:s.BR + ceil(s.BR / b) * s.BS}; },
+  inlj: s => {
+    const RF = Math.min(1, s.VS / s.VR);
+    if (s.clustered) return {general:'B(R) + T(R)·[search + RF·⌈B(S)/V(S,JC)⌉]', plugged:`${s.BR} + ${s.TR}·[${s.c} + ${+RF.toFixed(2)}·⌈${s.BS}/${s.VS}⌉]`,
+      value:s.BR + s.TR * (s.c + RF * ceil(s.BS / s.VS)), diff:'The formula is an estimate: it assumes JC values are spread uniformly and every R tuple matches with probability RF = min{1, V(S,JC)/V(R,JC)}; the run counts the real matches.'};
+    return {general:'B(R) + T(R)·[search + RF·⌈T(S)/V(S,JC)⌉]', plugged:`${s.BR} + ${s.TR}·[${s.c} + ${+RF.toFixed(2)}·⌈${s.TS}/${s.VS}⌉]`,
+      value:s.BR + s.TR * (s.c + RF * ceil(s.TS / s.VS)), diff:'The formula is an estimate: it assumes JC values are spread uniformly (and here the index leaf reads are part of the search cost); the run counts the real matches.'};
+  },
+  smj: s => s.presorted ? {general:'B(R) + B(S)  (already sorted)', plugged:`${s.BR} + ${s.BS}`, value:s.BR + s.BS, diff:'The formula is the worst case: the merge stops early once one relation ends.'}
+    : {general:'(2k+1)·[B(R) + B(S)]', plugged:`(2·${s.k}+1)·[${s.BR} + ${s.BS}]`, value:(2 * s.k + 1) * (s.BR + s.BS), diff:'Sorting is charged by the formula 2·B·k; the merge can stop early once one relation ends, so the run can be cheaper.'},
+  hash: s => ({general:'3·[B(R) + B(S)]', plugged:`3·[${s.BR} + ${s.BS}]`, value:3 * (s.BR + s.BS), diff:'The difference comes from partly filled bucket pages: the partitions can take a few more (or fewer) pages than the original relations.'})
+};
+const PSEUDO = {
+  nlj:['for each page p of R:', '    for each page q of S:', '        for each r in p, s in q:', '            if r.JC = s.JC: output (r, s)'],
+  bnlj:['for each block of M−2 pages of R:   (build a hash table)', '    for each page q of S:', '        for each s in q: probe the table with s.JC', '            output (r, s) for every match'],
+  inlj:['for each page p of R:', '    for each r in p:', '        search the index on S.JC for r.JC', '        read the S pages it points to, output (r, s)'],
+  smj:['read a page from R and from S', 'output all the matches', 'if the last JC of R is smaller, read a page of R; otherwise read a page of S', 'continue until reaching the end of R or S'],
+  hash:['step 1: for each page of R, then of S:', '    put every tuple in bucket h1(JC) (M−1 output buffers)', '    write a buffer to disk when it is full', 'step 2: for each bucket i:', '    read Rᵢ into memory, build a hash table with h2', '    for each page of Sᵢ:', '        probe the table with each s, output the matches']
+};
+const INTRO = {
+  nlj:{title:'Nested loop join', text:'For every page of R, read every page of S and output the pairs that match. Simple, needs only 3 frames, but S is scanned once per page of R.'},
+  bnlj:{title:'Block nested loop join', text:'Use the memory: load as many R pages as fit (M − 2) as one block, then scan S once per block instead of once per page.'},
+  inlj:{title:'Index nested loop join', text:'For every tuple of R, use an index on S.JC to jump straight to the matching S tuples instead of scanning S.'},
+  smj:{title:'Sort-merge join', text:'If R and S are sorted by the join column, one synchronised pass finds all matches, like the merge step of external merge sort. Careful: one R tuple can match several pages of S.'},
+  hash:{title:'Hash join', text:'Partition both relations with the same hash function so matching tuples land in the same bucket, then join each bucket pair in memory.'}
+};
+
+/* ================================================================
+   Rendering the lab
+   ================================================================ */
+let TRACE = null, cur = 0, timer = null;
+function rebuild(){
+  try {
+    DATA = {R:parseRel(CFG.R, 'R'), S:parseRel(CFG.S, 'S')};
+    $('#dataErr').textContent = '';
+  } catch (e){ $('#dataErr').textContent = e.message; return; }
+  if (CFG.algo === 'cmp'){ TRACE = null; renderCompare(); return; }
+  const {R, S} = DATA, P = CFG.P, M = CFG.M;
+  TRACE = CFG.algo === 'nlj' ? traceNLJ(R, S, P, M, CFG.detail)
+    : CFG.algo === 'bnlj' ? traceBNLJ(R, S, P, M, CFG.detail)
+    : CFG.algo === 'inlj' ? traceINLJ(R, S, P, M, CFG.detail, CFG.clustered, CFG.c)
+    : CFG.algo === 'smj' ? traceSMJ(R, S, P, M, CFG.detail, CFG.sorted, CFG.k)
+    : traceHash(R, S, P, M, CFG.detail);
+  cur = 0;
+  renderShell();
+  renderStep();
+}
+function renderSide(){
+  $('#algos').innerHTML = ALGOS.map(a => `<button data-a="${a.id}" class="${a.id === CFG.algo ? 'on' : ''}">${esc(a.name)}<small>${esc(a.sub)}</small></button>`).join('');
+  $('#presets').innerHTML = Object.entries(PRESETS).map(([k, p]) => `<button data-p="${k}" class="${CFG.preset === k ? 'on' : ''}">${esc(p.name)}<small>${esc(p.sub)}</small></button>`).join('');
+  document.querySelectorAll('#modeSeg button').forEach(b => b.classList.toggle('on', b.dataset.mode === CFG.mode));
+  $('#exPanel').style.display = CFG.mode === 'custom' ? 'none' : '';
+  $('#buildPanel').style.display = CFG.mode === 'custom' ? '' : 'none';
+  if (CFG.mode === 'custom') renderEditors();
+  if (document.activeElement !== $('#rIn')) $('#rIn').value = CFG.R;
+  if (document.activeElement !== $('#sIn')) $('#sIn').value = CFG.S;
+  $('#Pr').value = CFG.P; $('#Mr').value = CFG.M; $('#Pv').textContent = CFG.P; $('#Mv').textContent = CFG.M; $('#detail').checked = CFG.detail;
+  renderPreview();
+  const o = $('#opts');
+  if (CFG.algo === 'inlj') o.innerHTML = `<div class="field"><span>Index on S.JC</span><div class="seg"><button data-o="clustered" data-v="1" class="${CFG.clustered ? 'on' : ''}">Clustered</button><button data-o="clustered" data-v="0" class="${CFG.clustered ? '' : 'on'}">Unclustered</button></div></div>` +
+    `<div class="num"><span>Index search cost<small>0 memory · 1 hash · 2–4 B+ tree</small></span><div class="stepper"><button data-d="c" data-v="-1">−</button><b>${CFG.c}</b><button data-d="c" data-v="1">+</button></div></div>`;
+  else if (CFG.algo === 'smj') o.innerHTML = `<label class="ck"><input type="checkbox" data-o="sorted"${CFG.sorted ? ' checked' : ''}><span>R and S are already sorted by JC (skip phase 1)</span></label>` +
+    (CFG.sorted ? '' : `<div class="num"><span>Sort passes k<small>usually 2, so sorting ≈ 4·B</small></span><div class="stepper"><button data-d="k" data-v="-1">−</button><b>${CFG.k}</b><button data-d="k" data-v="1">+</button></div></div>`);
+  else if (CFG.algo === 'hash') o.innerHTML = `<div class="hint">Buckets: M − 1 = <b style="color:var(--text)">${Math.max(1, CFG.M - 1)}</b>, with h1(JC) = JC mod ${Math.max(1, CFG.M - 1)}. Change M to change the number of buckets.</div>`;
+  else if (CFG.algo === 'bnlj') o.innerHTML = `<div class="hint">Block size: M − 2 = <b style="color:var(--text)">${Math.max(1, CFG.M - 2)}</b> page${CFG.M - 2 === 1 ? '' : 's'} of R. Raise M and watch the number of S scans drop.</div>`;
+  else o.innerHTML = '';
+}
+function renderShell(){
+  const intro = INTRO[CFG.algo], f = FORMULAS[CFG.algo](STATS()), s = STATS();
+  $('#main').innerHTML = `
+    <div class="head"><div class="what"><h1>${esc(intro.title)}</h1><p>${esc(intro.text)}</p></div>
+      <div class="cost"><div class="f">Cost = <b>${esc(f.general)}</b></div><div class="f">= ${esc(f.plugged)} = <b>${fmt(f.value)}</b> I/O</div>
+        <div class="io"><span>B(R) <b>${s.BR}</b></span><span>B(S) <b>${s.BS}</b></span><span>M <b>${s.M}</b></span><span id="ioNow"></span></div></div></div>
+    <div class="controls">
+      <button class="cbtn" id="first" title="First step (Home)"><svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><rect x="2" y="3" width="2" height="10" rx=".5"/><path d="M14 3v10L5 8z"/></svg></button><button class="cbtn" id="prev" title="Previous step (←)"><svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M11 3v10L4 8z"/></svg></button>
+      <button class="cbtn play" id="play" title="Play / pause (Space)">Play</button><button class="cbtn" id="next" title="Next step (→)"><svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M5 3v10l7-5z"/></svg></button><button class="cbtn" id="last" title="Last step (End)"><svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><rect x="12" y="3" width="2" height="10" rx=".5"/><path d="M2 3v10l9-5z"/></svg></button>
+      <span class="scount" id="scount"></span><input type="range" id="scrub" min="0" value="0">
+      <label class="speed">Speed <input type="range" id="speed" min="1" max="10" value="${CFG.speed || 5}"></label>
+    </div>
+    <div class="explain"><div class="narr" id="narr"></div><div class="code" id="code"></div></div>
+    <div class="stage">
+      <section class="col disk"><header class="colh"><span class="ic"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><ellipse cx="12" cy="5.5" rx="8" ry="3"/><path d="M4 5.5v13c0 1.7 3.6 3 8 3s8-1.3 8-3v-13"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg></span><div><h2>Disk</h2><small>relations stored as pages</small></div><span class="badge" id="diskN"></span></header><div id="disk"></div></section>
+      <div class="flow read" id="flowIn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg><span>read</span></div>
+      <section class="col memc"><header class="colh"><span class="ic"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10v4M11 10v4M15 10v4M19 18v2M5 18v2M9 18v2M13 18v2M17 18v2"/></svg></span><div><h2>Memory</h2><small>M = ${CFG.M} buffer frames</small></div><span class="badge" id="memN"></span></header><div id="mem"></div></section>
+      <div class="flow write" id="flowOut"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg><span>output</span></div>
+      <section class="col outc"><header class="colh"><span class="ic"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 9v11"/></svg></span><div><h2>Output</h2><small>R ⋈ S result</small></div><span class="badge" id="outN"></span></header><div id="out"></div></section>
+    </div>`;
+  $('#scrub').max = TRACE.steps.length - 1;
+  $('#first').onclick = () => go(0); $('#prev').onclick = () => go(cur - 1); $('#next').onclick = () => go(cur + 1); $('#last').onclick = () => go(TRACE.steps.length - 1);
+  $('#play').onclick = togglePlay;
+  $('#scrub').oninput = e => go(+e.target.value);
+  $('#speed').oninput = e => { CFG.speed = +e.target.value; save(); if (timer){ stopPlay(); togglePlay(); } };
+}
+function go(i){ cur = Math.max(0, Math.min(TRACE.steps.length - 1, i)); if (cur === TRACE.steps.length - 1) stopPlay(); renderStep(); }
+function togglePlay(){
+  if (timer){ stopPlay(); return; }
+  if (cur >= TRACE.steps.length - 1) cur = 0;
+  $('#play').textContent = 'Pause';
+  const ms = 1600 / (CFG.speed || 5) * 1.6;
+  timer = setInterval(() => go(cur + 1), Math.max(120, ms));
+}
+function stopPlay(){ clearInterval(timer); timer = null; const p = $('#play'); if (p) p.textContent = 'Play'; }
+
+function pageHTML(rel, i, recs, color, st, extraCls = ''){
+  const inMem = !extraCls && st.mem.some(f => f && f.role === rel && f.recs.length && f.recs[0] === recs[0]);
+  const reading = !extraCls && st.reading && st.reading.rel === rel && st.reading.page === i;
+  const status = reading ? '<span class="st rd">reading…</span>' : inMem ? '<span class="st im">in memory</span>' : '';
+  return `<div class="page${reading ? ' reading' : inMem ? ' inmem' : ''} ${extraCls}" style="--pc:${color}"><div class="ph">page ${i + 1}${status}</div>` +
+    recs.map(r => `<div class="rec ${st.hot[r.uid] || ''}"><span>${esc(r.id)}</span><span>${esc(r.k)}</span></div>`).join('') + '</div>';
+}
+function renderStep(){
+  const st = TRACE.steps[cur], prevOut = cur ? TRACE.steps[cur - 1].outN : 0;
+  const P = CFG.P;
+  $('#scount').textContent = `${cur + 1} / ${TRACE.steps.length}`;
+  $('#scrub').value = cur;
+  $('#first').disabled = $('#prev').disabled = cur === 0;
+  $('#next').disabled = $('#last').disabled = cur === TRACE.steps.length - 1;
+  $('#ioNow').innerHTML = `<span class="tot">I/O so far <b>${st.reads + st.writes}</b></span>` + (st.writes ? ` <small>(${st.reads} reads + ${st.writes} writes)</small>` : '');
+  $('#narr').innerHTML = (st.phase ? `<b style="color:#9fdcf3">${esc(st.phase)} · </b>` : '') + st.text;
+  $('#code').innerHTML = PSEUDO[CFG.algo].map((l, i) => l ? `<div class="${st.line === i + 1 ? 'on' : ''}"><span class="ln">${i + 1}</span>${esc(l)}</div>` : '').join('');
+  $('#flowIn').classList.toggle('on', !!st.reading);
+  $('#flowOut').classList.toggle('on', st.outN > prevOut);
+
+  // disk
+  const view = st.view || {};
+  const file = rel => {
+    const base = DATA[rel], recs = view[rel] === 'sorted' ? sortByKey(base) : base, pages = paginate(recs, P);
+    return `<div class="file"><div class="fhead"><span class="rel">${rel}</span><span class="chip">${pages.length} page${pages.length > 1 ? 's' : ''}</span><span class="chip">${base.length} tuples</span>` +
+      (view[rel] === 'sorted' ? '<span class="chip warn">sorted by JC</span>' : '') + `</div>` +
+      `<div class="colhead"><span>Id</span><span>JC</span></div><div class="pages">${pages.map((pg, i) => pageHTML(rel, i, pg, pageColor(rel, i), st)).join('')}</div></div>`;
+  };
+  let disk = `<div class="files">${file('R')}${file('S')}</div>`;
+  if (st.parts){
+    const n = st.parts.R.length;
+    disk += `<div class="parts"><h4>Partitions written to disk</h4>` + ['R', 'S'].map(rel => Array.from({length:n}, (_, b) =>
+      `<div class="prow"><b>${rel}<sub>${b}</sub></b>${st.parts[rel][b].length ? st.parts[rel][b].map((pg, i) => pageHTML(rel + 'p', i, pg, PAGE_COLORS[(b + 3) % PAGE_COLORS.length], st, 'part')).join('') : '<span class="hint" style="padding-top:5px">empty</span>'}</div>`).join('')).join('') + '</div>';
+  }
+  $('#disk').innerHTML = disk;
+  $('#diskN').textContent = st.reading ? `reading ${st.reading.rel} · page ${st.reading.page + 1}` : '';
+
+  // memory
+  const used = st.mem.filter(f => f && (f.recs.length || f.role === 'out')).length;
+  $('#memN').textContent = `${used} / ${CFG.M} used`;
+  let mem = '<div class="mem">' + st.mem.map((f, i) => {
+    if (!f) return `<div class="frame"><div class="fl"><small>frame ${i + 1}</small></div><div class="free"><b>○</b>free</div></div>`;
+    if (f.role === 'out'){
+      const recent = TRACE.OUT.slice(Math.max(0, st.outN - P), st.outN);
+      return `<div class="frame used outf"><div class="fl"><b>Output buffer</b><i>${recent.length}/${P}</i></div><div class="outbuf">${recent.length ? recent.map(o => `(${esc(o.r.id)}, ${esc(o.s.id)}, ${esc(o.r.k)})`).join('<br>') : '<span style="color:var(--text-faint);font-style:italic;font-weight:400">empty</span>'}</div></div>`;
+    }
+    const fresh = st.reading && f.label === `${st.reading.rel} page ${st.reading.page + 1}`;
+    return `<div class="frame used${fresh ? ' fresh' : ''}" style="--fc:${f.color || '#a98bff'}"><div class="fl"><b>${esc(f.label)}</b>${f.role === 'buf' ? `<i>${f.recs.length}/${P}</i>` : `<small>frame ${i + 1}</small>`}</div>` +
+      (f.recs.length ? `<div class="page" style="--pc:${f.color || '#888'}">` + f.recs.map(r => `<div class="rec ${st.hot[r.uid] || ''}"><span>${esc(r.id)}</span><span>${esc(r.k)}</span></div>`).join('') + '</div>' : '<div class="free"><b>○</b>empty</div>') + '</div>';
+  }).join('') + '</div>';
+  if (st.ht) mem += `<div class="aux"><h4>Hash table on JC <small>in memory</small></h4><div class="ht">${st.ht.map(e => `<div class="${e.k === st.htKey ? 'on' : ''}"><b>JC ${esc(e.k)}</b><span>→ R ids ${e.ids.map(esc).join(', ')}</span></div>`).join('')}</div></div>`;
+  if (st.idx) mem += `<div class="aux"><h4>Index on S.JC <small>${CFG.clustered ? 'clustered' : 'unclustered'} · search cost ${CFG.c}</small></h4><div class="ht">${st.idx.map(e => `<div class="${e.k === st.htKey ? 'on' : ''}"><b>JC ${esc(e.k)}</b><span>→ S ids ${e.ids.map(esc).join(', ')} · page${e.pages.length > 1 ? 's' : ''} ${e.pages.join(', ')}</span></div>`).join('')}</div></div>`;
+  mem += `<div class="memnote">${CFG.algo === 'nlj' ? 'Nested loop uses only 3 frames whatever M is — the extra memory is wasted.' : CFG.algo === 'inlj' ? 'Index nested loop needs a frame for R, one for S and the output buffer.' : CFG.algo === 'smj' ? 'Memory holds every page that can still meet a future page of the other relation, plus the output buffer.' : 'All M frames are in use.'}</div>`;
+  $('#mem').innerHTML = mem;
+
+  // output
+  $('#outN').textContent = `${st.outN} tuple${st.outN === 1 ? '' : 's'}`;
+  $('#out').innerHTML = st.outN ? `<table class="out"><thead><tr><th>R.Id</th><th>S.Id</th><th>JC</th></tr></thead><tbody>` +
+    TRACE.OUT.slice(0, st.outN).map((o, i) => `<tr class="${i >= prevOut ? 'new' : ''}"><td>${esc(o.r.id)}</td><td>${esc(o.s.id)}</td><td>${esc(o.r.k)}</td></tr>`).join('') + '</tbody></table>'
+    : '<div class="out-empty"><b>∅</b>No result tuples yet.<br>Matches appear here as they are found.</div>';
+}
+
+/* ================================================================
+   Compare tab: every formula on the same numbers
+   ================================================================ */
+const CMP_PRESETS = {
+  lab:{name:'This lab\'s data'},
+  slides:{name:'Purchase ⋈ Product (slides)', v:{BR:100000, TR:1000000, VR:10000, BS:400, TS:20000, VS:20000, M:102, c:2, BI:4, k:2}}
+};
+let CMP = null;
+function cmpDefaults(){ const s = STATS(); return {BR:s.BR, TR:s.TR, VR:s.VR, BS:s.BS, TS:s.TS, VS:s.VS, M:s.M, c:s.c, BI:1, k:s.k}; }
+function cmpRows(v){
+  const b = Math.max(1, v.M - 2), RF = Math.min(1, v.VS / v.VR);
+  const rows = [
+    {name:'Nested loop', f:'B(R) + B(R)·B(S)', p:`${fmt(v.BR)} + ${fmt(v.BR)}·${fmt(v.BS)}`, val:v.BR + v.BR * v.BS,
+     as:'No assumptions', adv:'Naive; efficient if the join result is close to a Cartesian product or one relation is very small'},
+    {name:'Block nested loop', f:'B(R) + ⌈B(R)/(M−2)⌉·B(S)', p:`${fmt(v.BR)} + ⌈${fmt(v.BR)}/${fmt(b)}⌉·${fmt(v.BS)}`, val:v.BR + ceil(v.BR / b) * v.BS,
+     as:'No assumptions', adv:'Better than nested loop'},
+    {name:'Index NL (clustered)', f:'B(R) + T(R)·[search + RF·⌈B(S)/V(S,B)⌉]', p:`${fmt(v.BR)} + ${fmt(v.TR)}·[${v.c} + ${+RF.toFixed(3)}·⌈${fmt(v.BS)}/${fmt(v.VS)}⌉]`, val:v.BR + v.TR * (v.c + RF * ceil(v.BS / v.VS)),
+     as:'Index on the join column of S', adv:'Usually better than nested loop if the index is clustered or there are few matches per tuple'},
+    {name:'Index NL (unclustered)', f:'B(R) + T(R)·[search + RF·(⌈B(I)/V(S,B)⌉ + ⌈T(S)/V(S,B)⌉)]', p:`${fmt(v.BR)} + ${fmt(v.TR)}·[${v.c} + ${+RF.toFixed(3)}·(⌈${fmt(v.BI)}/${fmt(v.VS)}⌉ + ⌈${fmt(v.TS)}/${fmt(v.VS)}⌉)]`,
+     val:v.BR + v.TR * (v.c + RF * (ceil(v.BI / v.VS) + ceil(v.TS / v.VS))), as:'Index on the join column of S', adv:'Every matching tuple may cost a page read'},
+    {name:'Sort-merge', f:'(2k+1)·[B(R) + B(S)]', p:`(2·${v.k}+1)·[${fmt(v.BR)} + ${fmt(v.BS)}]`, val:(2 * v.k + 1) * (v.BR + v.BS),
+     as:'Each tuple has relatively few matches', adv:'Very efficient if the data is sorted; the result is sorted; usually better than loops (linear)'},
+    {name:'Hash join', f:'3·[B(R) + B(S)]', p:`3·[${fmt(v.BR)} + ${fmt(v.BS)}]`, val:3 * (v.BR + v.BS),
+     as:'Data can be split into small enough partitions', adv:'Usually the most efficient (linear)',
+     warn:Math.min(v.BR, v.BS) / Math.max(1, v.M - 1) > v.M - 2 ? 'Partitions are larger than M − 2 pages: another partitioning pass is needed, so the real cost is higher.' : ''}
+  ];
+  const best = Math.min(...rows.map(r => r.val));
+  rows.forEach(r => r.best = r.val === best);
+  return rows;
+}
+function renderCompare(){
+  if (!CMP) CMP = cmpDefaults();
+  const fields = [['BR', 'B(R)', 'pages of R'], ['TR', 'T(R)', 'tuples of R'], ['VR', 'V(R, B)', 'distinct join values in R'], ['BS', 'B(S)', 'pages of S'], ['TS', 'T(S)', 'tuples of S'],
+    ['VS', 'V(S, B)', 'distinct join values in S'], ['M', 'M', 'memory pages'], ['c', 'Index search', '0 / 1 / 2–4'], ['BI', 'B(I)', 'index pages'], ['k', 'k', 'sort passes']];
+  $('#main').innerHTML = `
+    <div class="head"><div class="what"><h1>Compare join costs</h1><p>Plug the same statistics into every formula from the recitation. The cheapest one is marked; hover a bar for its formula. R is the outer relation; for index nested loop the index is on S.</p></div></div>
+    <div class="cmp">
+      <div class="card"><h2>Statistics</h2>
+        <div class="pbtns">${Object.entries(CMP_PRESETS).map(([k, p]) => `<button class="btn sm" data-cp="${k}">${esc(p.name)}</button>`).join('')}<button class="btn sm" id="swapRS" title="Swap the roles of R and S">⇄ Swap R and S</button></div>
+        <div class="params">${fields.map(([k, l, h]) => `<label>${l}<small>${h}</small><input class="inp" type="number" min="0" step="any" data-cv="${k}" value="${CMP[k]}"></label>`).join('')}</div>
+      </div>
+      <div class="card"><h2>I/O cost <span style="text-transform:none;letter-spacing:0;font-weight:500">· <label style="cursor:pointer"><input type="checkbox" id="logScale" ${CFG.log !== false ? 'checked' : ''} style="accent-color:#7c9cff;vertical-align:-2px"> log scale</label></span></h2><div class="chart" id="chart"></div></div>
+      <div class="card"><h2>Formulas</h2><div style="overflow-x:auto"><table class="ct" id="ctable"></table></div></div>
+    </div>`;
+  const draw = () => {
+    const rows = cmpRows(CMP), log = $('#logScale').checked, max = Math.max(...rows.map(r => r.val));
+    const w = v => !(v > 0) ? 0 : log ? Math.max(1, Math.log10(v + 1) / Math.log10(max + 1) * 100) : v / max * 100;
+    $('#chart').innerHTML = rows.map((r, i) => `<div class="bar-row" data-i="${i}"><div class="lbl">${esc(r.name)}</div><div class="track"><div class="b" style="width:${w(r.val).toFixed(2)}%"></div></div>` +
+      `<div class="v">${fmt(r.val)}${r.best ? '<small style="color:var(--sql)">★ cheapest</small>' : r.warn ? '<small style="color:var(--warn)">⚠ see table</small>' : ''}</div></div>`).join('') +
+      `<div class="axisnote">${log ? 'Log scale: each bar length grows with the number of digits, so costs that differ by 1000× still fit.' : 'Linear scale: bar length is proportional to the cost.'}</div>`;
+    $('#ctable').innerHTML = `<thead><tr><th>Join</th><th>Cost formula</th><th>With these numbers</th><th style="text-align:right">I/O</th><th>Assumptions</th><th>Advantages</th></tr></thead><tbody>` +
+      rows.map(r => `<tr class="${r.best ? 'best' : ''}"><td>${esc(r.name)}</td><td class="mono">${esc(r.f)}</td><td class="mono">${esc(r.p)}</td><td class="ccost">${fmt(r.val)}</td><td>${esc(r.as)}</td><td>${esc(r.adv)}${r.warn ? `<br><span style="color:var(--warn)">⚠ ${esc(r.warn)}</span>` : ''}</td></tr>`).join('') + '</tbody>';
+    document.querySelectorAll('.bar-row').forEach(el => {
+      const r = rows[+el.dataset.i];
+      el.onmousemove = e => { const t = $('#tip'); t.style.display = 'block'; t.style.left = Math.min(e.clientX + 14, innerWidth - 340) + 'px'; t.style.top = e.clientY + 14 + 'px';
+        t.innerHTML = `<b>${esc(r.name)}</b><br><code>${esc(r.f)}</code><br>= <code>${esc(r.p)}</code><br>= <b>${fmt(r.val)}</b> I/O`; };
+      el.onmouseleave = () => $('#tip').style.display = 'none';
+    });
+  };
+  draw();
+  $('#main').oninput = e => {
+    const k = e.target.dataset.cv;
+    if (k){ const v = parseFloat(e.target.value); if (Number.isFinite(v) && v >= 0){ CMP[k] = v; draw(); } }
+    if (e.target.id === 'logScale'){ CFG.log = e.target.checked; save(); draw(); }
+  };
+  document.querySelectorAll('[data-cp]').forEach(b => b.onclick = () => { CMP = b.dataset.cp === 'lab' ? cmpDefaults() : {...CMP_PRESETS[b.dataset.cp].v}; renderCompare(); });
+  $('#swapRS').onclick = () => { CMP = {...CMP, BR:CMP.BS, BS:CMP.BR, TR:CMP.TS, TS:CMP.TR, VR:CMP.VS, VS:CMP.VR}; renderCompare(); };
+}
+
+/* ================================================================
+   Build your own data: table editors, generator, page preview
+   ================================================================ */
+const rowsOf = text => text.split('\n').map(l => l.trim()).filter(Boolean).map(l => { const [id = '', k = ''] = l.split(/[\s,;|]+/); return {id, k}; });
+const textOf = rows => rows.map(r => `${r.id || '?'} ${r.k || '?'}`).join('\n');   // '?' keeps an empty cell in its column
+function renderEditors(){
+  for (const rel of ['R', 'S']){
+    const rows = rowsOf(CFG[rel]), P = CFG.P;
+    $('#ed' + rel).innerHTML = `<div class="ed-h"><span class="rel">${rel}</span><b>Relation ${rel}</b><span class="chip">${rows.length} rec · ${Math.ceil(rows.length / P)} pg</span>` +
+      `<button data-ed="clear" data-rel="${rel}" title="Remove every record of ${rel}">Clear</button></div>` +
+      `<div class="ed-cols"><span></span><span>Id</span><span>JC</span><span></span></div><div class="ed-body">` +
+      rows.map((r, i) => `<div class="ed-row"><span class="pg" style="background:${pageColor(rel, Math.floor(i / P))}" title="page ${Math.floor(i / P) + 1}"></span>` +
+        `<input data-rel="${rel}" data-i="${i}" data-f="id" value="${r.id === '?' ? '' : esc(r.id)}" class="${r.id === '?' ? 'bad' : ''}" placeholder="Id" aria-label="${rel} row ${i + 1} Id">` +
+        `<input data-rel="${rel}" data-i="${i}" data-f="k" value="${r.k === '?' ? '' : esc(r.k)}" class="${r.k === '?' ? 'bad' : ''}" placeholder="JC" aria-label="${rel} row ${i + 1} JC">` +
+        `<button class="x" data-ed="del" data-rel="${rel}" data-i="${i}" title="Delete this record">×</button></div>`).join('') +
+      `</div><button class="ed-add" data-ed="add" data-rel="${rel}">+ Add record</button>`;
+  }
+}
+function renderPreview(){
+  let R, S;
+  try { R = parseRel(CFG.R, 'R'); S = parseRel(CFG.S, 'S'); } catch (e){ $('#preview').innerHTML = ''; return; }
+  const P = CFG.P, M = CFG.M;
+  const blocks = (rel, recs) => paginate(recs, P).map((pg, i) => `<i style="background:${pageColor(rel, i)}" title="page ${i + 1}: ${pg.length} record${pg.length > 1 ? 's' : ''}">${pg.length}</i>`).join('');
+  $('#preview').innerHTML =
+    `<div class="pv-row"><span>R on disk<small>B(R) = ${Math.ceil(R.length / P)}</small></span><div class="pv-blocks">${blocks('R', R)}</div></div>` +
+    `<div class="pv-row"><span>S on disk<small>B(S) = ${Math.ceil(S.length / P)}</small></span><div class="pv-blocks">${blocks('S', S)}</div></div>` +
+    `<div class="pv-row"><span>Memory<small>M = ${M}</small></span><div class="pv-blocks">${Array.from({length:M}, (_, i) => `<i class="fr">${i + 1}</i>`).join('')}</div></div>` +
+    `<div class="hint">Each block is one page (the number = records in it). Each dashed box is one memory frame.</div>`;
+}
+let editT = null;
+const dataChanged = (structural) => {
+  CFG.preset = null; CMP = null; save();
+  if (structural) renderEditors();
+  renderPreview();
+  if (document.activeElement !== $('#rIn')) $('#rIn').value = CFG.R;
+  if (document.activeElement !== $('#sIn')) $('#sIn').value = CFG.S;
+  clearTimeout(editT); editT = setTimeout(() => { stopPlay(); rebuild(); }, structural ? 0 : 350);
+};
+$('#modeSeg').addEventListener('click', e => {
+  const b = e.target.closest('[data-mode]'); if (!b || b.dataset.mode === CFG.mode) return;
+  CFG.mode = b.dataset.mode; save(); renderSide();
+});
+$('#buildPanel').addEventListener('input', e => {
+  const t = e.target; if (!t.dataset.f) return;
+  const rel = t.dataset.rel, rows = rowsOf(CFG[rel]);
+  rows[+t.dataset.i][t.dataset.f] = t.value.trim().replace(/\s+/g, '_');
+  CFG[rel] = textOf(rows);
+  t.classList.toggle('bad', !t.value.trim());
+  dataChanged(false);
+});
+$('#buildPanel').addEventListener('click', e => {
+  const b = e.target.closest('[data-ed]'); if (!b) return;
+  const rel = b.dataset.rel, rows = rowsOf(CFG[rel]);
+  if (b.dataset.ed === 'add'){
+    const nums = rows.map(r => +r.id).filter(Number.isFinite);
+    rows.push({id:String(nums.length ? Math.max(...nums) + 1 : rows.length + 1), k:rows.length ? rows[rows.length - 1].k : '1'});
+  } else if (b.dataset.ed === 'del'){
+    if (rows.length <= 1) return;
+    rows.splice(+b.dataset.i, 1);
+  } else if (b.dataset.ed === 'clear'){
+    rows.splice(0, rows.length, {id:'1', k:'1'});
+  }
+  CFG[rel] = textOf(rows);
+  dataChanged(true);
+  if (b.dataset.ed === 'add'){ const ins = $('#ed' + rel).querySelectorAll('.ed-row'); const last = ins[ins.length - 1]; if (last){ last.scrollIntoView({block:'nearest'}); last.querySelector('[data-f="k"]').select(); } }
+});
+$('#genGo').addEventListener('click', () => {
+  const n = (id, lo, hi) => Math.max(lo, Math.min(hi, Math.round(+$(id).value) || lo));
+  const nR = n('#genR', 1, 40), nS = n('#genS', 1, 40), V = n('#genV', 1, 20);
+  const gen = cnt => Array.from({length:cnt}, (_, i) => `${i + 1} ${1 + Math.floor(Math.random() * V)}`).join('\n');
+  CFG.R = gen(nR); CFG.S = gen(nS);
+  dataChanged(true);
+});
+const sliderMove = (key, el) => {
+  CFG[key] = +el.value; $('#' + key + 'v').textContent = CFG[key];
+  CFG.preset = null; CMP = null; save();
+  renderPreview();
+  if (CFG.mode === 'custom') renderEditors();
+  clearTimeout(editT); editT = setTimeout(() => { stopPlay(); renderSide(); rebuild(); }, 180);
+};
+$('#Pr').addEventListener('input', e => sliderMove('P', e.target));
+$('#Mr').addEventListener('input', e => sliderMove('M', e.target));
+
+/* ================================================================
+   Wiring
+   ================================================================ */
+$('#algos').addEventListener('click', e => { const b = e.target.closest('[data-a]'); if (!b) return; stopPlay(); CFG.algo = b.dataset.a; save(); renderSide(); rebuild(); window.scrollTo({top:0}); });
+$('#presets').addEventListener('click', e => {
+  const b = e.target.closest('[data-p]'); if (!b) return; const p = PRESETS[b.dataset.p];
+  stopPlay(); Object.assign(CFG, {preset:b.dataset.p, P:p.P, M:p.M, R:p.R, S:p.S}); CMP = null; save(); renderSide(); rebuild();
+});
+let typeT = null;
+['rIn', 'sIn'].forEach(id => $('#' + id).addEventListener('input', e => {
+  CFG[id === 'rIn' ? 'R' : 'S'] = e.target.value; CFG.preset = null; CMP = null; save();
+  clearTimeout(typeT); typeT = setTimeout(() => { stopPlay(); renderSide(); rebuild(); }, 450);
+}));
+document.querySelector('.side').addEventListener('click', e => {
+  const b = e.target.closest('[data-d]');
+  if (b){
+    const lim = {P:[1, 8], M:[3, 12], c:[0, 4], k:[1, 4]}[b.dataset.d];
+    CFG[b.dataset.d] = Math.max(lim[0], Math.min(lim[1], CFG[b.dataset.d] + +b.dataset.v));
+    if (b.dataset.d === 'P' || b.dataset.d === 'M') CFG.preset = null;
+    CMP = null; stopPlay(); save(); renderSide(); rebuild(); return;
+  }
+  const o = e.target.closest('button[data-o]');
+  if (o){ CFG[o.dataset.o] = o.dataset.v === '1'; stopPlay(); save(); renderSide(); rebuild(); }
+});
+document.querySelector('.side').addEventListener('change', e => {
+  if (e.target.id === 'detail'){ CFG.detail = e.target.checked; stopPlay(); save(); rebuild(); }
+  else if (e.target.dataset.o === 'sorted'){ CFG.sorted = e.target.checked; stopPlay(); save(); renderSide(); rebuild(); }
+});
+document.addEventListener('keydown', e => {
+  if (!TRACE || /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)) return;
+  if (e.key === 'ArrowRight'){ stopPlay(); go(cur + 1); }
+  else if (e.key === 'ArrowLeft'){ stopPlay(); go(cur - 1); }
+  else if (e.key === 'Home'){ stopPlay(); go(0); }
+  else if (e.key === 'End'){ stopPlay(); go(TRACE.steps.length - 1); }
+  else if (e.key === ' '){ e.preventDefault(); togglePlay(); }
+  else return;
+});
+
+renderSide();
+rebuild();
+})();
+</script>
+</body>
+</html>

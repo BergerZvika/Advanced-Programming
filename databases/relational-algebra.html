@@ -1,0 +1,1576 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Relational Algebra Lab</title>
+<meta name="description" content="Evaluate relational algebra over editable relations: query trees, step-by-step evaluation and the equivalent SQL." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg-0:#07070e;
+  --bg-1:#0c0c18;
+  --panel:#0f0f1d;
+  --panel-2:#14142a;
+  --surface:rgba(255,255,255,0.04);
+  --surface-2:rgba(255,255,255,0.08);
+  --border:rgba(255,255,255,0.09);
+  --border-strong:rgba(255,255,255,0.18);
+  --text:#eaeaf5;
+  --text-dim:#9a9ab0;
+  --text-faint:#666680;
+  --accent:#7c5cff;
+  --accent-2:#35d0ff;
+  --sql:#4ce0a3;
+  --warn:#ffb547;
+  --err:#ff6b7a;
+  --pink:#ff6ec7;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+  /* operator families */
+  --o-unary:#35d0ff; --o-join:#a98bff; --o-set:#ffb547; --o-div:#ff6ec7; --o-agg:#4ce0a3; --o-rel:#eaeaf5;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:var(--bg-0)}
+body{font-family:'Inter',system-ui,sans-serif;color:var(--text);font-size:13.5px}
+a{color:inherit;text-decoration:none}
+button,select,input,textarea{font-family:inherit;color:inherit}
+button{cursor:pointer}
+
+.topbar{display:flex;align-items:center;gap:10px;padding:10px 16px;flex-wrap:wrap;background:linear-gradient(180deg,#0e0e1c,#0a0a15);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:20}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;white-space:nowrap}
+.brand .dot{width:10px;height:10px;border-radius:50%;background:linear-gradient(135deg,var(--o-unary),var(--o-join));box-shadow:0 0 14px var(--o-join)}
+.brand small{font-family:var(--mono);font-weight:500;font-size:11px;color:var(--text-faint)}
+.spacer{flex:1}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:7px 12px;border-radius:9px;font-size:12.5px;font-weight:600;background:var(--surface);border:1px solid var(--border);transition:background .15s,border-color .15s;white-space:nowrap}
+.btn:hover{background:var(--surface-2);border-color:var(--border-strong)}
+.btn.primary{background:linear-gradient(135deg,#2bbf86,#1f9d6b);border-color:rgba(76,224,163,0.5);color:#04140d}
+.btn.primary:hover{background:linear-gradient(135deg,#4ce0a3,#25b07a)}
+.btn.sm{padding:5px 10px;font-size:12px}
+
+.layout{display:grid;grid-template-columns:380px minmax(0,1fr);min-height:calc(100vh - 53px)}
+.side{background:var(--panel);border-right:1px solid var(--border);padding:16px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.side h3{margin:0;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--text-faint);font-weight:700;display:flex;align-items:center;gap:8px}
+.side h3 .n{margin-left:auto;font-family:var(--mono);letter-spacing:0}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:12px;font-weight:600;color:var(--text-dim)}
+.inp{width:100%;padding:9px 11px;border-radius:9px;background:var(--bg-1);border:1px solid var(--border);font-family:var(--mono);font-size:13px;outline:none}
+.inp:focus{border-color:rgba(169,139,255,0.6)}
+.hint{font-size:11.5px;color:var(--text-faint);line-height:1.55}
+.hint code{font-family:var(--mono);background:var(--surface-2);padding:0 5px;border-radius:4px;color:var(--text-dim)}
+
+/* ---------- relation editor ---------- */
+.rels{display:flex;flex-direction:column;gap:8px}
+.rel{background:var(--bg-1);border:1px solid var(--border);border-radius:11px}
+.rel[open]{border-color:var(--border-strong)}
+.rel summary{list-style:none;display:flex;align-items:center;gap:8px;padding:9px 10px;cursor:pointer;font-family:var(--mono);font-size:12.5px;min-width:0}
+.rel summary::-webkit-details-marker{display:none}
+.rel .chev{width:0;height:0;border-left:5px solid var(--text-faint);border-top:4px solid transparent;border-bottom:4px solid transparent;transition:transform .15s;flex:none}
+.rel[open] .chev{transform:rotate(90deg)}
+.rel .rname{font-weight:700;flex:none}
+.rel .rschema{color:var(--text-faint);font-size:11.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
+.rel .rschema u{text-decoration-color:var(--warn);text-underline-offset:3px}
+.rel .rcount{font-size:10.5px;color:var(--text-faint);flex:none}
+.mini{flex:none;font-family:var(--mono);font-size:11px;padding:2px 7px;border-radius:6px;background:rgba(169,139,255,0.12);border:1px solid rgba(169,139,255,0.35);color:#d9ceff}
+.mini:hover{background:rgba(169,139,255,0.25);color:#fff}
+.rbody{padding:0 10px 10px}
+.tw{overflow-x:auto;border-radius:8px;border:1px solid var(--border)}
+table.et{border-collapse:collapse;font-family:var(--mono);font-size:11.5px;width:100%}
+table.et th,table.et td{padding:0;border-bottom:1px solid var(--border);border-right:1px solid var(--border)}
+table.et th{background:rgba(169,139,255,0.08);position:relative}
+table.et input{background:transparent;border:none;font:inherit;padding:5px 7px;width:100%;min-width:64px;outline:none;color:var(--text)}
+table.et th input{color:#d9ceff;font-weight:600;padding-right:18px}
+table.et input::placeholder{color:var(--text-faint);font-style:italic}
+table.et input:focus{background:rgba(255,255,255,0.05);box-shadow:inset 0 0 0 1px var(--accent)}
+table.et .x{position:absolute;right:2px;top:50%;transform:translateY(-50%);opacity:0}
+table.et th:hover .x,table.et tr:hover .x{opacity:1}
+table.et td.rx,table.et th.rx{width:22px;border-right:none;position:relative}
+.x{background:none;border:none;color:var(--text-faint);font-size:13px;line-height:1;padding:2px 4px;border-radius:4px}
+.x:hover{color:var(--err);background:rgba(255,107,122,0.12)}
+.rctl{display:flex;gap:5px;margin-top:7px;flex-wrap:wrap}
+.rctl button{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:5px 6px;font-size:11.5px;color:var(--text-dim)}
+.rctl button:hover{color:var(--text);border-color:var(--border-strong)}
+.rctl button.danger:hover{color:var(--err);border-color:rgba(255,107,122,0.5)}
+.side-actions{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.side-actions .btn{justify-content:center;padding:7px 6px;font-size:12px}
+
+/* ---------- main ---------- */
+.main{display:flex;flex-direction:column;min-width:0;padding:18px 22px 60px;gap:16px;max-width:1240px}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:14px 16px}
+.palette{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.pg{display:flex;gap:4px;flex-wrap:wrap;padding-right:8px;border-right:1px solid var(--border)}
+.pg:last-child{border-right:none}
+.pg button{--c:var(--text-dim);min-width:34px;height:32px;padding:0 9px;border-radius:8px;font-family:var(--mono);font-size:14px;font-weight:600;background:color-mix(in srgb,var(--c) 10%,transparent);border:1px solid color-mix(in srgb,var(--c) 35%,transparent);color:var(--c);transition:transform .1s,background .1s}
+.pg button:hover{background:color-mix(in srgb,var(--c) 22%,transparent);transform:translateY(-1px)}
+.pg button small{font-size:10px;margin-left:1px}
+.editor{position:relative}
+#expr{width:100%;min-height:96px;resize:vertical;padding:12px 14px;border-radius:11px;background:var(--bg-0);border:1px solid var(--border);font-family:var(--mono);font-size:15px;line-height:1.6;outline:none;tab-size:2}
+#expr:focus{border-color:rgba(169,139,255,0.6);box-shadow:0 0 0 3px rgba(124,92,255,0.15)}
+.erow{display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap}
+.erow .hint{margin-left:auto}
+.pretty{margin-top:10px;font-family:var(--mono);font-size:14px;line-height:1.9;color:var(--text);display:flex;flex-direction:column;gap:2px;overflow-x:auto}
+.pretty:empty{display:none}
+.pretty .lbl{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-faint);font-family:'Inter',sans-serif;font-weight:700}
+.pretty sub{font-size:10.5px;color:var(--text-dim);vertical-align:-0.45em}
+.o{font-weight:700;color:var(--c,var(--text))}
+.err{color:var(--err);font-size:12.5px;font-family:var(--mono);white-space:pre;overflow-x:auto;padding:9px 12px;border-radius:9px;background:rgba(255,107,122,0.08);border:1px solid rgba(255,107,122,0.3);margin-top:10px;display:none;line-height:1.55}
+.err.on{display:block}
+.err .src{color:var(--text-dim)}
+
+.examples{display:flex;flex-direction:column;gap:8px}
+.exg{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.exg > span{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-faint);font-weight:700;width:76px;flex:none}
+.exg .chips{display:flex;gap:5px;flex-wrap:wrap;flex:1;min-width:0}
+.chip{font-size:12px;padding:4px 10px;border-radius:999px;background:var(--surface);border:1px solid var(--border);color:var(--text-dim)}
+.chip:hover{color:var(--text);border-color:var(--border-strong);background:var(--surface-2)}
+
+.rtabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin:-4px -16px 14px;padding:0 12px;overflow-x:auto}
+.rtabs button{background:none;border:none;border-bottom:2px solid transparent;padding:9px 12px;font-weight:600;font-size:12.5px;color:var(--text-faint);white-space:nowrap}
+.rtabs button:hover{color:var(--text)}
+.rtabs button.on{color:var(--text);border-bottom-color:var(--o-join)}
+.rtabs .n{font-family:var(--mono);font-size:11px;color:var(--text-faint);margin-left:4px}
+
+.meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;font-size:12px;color:var(--text-dim)}
+.meta .schema{font-family:var(--mono);color:var(--text)}
+.tag{display:inline-block;font-family:var(--mono);font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap;color:var(--accent-2);background:rgba(53,208,255,0.1);border:1px solid rgba(53,208,255,0.35)}
+table.rt{border-collapse:collapse;font-family:var(--mono);font-size:12.5px;width:100%}
+table.rt th{text-align:left;font-weight:600;color:#d9ceff;background:rgba(169,139,255,0.08);padding:6px 11px;border-bottom:1px solid var(--border-strong);white-space:nowrap}
+table.rt th .q{color:var(--text-faint);font-weight:500}
+table.rt td{padding:6px 11px;border-bottom:1px solid var(--border);white-space:nowrap}
+table.rt tr:last-child td{border-bottom:none}
+table.rt td.null{color:var(--text-faint);font-style:italic}
+table.rt td.st{width:28px;text-align:center;font-weight:700}
+table.rt tr.keep td.st{color:var(--sql)}
+table.rt tr.drop td{opacity:.42}
+table.rt tr.drop td.st{color:var(--err);opacity:1}
+table.rt tr.unk td{opacity:.6}
+table.rt tr.unk td.st{color:var(--warn);opacity:1}
+table.rt tr.pad td.null{color:var(--warn)}
+.more{font-size:11.5px;color:var(--text-faint);padding:8px 2px 0}
+.empty{font-family:var(--mono);color:var(--text-faint);padding:14px;text-align:center;border:1px dashed var(--border-strong);border-radius:9px}
+.placeholder{color:var(--text-faint);padding:20px 4px;line-height:1.6}
+
+/* steps */
+.step{border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:12px;background:var(--bg-1)}
+.step-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+.step-n{font-family:var(--mono);font-size:11px;color:var(--text-faint);width:22px}
+.badge{--c:var(--text);font-family:var(--mono);font-weight:700;font-size:13px;min-width:28px;height:26px;padding:0 7px;border-radius:7px;display:inline-flex;align-items:center;justify-content:center;color:var(--c);background:color-mix(in srgb,var(--c) 14%,transparent);border:1px solid color-mix(in srgb,var(--c) 40%,transparent)}
+.step-e{font-family:var(--mono);font-size:13px;overflow-x:auto;white-space:nowrap;flex:1;min-width:0}
+.step-e sub{font-size:10px;color:var(--text-dim)}
+.step p{margin:0 0 10px;color:var(--text-dim);font-size:12.5px;line-height:1.6}
+.step p b{color:var(--text)}
+.step p code{font-family:var(--mono);background:var(--surface-2);padding:0 5px;border-radius:4px;color:var(--text)}
+.stmt-h{font-family:var(--mono);font-size:12px;color:var(--text-faint);margin:4px 0 10px;letter-spacing:.04em}
+.stmt-h b{color:var(--o-agg)}
+
+/* query tree */
+.qt{overflow-x:auto;padding:4px 0 10px}
+.qt ul{display:flex;justify-content:center;margin:0;padding:16px 0 0;position:relative}
+.qt li{list-style:none;display:flex;flex-direction:column;align-items:center;position:relative;padding:16px 6px 0}
+.qt li::before,.qt li::after{content:"";position:absolute;top:0;right:50%;width:50%;height:16px;border-top:1px solid var(--border-strong)}
+.qt li::after{right:auto;left:50%;border-left:1px solid var(--border-strong)}
+.qt li:only-child::before,.qt li:only-child::after{display:none}
+.qt li:only-child{padding-top:0}
+.qt li:first-child::before,.qt li:last-child::after{border:0 none}
+.qt li:last-child::before{border-right:1px solid var(--border-strong);border-radius:0 7px 0 0}
+.qt li:first-child::after{border-radius:7px 0 0 0}
+.qt ul ul::before{content:"";position:absolute;top:0;left:50%;height:16px;border-left:1px solid var(--border-strong)}
+.qt > ul{padding-top:0;width:max-content;min-width:100%}
+.qt > ul > li{padding-top:0}
+.tn{--c:var(--text);display:inline-flex;flex-direction:column;align-items:center;gap:2px;padding:6px 11px;border-radius:10px;background:var(--panel-2);border:1px solid color-mix(in srgb,var(--c) 40%,transparent);font-family:var(--mono);max-width:260px;transition:box-shadow .12s,background .12s}
+.tn:hover{background:color-mix(in srgb,var(--c) 10%,var(--panel-2))}
+.tn.sel{box-shadow:0 0 0 2px var(--c);background:color-mix(in srgb,var(--c) 14%,var(--panel-2))}
+.tn .tsym{font-size:16px;font-weight:700;color:var(--c);line-height:1.2}
+.tn.leaf .tsym{font-size:12.5px}
+.tn .tsub{font-size:10.5px;color:var(--text-dim);white-space:normal;text-align:center;line-height:1.35;overflow-wrap:anywhere}
+.tn .trows{font-size:9.5px;color:var(--text-faint)}
+.tdetail{margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}
+
+/* sql */
+pre.sql{margin:0;padding:14px 16px;border-radius:11px;background:var(--bg-0);border:1px solid var(--border);font-family:var(--mono);font-size:12.5px;line-height:1.6;overflow-x:auto;color:var(--text)}
+pre.sql .k{color:#c4b2ff;font-weight:600}
+pre.sql .s{color:var(--sql)}
+pre.sql .c{color:var(--text-faint);font-style:italic}
+pre.sql .i{color:#ffd59a}
+.sqlbar{display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
+
+.temps{margin-top:16px;display:flex;flex-direction:column;gap:8px}
+.temps details{border:1px solid var(--border);border-radius:10px;padding:8px 12px;background:var(--bg-1)}
+.temps summary{cursor:pointer;font-family:var(--mono);font-size:12.5px;color:var(--text-dim)}
+.temps summary b{color:var(--o-agg)}
+.temps details[open] summary{margin-bottom:10px}
+
+/* cheat sheet */
+details.ref summary{cursor:pointer;font-weight:600;font-size:13px;list-style:none;display:flex;align-items:center;gap:8px}
+details.ref summary::-webkit-details-marker{display:none}
+details.ref summary::before{content:"";border-left:5px solid var(--text-faint);border-top:4px solid transparent;border-bottom:4px solid transparent;transition:transform .15s}
+details.ref[open] summary::before{transform:rotate(90deg)}
+details.ref summary span{font-weight:400;color:var(--text-faint);font-size:12px}
+.reft{width:100%;border-collapse:collapse;margin-top:12px;font-size:12.5px}
+.reft th{text-align:left;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-faint);padding:6px 10px;border-bottom:1px solid var(--border-strong)}
+.reft td{padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:top;color:var(--text-dim)}
+.reft td:first-child{font-weight:600;color:var(--text);white-space:nowrap}
+.reft code{font-family:var(--mono);font-size:12px;color:var(--text);white-space:nowrap}
+.reft .refwrap{overflow-x:auto}
+
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--panel-2);border:1px solid var(--border-strong);padding:9px 16px;border-radius:10px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:60}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+@media (max-width:980px){
+  .layout{grid-template-columns:1fr}
+  .side{border-right:none;border-bottom:1px solid var(--border)}
+  .main{padding:16px 16px 50px}
+  .brand small{display:none}
+  .exg > span{width:auto}
+}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="index.html" title="Back to Databases Lab"><span class="dot"></span>Relational Algebra Lab <small>σ π ⋈ ÷ γ · query trees · SQL</small></a>
+  <span class="spacer"></span>
+  <a class="btn" href="index.html">← Databases</a>
+  <a class="btn" href="../home.html">⌂ Home</a>
+</header>
+
+<div class="layout">
+  <aside class="side">
+    <div class="field">
+      <label for="ds">Database</label>
+      <select class="inp" id="ds"></select>
+      <div class="hint" id="dsDesc"></div>
+    </div>
+    <h3>Relations <span class="n" id="relCount"></span></h3>
+    <div class="rels" id="rels"></div>
+    <div class="side-actions">
+      <button class="btn" id="addRel">+ Relation</button>
+      <button class="btn" id="csvBtn">⤒ CSV</button>
+      <button class="btn" id="resetDs" title="Restore this database's original relations">↺ Reset</button>
+    </div>
+    <input type="file" id="csvIn" accept=".csv,text/csv" hidden>
+    <div class="hint">Click a relation to edit its rows. Empty cells are <code>NULL</code>. Underlined attributes form the key. <code>↥</code> inserts the name into the expression.</div>
+  </aside>
+
+  <main class="main">
+    <section class="card">
+      <div class="palette" id="palette"></div>
+      <div class="editor"><textarea id="expr" spellcheck="false" autocomplete="off" placeholder="π[name, dept_name](σ[salary > 60000](Employee ⋈ Department))"></textarea></div>
+      <div class="erow">
+        <button class="btn primary" id="evalBtn">▶ Evaluate</button>
+        <button class="btn" id="clearBtn">✕ Clear</button>
+        <span class="hint">Evaluates as you type · <code>Ctrl ↵</code> · ASCII works too: <code>sigma</code> <code>pi</code> <code>join</code> <code>&lt;-</code></span>
+      </div>
+      <div class="err" id="err"></div>
+      <div class="pretty" id="pretty"></div>
+    </section>
+
+    <section class="card examples" id="examples"></section>
+
+    <section class="card">
+      <div class="rtabs" id="rtabs">
+        <button data-t="result">Result<span class="n" id="nRes"></span></button>
+        <button data-t="tree">Query tree</button>
+        <button data-t="steps">Step by step<span class="n" id="nSteps"></span></button>
+        <button data-t="sql">SQL</button>
+      </div>
+      <div id="out"></div>
+    </section>
+
+    <section class="card">
+      <details class="ref">
+        <summary>Syntax &amp; SQL cheat sheet <span>— every operator, its ASCII spelling and the SQL it maps to</span></summary>
+        <div class="refwrap"><table class="reft">
+          <thead><tr><th>Operator</th><th>Write</th><th>ASCII</th><th>SQL</th></tr></thead>
+          <tbody>
+            <tr><td>σ selection</td><td><code>σ[cond](R)</code></td><td><code>sigma</code></td><td><code>SELECT * FROM R WHERE cond</code></td></tr>
+            <tr><td>π projection</td><td><code>π[a, b](R)</code></td><td><code>pi</code></td><td><code>SELECT DISTINCT a, b FROM R</code></td></tr>
+            <tr><td>ρ rename</td><td><code>ρ[S](R)</code> · <code>ρ[S(x, y)](R)</code> · <code>ρ[old → new](R)</code></td><td><code>rho</code>, <code>-&gt;</code></td><td><code>R AS S</code> · <code>old AS new</code></td></tr>
+            <tr><td>× product</td><td><code>R × S</code></td><td><code>cross</code>, <code>*</code></td><td><code>R CROSS JOIN S</code></td></tr>
+            <tr><td>⋈ natural join</td><td><code>R ⋈ S</code></td><td><code>join</code></td><td><code>R NATURAL JOIN S</code></td></tr>
+            <tr><td>⋈θ theta join</td><td><code>R ⋈[cond] S</code></td><td><code>join[cond]</code></td><td><code>R JOIN S ON cond</code></td></tr>
+            <tr><td>⟕ ⟖ ⟗ outer joins</td><td><code>R ⟕ S</code>, <code>R ⟖ S</code>, <code>R ⟗ S</code> (also with <code>[cond]</code>)</td><td><code>leftjoin</code> <code>rightjoin</code> <code>fulljoin</code></td><td><code>NATURAL LEFT / RIGHT / FULL JOIN</code></td></tr>
+            <tr><td>⋉ semijoin</td><td><code>R ⋉ S</code></td><td><code>semijoin</code></td><td><code>WHERE EXISTS (…)</code></td></tr>
+            <tr><td>▷ antijoin</td><td><code>R ▷ S</code></td><td><code>antijoin</code></td><td><code>WHERE NOT EXISTS (…)</code></td></tr>
+            <tr><td>∪ ∩ − set operations</td><td><code>R ∪ S</code>, <code>R ∩ S</code>, <code>R − S</code></td><td><code>union</code> <code>intersect</code> <code>minus</code>, <code>-</code></td><td><code>UNION</code> · <code>INTERSECT</code> · <code>EXCEPT</code></td></tr>
+            <tr><td>÷ division</td><td><code>R ÷ S</code></td><td><code>divide</code>, <code>/</code></td><td>double <code>NOT EXISTS</code></td></tr>
+            <tr><td>γ grouping</td><td><code>γ[g; COUNT(*) AS n, AVG(x) AS avg_x](R)</code></td><td><code>gamma</code></td><td><code>SELECT g, COUNT(*) AS n … GROUP BY g</code></td></tr>
+            <tr><td>← assignment</td><td><code>T ← expr</code> (one per line, last line is the answer)</td><td><code>&lt;-</code>, <code>:=</code></td><td><code>WITH T AS (…)</code></td></tr>
+            <tr><td>Conditions</td><td><code>= ≠ &lt; &gt; ≤ ≥</code>, <code>∧ ∨ ¬</code>, <code>IS NULL</code>, <code>'text'</code></td><td><code>!= &lt;&gt; &lt;= &gt;=</code>, <code>and or not</code></td><td>three-valued logic: a comparison with <code>NULL</code> is UNKNOWN</td></tr>
+          </tbody>
+        </table></div>
+        <p class="hint" style="margin:10px 0 0">Attributes can be qualified as <code>Relation.attr</code>. When both sides of <code>×</code> or <code>⋈[θ]</code> share an attribute, the result keeps both as <code>R.a</code> and <code>S.a</code>. To combine a relation with itself, rename one copy: <code>ρ[E2](Employee)</code>. Comments start with <code>--</code>.</p>
+      </details>
+    </section>
+  </main>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+'use strict';
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const IDENT = /^[A-Za-z_][A-Za-z0-9_]*$/;
+
+/* ================================================================
+   Sample databases
+   ================================================================ */
+const DATASETS = {
+  company: {
+    name: 'Company · employees, departments, projects',
+    desc: 'Frank has no department (NULL), Dave works in department 30 which does not exist, and Marketing has no employees: good for outer joins and NULLs.',
+    start: 'π[name, dept_name](σ[salary > 60000](Employee ⋈ Department))',
+    rels: [
+      {name:'Employee', key:['eid'], attrs:['eid','name','age','dept_id','salary'], rows:[
+        [1,'Alice',30,10,70000],[2,'Bob',25,20,55000],[3,'Carol',40,10,90000],[4,'Dave',35,30,65000],[5,'Eve',28,20,60000],[6,'Frank',45,null,120000]]},
+      {name:'Department', key:['dept_id'], attrs:['dept_id','dept_name','location'], rows:[
+        [10,'Engineering','NYC'],[20,'Sales','LA'],[40,'Marketing','SF']]},
+      {name:'Project', key:['pid'], attrs:['pid','pname','dept_id'], rows:[
+        ['P1','Apollo',10],['P2','Zeus',10],['P3','Hermes',20]]},
+      {name:'WorksOn', key:['eid','pid'], attrs:['eid','pid','hours'], rows:[
+        [1,'P1',20],[1,'P2',15],[2,'P3',30],[3,'P1',10],[3,'P2',25],[3,'P3',5],[5,'P3',12]]}
+    ],
+    examples: [
+      ['Basics', [
+        ['Selection', 'σ[salary > 60000](Employee)'],
+        ['Projection', 'π[name, salary](Employee)'],
+        ['AND / OR', 'σ[dept_id = 10 ∧ age < 35 ∨ salary ≥ 100000](Employee)'],
+        ['NULL is unknown', 'σ[dept_id ≠ 10](Employee)'],
+        ['IS NULL', 'σ[dept_id IS NULL](Employee)']
+      ]],
+      ['Joins', [
+        ['Natural join', 'Employee ⋈ Department'],
+        ['θ-join', 'Employee ⋈[Employee.dept_id = Department.dept_id ∧ salary > 60000] Department'],
+        ['Left outer', 'Employee ⟕ Department'],
+        ['Full outer', 'Employee ⟗ Department'],
+        ['Semijoin', 'Department ⋉ Employee'],
+        ['Antijoin', 'Department ▷ Employee'],
+        ['Self-join with ρ', 'π[E1.name, E2.name](σ[E1.dept_id = E2.dept_id ∧ E1.eid < E2.eid](ρ[E1](Employee) × ρ[E2](Employee)))']
+      ]],
+      ['Sets', [
+        ['Union', 'π[dept_id](Employee) ∪ π[dept_id](Department)'],
+        ['Intersection', 'π[dept_id](Employee) ∩ π[dept_id](Department)'],
+        ['Difference', 'π[dept_id](Department) − π[dept_id](Employee)']
+      ]],
+      ['Advanced', [
+        ['Division', 'π[eid, pid](WorksOn) ÷ π[pid](Project)'],
+        ['All dept-10 projects', 'π[name](Employee ⋈ (π[eid, pid](WorksOn) ÷ π[pid](σ[dept_id = 10](Project))))'],
+        ['Grouping γ', 'γ[dept_id; COUNT(*) AS n, AVG(salary) AS avg_salary](Employee)'],
+        ['Assignment ←', 'Busy ← γ[eid; SUM(hours) AS total](WorksOn)\nπ[name, total](σ[total ≥ 30](Busy ⋈ Employee))']
+      ]]
+    ]
+  },
+  university: {
+    name: 'University · students, courses, enrollment',
+    desc: 'Chen is still taking Databases (grade is NULL) and Fay has not enrolled in anything yet.',
+    start: 'π[sname, title](Student ⋈ Takes ⋈ Course)',
+    rels: [
+      {name:'Student', key:['sid'], attrs:['sid','sname','major','year'], rows:[
+        [1,'Ana','CS',2],[2,'Ben','Math',3],[3,'Chen','CS',1],[4,'Dana','Physics',2],[5,'Eli','CS',3],[6,'Fay','Math',1]]},
+      {name:'Course', key:['cid'], attrs:['cid','title','dept','credits'], rows:[
+        ['CS101','Intro to Programming','CS',4],['CS220','Databases','CS',3],['CS330','Algorithms','CS',4],['MA101','Calculus I','Math',4],['PH101','Mechanics','Physics',3]]},
+      {name:'Takes', key:['sid','cid'], attrs:['sid','cid','grade'], rows:[
+        [1,'CS101','A'],[1,'CS220','A'],[1,'CS330','B'],[2,'MA101','A'],[2,'CS220','C'],[3,'CS101','B'],[3,'CS220',null],
+        [4,'PH101','A'],[4,'MA101','B'],[5,'CS101','A'],[5,'CS220','B'],[5,'CS330','A']]}
+    ],
+    examples: [
+      ['Basics', [
+        ['CS students', "σ[major = 'CS'](Student)"],
+        ['Grade missing', 'σ[grade IS NULL](Takes)'],
+        ['Took Databases', "π[sname](Student ⋈ Takes ⋈ σ[title = 'Databases'](Course))"]
+      ]],
+      ['Joins', [
+        ['Courses ⟕ enrollment', 'π[cid, title, sid](Course ⟕ Takes)'],
+        ['Never enrolled ▷', 'Student ▷ Takes'],
+        ['Same course pairs', 'π[T1.sid, T2.sid, T1.cid](ρ[T1](Takes) ⋈[T1.cid = T2.cid ∧ T1.sid < T2.sid] ρ[T2](Takes))']
+      ]],
+      ['Sets', [
+        ['Never enrolled −', 'π[sid, sname](Student) − π[sid, sname](Student ⋈ Takes)'],
+        ['Majors ∪ depts (ρ)', 'π[major](Student) ∪ ρ[dept → major](π[dept](Course))']
+      ]],
+      ['Advanced', [
+        ['Took every CS course', "π[sname](Student ⋈ (π[sid, cid](Takes) ÷ π[cid](σ[dept = 'CS'](Course))))"],
+        ['Students per course', 'γ[cid; COUNT(*) AS students](Takes)'],
+        ['Credits per student', 'γ[sid, sname; SUM(credits) AS credits](Student ⋈ Takes ⋈ Course)']
+      ]]
+    ]
+  },
+  sailors: {
+    name: 'Sailors · the textbook classic',
+    desc: 'Sailors, Boats and Reserves from Ramakrishnan & Gehrke. Two different sailors are named Horatio.',
+    start: "π[sname](σ[color = 'red'](Boats) ⋈ Reserves ⋈ Sailors)",
+    rels: [
+      {name:'Sailors', key:['sid'], attrs:['sid','sname','rating','age'], rows:[
+        [22,'Dustin',7,45],[29,'Brutus',1,33],[31,'Lubber',8,55.5],[32,'Andy',8,25.5],[58,'Rusty',10,35],
+        [64,'Horatio',7,35],[71,'Zorba',10,16],[74,'Horatio',9,35],[85,'Art',3,25.5],[95,'Bob',3,63.5]]},
+      {name:'Boats', key:['bid'], attrs:['bid','bname','color'], rows:[
+        [101,'Interlake','blue'],[102,'Interlake','red'],[103,'Clipper','green'],[104,'Marine','red']]},
+      {name:'Reserves', key:['sid','bid','day'], attrs:['sid','bid','day'], rows:[
+        [22,101,'1998-10-10'],[22,102,'1998-10-10'],[22,103,'1998-10-08'],[22,104,'1998-10-07'],[31,102,'1998-11-10'],
+        [31,103,'1998-11-06'],[31,104,'1998-11-12'],[64,101,'1998-09-05'],[64,102,'1998-09-08'],[74,103,'1998-09-08']]}
+    ],
+    examples: [
+      ['Basics', [
+        ['Reserved boat 103', 'π[sname](σ[bid = 103](Reserves) ⋈ Sailors)'],
+        ['Reserved a red boat', "π[sname](σ[color = 'red'](Boats) ⋈ Reserves ⋈ Sailors)"],
+        ['Red or green (←)', "Temp ← σ[color = 'red' ∨ color = 'green'](Boats)\nπ[sname](Temp ⋈ Reserves ⋈ Sailors)"]
+      ]],
+      ['Sets', [
+        ['Red and green', "π[sname](Sailors ⋈ (π[sid](σ[color = 'red'](Boats) ⋈ Reserves) ∩ π[sid](σ[color = 'green'](Boats) ⋈ Reserves)))"],
+        ['Never a red boat', "π[sname](Sailors ▷ (σ[color = 'red'](Boats) ⋈ Reserves))"]
+      ]],
+      ['Advanced', [
+        ['Reserved all boats', 'π[sname](Sailors ⋈ (π[sid, bid](Reserves) ÷ π[bid](Boats)))'],
+        ['All red boats', "π[sname](Sailors ⋈ (π[sid, bid](Reserves) ÷ π[bid](σ[color = 'red'](Boats))))"],
+        ['Better than a Horatio', "π[S1.sname, S1.rating](ρ[S1](Sailors) ⋈[S1.rating > S2.rating ∧ S2.sname = 'Horatio'] ρ[S2](Sailors))"],
+        ['Per rating γ', 'γ[rating; COUNT(*) AS sailors, AVG(age) AS avg_age](Sailors)']
+      ]]
+    ]
+  }
+};
+
+/* ================================================================
+   Engine: values
+   ================================================================ */
+const isNumStr = s => typeof s === 'string' && /^-?\d+(\.\d+)?$/.test(s.trim());
+const coerce = v => {
+  if (v === null || v === undefined) return null;
+  const s = String(v).trim();
+  if (s === '' || s.toLowerCase() === 'null') return null;
+  if (isNumStr(s)) return parseFloat(s);
+  return String(v);
+};
+const asNum = v => typeof v === 'number' ? v : isNumStr(v) ? parseFloat(v) : null;
+const key = r => JSON.stringify(r);
+const dedup = rows => { const seen = new Set(), out = []; for (const r of rows){ const k = key(r); if (!seen.has(k)){ seen.add(k); out.push(r); } } return out; };
+const baseName = a => a.slice(a.lastIndexOf('.') + 1);
+const cmpEq = (a, b) => {
+  if (a == null || b == null) return false;
+  if (a === b) return true;
+  const na = asNum(a), nb = asNum(b);
+  return na !== null && nb !== null && na === nb;
+};
+function compareVals(op, a, b){
+  if (a == null || b == null) return null;                       // UNKNOWN
+  const na = asNum(a), nb = asNum(b), num = na !== null && nb !== null;
+  const x = num ? na : String(a), y = num ? nb : String(b);
+  switch (op){
+    case '=': return x === y;
+    case '≠': return x !== y;
+    case '<': return x < y;
+    case '>': return x > y;
+    case '≤': return x <= y;
+    case '≥': return x >= y;
+  }
+  return null;
+}
+const raErr = (msg, pos) => Object.assign(new Error(msg), {pos});
+const dupCheck = (attrs, op) => {
+  const d = attrs.find((x, i) => attrs.indexOf(x) !== i);
+  if (d) throw new Error(`${op}: the result would have two attributes called "${d}". Rename one of them with ρ first.`);
+};
+
+/* Find an attribute by plain name ("dept_id") or qualified name ("Employee.dept_id"). */
+function resolveAttr(rel, ref, op){
+  const exact = rel.attrs.indexOf(ref);
+  if (exact >= 0) return exact;
+  const dot = ref.lastIndexOf('.');
+  let cand;
+  if (dot > 0){
+    const q = ref.slice(0, dot), c = ref.slice(dot + 1);
+    cand = rel.attrs.map((a, i) => i).filter(i => baseName(rel.attrs[i]) === c && (rel.src[i].includes(q) || rel.attrs[i] === ref));
+  } else {
+    cand = rel.attrs.map((a, i) => i).filter(i => baseName(rel.attrs[i]) === ref);
+  }
+  if (cand.length === 1) return cand[0];
+  if (cand.length > 1) throw new Error(`${op}: "${ref}" is ambiguous here — it could be ${cand.map(i => rel.attrs[i]).join(' or ')}. Qualify it.`);
+  throw new Error(`${op}: no attribute "${ref}" in (${rel.attrs.join(', ')})`);
+}
+
+/* Predicates use three-valued logic: true / false / null (UNKNOWN). */
+function compilePred(p, rel, op){
+  switch (p.type){
+    case 'not': { const f = compilePred(p.child, rel, op); return r => { const v = f(r); return v === null ? null : !v; }; }
+    case 'and': { const a = compilePred(p.left, rel, op), b = compilePred(p.right, rel, op);
+      return r => { const x = a(r), y = b(r); if (x === false || y === false) return false; if (x === null || y === null) return null; return true; }; }
+    case 'or': { const a = compilePred(p.left, rel, op), b = compilePred(p.right, rel, op);
+      return r => { const x = a(r), y = b(r); if (x === true || y === true) return true; if (x === null || y === null) return null; return false; }; }
+    case 'isnull': { const t = compileTerm(p.term, rel, op); return r => { const v = t(r) == null; return p.neg ? !v : v; }; }
+    case 'cmp': { const a = compileTerm(p.left, rel, op), b = compileTerm(p.right, rel, op); return r => compareVals(p.op, a(r), b(r)); }
+  }
+  throw new Error('Invalid condition');
+}
+function compileTerm(t, rel, op){
+  if (t.kind === 'ident'){ const i = resolveAttr(rel, t.name, op); return r => r[i]; }
+  const v = t.kind === 'null' ? null : t.value;
+  return () => v;
+}
+
+/* ================================================================
+   Engine: operators
+   ================================================================ */
+function qualified(rel, i, op){
+  const a = rel.attrs[i];
+  if (a.includes('.')) return a;
+  const p = rel.src[i].length ? rel.src[i][0] : rel.name;
+  if (!p) throw new Error(`${op}: both sides have an attribute "${a}". Rename one side first, e.g. ρ[X](…)`);
+  return p + '.' + a;
+}
+function combine(a, b, op){
+  const attrs = [], src = [];
+  a.attrs.forEach((x, i) => { attrs.push(b.attrs.includes(x) ? qualified(a, i, op) : x); src.push(a.src[i]); });
+  b.attrs.forEach((x, i) => { attrs.push(a.attrs.includes(x) ? qualified(b, i, op) : x); src.push(b.src[i]); });
+  const d = attrs.find((x, i) => attrs.indexOf(x) !== i);
+  if (d) throw new Error(`${op}: both sides have an attribute "${d}". To combine a relation with itself, rename one copy, e.g. ρ[X](${baseName(d) === d ? 'R' : d.split('.')[0]}).`);
+  return {name:null, attrs, src};
+}
+function relProduct(a, b, kind, pred, op){
+  const sch = combine(a, b, op);
+  const f = pred ? compilePred(pred, sch, op) : null;
+  const rows = [], usedB = new Set(), nullsA = a.attrs.map(() => null), nullsB = b.attrs.map(() => null);
+  for (const ra of a.rows){
+    let m = false;
+    b.rows.forEach((rb, j) => { const row = [...ra, ...rb]; if (!f || f(row) === true){ rows.push(row); m = true; usedB.add(j); } });
+    if (!m && (kind === 'left' || kind === 'full')) rows.push([...ra, ...nullsB]);
+  }
+  if (kind === 'right' || kind === 'full') b.rows.forEach((rb, j) => { if (!usedB.has(j)) rows.push([...nullsA, ...rb]); });
+  return {...sch, rows};
+}
+function relNatural(a, b, kind){
+  const common = a.attrs.filter(x => b.attrs.includes(x));
+  const ai = common.map(x => a.attrs.indexOf(x)), bi = common.map(x => b.attrs.indexOf(x));
+  const bOnly = b.attrs.map((x, i) => i).filter(i => !common.includes(b.attrs[i]));
+  const attrs = [...a.attrs, ...bOnly.map(i => b.attrs[i])];
+  const src = [...a.attrs.map((x, i) => common.includes(x) ? [...new Set([...a.src[i], ...b.src[b.attrs.indexOf(x)]])] : a.src[i]), ...bOnly.map(i => b.src[i])];
+  const rows = [], usedB = new Set();
+  for (const ra of a.rows){
+    let m = false;
+    b.rows.forEach((rb, j) => {
+      if (ai.every((x, k) => cmpEq(ra[x], rb[bi[k]]))){ rows.push([...ra, ...bOnly.map(i => rb[i])]); m = true; usedB.add(j); }
+    });
+    if (!m && (kind === 'left' || kind === 'full')) rows.push([...ra, ...bOnly.map(() => null)]);
+  }
+  if (kind === 'right' || kind === 'full') b.rows.forEach((rb, j) => {
+    if (!usedB.has(j)) rows.push([...a.attrs.map(x => { const k = common.indexOf(x); return k >= 0 ? rb[bi[k]] : null; }), ...bOnly.map(i => rb[i])]);
+  });
+  return {name:null, attrs, src, rows, common};
+}
+function relSet(a, b, kind, op){
+  if (a.attrs.length !== b.attrs.length)
+    throw new Error(`${op}: both sides must be union-compatible (same number of attributes) — left is (${a.attrs.join(', ')}), right is (${b.attrs.join(', ')})`);
+  const bk = new Set(b.rows.map(key));
+  const rows = kind === 'union' ? dedup([...a.rows, ...b.rows])
+    : kind === 'intersect' ? dedup(a.rows.filter(r => bk.has(key(r))))
+    : dedup(a.rows.filter(r => !bk.has(key(r))));
+  return {name:null, attrs:a.attrs, src:a.src, rows};
+}
+function relDivide(a, b){
+  const miss = b.attrs.filter(x => !a.attrs.includes(x));
+  if (miss.length) throw new Error(`÷: every attribute of the divisor must also be in the dividend — (${miss.join(', ')}) is not in (${a.attrs.join(', ')})`);
+  const keep = a.attrs.map((x, i) => i).filter(i => !b.attrs.includes(a.attrs[i]));
+  if (!keep.length) throw new Error('÷: the dividend needs at least one attribute that is not in the divisor');
+  const bIdx = b.attrs.map(x => a.attrs.indexOf(x));
+  const groups = new Map();
+  for (const r of a.rows){
+    const x = keep.map(i => r[i]), k = key(x);
+    if (!groups.has(k)) groups.set(k, {x, ys:new Set()});
+    groups.get(k).ys.add(key(bIdx.map(i => r[i])));
+  }
+  const need = dedup(b.rows).map(key);
+  const rows = [];
+  for (const g of groups.values()) if (need.every(k => g.ys.has(k))) rows.push(g.x);
+  return {name:null, attrs:keep.map(i => a.attrs[i]), src:keep.map(i => a.src[i]), rows, groups:groups.size};
+}
+function relSemi(a, b, anti){
+  const common = a.attrs.filter(x => b.attrs.includes(x));
+  const ai = common.map(x => a.attrs.indexOf(x)), bi = common.map(x => b.attrs.indexOf(x));
+  const rows = a.rows.filter(ra => { const m = b.rows.some(rb => ai.every((x, k) => cmpEq(ra[x], rb[bi[k]]))); return anti ? !m : m; });
+  return {name:a.name, attrs:a.attrs, src:a.src, rows, common};
+}
+function aggregate(fn, vals){
+  if (fn === 'COUNT') return vals.length;
+  if (!vals.length) return null;
+  if (fn === 'MIN' || fn === 'MAX'){
+    return vals.reduce((m, v) => { const lt = compareVals('<', v, m); return (fn === 'MIN' ? lt : compareVals('>', v, m)) ? v : m; });
+  }
+  const nums = vals.map(asNum);
+  if (nums.some(n => n === null)) throw new Error(`γ: ${fn} needs numbers, but got "${vals[nums.indexOf(null)]}"`);
+  const sum = nums.reduce((s, n) => s + n, 0);
+  return fn === 'SUM' ? sum : sum / nums.length;
+}
+function relGamma(c, n){
+  const gi = n.groups.map(g => resolveAttr(c, g, 'γ'));
+  const aggs = n.aggs.map(a => {
+    const i = a.arg == null ? -1 : resolveAttr(c, a.arg, 'γ');
+    return {fn:a.fn, i, arg: i < 0 ? null : c.attrs[i], name: a.as || (a.fn.toLowerCase() + (a.arg ? '_' + baseName(c.attrs[i]) : ''))};
+  });
+  const attrs = [...gi.map(i => c.attrs[i]), ...aggs.map(a => a.name)];
+  dupCheck(attrs, 'γ');
+  const groups = new Map();
+  if (!gi.length) groups.set(key([]), {g:[], rows:[]});
+  for (const r of c.rows){
+    const g = gi.map(i => r[i]), k = key(g);
+    if (!groups.has(k)) groups.set(k, {g, rows:[]});
+    groups.get(k).rows.push(r);
+  }
+  const rows = [...groups.values()].map(G => [...G.g, ...aggs.map(a => aggregate(a.fn, a.i < 0 ? G.rows : G.rows.map(r => r[a.i]).filter(v => v != null)))]);
+  n.meta = {gAttrs: gi.map(i => c.attrs[i]), aggs};
+  return {name:null, attrs, src:[...gi.map(i => c.src[i]), ...aggs.map(() => [])], rows};
+}
+
+/* ================================================================
+   Parser
+   ================================================================ */
+const OPCH = {'σ':'σ','π':'π','ρ':'ρ','γ':'γ','⋈':'⋈','⨝':'⋈','⟕':'⟕','⟖':'⟖','⟗':'⟗','×':'×','∪':'∪','∩':'∩','−':'−','∖':'−','÷':'÷','⋉':'⋉','▷':'▷'};
+const WORDS = {sigma:'σ', pi:'π', rho:'ρ', rename:'ρ', gamma:'γ', join:'⋈', leftjoin:'⟕', rightjoin:'⟖', fulljoin:'⟗', outerjoin:'⟗',
+  cross:'×', union:'∪', intersect:'∩', minus:'−', except:'−', divide:'÷', semijoin:'⋉', antijoin:'▷'};
+const BIN = {'⋈':'join','⟕':'ljoin','⟖':'rjoin','⟗':'fjoin','×':'cross','÷':'divide','⋉':'semi','▷':'anti','∪':'union','∩':'intersect','−':'minus'};
+const AGG = new Set(['COUNT','SUM','AVG','MIN','MAX']);
+
+function tokenize(src){
+  const t = []; let i = 0;
+  const push = (type, value, pos, raw) => t.push({type, value, pos, raw});
+  while (i < src.length){
+    const c = src[i], c2 = src[i + 1];
+    if (/\s/.test(c)){ i++; continue; }
+    if (c === '-' && c2 === '-'){ while (i < src.length && src[i] !== '\n') i++; continue; }
+    if (OPCH[c]){ push('op', OPCH[c], i, c); i++; continue; }
+    if (c === '('){ push('lparen', c, i); i++; continue; }
+    if (c === ')'){ push('rparen', c, i); i++; continue; }
+    if (c === '['){ push('lbrack', c, i); i++; continue; }
+    if (c === ']'){ push('rbrack', c, i); i++; continue; }
+    if (c === ','){ push('comma', c, i); i++; continue; }
+    if (c === ';'){ push('semi', c, i); i++; continue; }
+    if (c === '←'){ push('assign', '←', i); i++; continue; }
+    if (c === ':' && c2 === '='){ push('assign', '←', i); i += 2; continue; }
+    if (c === '<' && c2 === '-' && !/[\d.]/.test(src[i + 2] || '')){ push('assign', '←', i); i += 2; continue; }
+    if (c === '→'){ push('arrow', '→', i); i++; continue; }
+    if (c === '-' && c2 === '>'){ push('arrow', '→', i); i += 2; continue; }
+    if (c === '*'){ push('op', '×', i, '*'); i++; continue; }
+    if (c === '/'){ push('op', '÷', i, '/'); i++; continue; }
+    if (c === '-'){ push('op', '−', i, '-'); i++; continue; }
+    if (c === "'" || c === '"'){
+      let j = i + 1, s = '';
+      while (j < src.length && src[j] !== c){ s += src[j]; j++; }
+      if (j >= src.length) throw raErr('Unterminated string — add the closing quote', i);
+      push('str', s, i); i = j + 1; continue;
+    }
+    if (/\d/.test(c)){
+      let j = i; while (j < src.length && /[\d.]/.test(src[j])) j++;
+      push('num', parseFloat(src.slice(i, j)), i); i = j; continue;
+    }
+    if (c === '<' && c2 === '>'){ push('cmp', '≠', i); i += 2; continue; }
+    if (c === '<' && c2 === '='){ push('cmp', '≤', i); i += 2; continue; }
+    if (c === '>' && c2 === '='){ push('cmp', '≥', i); i += 2; continue; }
+    if (c === '!' && c2 === '='){ push('cmp', '≠', i); i += 2; continue; }
+    if ('=≠<>≤≥'.includes(c)){ push('cmp', c, i); i++; continue; }
+    if (c === '∧'){ push('logic', 'AND', i); i++; continue; }
+    if (c === '∨'){ push('logic', 'OR', i); i++; continue; }
+    if (c === '¬'){ push('logic', 'NOT', i); i++; continue; }
+    if (/[A-Za-z_]/.test(c)){
+      let j = i; while (j < src.length && /[A-Za-z0-9_.]/.test(src[j])) j++;
+      const w = src.slice(i, j), lw = w.toLowerCase();
+      if (lw === 'and' || lw === 'or' || lw === 'not') push('logic', lw.toUpperCase(), i);
+      else if (WORDS[lw]) push('op', WORDS[lw], i, w);
+      else push('ident', w, i);
+      i = j; continue;
+    }
+    throw raErr(`Unexpected character "${c}"`, i);
+  }
+  push('eof', null, src.length);
+  return t;
+}
+
+let nodeSeq = 0;
+function parse(src){
+  const tokens = tokenize(src);
+  let p = 0;
+  const peek = () => tokens[p];
+  const eat = () => tokens[p++];
+  const show = t => t.type === 'eof' ? 'end of input' : `"${t.raw || t.value}"`;
+  const expect = (type, what) => {
+    const t = tokens[p];
+    if (t.type !== type) throw raErr(`Expected ${what || type}, got ${show(t)}`, t.pos);
+    p++; return t;
+  };
+  const node = (o, pos) => Object.assign(o, {id: ++nodeSeq, pos});
+  const isAssignAt = k => tokens[k].type === 'ident' && tokens[k + 1].type === 'assign';
+  // A new statement starts with "Name ←", or on a new line with anything that can begin an expression.
+  const startsStmt = k => isAssignAt(k) || (k > 0 && src.slice(tokens[k - 1].pos, tokens[k].pos).includes('\n') &&
+    (tokens[k].type === 'ident' || tokens[k].type === 'lparen' || (tokens[k].type === 'op' && 'σπργ'.includes(tokens[k].value))));
+
+  const parseExpr = () => {
+    let left = parseJoin();
+    while (peek().type === 'op' && '∪∩−'.includes(peek().value)){
+      const t = eat();
+      left = node({type:BIN[t.value], left, right:parseJoin()}, t.pos);
+    }
+    return left;
+  };
+  const parseJoin = () => {
+    let left = parseUnary();
+    while (peek().type === 'op' && '⋈⟕⟖⟗×÷⋉▷'.includes(peek().value)){
+      const t = eat(); let pred = null;
+      if ('⋈⟕⟖⟗'.includes(t.value) && peek().type === 'lbrack'){ eat(); pred = parsePred(); expect('rbrack', '"]"'); }
+      left = node({type:BIN[t.value], left, right:parseUnary(), pred}, t.pos);
+    }
+    return left;
+  };
+  const parseUnary = () => {
+    const t = peek();
+    if (t.type === 'op' && 'σπργ'.includes(t.value)){
+      eat();
+      expect('lbrack', `"[" after ${t.value}`);
+      let n;
+      if (t.value === 'σ'){ n = {type:'sigma', pred:parsePred()}; }
+      else if (t.value === 'π'){
+        const attrs = [expect('ident', 'an attribute name').value];
+        while (peek().type === 'comma'){ eat(); attrs.push(expect('ident', 'an attribute name').value); }
+        n = {type:'pi', attrs};
+      }
+      else if (t.value === 'ρ'){ n = {type:'rename', spec:parseRenameSpec()}; }
+      else { n = {type:'gamma', ...parseGammaSpec()}; }
+      expect('rbrack', '"]"');
+      n.child = parseUnary();
+      return node(n, t.pos);
+    }
+    return parsePrimary();
+  };
+  const parsePrimary = () => {
+    const t = peek();
+    if (t.type === 'lparen'){ eat(); const e = parseExpr(); expect('rparen', '")"'); return e; }
+    if (t.type === 'ident'){
+      eat();
+      if (t.value.includes('.')) throw raErr(`"${t.value}" looks like an attribute — a relation name is expected here`, t.pos);
+      return node({type:'rel', name:t.value}, t.pos);
+    }
+    throw raErr(`Expected a relation, "(" or an operator, got ${show(t)}`, t.pos);
+  };
+  const parseRenameSpec = () => {
+    const first = expect('ident', 'a name');
+    if (peek().type === 'arrow' || peek().type === 'assign'){
+      const map = []; let a = first;
+      for (;;){
+        const t = eat();
+        if (t.type !== 'arrow' && t.type !== 'assign') throw raErr(`Expected "→" in ρ[old → new], got ${show(t)}`, t.pos);
+        const b = expect('ident', 'an attribute name');
+        const m = t.type === 'arrow' ? {from:a.value, to:b.value} : {from:b.value, to:a.value};
+        const nt = t.type === 'arrow' ? b : a;
+        if (!IDENT.test(m.to)) throw raErr(`ρ: "${m.to}" is not a valid new attribute name`, nt.pos);
+        map.push(m);
+        if (peek().type !== 'comma') break;
+        eat(); a = expect('ident', 'an attribute name');
+      }
+      return {map};
+    }
+    if (!IDENT.test(first.value)) throw raErr(`ρ: "${first.value}" is not a valid relation name`, first.pos);
+    if (peek().type === 'lparen'){
+      eat();
+      const attrs = [expect('ident', 'an attribute name')];
+      while (peek().type === 'comma'){ eat(); attrs.push(expect('ident', 'an attribute name')); }
+      expect('rparen', '")"');
+      const bad = attrs.find(a => !IDENT.test(a.value));
+      if (bad) throw raErr(`ρ: "${bad.value}" is not a valid attribute name`, bad.pos);
+      return {relName:first.value, attrs:attrs.map(a => a.value)};
+    }
+    return {relName:first.value};
+  };
+  const parseGammaSpec = () => {
+    const groups = [], aggs = [];
+    while (peek().type !== 'rbrack'){
+      const t = peek();
+      if (t.type === 'ident' && AGG.has(t.value.toUpperCase()) && tokens[p + 1].type === 'lparen'){
+        eat(); eat();
+        const fn = t.value.toUpperCase(); let arg = null;
+        if (peek().type === 'op' && peek().raw === '*'){
+          if (fn !== 'COUNT') throw raErr(`Only COUNT can take *; write ${fn}(attribute)`, peek().pos);
+          eat();
+        } else arg = expect('ident', 'an attribute or *').value;
+        expect('rparen', '")"');
+        let as = null;
+        if ((peek().type === 'ident' && peek().value.toLowerCase() === 'as') || peek().type === 'arrow'){
+          eat();
+          const a = expect('ident', 'a name for the aggregate');
+          if (!IDENT.test(a.value)) throw raErr(`"${a.value}" is not a valid attribute name`, a.pos);
+          as = a.value;
+        }
+        aggs.push({fn, arg, as});
+      } else {
+        const g = expect('ident', 'a grouping attribute or an aggregate like COUNT(*)');
+        if (aggs.length) throw raErr('γ: list the grouping attributes first, then the aggregates', g.pos);
+        groups.push(g.value);
+      }
+      if (peek().type === 'comma' || peek().type === 'semi'){ eat(); continue; }
+      break;
+    }
+    if (!groups.length && !aggs.length) throw raErr('γ needs grouping attributes and/or aggregates, e.g. γ[dept; COUNT(*) AS n]', peek().pos);
+    return {groups, aggs};
+  };
+  const parsePred = () => {
+    let left = parseAnd();
+    while (peek().type === 'logic' && peek().value === 'OR'){ eat(); left = {type:'or', left, right:parseAnd()}; }
+    return left;
+  };
+  const parseAnd = () => {
+    let left = parseNot();
+    while (peek().type === 'logic' && peek().value === 'AND'){ eat(); left = {type:'and', left, right:parseNot()}; }
+    return left;
+  };
+  const parseNot = () => {
+    if (peek().type === 'logic' && peek().value === 'NOT'){ eat(); return {type:'not', child:parseNot()}; }
+    if (peek().type === 'lparen'){ eat(); const e = parsePred(); expect('rparen', '")"'); return e; }
+    const left = parseTerm();
+    if (peek().type === 'ident' && peek().value.toLowerCase() === 'is'){
+      eat();
+      let neg = false;
+      if (peek().type === 'logic' && peek().value === 'NOT'){ eat(); neg = true; }
+      const t = expect('ident', 'NULL');
+      if (t.value.toLowerCase() !== 'null') throw raErr(`Expected NULL after IS, got "${t.value}"`, t.pos);
+      return {type:'isnull', neg, term:left};
+    }
+    if (peek().type !== 'cmp') throw raErr(`Expected a comparison (= ≠ < > ≤ ≥) or IS NULL, got ${show(peek())}`, peek().pos);
+    const op = eat().value;
+    return {type:'cmp', op, left, right:parseTerm()};
+  };
+  const parseTerm = () => {
+    const t = peek();
+    if (t.type === 'num'){ eat(); return {kind:'num', value:t.value}; }
+    if (t.type === 'str'){ eat(); return {kind:'str', value:t.value}; }
+    if (t.type === 'ident'){ eat(); return t.value.toLowerCase() === 'null' ? {kind:'null'} : {kind:'ident', name:t.value}; }
+    if (t.type === 'op' && t.value === '−'){
+      eat(); const n = peek();
+      if (n.type === 'num'){ eat(); return {kind:'num', value:-n.value}; }
+      throw raErr('Expected a number after "-"', n.pos);
+    }
+    throw raErr(`Expected an attribute or a value, got ${show(t)}`, t.pos);
+  };
+
+  const stmts = [];
+  while (peek().type !== 'eof'){
+    if (peek().type === 'semi'){ eat(); continue; }
+    const start = peek().pos;
+    let assign = null;
+    if (isAssignAt(p)){
+      const t = eat(); eat();
+      if (!IDENT.test(t.value)) throw raErr(`"${t.value}" is not a valid relation name`, t.pos);
+      assign = {name:t.value, pos:t.pos};
+    }
+    const expr = parseExpr();
+    stmts.push({assign, expr, text:src.slice(start, peek().pos).trim()});
+    const nx = peek();
+    if (nx.type !== 'eof' && nx.type !== 'semi' && !startsStmt(p))
+      throw raErr(`Unexpected ${show(nx)} — expected an operator, ")" or the end of the expression`, nx.pos);
+  }
+  if (!stmts.length) throw raErr('Write an expression', 0);
+  return stmts;
+}
+
+/* ================================================================
+   Evaluation
+   ================================================================ */
+function evaluate(stmts, baseRels){
+  const env = new Map();
+  const lookup = (n) => {
+    if (env.has(n.name)) return env.get(n.name);
+    const b = baseRels.find(x => x.name === n.name);
+    if (!b) throw raErr(`Unknown relation "${n.name}". Available: ${[...baseRels.map(r => r.name), ...env.keys()].join(', ')}`, n.pos);
+    return {name:b.name, attrs:[...b.attrs], rows:b.rows, src:b.attrs.map(() => [b.name])};
+  };
+  const ev = (n, steps) => {
+    if (n.type === 'rel'){ n.res = lookup(n); return n.res; }
+    let r;
+    try {
+      switch (n.type){
+        case 'sigma': {
+          const c = ev(n.child, steps);
+          const f = compilePred(n.pred, c, 'σ');
+          n.marks = c.rows.map(f);
+          r = {name:c.name, attrs:c.attrs, src:c.src, rows:c.rows.filter((_, i) => n.marks[i] === true)};
+          break;
+        }
+        case 'pi': {
+          const c = ev(n.child, steps);
+          const idx = n.attrs.map(a => resolveAttr(c, a, 'π'));
+          const attrs = idx.map(i => c.attrs[i]);
+          dupCheck(attrs, 'π');
+          r = {name:c.name, attrs, src:idx.map(i => c.src[i]), rows:dedup(c.rows.map(row => idx.map(i => row[i])))};
+          n.dropped = c.rows.length - r.rows.length;
+          break;
+        }
+        case 'rename': {
+          const c = ev(n.child, steps), s = n.spec;
+          if (s.relName){
+            let attrs = c.attrs;
+            if (s.attrs){
+              if (s.attrs.length !== c.attrs.length) throw new Error(`ρ: ${s.relName}(…) lists ${s.attrs.length} attribute name${s.attrs.length === 1 ? '' : 's'}, but the relation has ${c.attrs.length}: (${c.attrs.join(', ')})`);
+              attrs = s.attrs; dupCheck(attrs, 'ρ');
+            }
+            r = {name:s.relName, attrs:[...attrs], src:attrs.map(() => [s.relName]), rows:c.rows};
+          } else {
+            const attrs = [...c.attrs];
+            for (const m of s.map) attrs[resolveAttr(c, m.from, 'ρ')] = m.to;
+            dupCheck(attrs, 'ρ');
+            r = {name:c.name, attrs, src:c.src, rows:c.rows};
+          }
+          break;
+        }
+        case 'gamma': r = relGamma(ev(n.child, steps), n); break;
+        default: {
+          const L = ev(n.left, steps), R = ev(n.right, steps);
+          const kind = {join:'inner', ljoin:'left', rjoin:'right', fjoin:'full'}[n.type];
+          const sym = SYM[n.type];
+          if (kind){
+            if (n.pred) r = relProduct(L, R, kind, n.pred, sym);
+            else { r = relNatural(L, R, kind); n.common = r.common; }
+          }
+          else if (n.type === 'cross') r = relProduct(L, R, 'cross', null, '×');
+          else if (n.type === 'divide') r = relDivide(L, R);
+          else if (n.type === 'semi' || n.type === 'anti'){ r = relSemi(L, R, n.type === 'anti'); n.common = r.common; }
+          else r = relSet(L, R, n.type, sym);
+        }
+      }
+    } catch (e){ if (e.pos == null) e.pos = n.pos; throw e; }
+    n.res = r;
+    steps.push(n);
+    return r;
+  };
+  const out = [];
+  for (const st of stmts){
+    if (st.assign){
+      if (baseRels.some(r => r.name === st.assign.name)) throw raErr(`"${st.assign.name}" is already a relation in this database — pick another name for the temporary result`, st.assign.pos);
+    }
+    const steps = [];
+    let r = ev(st.expr, steps);
+    if (st.assign){
+      r = {name:st.assign.name, attrs:r.attrs, rows:r.rows, src:r.attrs.map(() => [st.assign.name])};
+      env.set(st.assign.name, r);
+    }
+    out.push({stmt:st, steps, rel:r});
+  }
+  return out;
+}
+
+/* ================================================================
+   Translation to SQL (SQLite dialect)
+   ================================================================ */
+const SQLKW = new Set(('ABORT ACTION ADD ALL ALTER AND AS ASC BETWEEN BY CASE CHECK COLLATE COLUMN CONSTRAINT CREATE CROSS CURRENT DEFAULT ' +
+  'DELETE DESC DISTINCT DROP ELSE END ESCAPE EXCEPT EXISTS FILTER FOREIGN FROM FULL GLOB GROUP HAVING IN INDEX INNER INSERT INTERSECT ' +
+  'INTO IS ISNULL JOIN KEY LEFT LIKE LIMIT MATCH NATURAL NOT NOTNULL NULL OF OFFSET ON OR ORDER OUTER PRIMARY REFERENCES RIGHT ROW SELECT ' +
+  'SET TABLE THEN TO UNION UNIQUE UPDATE USING VALUES WHEN WHERE WINDOW WITH').split(' '));
+const qi = s => IDENT.test(s) && !SQLKW.has(s.toUpperCase()) ? s : '"' + String(s).replace(/"/g, '""') + '"';
+const qv = v => v == null ? 'NULL' : typeof v === 'number' ? String(v) : "'" + String(v).replace(/'/g, "''") + "'";
+const indent = s => s.split('\n').map(l => '  ' + l).join('\n');
+const SQLOP = {'=':'=', '≠':'<>', '<':'<', '>':'>', '≤':'<=', '≥':'>='};
+
+function toSQL(results, baseRels){
+  let aliasN = 0;
+  const newAlias = () => 't' + (++aliasN);
+  const isRel = n => n.type === 'rel';
+  const isRelAlias = n => n.type === 'rename' && n.spec.relName && !n.spec.attrs && isRel(n.child);
+
+  // A "block" is one SELECT under construction. items map each output attribute to the column that holds it.
+  const leaf = (from, alias, attrs) => {
+    const items = new Map(), counts = new Map();
+    for (const a of attrs){ items.set(a, {a:alias, c:a}); counts.set(a, (counts.get(a) || 0) + 1); }
+    return {kind:'sel', from, where:[], cols:null, distinct:false, group:null, items, counts, aliases:new Set([alias]), star:true, attrs:[...attrs]};
+  };
+  const bare = b => b.kind === 'sel' && !b.cols && !b.group && !b.distinct;
+  const plain = b => bare(b) && !b.where.length;
+  const ref = (b, attr) => {
+    const it = b.items.get(attr);
+    return (b.counts.get(it.c) || 0) <= (it.n || 1) ? qi(it.c) : qi(it.a) + '.' + qi(it.c);
+  };
+  const render = b => {
+    if (b.kind === 'cmp') return b.sql;
+    const as = (expr, name) => expr === qi(name) || expr.endsWith('.' + qi(name)) ? expr : `${expr} AS ${qi(name)}`;
+    const sel = b.cols ? b.cols.map(c => as(c.expr, c.as)).join(', ')
+      : b.star ? '*' : b.attrs.map(a => as(ref(b, a), a)).join(', ');
+    let s = `SELECT ${b.distinct ? 'DISTINCT ' : ''}${sel}\nFROM ${b.from}`;
+    if (b.where.length) s += '\nWHERE ' + b.where.map(w => b.where.length > 1 && / OR /.test(w) ? `(${w})` : w).join('\n  AND ');
+    if (b.group && b.group.length) s += '\nGROUP BY ' + b.group.join(', ');
+    return s;
+  };
+  const wrap = (b, alias) => { alias = alias || newAlias(); return leaf(`(\n${indent(render(b))}\n) AS ${qi(alias)}`, alias, b.attrs); };
+  const predSQL = (p, rel, b) => {
+    const term = t => t.kind === 'ident' ? ref(b, rel.attrs[resolveAttr(rel, t.name, '')]) : t.kind === 'null' ? 'NULL' : qv(t.value);
+    const go = (p, top) => {
+      switch (p.type){
+        case 'not': return 'NOT ' + go(p.child, false);
+        case 'and': case 'or': { const s = `${go(p.left, false)} ${p.type.toUpperCase()} ${go(p.right, false)}`; return top ? s : `(${s})`; }
+        case 'isnull': return `${term(p.term)} IS ${p.neg ? 'NOT ' : ''}NULL`;
+        case 'cmp': return `${term(p.left)} ${SQLOP[p.op]} ${term(p.right)}`;
+      }
+    };
+    return go(p, true);
+  };
+  // A FROM item for one side of a join. chain(b) says whether a compiled block may be spliced in directly.
+  const side = (n, avoid, chain) => {
+    if (isRel(n) || isRelAlias(n)){
+      const name = isRel(n) ? n.name : n.child.name;
+      let alias = isRel(n) ? n.name : n.spec.relName;
+      if (avoid.has(alias)){ let k = 2; while (avoid.has(alias + '_' + k)) k++; alias += '_' + k; }
+      return leaf(alias === name ? qi(name) : `${qi(name)} AS ${qi(alias)}`, alias, n.res.attrs);
+    }
+    const b = compile(n);
+    if (chain && chain(b) && ![...b.aliases].some(a => avoid.has(a))) return b;
+    return wrap(b);
+  };
+  const source = (n, alias) => isRel(n) ? `${qi(n.name)} AS ${alias}` : `(\n${indent(render(compile(n)))}\n) AS ${alias}`;
+
+  const compile = n => { const b = compile0(n); b.attrs = n.res.attrs; return b; };
+  const compile0 = n => {
+    switch (n.type){
+      case 'rel': return leaf(qi(n.name), n.name, n.res.attrs);
+      case 'sigma': {
+        let b = compile(n.child); if (!bare(b)) b = wrap(b);
+        b.where.push(predSQL(n.pred, n.child.res, b));
+        return b;
+      }
+      case 'pi': {
+        let b = compile(n.child); if (!bare(b)) b = wrap(b);
+        b.cols = n.res.attrs.map(a => ({expr:ref(b, a), as:a}));
+        b.distinct = true;
+        return b;
+      }
+      case 'rename': {
+        const c = n.child, s = n.spec;
+        if (s.relName){
+          const b = isRel(c) ? leaf(`${qi(c.name)} AS ${qi(s.relName)}`, s.relName, c.res.attrs) : wrap(compile(c), s.relName);
+          if (s.attrs) b.cols = c.res.attrs.map((a, i) => ({expr:ref(b, a), as:n.res.attrs[i]}));
+          return b;
+        }
+        let b = compile(c); if (!bare(b)) b = wrap(b);
+        b.cols = c.res.attrs.map((a, i) => ({expr:ref(b, a), as:n.res.attrs[i]}));
+        return b;
+      }
+      case 'gamma': {
+        let b = compile(n.child); if (!bare(b)) b = wrap(b);
+        const g = n.meta.gAttrs.map(a => ref(b, a));
+        b.cols = [...n.meta.gAttrs.map((a, i) => ({expr:g[i], as:a})),
+          ...n.meta.aggs.map(a => ({expr:`${a.fn}(${a.arg == null ? '*' : ref(b, a.arg)})`, as:a.name}))];
+        b.group = g;
+        return b;
+      }
+      case 'join': case 'ljoin': case 'rjoin': case 'fjoin': case 'cross': {
+        const natural = n.type !== 'cross' && !n.pred;
+        const L = side(n.left, new Set(), natural ? (b => plain(b) && b.star) : plain);
+        const R = side(n.right, L.aliases);
+        const kw = {join:'JOIN', ljoin:'LEFT JOIN', rjoin:'RIGHT JOIN', fjoin:'FULL JOIN', cross:'CROSS JOIN'}[n.type];
+        const b = {kind:'sel', where:[], cols:null, distinct:false, group:null, items:new Map(), counts:new Map(L.counts),
+          aliases:new Set([...L.aliases, ...R.aliases]), star:L.star && R.star, attrs:n.res.attrs};
+        for (const [c, k] of R.counts) b.counts.set(c, (b.counts.get(c) || 0) + k);
+        const la = n.left.res.attrs, ra = n.right.res.attrs;
+        if (natural){
+          b.from = `${L.from}\nNATURAL ${kw} ${R.from}`;
+          for (const a of la){
+            const it = L.items.get(a);
+            if (ra.includes(a)){ const rt = R.items.get(a); b.items.set(a, {a:it.a, c:it.c, n:(it.n || 1) + (rt.n || 1)}); }
+            else b.items.set(a, it);
+          }
+          for (const a of ra) if (!la.includes(a)) b.items.set(a, R.items.get(a));
+        } else {
+          la.forEach((a, i) => b.items.set(n.res.attrs[i], L.items.get(a)));
+          ra.forEach((a, i) => b.items.set(n.res.attrs[la.length + i], R.items.get(a)));
+          if (n.res.attrs.some((a, i) => a !== [...la, ...ra][i])) b.star = false;
+          b.from = `${L.from}\n${kw} ${R.from}`;
+          if (n.pred) b.from += `\n  ON ${predSQL(n.pred, n.res, b)}`;
+        }
+        return b;
+      }
+      case 'semi': case 'anti': {
+        let b = compile(n.left); if (!bare(b)) b = wrap(b);
+        const R = side(n.right, b.aliases);
+        const ra = n.right.res.attrs;
+        const conds = n.left.res.attrs.filter(a => ra.includes(a)).map(a => {
+          const l = b.items.get(a), r = R.items.get(a);
+          return `${qi(r.a)}.${qi(r.c)} = ${qi(l.a)}.${qi(l.c)}`;
+        });
+        let sub = `SELECT 1\nFROM ${R.from}`;
+        if (R.where.length) sub += '\nWHERE ' + R.where.join(' AND ');
+        if (conds.length) sub += (R.where.length ? '\n  AND ' : '\nWHERE ') + conds.join('\n  AND ');
+        b.where.push(`${n.type === 'anti' ? 'NOT ' : ''}EXISTS (\n${indent(sub)}\n)`);
+        return b;
+      }
+      case 'divide': {
+        const A = n.res.attrs, B = n.right.res.attrs;
+        const eq = (x, y, attrs) => attrs.map(a => `${x}.${qi(a)} = ${y}.${qi(a)}`).join(' AND ');
+        const inner = `SELECT 1\nFROM ${source(n.left, 'r2')}\nWHERE ${eq('r2', 'r1', A)}\n  AND ${eq('r2', 's', B)}`;
+        const mid = `SELECT 1\nFROM ${source(n.right, 's')}\nWHERE NOT EXISTS (\n${indent(inner)}\n)`;
+        const b = leaf(source(n.left, 'r1'), 'r1', n.left.res.attrs);
+        b.where.push(`NOT EXISTS (\n${indent(mid)}\n)`);
+        b.cols = A.map(a => ({expr:`r1.${qi(a)}`, as:a}));
+        b.distinct = true;
+        return b;
+      }
+      default: {   // union / intersect / minus
+        const L = compile(n.left), R = compile(n.right);
+        const kw = {union:'UNION', intersect:'INTERSECT', minus:'EXCEPT'}[n.type];
+        return {kind:'cmp', sql:`${render(L)}\n${kw}\n${render(R.kind === 'cmp' ? wrap(R) : R)}`};
+      }
+    }
+  };
+
+  // Base relations become CTEs built from VALUES, so the query runs on any SQLite database without touching its tables.
+  const temps = new Set(results.filter(r => r.stmt.assign).map(r => r.stmt.assign.name));
+  const used = new Set();
+  const walk = n => { if (!n) return; if (n.type === 'rel'){ if (!temps.has(n.name)) used.add(n.name); return; } walk(n.child); walk(n.left); walk(n.right); };
+  results.forEach(r => walk(r.stmt.expr));
+  const ctes = [];
+  for (const r of baseRels){
+    if (!used.has(r.name)) continue;
+    const body = r.rows.length
+      ? 'VALUES\n' + r.rows.map(row => '  (' + row.map(qv).join(', ') + ')').join(',\n')
+      : `SELECT ${r.attrs.map(() => 'NULL').join(', ')} WHERE 0`;
+    ctes.push(`${qi(r.name)}(${r.attrs.map(qi).join(', ')}) AS (\n${indent(body)}\n)`);
+  }
+  let main = '';
+  results.forEach((r, i) => {
+    const sql = render(compile(r.stmt.expr));
+    if (r.stmt.assign){
+      ctes.push(`${qi(r.stmt.assign.name)} AS (\n${indent(sql)}\n)`);
+      if (i === results.length - 1) main = `SELECT * FROM ${qi(r.stmt.assign.name)}`;
+    } else if (i === results.length - 1) main = sql;
+  });
+  return (ctes.length ? 'WITH\n' + ctes.join(',\n') + '\n' : '') + main + ';';
+}
+
+/* ================================================================
+   Display helpers
+   ================================================================ */
+const SYM = {sigma:'σ', pi:'π', rename:'ρ', gamma:'γ', join:'⋈', ljoin:'⟕', rjoin:'⟖', fjoin:'⟗', cross:'×', divide:'÷', semi:'⋉', anti:'▷', union:'∪', intersect:'∩', minus:'−'};
+const FAMILY = {sigma:'unary', pi:'unary', rename:'unary', gamma:'agg', join:'join', ljoin:'join', rjoin:'join', fjoin:'join', cross:'join',
+  semi:'join', anti:'join', divide:'div', union:'set', intersect:'set', minus:'set', rel:'rel'};
+const color = n => `var(--o-${FAMILY[n.type]})`;
+const fmtVal = v => v == null ? 'NULL' : typeof v === 'number' && !Number.isInteger(v) ? String(+v.toFixed(4)) : String(v);
+
+function predText(p, top = true){
+  switch (p.type){
+    case 'not': return '¬' + predText(p.child, false);
+    case 'and': case 'or': { const s = `${predText(p.left, false)} ${p.type === 'and' ? '∧' : '∨'} ${predText(p.right, false)}`; return top ? s : `(${s})`; }
+    case 'isnull': return `${termText(p.term)} IS ${p.neg ? 'NOT ' : ''}NULL`;
+    case 'cmp': return `${termText(p.left)} ${p.op} ${termText(p.right)}`;
+  }
+}
+const termText = t => t.kind === 'str' ? `'${t.value}'` : t.kind === 'ident' ? t.name : t.kind === 'null' ? 'NULL' : String(t.value);
+function subText(n){
+  switch (n.type){
+    case 'sigma': return predText(n.pred);
+    case 'pi': return n.attrs.join(', ');
+    case 'rename': return n.spec.relName ? n.spec.relName + (n.spec.attrs ? `(${n.spec.attrs.join(', ')})` : '') : n.spec.map.map(m => `${m.to}←${m.from}`).join(', ');
+    case 'gamma': return [n.groups.join(', '), n.aggs.map(a => `${a.fn}(${a.arg || '*'})${a.as ? '→' + a.as : ''}`).join(', ')].filter(Boolean).join('; ');
+    default: return n.pred ? predText(n.pred) : '';
+  }
+}
+const isBinary = n => !!n.left;
+function exprHTML(n, parenBinary){
+  if (n.type === 'rel') return esc(n.name);
+  const op = `<span class="o" style="--c:${color(n)}">${SYM[n.type]}</span>`;
+  const sub = subText(n);
+  if (!isBinary(n)) return `${op}<sub>${esc(sub)}</sub>(${exprHTML(n.child, false)})`;
+  const s = `${exprHTML(n.left, true)} ${op}${sub ? `<sub>${esc(sub)}</sub>` : ''} ${exprHTML(n.right, true)}`;
+  return parenBinary ? `(${s})` : s;
+}
+function attrHTML(a){
+  const d = a.lastIndexOf('.');
+  return d < 0 ? esc(a) : `<span class="q">${esc(a.slice(0, d + 1))}</span>${esc(a.slice(d + 1))}`;
+}
+const LIMIT = 300;
+function tableHTML(attrs, rows, opts = {}){
+  if (!rows.length) return '<div class="empty">∅ empty relation — 0 rows</div>';
+  const shown = rows.slice(0, LIMIT);
+  const head = (opts.status ? '<th></th>' : '') + attrs.map(a => `<th>${attrHTML(a)}</th>`).join('');
+  const body = shown.map((r, i) => {
+    const st = opts.status ? opts.status[i] : null;
+    const cls = st === true ? 'keep' : st === false ? 'drop' : st === null && opts.status ? 'unk' : (opts.pad && opts.pad(r) ? 'pad' : '');
+    const mark = opts.status ? `<td class="st">${st === true ? '✓' : st === false ? '✗' : '?'}</td>` : '';
+    return `<tr class="${cls}">${mark}${r.map(v => v == null ? '<td class="null">NULL</td>' : `<td>${esc(fmtVal(v))}</td>`).join('')}</tr>`;
+  }).join('');
+  return `<div class="tw"><table class="rt"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>` +
+    (rows.length > LIMIT ? `<div class="more">… ${rows.length - LIMIT} more rows not shown</div>` : '');
+}
+function relMeta(rel){
+  return `<div class="meta"><span class="tag">${rel.rows.length} row${rel.rows.length === 1 ? '' : 's'}</span><span class="schema">(${rel.attrs.map(attrHTML).join(', ')})</span></div>`;
+}
+const list = a => a.map(x => `<code>${esc(x)}</code>`).join(', ');
+function explain(n){
+  const r = n.res, cnt = x => `<b>${x.rows.length}</b>`;
+  switch (n.type){
+    case 'sigma': {
+      const unk = n.marks.filter(m => m === null).length;
+      return `Keeps the rows where <code>${esc(predText(n.pred))}</code> is TRUE: ${cnt(r)} of ${cnt(n.child.res)} rows.` +
+        (unk ? ` <b>${unk}</b> row${unk === 1 ? ' is' : 's are'} dropped because the condition is UNKNOWN (it compares a NULL).` : '');
+    }
+    case 'pi': return `Keeps only ${list(r.attrs)}` + (n.dropped ? `, then removes <b>${n.dropped}</b> duplicate row${n.dropped === 1 ? '' : 's'} — a relation is a set.` : '. No duplicates appeared.');
+    case 'rename': return n.spec.relName ? `Renames the relation to <code>${esc(n.spec.relName)}</code>${n.spec.attrs ? ' and its attributes to ' + list(n.spec.attrs) : ''}. The rows don't change, but attributes can now be written as <code>${esc(n.spec.relName)}.attr</code>.`
+      : `Renames ${n.spec.map.map(m => `<code>${esc(m.from)}</code> → <code>${esc(m.to)}</code>`).join(', ')}. The rows don't change.`;
+    case 'gamma': return `Groups the ${cnt(n.child.res)} rows ` + (n.meta.gAttrs.length ? `by ${list(n.meta.gAttrs)} into ${cnt(r)} group${r.rows.length === 1 ? '' : 's'}` : 'into a single group') +
+      (n.meta.aggs.length ? ` and computes ${n.meta.aggs.map(a => `<code>${a.fn}(${esc(a.arg || '*')})</code>`).join(', ')} for each. Aggregates other than COUNT(*) skip NULLs.` : '.');
+    case 'cross': return `Pairs every row on the left with every row on the right: ${cnt(n.left.res)} × ${cnt(n.right.res)} = ${cnt(r)} rows.`;
+    case 'join': case 'ljoin': case 'rjoin': case 'fjoin': {
+      const outer = {ljoin:'Left rows without a partner are kept, padded with NULL.', rjoin:'Right rows without a partner are kept, padded with NULL.', fjoin:'Rows without a partner on either side are kept, padded with NULL.'}[n.type] || '';
+      if (n.pred) return `Pairs rows of ${cnt(n.left.res)} and ${cnt(n.right.res)} and keeps the pairs where <code>${esc(predText(n.pred))}</code> is TRUE — a σ over ×. ${outer} Result: ${cnt(r)} rows.`;
+      if (!n.common.length) return `The two sides share no attributes, so the natural join is a Cartesian product: ${cnt(r)} rows. ${outer}`;
+      return `Pairs rows that agree on ${list(n.common)} and keeps each common attribute once. ${outer} Result: ${cnt(r)} rows.`;
+    }
+    case 'semi': case 'anti':
+      return `Keeps the left rows that have ${n.type === 'anti' ? '<b>no</b>' : 'at least one'} partner on the right${n.common.length ? ' (matching on ' + list(n.common) + ')' : ' (no common attributes, so it only checks whether the right side is empty)'}. Only the left attributes are kept: ${cnt(r)} of ${cnt(n.left.res)} rows.`;
+    case 'divide': return `Keeps each ${list(r.attrs)} value that appears together with <b>every</b> row of the divisor (${list(n.right.res.attrs)}, ${cnt(n.right.res)} rows): ${cnt(r)} qualify.`;
+    case 'union': case 'intersect': case 'minus': {
+      const what = {union:'rows in either side', intersect:'rows in both sides', minus:'left rows that are not on the right'}[n.type];
+      const renamed = n.left.res.attrs.some((a, i) => a !== n.right.res.attrs[i]) ? ' The attribute names differ, so the result uses the left names.' : '';
+      return `Keeps the ${what}: ${cnt(n.left.res)} and ${cnt(n.right.res)} → ${cnt(r)} rows, duplicates removed.${renamed}`;
+    }
+  }
+  return '';
+}
+
+/* ================================================================
+   State
+   ================================================================ */
+const STORE = 'ralab.v1';
+const clone = o => JSON.parse(JSON.stringify(o));
+const freshRels = ds => clone(DATASETS[ds].rels);
+let S = (() => { try { const v = JSON.parse(localStorage.getItem(STORE)); if (v && DATASETS[v.ds]) return v; } catch (e) {} return null; })()
+  || {ds:'company', data:{}, expr:{}};
+let tab = (() => { try { return localStorage.getItem('ralab.tab') || 'result'; } catch (e){ return 'result'; } })();
+let saveT = null;
+const save = () => { clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem(STORE, JSON.stringify(S)); } catch (e) {} }, 250); };
+const rels = () => S.data[S.ds] || (S.data[S.ds] = freshRels(S.ds));
+const openRels = new Set();
+let results = null, selNode = null;
+
+function toast(msg){
+  const t = $('#toast'); t.textContent = msg; t.classList.add('on');
+  clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('on'), 2200);
+}
+
+/* ================================================================
+   Sidebar: databases and relation editor
+   ================================================================ */
+$('#ds').innerHTML = Object.entries(DATASETS).map(([k, d]) => `<option value="${k}">${esc(d.name)}</option>`).join('');
+function renderDataset(){
+  $('#ds').value = S.ds;
+  $('#dsDesc').textContent = DATASETS[S.ds].desc;
+  renderRels();
+  renderExamples();
+}
+function renderRels(){
+  const R = rels();
+  $('#relCount').textContent = R.length;
+  $('#rels').innerHTML = R.map((r, ri) => `
+    <details class="rel" data-r="${ri}"${openRels.has(r.name) ? ' open' : ''}>
+      <summary><span class="chev"></span><span class="rname">${esc(r.name)}</span>
+        <span class="rschema">(${r.attrs.map(a => (r.key || []).includes(a) ? `<u>${esc(a)}</u>` : esc(a)).join(', ')})</span>
+        <span class="rcount">${r.rows.length}</span>
+        <button class="mini" data-act="ins" title="Insert ${esc(r.name)} into the expression">↥</button></summary>
+      <div class="rbody">
+        <div class="tw"><table class="et"><thead><tr>${r.attrs.map((a, ci) =>
+          `<th><input data-k="attr" data-c="${ci}" value="${esc(a)}" spellcheck="false" aria-label="Attribute name"><button class="x" data-act="delcol" data-c="${ci}" title="Delete column ${esc(a)}">×</button></th>`).join('')}<th class="rx"></th></tr></thead>
+        <tbody>${r.rows.map((row, ri2) => `<tr>${row.map((v, ci) =>
+          `<td><input data-k="cell" data-row="${ri2}" data-c="${ci}" value="${v == null ? '' : esc(v)}" placeholder="NULL" spellcheck="false"></td>`).join('')}<td class="rx"><button class="x" data-act="delrow" data-row="${ri2}" title="Delete row">×</button></td></tr>`).join('')}</tbody></table></div>
+        <div class="rctl"><button data-act="addrow">+ Row</button><button data-act="addcol">+ Column</button><button data-act="rename">Rename</button><button data-act="delrel" class="danger">Delete</button></div>
+      </div>
+    </details>`).join('');
+}
+function changed(structural){
+  if (structural) renderRels();
+  save();
+  scheduleRun(0);
+}
+$('#rels').addEventListener('toggle', e => {
+  const d = e.target.closest('details.rel'); if (!d) return;
+  const name = rels()[+d.dataset.r].name;
+  d.open ? openRels.add(name) : openRels.delete(name);
+}, true);
+$('#rels').addEventListener('click', e => {
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  const d = b.closest('details.rel'), r = rels()[+d.dataset.r];
+  switch (b.dataset.act){
+    case 'ins': e.preventDefault(); insert(r.name); break;
+    case 'addrow': r.rows.push(r.attrs.map(() => null)); changed(true); break;
+    case 'delrow': r.rows.splice(+b.dataset.row, 1); changed(true); break;
+    case 'addcol': {
+      let k = r.attrs.length + 1; while (r.attrs.includes('col' + k)) k++;
+      const nm = (prompt(`New attribute for ${r.name}:`, 'col' + k) || '').trim();
+      if (!nm) return;
+      if (!IDENT.test(nm)) return toast('Attribute names use letters, digits and _');
+      if (r.attrs.includes(nm)) return toast(`${r.name} already has ${nm}`);
+      r.attrs.push(nm); r.rows.forEach(row => row.push(null)); changed(true);
+      break;
+    }
+    case 'delcol': {
+      if (r.attrs.length <= 1) return toast('A relation needs at least one attribute');
+      const ci = +b.dataset.c, a = r.attrs[ci];
+      r.attrs.splice(ci, 1); r.rows.forEach(row => row.splice(ci, 1));
+      if (r.key) r.key = r.key.filter(x => x !== a);
+      changed(true);
+      break;
+    }
+    case 'rename': {
+      const nm = (prompt('Rename relation:', r.name) || '').trim();
+      if (!nm || nm === r.name) return;
+      if (!IDENT.test(nm)) return toast('Relation names use letters, digits and _');
+      if (rels().some(x => x.name === nm)) return toast(`${nm} already exists`);
+      if (openRels.delete(r.name)) openRels.add(nm);
+      r.name = nm; changed(true);
+      break;
+    }
+    case 'delrel':
+      if (!confirm(`Delete relation ${r.name}?`)) return;
+      rels().splice(+d.dataset.r, 1); changed(true);
+      break;
+  }
+});
+$('#rels').addEventListener('change', e => {
+  const inp = e.target.closest('input[data-k]'); if (!inp) return;
+  const r = rels()[+inp.closest('details.rel').dataset.r], ci = +inp.dataset.c;
+  if (inp.dataset.k === 'cell'){ r.rows[+inp.dataset.row][ci] = coerce(inp.value); changed(false); return; }
+  const nm = inp.value.trim(), old = r.attrs[ci];
+  if (nm === old) return;
+  if (!IDENT.test(nm)){ inp.value = old; return toast('Attribute names use letters, digits and _'); }
+  if (r.attrs.includes(nm)){ inp.value = old; return toast(`${r.name} already has ${nm}`); }
+  r.attrs[ci] = nm;
+  if (r.key) r.key = r.key.map(x => x === old ? nm : x);
+  changed(true);
+});
+$('#ds').addEventListener('change', e => { S.ds = e.target.value; openRels.clear(); save(); renderDataset(); loadExpr(); });
+$('#addRel').addEventListener('click', () => {
+  let k = rels().length + 1; while (rels().some(r => r.name === 'R' + k)) k++;
+  const nm = (prompt('Name of the new relation:', 'R' + k) || '').trim();
+  if (!nm) return;
+  if (!IDENT.test(nm)) return toast('Relation names use letters, digits and _');
+  if (rels().some(r => r.name === nm)) return toast(`${nm} already exists`);
+  rels().push({name:nm, key:[], attrs:['a', 'b'], rows:[[null, null]]});
+  openRels.add(nm); changed(true);
+});
+$('#resetDs').addEventListener('click', () => {
+  if (!confirm(`Restore the original ${DATASETS[S.ds].name.split(' ·')[0]} relations? Your edits to them will be lost.`)) return;
+  S.data[S.ds] = freshRels(S.ds); changed(true);
+});
+function parseCsv(text){
+  const rows = []; let row = [], cur = '', q = false;
+  for (let i = 0; i < text.length; i++){
+    const c = text[i];
+    if (q){ if (c === '"' && text[i + 1] === '"'){ cur += '"'; i++; } else if (c === '"') q = false; else cur += c; continue; }
+    if (c === '"') q = true;
+    else if (c === ','){ row.push(cur); cur = ''; }
+    else if (c === '\n'){ row.push(cur); rows.push(row); row = []; cur = ''; }
+    else if (c !== '\r') cur += c;
+  }
+  if (cur !== '' || row.length){ row.push(cur); rows.push(row); }
+  return rows.filter(r => r.length > 1 || (r[0] || '').trim() !== '');
+}
+$('#csvBtn').addEventListener('click', () => $('#csvIn').click());
+$('#csvIn').addEventListener('change', e => {
+  const f = e.target.files && e.target.files[0]; if (!f) return;
+  const rd = new FileReader();
+  rd.onload = () => {
+    const parsed = parseCsv(String(rd.result || ''));
+    if (!parsed.length) return toast('That CSV is empty');
+    const base = f.name.replace(/\.csv$/i, '').replace(/[^A-Za-z0-9_]/g, '_').replace(/^(?=\d)/, '_') || 'Imported';
+    let name = base, k = 2; while (rels().some(r => r.name === name)) name = base + '_' + k++;
+    const attrs = parsed[0].map((a, i) => { const s = String(a).trim().replace(/[^A-Za-z0-9_]/g, '_').replace(/^(?=\d)/, '_'); return s || 'col' + (i + 1); });
+    dupCheck(attrs.map((a, i) => attrs.indexOf(a) === i ? a : (attrs[i] = a + '_' + (i + 1))), 'CSV');
+    const rows = parsed.slice(1).map(r => attrs.map((_, i) => coerce(r[i])));
+    rels().push({name, key:[], attrs, rows});
+    openRels.add(name); changed(true);
+    toast(`Imported ${name}: ${rows.length} rows`);
+  };
+  rd.readAsText(f);
+  e.target.value = '';
+});
+
+/* ================================================================
+   Editor
+   ================================================================ */
+const exprEl = $('#expr');
+function insert(text, caret){
+  const s = exprEl.selectionStart ?? exprEl.value.length, e = exprEl.selectionEnd ?? s;
+  exprEl.value = exprEl.value.slice(0, s) + text + exprEl.value.slice(e);
+  const c = s + (caret ?? text.length);
+  exprEl.focus(); exprEl.setSelectionRange(c, c);
+  scheduleRun(0);
+}
+const PALETTE = [
+  ['unary', [['σ', 'σ[]()', 2, 'Selection σ[condition](R) — sigma'], ['π', 'π[]()', 2, 'Projection π[a, b](R) — pi'],
+             ['ρ', 'ρ[]()', 2, 'Rename ρ[S](R), ρ[S(a,b)](R) or ρ[old → new](R) — rho']]],
+  ['agg',   [['γ', 'γ[; COUNT(*) AS n]()', 2, 'Grouping γ[g; COUNT(*) AS n](R) — gamma']]],
+  ['join',  [['⋈', ' ⋈ ', null, 'Natural join — join'], ['⋈<small>θ</small>', ' ⋈[] ', 3, 'Theta join R ⋈[condition] S'],
+             ['⟕', ' ⟕ ', null, 'Left outer join — leftjoin'], ['⟖', ' ⟖ ', null, 'Right outer join — rightjoin'], ['⟗', ' ⟗ ', null, 'Full outer join — fulljoin'],
+             ['×', ' × ', null, 'Cartesian product — cross or *'], ['⋉', ' ⋉ ', null, 'Semijoin — semijoin'], ['▷', ' ▷ ', null, 'Antijoin — antijoin']]],
+  ['set',   [['∪', ' ∪ ', null, 'Union — union'], ['∩', ' ∩ ', null, 'Intersection — intersect'], ['−', ' − ', null, 'Difference — minus or -']]],
+  ['div',   [['÷', ' ÷ ', null, 'Division — divide or /']]],
+  ['rel',   [['∧', ' ∧ ', null, 'AND'], ['∨', ' ∨ ', null, 'OR'], ['¬', '¬', null, 'NOT'], ['=', ' = ', null, 'Equals'], ['≠', ' ≠ ', null, 'Not equal — != or <>'],
+             ['<', ' < '], ['>', ' > '], ['≤', ' ≤ ', null, 'Less or equal — <='], ['≥', ' ≥ ', null, 'Greater or equal — >='],
+             ['←', ' ← ', null, 'Assignment Temp ← expression — <- or :='], ['→', ' → ', null, 'Rename arrow in ρ[old → new]']]]
+];
+$('#palette').innerHTML = PALETTE.map(([fam, items], gi) => `<div class="pg">${items.map((it, ii) =>
+  `<button data-g="${gi}" data-i="${ii}" style="--c:var(--o-${fam})" title="${esc(it[3] || it[1].trim())}">${it[0]}</button>`).join('')}</div>`).join('');
+$('#palette').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const it = PALETTE[+b.dataset.g][1][+b.dataset.i];
+  insert(it[1], it[2]);
+});
+function renderExamples(){
+  $('#examples').innerHTML = DATASETS[S.ds].examples.map(([g, items], gi) =>
+    `<div class="exg"><span>${esc(g)}</span><div class="chips">${items.map(([label, x], ii) =>
+      `<button class="chip" data-g="${gi}" data-i="${ii}" title="${esc(x)}">${esc(label)}</button>`).join('')}</div></div>`).join('');
+}
+$('#examples').addEventListener('click', e => {
+  const b = e.target.closest('.chip'); if (!b) return;
+  exprEl.value = DATASETS[S.ds].examples[+b.dataset.g][1][+b.dataset.i][1];
+  selNode = null;
+  run();
+});
+function loadExpr(){
+  exprEl.value = S.expr[S.ds] ?? DATASETS[S.ds].start;
+  selNode = null;
+  run();
+}
+let runT = null;
+function scheduleRun(ms){ clearTimeout(runT); runT = setTimeout(run, ms); }
+exprEl.addEventListener('input', () => scheduleRun(350));
+exprEl.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)){ e.preventDefault(); run(); }
+});
+$('#evalBtn').addEventListener('click', run);
+$('#clearBtn').addEventListener('click', () => { exprEl.value = ''; run(); exprEl.focus(); });
+
+/* ================================================================
+   Run & output
+   ================================================================ */
+function showError(e, src){
+  const box = $('#err');
+  if (!e){ box.classList.remove('on'); box.innerHTML = ''; return; }
+  let html = '⚠ ' + esc(e.message);
+  if (typeof e.pos === 'number' && src){
+    const ls = src.lastIndexOf('\n', e.pos - 1) + 1, le = src.indexOf('\n', e.pos);
+    const line = src.slice(ls, le < 0 ? src.length : le);
+    html = `<span class="src">${esc(line)}</span>\n${' '.repeat(Math.max(0, e.pos - ls))}^\n` + html;
+  }
+  box.innerHTML = html; box.classList.add('on');
+}
+function run(){
+  clearTimeout(runT);
+  const src = exprEl.value;
+  S.expr[S.ds] = src; save();
+  if (!src.trim()){
+    results = null; showError(null); $('#pretty').innerHTML = '';
+    renderOut();
+    return;
+  }
+  let stmts;
+  try {
+    stmts = parse(src);
+    $('#pretty').innerHTML = '<span class="lbl">Parsed</span>' + stmts.map(s =>
+      `<div>${s.assign ? `<span class="o" style="--c:var(--o-agg)">${esc(s.assign.name)} ←</span> ` : ''}${exprHTML(s.expr, false)}</div>`).join('');
+    results = evaluate(stmts, rels().map(r => ({name:r.name, attrs:r.attrs, rows:r.rows})));
+    showError(null);
+    if (selNode && !findNode(selNode)) selNode = null;
+  } catch (e){
+    if (!stmts) $('#pretty').innerHTML = '';
+    results = null;
+    showError(e, src);
+  }
+  renderOut();
+}
+function walkNodes(n, f){ if (!n) return; f(n); walkNodes(n.child, f); walkNodes(n.left, f); walkNodes(n.right, f); }
+function findNode(id){
+  let hit = null;
+  if (results) results.forEach(r => walkNodes(r.stmt.expr, n => { if (n.id === id) hit = n; }));
+  return hit;
+}
+function setTab(t){
+  tab = t;
+  try { localStorage.setItem('ralab.tab', t); } catch (e) {}
+  renderOut();
+}
+$('#rtabs').addEventListener('click', e => { const b = e.target.closest('button[data-t]'); if (b) setTab(b.dataset.t); });
+
+function renderOut(){
+  document.querySelectorAll('#rtabs button').forEach(b => b.classList.toggle('on', b.dataset.t === tab));
+  const out = $('#out');
+  const final = results && results[results.length - 1];
+  $('#nRes').textContent = final ? final.rel.rows.length : '';
+  $('#nSteps').textContent = results ? results.reduce((s, r) => s + r.steps.length, 0) : '';
+  if (!results){
+    out.innerHTML = `<div class="placeholder">${exprEl.value.trim() ? 'Fix the expression above to see the result.' : 'Write an expression above or pick an example. Every operator is evaluated on the relations in the sidebar.'}</div>`;
+    return;
+  }
+  const multi = results.length > 1;
+  const stmtHead = r => r.stmt.assign ? `<div class="stmt-h"><b>${esc(r.stmt.assign.name)} ←</b> ${esc(r.stmt.text.replace(/^[^←]*←\s*|^[^:]*:=\s*|^[^<]*<-\s*/, ''))}</div>` : (multi ? '<div class="stmt-h">Answer</div>' : '');
+
+  if (tab === 'result'){
+    let h = relMeta(final.rel) + tableHTML(final.rel.attrs, final.rel.rows);
+    const temps = results.filter(r => r.stmt.assign && r !== final);
+    if (temps.length) h += `<div class="temps">${temps.map(r =>
+      `<details><summary><b>${esc(r.stmt.assign.name)}</b> (${r.rel.attrs.map(attrHTML).join(', ')}) · ${r.rel.rows.length} rows</summary>${tableHTML(r.rel.attrs, r.rel.rows)}</details>`).join('')}</div>`;
+    out.innerHTML = h;
+  }
+  else if (tab === 'tree'){
+    const li = n => {
+      const kids = n.type === 'rel' ? [] : isBinary(n) ? [n.left, n.right] : [n.child];
+      const sub = n.type === 'rel' ? '' : (n.common && n.common.length && !n.pred ? 'on ' + n.common.join(', ') : subText(n));
+      return `<li><button class="tn${n.type === 'rel' ? ' leaf' : ''}${selNode === n.id ? ' sel' : ''}" data-id="${n.id}" style="--c:${color(n)}">` +
+        `<span class="tsym">${esc(n.type === 'rel' ? n.name : SYM[n.type])}</span>${sub ? `<span class="tsub">${esc(sub)}</span>` : ''}` +
+        `<span class="trows">${n.res.rows.length} row${n.res.rows.length === 1 ? '' : 's'}</span></button>${kids.length ? `<ul>${kids.map(li).join('')}</ul>` : ''}</li>`;
+    };
+    if (selNode == null) selNode = final.stmt.expr.id;
+    const sel = findNode(selNode);
+    out.innerHTML = results.map(r => stmtHead(r) + `<div class="qt"><ul>${li(r.stmt.expr)}</ul></div>`).join('') +
+      `<div class="tdetail"><div class="hint" style="margin-bottom:8px">Click any node to see the relation it produces. Leaves are stored relations; the root is the answer.</div>` +
+      (sel ? (sel.type !== 'rel' ? `<p class="hint" style="font-size:12.5px;color:var(--text-dim);margin:0 0 10px">${explain(sel)}</p>` : '') + relMeta(sel.res) + tableHTML(sel.res.attrs, sel.res.rows) : '') + '</div>';
+  }
+  else if (tab === 'steps'){
+    let k = 0;
+    out.innerHTML = results.map(r => stmtHead(r) + (r.steps.length ? r.steps.map(n => {
+      k++;
+      const body = n.type === 'sigma'
+        ? tableHTML(n.child.res.attrs, n.child.res.rows, {status:n.marks})
+        : tableHTML(n.res.attrs, n.res.rows, {pad: ['ljoin', 'rjoin', 'fjoin'].includes(n.type) ? (row => row.some(v => v == null)) : null});
+      return `<div class="step"><div class="step-h"><span class="step-n">${k}.</span><span class="badge" style="--c:${color(n)}">${SYM[n.type]}</span>` +
+        `<span class="step-e">${exprHTML(n, false)}</span></div><p>${explain(n)}</p>${n.type === 'sigma' ? '' : relMeta(n.res)}${body}</div>`;
+    }).join('') : `<div class="step"><p>No operators — this is just the stored relation <code>${esc(r.stmt.expr.name)}</code>.</p>${tableHTML(r.rel.attrs, r.rel.rows)}</div>`)).join('');
+  }
+  else {
+    let sql, err = null;
+    try { sql = toSQL(results, rels()); } catch (e){ err = e; }
+    out.innerHTML = err ? `<div class="err on">⚠ Could not translate this expression: ${esc(err.message)}</div>` :
+      `<div class="sqlbar"><button class="btn primary sm" id="openSql">Open in SQL Lab →</button><button class="btn sm" id="copySql">Copy</button>` +
+      `<span class="hint">SQLite dialect. The relations are inlined as <code>WITH … VALUES</code>, so it runs as-is without changing any tables.</span></div>` +
+      `<pre class="sql">${hlSQL(sql)}</pre>`;
+    if (!err){
+      $('#copySql').onclick = () => navigator.clipboard.writeText(sql).then(() => toast('SQL copied'), () => toast('Copy failed'));
+      $('#openSql').onclick = () => {
+        const head = '-- Translated from the Relational Algebra Lab:\n' + exprEl.value.trim().split('\n').map(l => '--   ' + l).join('\n') + '\n';
+        try { localStorage.setItem('sqllab.handoff', JSON.stringify({name:'From RA', sql:head + sql})); location.href = 'sql.html'; }
+        catch (e){ navigator.clipboard.writeText(sql).then(() => toast('Storage is blocked — SQL copied instead')); }
+      };
+    }
+  }
+}
+$('#out').addEventListener('click', e => {
+  const b = e.target.closest('.tn'); if (!b) return;
+  selNode = +b.dataset.id;
+  renderOut();
+});
+function hlSQL(s){
+  const re = /('(?:[^']|'')*')|("(?:[^"]|"")*")|(--[^\n]*)|\b(SELECT|DISTINCT|FROM|WHERE|AND|OR|NOT|EXISTS|NATURAL|LEFT|RIGHT|FULL|CROSS|JOIN|ON|AS|UNION|INTERSECT|EXCEPT|GROUP|BY|WITH|VALUES|NULL|IS|COUNT|SUM|AVG|MIN|MAX)\b/g;
+  let out = '', last = 0, m;
+  while ((m = re.exec(s))){
+    out += esc(s.slice(last, m.index));
+    const cls = m[1] ? 's' : m[2] ? 'i' : m[3] ? 'c' : 'k';
+    out += `<span class="${cls}">${esc(m[0])}</span>`;
+    last = re.lastIndex;
+  }
+  return out + esc(s.slice(last));
+}
+
+renderDataset();
+loadExpr();
+})();
+</script>
+</body>
+</html>
