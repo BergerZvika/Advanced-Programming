@@ -3,9 +3,9 @@
 
 // for example
 //  
-// const x = 3
+const x = 3
 
-// console.log(x)
+console.log(x)
 
 // x=5
 // console.log(x)

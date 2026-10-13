@@ -1,45 +1,47 @@
-// promises & async / await
+// async / await
 //
-// JS is single-threaded. anything that "waits" (timers, network,
-// disk) is expressed as a Promise — a value that will arrive later.
-// async / await is just sweeter syntax over the same Promises.
+// async / await is syntax over Promises — nothing new underneath.
+//   async function  -> ALWAYS returns a Promise
+//   await promise   -> pauses THIS function until the promise settles,
+//                      then gives you its value (or throws its error)
+// while the function is paused, the rest of the program keeps running.
 
-// 1) creating a Promise from scratch
-// const p = new Promise((resolve, reject) => {
-//     setTimeout(() => resolve("done!"), 200);
-// });
-//
-// // a Promise has 3 states:
-// //   pending -> fulfilled (resolve called)
-// //           -> rejected  (reject called or an error is thrown)
-// p.then(value => console.log("got:", value));
-
-// 2) Promise.resolve / Promise.reject — instant promises
-// Promise.resolve(42).then(v => console.log(v)); // 42
-// Promise.reject(new Error("boom")).catch(e => console.log("caught:", e.message));
-
-// 3) chaining — each .then returns a NEW Promise
-// Promise.resolve(2)
-//     .then(n => n * 10)
-//     .then(n => n + 1)
-//     .then(n => console.log(n)); // 21
-
-// 4) async / await — read top-to-bottom like sync code
-// function delay(ms) {
-//     return new Promise(resolve => setTimeout(resolve, ms));
+// 1) an async function always returns a Promise
+// async function getNumber() {
+//     return 42;                      // wrapped: Promise.resolve(42)
 // }
+// console.log(getNumber());           // Promise { ... } — not 42!
+// getNumber().then(n => console.log("then:", n));
+
+// 2) await unwraps the value
+// const delay = (ms, v) => new Promise(r => setTimeout(() => r(v), ms));
 //
 // async function demo() {
 //     console.log("start");
-//     await delay(150);
-//     console.log("after 150ms");
-//     await delay(150);
-//     console.log("after another 150ms");
+//     const a = await delay(150, "first");
+//     console.log("after 150ms:", a);
+//     const b = await delay(150, "second");
+//     console.log("after another 150ms:", b);
 // }
 // demo();
-// // an async function ALWAYS returns a Promise — even if you don't return one explicitly
 
-// 5) error handling — try / catch around await
+// 3) the same flow — .then chain vs async/await
+// const delay = (ms, v) => new Promise(r => setTimeout(() => r(v), ms));
+//
+// function withThen() {
+//     return delay(100, 1)
+//         .then(a => delay(100, a + 1))
+//         .then(b => console.log("then chain:", b));
+// }
+// async function withAwait() {
+//     const a = await delay(100, 1);
+//     const b = await delay(100, a + 1);
+//     console.log("async/await:", b);
+// }
+// withThen();
+// withAwait();
+
+// 4) error handling — try / catch / finally around await
 // async function risky() {
 //     try {
 //         const v = await Promise.reject(new Error("nope"));
@@ -52,38 +54,60 @@
 // }
 // risky();
 
-// 6) Promise.all — wait for several in PARALLEL
-// async function inParallel() {
-//     const [a, b, c] = await Promise.all([
-//         delay(100).then(() => "A"),
-//         delay(100).then(() => "B"),
-//         delay(100).then(() => "C"),
-//     ]);
-//     console.log(a, b, c); // A B C — total ~100ms (not 300)
+// 5) throw inside async == rejected promise
+// async function fails() {
+//     throw new Error("thrown inside async");
 // }
-// inParallel();
+// fails().catch(e => console.log("caller sees a rejection:", e.message));
 
-// 7) sequential vs parallel — a very common pitfall
+// 6) sequential vs parallel — the most common pitfall
+// const delay = (ms, v) => new Promise(r => setTimeout(() => r(v), ms));
+//
 // async function sequential() {
 //     const t0 = performance.now();
-//     const a = await delay(100).then(() => 1); // 100ms
-//     const b = await delay(100).then(() => 2); // +100ms
-//     console.log("sequential:", a + b, ((performance.now() - t0) | 0) + "ms"); // ~200ms
+//     const a = await delay(150, 1);  // 150ms
+//     const b = await delay(150, 2);  // +150ms
+//     console.log("sequential:", a + b, ((performance.now() - t0) | 0) + "ms"); // ~300ms
 // }
-//
 // async function parallel() {
 //     const t0 = performance.now();
-//     const [a, b] = await Promise.all([    // both start NOW
-//         delay(100).then(() => 1),
-//         delay(100).then(() => 2),
-//     ]);
-//     console.log("parallel  :", a + b, ((performance.now() - t0) | 0) + "ms"); // ~100ms
+//     const pa = delay(150, 1);       // both start NOW
+//     const pb = delay(150, 2);
+//     const [a, b] = await Promise.all([pa, pb]);
+//     console.log("parallel  :", a + b, ((performance.now() - t0) | 0) + "ms"); // ~150ms
 // }
-// sequential();
-// parallel();
+// sequential().then(parallel);
+
+// 7) loops — for...of awaits one by one, .map + Promise.all runs together
+// const delay = (ms, v) => new Promise(r => setTimeout(() => r(v), ms));
+// const ids = [1, 2, 3];
+//
+// async function oneByOne() {
+//     for (const id of ids) {
+//         const v = await delay(100, id * 10);
+//         console.log("for...of got", v);
+//     }
+// }
+// async function allAtOnce() {
+//     const values = await Promise.all(ids.map(id => delay(100, id * 10)));
+//     console.log("Promise.all got", values);
+// }
+// oneByOne().then(allAtOnce);
+// // careful: ids.forEach(async id => await ...) does NOT wait — forEach ignores promises
+
+// 8) forgetting await — you get the Promise, not the value
+// async function getUser() { return { name: "Ada" }; }
+//
+// async function main() {
+//     const wrong = getUser();          // forgot await
+//     console.log("wrong:", wrong.name); // undefined — it's a Promise
+//     const right = await getUser();
+//     console.log("right:", right.name); // Ada
+// }
+// main();
 
 
-// active demo: a tiny async pipeline with error handling
+// 9) active demo — a tiny async pipeline with error handling
 function delay(ms, value) {
     return new Promise(resolve => setTimeout(() => resolve(value), ms));
 }

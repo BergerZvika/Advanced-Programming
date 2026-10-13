@@ -175,14 +175,11 @@ body::after{
   box-shadow: 0 0 8px var(--accent-2);
 }
 
-.back-link{
-  display:flex;align-items:center;gap:8px;
-  margin-top:18px; padding:10px 12px;border-radius:10px;
-  color:var(--text-dim); font-size:13px; text-decoration:none;
-  border:1px solid var(--border);
-  transition: background .15s, color .15s, border-color .15s;
-}
-.back-link:hover{ background:var(--surface); color:var(--text); border-color:var(--border-strong) }
+.top-bar .action-btn{ white-space:nowrap; flex-shrink:0 }
+.top-bar .file-meta{ flex:1 1 auto }
+.top-bar .file-links{ flex-wrap:wrap }
+.home-btn{ text-decoration:none; margin-left:6px; align-self:flex-start; margin-top:-4px; margin-right:-6px }
+.action-btn:disabled{ opacity:.4; cursor:default; pointer-events:none }
 
 /* Main pane */
 .editor-pane{
@@ -284,6 +281,25 @@ body::after{
   color:#f7df1e;
 }
 
+/* Text-size control (A− 16 A+) for the editor and the console */
+.fs-ctl{
+  display:inline-flex; align-items:center; flex-shrink:0;
+  border:1px solid var(--border); border-radius:8px; overflow:hidden;
+  background:rgba(255,255,255,0.02);
+}
+.fs-ctl button{
+  padding:4px 8px; border:none; background:transparent; color:var(--text-dim);
+  font-size:11.5px; font-weight:600; cursor:pointer;
+  transition: background .15s, color .15s;
+}
+.fs-ctl button:hover{ background:var(--surface-2); color:var(--text) }
+.fs-ctl button:disabled{ opacity:.35; pointer-events:none }
+.fs-ctl .fs-val{
+  min-width:28px; font-family:'JetBrains Mono',monospace; font-weight:500;
+  border-left:1px solid var(--border); border-right:1px solid var(--border);
+}
+.editor-chrome .fs-ctl{ margin-left:8px }
+
 /* Step tabs (per-file numbered runners) */
 .step-tabs{
   display:flex; gap:5px; margin: 0 6px 0 12px;
@@ -333,7 +349,7 @@ body::after{
 .cm-host{ position:relative; height:calc(100% - 41px) }
 .CodeMirror{
   height:100% !important; background:transparent;
-  font-size:14px; line-height:1.55;
+  font-size:var(--editor-fs, 16px); line-height:1.55;
   padding: 6px 0;
 }
 .CodeMirror-gutters{ background:transparent; border-right:1px solid var(--border) }
@@ -384,7 +400,7 @@ body::after{
 .console-head .icon-btn:hover{ background:var(--surface-2); color:var(--text); border-color:var(--border-strong) }
 .console-out{
   flex:1; overflow:auto; padding:10px 14px;
-  font-family:'JetBrains Mono',monospace; font-size:12.5px; line-height:1.55;
+  font-family:'JetBrains Mono',monospace; font-size:var(--console-fs, 15px); line-height:1.55;
   scrollbar-width:thin;
 }
 .console-out::-webkit-scrollbar{ width:8px; height:8px }
@@ -398,7 +414,7 @@ body::after{
   border-left:2px solid transparent;
   white-space:pre-wrap; word-break:break-word;
 }
-.line .t{ flex-shrink:0; color:var(--text-faint); font-size:10.5px; padding-top:2px; min-width:62px }
+.line .t{ flex-shrink:0; color:var(--text-faint); font-size:.8em; padding-top:.2em; min-width:5.8em }
 .line .c{ flex:1; min-width:0 }
 .line.log{ color:#dcd5ff; border-left-color:rgba(124,92,255,0.4) }
 .line.info{ color:#9bd9ff; border-left-color:rgba(53,208,255,0.5) }
@@ -407,7 +423,7 @@ body::after{
 .line.system{ color:var(--text-faint); border-left-color:rgba(255,255,255,0.15); font-style:italic }
 .line.result{ color:#a8f5d2; border-left-color:rgba(56,211,159,0.55) }
 .console-out table{
-  border-collapse:collapse; margin:4px 0; font-size:12px;
+  border-collapse:collapse; margin:4px 0; font-size:.93em;
 }
 .console-out th, .console-out td{
   border:1px solid rgba(255,255,255,0.1); padding:3px 8px; text-align:left;
@@ -578,8 +594,6 @@ body::after{
 
     <div class="section-label">Files</div>
     <ul class="file-list" id="fileList"></ul>
-
-    <a class="back-link" href="../index.html" style="margin-top:18px">⌂ Home</a>
   </aside>
 
   <main class="editor-pane">
@@ -599,6 +613,9 @@ body::after{
       <button class="action-btn" id="resetBtn" title="Revert to file on disk">⟲ Reset</button>
       <button class="action-btn" id="clearBtn" title="Clear console">✕ Clear</button>
       <button class="action-btn run-btn" id="runBtn" title="Run code">▶ Run <span class="k">⌘↵</span></button>
+      <button class="action-btn" id="prevBtn" title="Previous example">◀ Prev</button>
+      <button class="action-btn" id="nextBtn" title="Next example">Next ▶</button>
+      <a class="action-btn home-btn" href="../index.html" title="Back to home">⌂ Home</a>
     </header>
 
     <section class="editor-card" id="editorCard">
@@ -607,6 +624,7 @@ body::after{
         <span class="filename" id="chromeName">hello_world.js</span>
         <div class="step-tabs" id="stepTabs"></div>
         <span class="badge">JavaScript</span>
+        <div class="fs-ctl" data-fs="editor"></div>
       </div>
       <div class="cm-host">
         <textarea id="editor"></textarea>
@@ -618,6 +636,7 @@ body::after{
         <span class="label" id="consoleStatus">Idle</span>
         <span class="stats" id="consoleStats"></span>
         <div class="right">
+          <div class="fs-ctl" data-fs="console"></div>
           <button class="icon-btn" id="copyOutBtn">Copy</button>
           <button class="icon-btn" id="clearOutBtn">Clear</button>
         </div>
@@ -653,9 +672,9 @@ body::after{
 
 // for example
 //  
-// const x = 3
+const x = 3
 
-// console.log(x)
+console.log(x)
 
 // x=5
 // console.log(x)
@@ -713,127 +732,99 @@ body::after{
 // obj.foo();
 </script>
 <script type="text/plain" data-jsfile="let_vs_var.js">// let vs. var
-// let defines a block scoped variable
-// var defines a function scoped variable
+// let defines a BLOCK scoped variable    — lives inside the nearest { }
+// var defines a FUNCTION scoped variable — ignores { } blocks, only functions stop it
+//
+// lines that would throw an ERROR are left commented out ( // // ... )
+// so every step runs — uncomment one to see the error yourself.
 
-// 1)
-// example of let:
-// console.log(x); // trying to use x before initialization - ERROR!
+// 1) let — using it before the declaration is an ERROR
+// // let IS hoisted, but stays in the "temporal dead zone" (TDZ)
+// // until the line `let x = ...` actually runs
+// // console.log(x); // ERROR: Cannot access 'x' before initialization
 // let x = 5;
-// console.log(x);
+// console.log(x); // 5
 
-// same with var
-// trying to use x before initialization - this time there's no error 
-// x is simply 'undefined'
-// console.log(x);
-// var x = 5;
-// console.log(x);
-// x = '3'
+// 2) var — using it before the declaration is just undefined
+// // var is hoisted AND initialized to undefined — no error, which hides bugs
+// console.log(y); // undefined
+// var y = 5;
+// console.log(y); // 5
+// y = "3";        // var (and let) can change value and even type
+// console.log(y); // "3"
 
-// 2)
-// let in for loop
+// 3) let in a for loop — i exists only inside the loop
 // for (let i = 0; i < 3; i++) {
 //     console.log(`i = ${i}`);
 // }
+// // console.log(`after loop i = ${i}`); // ERROR: i is not defined
 
-// console.log(`i = ${i}`); // trying to log i but it is not defined in the outer scope
-
-// same with var
+// 4) var in a for loop — i leaks out of the loop
 // for (var i = 0; i < 3; i++) {
 //     console.log(`i = ${i}`);
 // }
+// console.log(`after loop i = ${i}`); // no error — i is 3
 
-// console.log(`i = ${i}`); // no error - i is defined
-
-// 3)
-// use let in function
-// function foo() {
-//     let x = 3;
-
-//     console.log(x);
+// 5) let inside a function — invisible outside it
+// function useLet() {
+//     let a = 3;
+//     console.log("inside useLet:", a);
 // }
+// useLet();
+// // console.log(a); // ERROR: a is not defined
 
-// foo();
-
-// // console.log(x); // accessing x from outer scope couses an ERROR!
-
-// // same with var
-// function foo() {
-//     var x = 3;
-
-//     console.log(x);
+// 6) var inside a function — ALSO invisible outside it
+// // var is function scoped, so a function stops it just like let
+// function useVar() {
+//     var b = 3;
+//     console.log("inside useVar:", b);
 // }
+// useVar();
+// // console.log(b); // ERROR: b is not defined (again!)
 
-// // var defines a function scoped variable
-// console.log(x); // accessing x from outer scope couses an ERROR! (AGAIN!)
-
-// 4)
-// blocked scoping with let
+// 7) let in a block — the inner x is a NEW variable
 // let x = 7;
-
-// { // opening a block 
-
-//     let x = 11;
-
-//     console.log(x) // print '11'
+// { // opening a block
+//     let x = 11;        // shadows the outer x, only inside these { }
+//     console.log(x);    // 11
 // }
+// console.log(x);        // 7 — the outer x was never touched
 
-// console.log(x) // print '7'
-
-// same with var
+// 8) var in a block — there is only ONE x
+// // a block { } is NOT a function, so var ignores it
 // var x = 7;
- 
-// { // opening a block 
-
-//     x = 11; // can't redeclare using var! ERROR! 
-
-//     console.log(x) 
+// { // opening a block
+//     var x = 11;        // same x as outside — overwrites it
+//     console.log(x);    // 11
 // }
+// console.log(x);        // 11 — changed outside too!
 
-// console.log(x)
- 
-// { // opening a block 
+// 9) no keyword at all — NOT let, it creates a GLOBAL
+// // console.log(z); // ERROR: z is not defined — reading before any assignment
+// z = 5;                 // no let / var / const -> becomes window.z (global)
+// console.log(z);        // 5
+// z = 7;
+// console.log(z);        // 7
+// // in 'use strict' mode `z = 5` would be an ERROR — always declare your variables
 
-//     var x = 11;
+// 10) redeclaring — only var allows it
+// // let twice in the same scope is a SyntaxError — the whole script refuses to run:
+// // let a = 1;
+// // let a = 2;  // ERROR: Identifier 'a' has already been declared
+// // mixing let and var is the same error:
+// // let b = 1;
+// // var b = 2;  // ERROR: Identifier 'b' has already been declared
+//
+// // const can't be redeclared OR reassigned
+// const c = 2;
+// console.log(c); // 2
+// // c = 3;      // ERROR: Assignment to constant variable.
 
-//     console.log(x) // prints '11'
-// }
-
-// console.log(x) // prints '11'
-
-// default is let!
-
-// console.log(x); // ERROR x is not defined 
-// x = 5;
-// console.log(x); // if reached will output '5'
-// x = 7; // x is not a const => we can change its value
-// console.log(x); // if reached will output '7'
-
-
-// NOTE:
-// you can't redeclare the same variable 
-// in the same scope using let or a combination of let & var
-// unless you are using var twice:
-
-// will not work
-// const x = 2;
-
-// console.log(x);
-
-// x = 3;
-
-// console.log(x);
-
-// will work
-var x = 2;
-
-console.log(x);
-
-var x = 3;
-
-console.log(x);
-
-
+// 11) var twice — allowed (one more reason to prefer let)
+var v = 2;
+console.log(v); // 2
+var v = 3;      // silently redeclares — no error
+console.log(v); // 3
 </script>
 <script type="text/plain" data-jsfile="count_down.js">/*
 Create a JS function that gets a number of seconds, then counts them down.
@@ -923,33 +914,6 @@ function logCurrentDate() {
 
 // call the function
 logCurrentDate()
-
-</script>
-<script type="text/plain" data-jsfile="fibonacci.js">function fibonacci(n) {
-    if (n <= 1) {
-        return n;
-    } else {
-        return fibonacci(n - 1) + fibonacci(n - 2);
-    }
-}
-
-function fibonacci_dm(n, memo = {}) {
-    if (n in memo) {
-        return memo[n];
-    }
-    if (n <= 1) {
-        return BigInt(n);
-    }
-    memo[n] = fibonacci_dm(n - 1, memo) + fibonacci_dm(n - 2, memo);
-    return memo[n];
-}
-
-// Example usage:
-// console.log(fibonacci(300));
-
-// Example usage:
-console.log(fibonacci_dm(300));
-console.log(fibonacci_dm(301));
 
 </script>
 <script type="text/plain" data-jsfile="fun_with_arrays.js">/*
@@ -1198,15 +1162,7 @@ console.log(frozen_object)
 // console.log(shalom("Israel")); // 'Shalom, Israel!'
 // // each greeter has its own captured `greeting`
 
-// 2) closures hold *references*, not snapshots
-// let value = 1;
-// const showValue = () => console.log(value);
-
-// showValue(); // 1
-// value = 99;
-// showValue(); // 99 — the closure sees the live binding
-
-// 3) private state — the classic "counter" pattern
+// 2) private state — the classic "counter" pattern
 // function makeCounter() {
 //     let count = 0;              // not visible from outside
 //     return {
@@ -1223,18 +1179,15 @@ console.log(frozen_object)
 // console.log(c.get()); // 1
 // // c.count is undefined — fully encapsulated
 
-// 4) IIFE — immediately invoked function expression
-// runs once, exposes only what you choose
-// const api = (function () {
-//     const secret = "shhh";
-//     return { reveal: () => secret };
-// })();
+// // a second counter gets its own, separate `count`
+// const c2 = makeCounter();
+// console.log(c2.inc()); // 1
+// console.log(c2.inc()); // 2
+// console.log(c2.inc()); // 3
+// console.log(c.get());  // 1 — c is unaffected
 
-// console.log(api.reveal()); // 'shhh'
-// console.log(api.secret);   // undefined
-
-// 5) the famous `var`-in-loop pitfall
-// var binds at function scope — every callback closes over the *same* i
+// 3) the famous `var`-in-loop pitfall
+// // var binds at function scope — every callback closes over the *same* i
 // for (var i = 0; i < 3; i++) {
 //     setTimeout(() => console.log("var i =", i), 0);
 // }
@@ -1247,23 +1200,32 @@ console.log(frozen_object)
 // // prints: 0, 1, 2
 
 
-// 6) closure as memoization — a function that remembers past results
-function memoize(fn) {
-    const cache = new Map(); // captured by the returned function
-    return function (n) {
-        if (cache.has(n)) return cache.get(n);
-        const result = fn(n);
-        cache.set(n, result);
-        return result;
-    };
+// 4) fibonacci — naive recursion vs. memoization
+function fibonacci(n) {
+    if (n <= 1) {
+        return n;
+    } else {
+        return fibonacci(n - 1) + fibonacci(n - 2);
+    }
 }
 
-const square = (n) => n * n;
-const fastSquare = memoize(square);
+function fibonacci_dm(n, memo = {}) {
+    if (n in memo) {
+        return memo[n];
+    }
+    if (n <= 1) {
+        return BigInt(n);
+    }
+    memo[n] = fibonacci_dm(n - 1, memo) + fibonacci_dm(n - 2, memo);
+    return memo[n];
+}
 
-console.log(fastSquare(7));  // computed -> 49
-console.log(fastSquare(7));  // cached   -> 49
-console.log(fastSquare(11)); // computed -> 121
+// Example usage:
+// console.log(fibonacci(300));
+
+// Example usage:
+console.log(fibonacci_dm(300));
+// console.log(fibonacci_dm(301));
 </script>
 <script type="text/plain" data-jsfile="destructuring.js">// destructuring & spread / rest
 //
@@ -1363,48 +1325,171 @@ const longer = [...list, 4];
 console.log("list  :", list);   // [1, 2, 3]
 console.log("longer:", longer); // [1, 2, 3, 4]
 </script>
-<script type="text/plain" data-jsfile="async_await.js">// promises & async / await
+<script type="text/plain" data-jsfile="promises.js">// promises
 //
-// JS is single-threaded. anything that "waits" (timers, network,
-// disk) is expressed as a Promise — a value that will arrive later.
-// async / await is just sweeter syntax over the same Promises.
+// a Promise is an object that stands for a value that isn't ready yet.
+// it starts "pending" and settles exactly ONCE, to either:
+//   fulfilled  — resolve(value) was called
+//   rejected   — reject(reason) was called, or the executor threw
+// once settled it never changes again.
 
-// 1) creating a Promise from scratch
+// 1) creating a Promise — the executor runs IMMEDIATELY (synchronously)
+// console.log("before");
 // const p = new Promise((resolve, reject) => {
-//     setTimeout(() => resolve("done!"), 200);
+//     console.log("executor runs now");
+//     setTimeout(() => resolve("ready!"), 200);
 // });
-//
-// // a Promise has 3 states:
-// //   pending -> fulfilled (resolve called)
-// //           -> rejected  (reject called or an error is thrown)
-// p.then(value => console.log("got:", value));
+// console.log("after — p is still pending");
+// p.then(value => console.log("then got:", value));
 
-// 2) Promise.resolve / Promise.reject — instant promises
-// Promise.resolve(42).then(v => console.log(v)); // 42
-// Promise.reject(new Error("boom")).catch(e => console.log("caught:", e.message));
+// 2) settling only happens once — later calls are ignored
+// const once = new Promise((resolve, reject) => {
+//     resolve("first");
+//     resolve("second");          // ignored
+//     reject(new Error("nope"));  // ignored too
+// });
+// once.then(v => console.log(v)); // first
 
-// 3) chaining — each .then returns a NEW Promise
-// Promise.resolve(2)
-//     .then(n => n * 10)
-//     .then(n => n + 1)
-//     .then(n => console.log(n)); // 21
+// 3) rejecting — throw inside the executor == reject
+// const bad = new Promise(() => {
+//     throw new Error("executor blew up");
+// });
+// bad.catch(err => console.log("caught:", err.message));
 
-// 4) async / await — read top-to-bottom like sync code
-// function delay(ms) {
-//     return new Promise(resolve => setTimeout(resolve, ms));
+// 4) then / catch / finally
+// function coinFlip() {
+//     return new Promise((resolve, reject) => {
+//         setTimeout(() => Math.random() < 0.5
+//             ? resolve("heads")
+//             : reject(new Error("tails")), 100);
+//     });
 // }
+// coinFlip()
+//     .then(v => console.log("won:", v))
+//     .catch(e => console.log("lost:", e.message))
+//     .finally(() => console.log("finally runs either way"));
+
+// 5) chaining — each .then returns a NEW Promise
+// //    return a value  -> next .then gets that value
+// //    return a Promise -> the chain WAITS for it
+// //    throw           -> skips to the next .catch
+// Promise.resolve(2)
+//     .then(n => n * 10)                                       // 20
+//     .then(n => new Promise(r => setTimeout(() => r(n + 1), 100))) // waits, 21
+//     .then(n => { if (n > 20) throw new Error("too big: " + n); return n; })
+//     .then(n => console.log("never runs", n))
+//     .catch(e => { console.log("caught:", e.message); return 0; })
+//     .then(n => console.log("recovered with", n));            // 0
+
+// 6) the classic mistake — forgetting to RETURN inside .then
+// Promise.resolve(1)
+//     .then(n => { Promise.resolve(n + 1); })   // no return -> undefined
+//     .then(n => console.log("forgot return:", n));
+// Promise.resolve(1)
+//     .then(n => Promise.resolve(n + 1))        // returned -> 2
+//     .then(n => console.log("with return:  ", n));
+
+// 7) turning a callback API into a Promise ("promisify")
+// function readConfig(name, callback) {           // old node-style API
+//     setTimeout(() => name
+//         ? callback(null, { name, debug: true })
+//         : callback(new Error("no name")), 100);
+// }
+// function readConfigAsync(name) {
+//     return new Promise((resolve, reject) => {
+//         readConfig(name, (err, data) => err ? reject(err) : resolve(data));
+//     });
+// }
+// readConfigAsync("app").then(cfg => console.log("config:", cfg));
+// readConfigAsync("").catch(e => console.log("error:", e.message));
+
+// 8) the combinators — all / allSettled / race / any
+// const wait = (ms, v, fail) => new Promise((res, rej) =>
+//     setTimeout(() => fail ? rej(new Error(v)) : res(v), ms));
+//
+// // all: every one must succeed; fails FAST on the first rejection
+// Promise.all([wait(100, "a"), wait(50, "b")])
+//     .then(v => console.log("all       :", v));                 // ["a","b"] (input order!)
+// Promise.all([wait(100, "a"), wait(50, "x", true)])
+//     .catch(e => console.log("all fail  :", e.message));        // x
+//
+// // allSettled: never rejects — reports every outcome
+// Promise.allSettled([wait(100, "a"), wait(50, "x", true)])
+//     .then(r => console.log("allSettled:", r.map(x => x.status)));
+//
+// // race: first to SETTLE wins (success or failure)
+// Promise.race([wait(100, "slow"), wait(50, "fast")])
+//     .then(v => console.log("race      :", v));                 // fast
+//
+// // any: first to SUCCEED wins; rejects only if ALL fail
+// Promise.any([wait(30, "x", true), wait(80, "ok")])
+//     .then(v => console.log("any       :", v));                 // ok
+
+
+// 9) active demo — a timeout wrapper built from Promise.race
+function wait(ms, value) {
+    return new Promise(resolve => setTimeout(() => resolve(value), ms));
+}
+
+function withTimeout(promise, ms) {
+    const timeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("timed out after " + ms + "ms")), ms));
+    return Promise.race([promise, timeout]);
+}
+
+withTimeout(wait(100, "fast response"), 300)
+    .then(v => console.log("ok:", v))
+    .catch(e => console.log("error:", e.message));
+
+withTimeout(wait(500, "slow response"), 300)
+    .then(v => console.log("ok:", v))
+    .catch(e => console.log("error:", e.message));
+</script>
+
+<script type="text/plain" data-jsfile="async_await.js">// async / await
+//
+// async / await is syntax over Promises — nothing new underneath.
+//   async function  -> ALWAYS returns a Promise
+//   await promise   -> pauses THIS function until the promise settles,
+//                      then gives you its value (or throws its error)
+// while the function is paused, the rest of the program keeps running.
+
+// 1) an async function always returns a Promise
+// async function getNumber() {
+//     return 42;                      // wrapped: Promise.resolve(42)
+// }
+// console.log(getNumber());           // Promise { ... } — not 42!
+// getNumber().then(n => console.log("then:", n));
+
+// 2) await unwraps the value
+// const delay = (ms, v) => new Promise(r => setTimeout(() => r(v), ms));
 //
 // async function demo() {
 //     console.log("start");
-//     await delay(150);
-//     console.log("after 150ms");
-//     await delay(150);
-//     console.log("after another 150ms");
+//     const a = await delay(150, "first");
+//     console.log("after 150ms:", a);
+//     const b = await delay(150, "second");
+//     console.log("after another 150ms:", b);
 // }
 // demo();
-// // an async function ALWAYS returns a Promise — even if you don't return one explicitly
 
-// 5) error handling — try / catch around await
+// 3) the same flow — .then chain vs async/await
+// const delay = (ms, v) => new Promise(r => setTimeout(() => r(v), ms));
+//
+// function withThen() {
+//     return delay(100, 1)
+//         .then(a => delay(100, a + 1))
+//         .then(b => console.log("then chain:", b));
+// }
+// async function withAwait() {
+//     const a = await delay(100, 1);
+//     const b = await delay(100, a + 1);
+//     console.log("async/await:", b);
+// }
+// withThen();
+// withAwait();
+
+// 4) error handling — try / catch / finally around await
 // async function risky() {
 //     try {
 //         const v = await Promise.reject(new Error("nope"));
@@ -1417,38 +1502,60 @@ console.log("longer:", longer); // [1, 2, 3, 4]
 // }
 // risky();
 
-// 6) Promise.all — wait for several in PARALLEL
-// async function inParallel() {
-//     const [a, b, c] = await Promise.all([
-//         delay(100).then(() => "A"),
-//         delay(100).then(() => "B"),
-//         delay(100).then(() => "C"),
-//     ]);
-//     console.log(a, b, c); // A B C — total ~100ms (not 300)
+// 5) throw inside async == rejected promise
+// async function fails() {
+//     throw new Error("thrown inside async");
 // }
-// inParallel();
+// fails().catch(e => console.log("caller sees a rejection:", e.message));
 
-// 7) sequential vs parallel — a very common pitfall
+// 6) sequential vs parallel — the most common pitfall
+// const delay = (ms, v) => new Promise(r => setTimeout(() => r(v), ms));
+//
 // async function sequential() {
 //     const t0 = performance.now();
-//     const a = await delay(100).then(() => 1); // 100ms
-//     const b = await delay(100).then(() => 2); // +100ms
-//     console.log("sequential:", a + b, ((performance.now() - t0) | 0) + "ms"); // ~200ms
+//     const a = await delay(150, 1);  // 150ms
+//     const b = await delay(150, 2);  // +150ms
+//     console.log("sequential:", a + b, ((performance.now() - t0) | 0) + "ms"); // ~300ms
 // }
-//
 // async function parallel() {
 //     const t0 = performance.now();
-//     const [a, b] = await Promise.all([    // both start NOW
-//         delay(100).then(() => 1),
-//         delay(100).then(() => 2),
-//     ]);
-//     console.log("parallel  :", a + b, ((performance.now() - t0) | 0) + "ms"); // ~100ms
+//     const pa = delay(150, 1);       // both start NOW
+//     const pb = delay(150, 2);
+//     const [a, b] = await Promise.all([pa, pb]);
+//     console.log("parallel  :", a + b, ((performance.now() - t0) | 0) + "ms"); // ~150ms
 // }
-// sequential();
-// parallel();
+// sequential().then(parallel);
+
+// 7) loops — for...of awaits one by one, .map + Promise.all runs together
+// const delay = (ms, v) => new Promise(r => setTimeout(() => r(v), ms));
+// const ids = [1, 2, 3];
+//
+// async function oneByOne() {
+//     for (const id of ids) {
+//         const v = await delay(100, id * 10);
+//         console.log("for...of got", v);
+//     }
+// }
+// async function allAtOnce() {
+//     const values = await Promise.all(ids.map(id => delay(100, id * 10)));
+//     console.log("Promise.all got", values);
+// }
+// oneByOne().then(allAtOnce);
+// // careful: ids.forEach(async id => await ...) does NOT wait — forEach ignores promises
+
+// 8) forgetting await — you get the Promise, not the value
+// async function getUser() { return { name: "Ada" }; }
+//
+// async function main() {
+//     const wrong = getUser();          // forgot await
+//     console.log("wrong:", wrong.name); // undefined — it's a Promise
+//     const right = await getUser();
+//     console.log("right:", right.name); // Ada
+// }
+// main();
 
 
-// active demo: a tiny async pipeline with error handling
+// 9) active demo — a tiny async pipeline with error handling
 function delay(ms, value) {
     return new Promise(resolve => setTimeout(() => resolve(value), ms));
 }
@@ -1479,6 +1586,127 @@ async function main() {
 }
 
 main();
+</script>
+
+<script type="text/plain" data-jsfile="event_loop.js">// the event loop
+//
+// JS runs on ONE thread with ONE call stack. waiting (timers, network,
+// clicks) happens outside JS; when it's done, a callback is queued.
+//
+//   call stack       — the code running right now
+//   microtask queue  — promise callbacks (.then/await), queueMicrotask
+//   task queue       — setTimeout, setInterval, events, I/O  ("macrotasks")
+//
+// the loop, forever:
+//   1. run the current task until the call stack is EMPTY
+//   2. run ALL microtasks (including ones added while draining)
+//   3. (browser) maybe render a frame
+//   4. take the NEXT task from the task queue -> back to 1
+
+// 1) sync code always finishes first
+// console.log("A");
+// setTimeout(() => console.log("C — timer, even with 0ms"), 0);
+// console.log("B");
+// // A, B, C
+
+// 2) microtasks beat tasks
+// setTimeout(() => console.log("3. setTimeout (task)"), 0);
+// Promise.resolve().then(() => console.log("2. promise (microtask)"));
+// console.log("1. sync");
+
+// 3) the classic quiz — guess the order before you run it
+// console.log("1");
+// setTimeout(() => console.log("2"), 0);
+// Promise.resolve()
+//     .then(() => console.log("3"))
+//     .then(() => console.log("4"));
+// queueMicrotask(() => console.log("5"));
+// console.log("6");
+// // answer: 1 6 3 5 4 2
+// //   sync: 1 6 | microtasks: 3 5, then 4 (queued when 3 finished) | task: 2
+
+// 4) await = "pause here, continue in a microtask"
+// async function worker() {
+//     console.log("b. worker starts (sync!)");
+//     await null;
+//     console.log("d. worker resumes (microtask)");
+// }
+// console.log("a. start");
+// worker();
+// console.log("c. end of script");
+
+// 5) setTimeout's delay is a MINIMUM, not a promise
+// const t0 = performance.now();
+// setTimeout(() => {
+//     console.log("asked for 0ms, got", (performance.now() - t0).toFixed(0) + "ms");
+// }, 0);
+// const end = Date.now() + 200;
+// while (Date.now() < end) {}   // block the call stack for 200ms
+// console.log("busy loop done");
+
+// 6) blocking the thread blocks EVERYTHING — timers, clicks, rendering
+// let ticks = 0;
+// const id = setInterval(() => console.log("tick", ++ticks), 50);
+// setTimeout(() => {
+//     console.log("--- blocking for 300ms ---");
+//     const end = Date.now() + 300;
+//     while (Date.now() < end) {}
+//     console.log("--- unblocked ---");
+// }, 120);
+// setTimeout(() => clearInterval(id), 600);
+// // notice: no ticks while blocked, then only ONE catches up (intervals don't pile up)
+
+// 7) chunking long work so the loop can breathe
+// function sumInChunks(n, chunk) {
+//     return new Promise(resolve => {
+//         let i = 0, total = 0, slices = 0;
+//         (function step() {
+//             const stop = Math.min(i + chunk, n);
+//             for (; i < stop; i++) total += i;
+//             slices++;
+//             if (i < n) setTimeout(step, 0);  // yield to the loop, then continue
+//             else resolve({ total, slices });
+//         })();
+//     });
+// }
+// setTimeout(() => console.log("a timer squeezed in between chunks"), 0);
+// sumInChunks(1_000_000, 250_000).then(r => console.log("sum:", r.total, "in", r.slices, "slices"));
+
+// 8) microtasks can STARVE the loop — they all run before the next task
+// let count = 0;
+// function again() {
+//     if (++count < 100_000) queueMicrotask(again);  // re-queues itself
+//     else console.log("microtasks done:", count);
+// }
+// setTimeout(() => console.log("timer finally runs"), 0);
+// queueMicrotask(again);
+// // the 0ms timer waits for all 100k microtasks (an infinite version would freeze the page)
+
+
+// 9) active demo — label every callback with the queue it came from
+const log = (queue, msg) => console.log(queue.padEnd(10), "|", msg);
+
+log("sync", "script start");
+
+setTimeout(() => {
+    log("task", "timeout 1");
+    Promise.resolve().then(() => log("microtask", "promise inside timeout 1"));
+}, 0);
+
+setTimeout(() => log("task", "timeout 2"), 0);
+
+Promise.resolve().then(() => {
+    log("microtask", "promise 1");
+    setTimeout(() => log("task", "timeout queued by promise 1"), 0);
+});
+
+(async () => {
+    log("sync", "async fn body (before await)");
+    await null;
+    log("microtask", "async fn after await");
+})();
+
+log("sync", "script end");
 </script>
 
 <script>
@@ -1534,9 +1762,33 @@ const FILES = [
   { file: 'fun_with_arrays.js',     label: 'Fun With Arrays' },
   { file: 'playing_with_objects.js',label: 'Playing With Objects' },
   { file: 'destructuring.js',       label: 'Destructuring & Spread' },
-  { file: 'fibonacci.js',           label: 'Fibonacci' },
   { file: 'count_down.js',          label: 'Count Down' },
-  { file: 'async_await.js',         label: 'Async / Await' },
+  { file: 'promises.js',            label: 'Promises',
+    links: [
+      { title: 'MDN — Using promises', url: 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Using_promises' },
+    ],
+  },
+  { file: 'async_await.js',         label: 'Async / Await',
+    links: [
+      { title: 'MDN — async function', url: 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/async_function' },
+    ],
+  },
+  { file: 'event_loop.js',          label: 'Event Loop',
+    links: [
+      {
+        title: 'What the heck is the event loop anyway? — Philip Roberts',
+        icon: '▶',
+        embed: { type: 'iframe', src: 'https://www.youtube.com/embed/8aGhZQkoFbQ', allow: 'accelerometer; encrypted-media; picture-in-picture; fullscreen' },
+      },
+      {
+        title: 'In The Loop — Jake Archibald',
+        icon: '▶',
+        embed: { type: 'iframe', src: 'https://www.youtube.com/embed/cCOL7MC4Pl0', allow: 'accelerometer; encrypted-media; picture-in-picture; fullscreen' },
+      },
+      { title: 'Loupe — visualize the call stack & queues', url: 'http://latentflip.com/loupe/' },
+      { title: 'MDN — The event loop', url: 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Event_loop' },
+    ],
+  },
   { file: 'current_date.js',        label: 'Current Date',
     links: [
       { title: 'Time formatting and storage bugs', url: 'https://en.wikipedia.org/wiki/Time_formatting_and_storage_bugs' },
@@ -2001,6 +2253,30 @@ async function loadFile(name){
   return text;
 }
 
+/* "◀ Prev" / "Next ▶" — walk FILES in sidebar order; disabled at either end. */
+const prevBtnEl = document.getElementById('prevBtn');
+const nextBtnEl = document.getElementById('nextBtn');
+function neighborFile(delta){
+  const i = FILES.findIndex(f => f.file === state.active);
+  const j = i + delta;
+  return (i >= 0 && j >= 0 && j < FILES.length) ? FILES[j] : null;
+}
+function updateNextBtn(){
+  const pf = neighborFile(-1), nf = neighborFile(1);
+  prevBtnEl.disabled = !pf;
+  prevBtnEl.title = pf ? 'Previous example: ' + pf.label : 'This is the first example';
+  nextBtnEl.disabled = !nf;
+  nextBtnEl.title = nf ? 'Next example: ' + nf.label : 'This is the last example';
+}
+prevBtnEl.addEventListener('click', () => {
+  const pf = neighborFile(-1);
+  if(pf) activate(pf.file);
+});
+nextBtnEl.addEventListener('click', () => {
+  const nf = neighborFile(1);
+  if(nf) activate(nf.file);
+});
+
 async function activate(name){
   // Save current view (file + step) into its slot
   if(state.active){
@@ -2011,6 +2287,7 @@ async function activate(name){
   document.querySelectorAll('.file-btn').forEach(b=>{
     b.classList.toggle('active', b.dataset.file === name);
   });
+  updateNextBtn();
   fileNameEl.firstChild.textContent = name;
   if(!state.loaded[name]){
     editor.setValue('// Loading ' + name + '…');
@@ -2018,16 +2295,16 @@ async function activate(name){
   }
   // (Re)compute steps from the current "All" buffer
   state.steps[name] = parseSteps(state.buffers[name] ?? state.originals[name] ?? '');
-  // First time this file is opened: default to the LAST step when there are
+  // First time this file is opened: default to the FIRST step when there are
   // multiple steps; otherwise fall back to All (0).
   if(state.activeStep[name] == null){
     const ss = state.steps[name];
-    state.activeStep[name] = (ss && ss.length >= 2) ? ss[ss.length - 1].n : 0;
+    state.activeStep[name] = (ss && ss.length >= 2) ? ss[0].n : 0;
   }
-  // If a previously-active step no longer exists (e.g. headings removed), fall back to the last available step or All
+  // If a previously-active step no longer exists (e.g. headings removed), fall back to the first available step or All
   if(state.activeStep[name] !== 0 && !(state.steps[name] || []).some(s => s.n === state.activeStep[name])){
     const ss = state.steps[name];
-    state.activeStep[name] = (ss && ss.length) ? ss[ss.length - 1].n : 0;
+    state.activeStep[name] = (ss && ss.length) ? ss[0].n : 0;
   }
   loadEditorForCurrentStep();
   renderStepTabs();
@@ -2107,6 +2384,38 @@ window.addEventListener('keydown', (e)=>{
     e.preventDefault();
     runCode();
   }
+});
+
+/* Text size for the editor and the console — A− / A+, click the number to reset.
+   Stored as CSS vars (--editor-fs / --console-fs) and remembered across reloads. */
+const FONT_SIZES = {
+  editor:  { def: 16, cssVar: '--editor-fs',  label: 'editor' },
+  console: { def: 15, cssVar: '--console-fs', label: 'output' },
+};
+const FS_MIN = 10, FS_MAX = 32;
+document.querySelectorAll('.fs-ctl').forEach(ctl => {
+  const key = ctl.dataset.fs, cfg = FONT_SIZES[key];
+  const storeKey = 'jsLab.fontSize.' + key;
+  ctl.innerHTML = `<button type="button" title="Smaller ${cfg.label} text">A−</button>`
+    + `<button type="button" class="fs-val" title="Reset ${cfg.label} text size"></button>`
+    + `<button type="button" title="Bigger ${cfg.label} text">A+</button>`;
+  const [down, val, up] = ctl.querySelectorAll('button');
+  function apply(px, save){
+    px = Math.max(FS_MIN, Math.min(FS_MAX, px));
+    cfg.px = px;
+    document.documentElement.style.setProperty(cfg.cssVar, px + 'px');
+    val.textContent = px;
+    down.disabled = px <= FS_MIN;
+    up.disabled = px >= FS_MAX;
+    if(save){ try{ localStorage.setItem(storeKey, String(px)); }catch(_){} }
+    if(key === 'editor') editor.refresh();
+  }
+  down.addEventListener('click', () => apply(cfg.px - 1, true));
+  up.addEventListener('click',   () => apply(cfg.px + 1, true));
+  val.addEventListener('click',  () => apply(cfg.def, true));
+  let saved = NaN;
+  try{ saved = parseInt(localStorage.getItem(storeKey), 10); }catch(_){}
+  apply(Number.isFinite(saved) ? saved : cfg.def, false);
 });
 
 /* ==========================================================
@@ -2226,6 +2535,8 @@ function killSandbox(){
 let isRunning = false;
 let idleTimer = null;
 const IDLE_WINDOW_MS = 800;
+let pendingTimers = 0;   // setTimeout/setInterval still queued in the sandbox
+let syncDone = false;    // top-level user code has finished
 
 function setRunButton(running){
   const btn = document.getElementById('runBtn');
@@ -2245,9 +2556,10 @@ function setRunButton(running){
 
 function scheduleIdle(){
   if(idleTimer) clearTimeout(idleTimer);
+  if(pendingTimers > 0){ idleTimer = null; return; }  // timers still queued — stay alive
   idleTimer = setTimeout(()=>{
     idleTimer = null;
-    if(!isRunning) return;
+    if(!isRunning || pendingTimers > 0) return;
     killSandbox();
     isRunning = false;
     setRunButton(false);
@@ -2275,20 +2587,45 @@ function buildSandboxSrc(code, runId){
 (function(){
   const RUN_ID = ${runId};
   function send(kind, payload){
-    parent.postMessage({ __js_lab__: true, runId: RUN_ID, kind, payload }, '*');
+    try{
+      parent.postMessage({ __js_lab__: true, runId: RUN_ID, kind, payload }, '*');
+    }catch(_){
+      // Last resort if something still can't be structured-cloned
+      parent.postMessage({ __js_lab__: true, runId: RUN_ID, kind, payload: payload.map(p => String(p)) }, '*');
+    }
+  }
+  // postMessage can't clone Promises, functions, DOM nodes, ... — turn them
+  // into display strings (recursively) so console.log never throws.
+  function clean(v, seen, depth){
+    const t = typeof v;
+    if(v === null || v === undefined || t === 'string' || t === 'number' || t === 'boolean' || t === 'bigint') return v;
+    if(t === 'symbol') return v.toString();
+    if(t === 'function') return depth === 0 ? v.toString() : '[Function ' + (v.name || 'anonymous') + ']';
+    if(v instanceof Promise) return 'Promise { … }';
+    if(v instanceof Error){
+      return depth === 0 ? { __t:'error', name:v.name, message:v.message, stack:v.stack } : v.name + ': ' + v.message;
+    }
+    if(v instanceof Date || v instanceof RegExp) return v;
+    if(typeof Node !== 'undefined' && v instanceof Node) return '<' + (v.nodeName || 'node').toLowerCase() + '>';
+    if(seen.has(v)) return '[Circular]';
+    seen.add(v);
+    let out;
+    if(Array.isArray(v)) out = v.map(x => clean(x, seen, depth + 1));
+    else if(v instanceof Map) out = new Map(Array.from(v, ([k, x]) => [clean(k, seen, depth + 1), clean(x, seen, depth + 1)]));
+    else if(v instanceof Set) out = new Set(Array.from(v, x => clean(x, seen, depth + 1)));
+    else { out = {}; Object.keys(v).forEach(k => { out[k] = clean(v[k], seen, depth + 1); }); }
+    seen.delete(v);
+    return out;
   }
   function pack(args){
-    return Array.from(args).map(a => {
-      if(a instanceof Error) return { __t:'error', name:a.name, message:a.message, stack:a.stack };
-      return a;
-    });
+    return Array.from(args).map(a => clean(a, new Set(), 0));
   }
   const origLog = console.log;
   ['log','info','warn','error','debug'].forEach(m=>{
     console[m] = function(){ send(m === 'debug' ? 'log' : m, pack(arguments)); };
   });
-  console.table = function(data){ send('table', [data]); };
-  console.dir = function(o){ send('log', [o]); };
+  console.table = function(data){ send('table', pack([data])); };
+  console.dir = function(o){ send('log', pack([o])); };
   console.trace = function(){ send('log', ['trace']); };
   console.group = function(){ send('log', ['▼ '+Array.from(arguments).join(' ')]); };
   console.groupEnd = function(){};
@@ -2298,6 +2635,28 @@ function buildSandboxSrc(code, runId){
     const start = (console.__t||{})[k];
     if(start!=null) send('info', [k+': '+(performance.now()-start).toFixed(3)+'ms']);
   };
+  // Track pending timers so the host keeps the run alive until they fire
+  // (a 1s countdown would otherwise outlive the idle window and get cut).
+  const pending = new Set();
+  const report = () => send('timers', [pending.size]);
+  const origST = window.setTimeout, origCT = window.clearTimeout;
+  const origSI = window.setInterval, origCI = window.clearInterval;
+  window.setTimeout = function(fn, ms){
+    const args = Array.prototype.slice.call(arguments, 2);
+    const id = origST(function(){
+      try{ typeof fn === 'function' ? fn.apply(this, args) : (0, eval)(String(fn)); }
+      finally{ pending.delete(id); report(); }
+    }, ms);
+    pending.add(id); report();
+    return id;
+  };
+  window.clearTimeout = function(id){ origCT(id); if(pending.delete(id)) report(); };
+  window.setInterval = function(){
+    const id = origSI.apply(window, arguments);
+    pending.add(id); report();
+    return id;
+  };
+  window.clearInterval = function(id){ origCI(id); if(pending.delete(id)) report(); };
   window.addEventListener('error', function(e){
     send('error', [{__t:'error', name:(e.error&&e.error.name)||'Error', message:e.message, stack:(e.error&&e.error.stack)||''}]);
   });
@@ -2325,9 +2684,17 @@ window.addEventListener('message', (ev)=>{
   if(!data || !data.__js_lab__) return;
   if(data.runId !== sandboxId) return;
   const { kind, payload } = data;
+  if(kind === 'timers'){
+    // Pending timer count changed — hold the run open while any remain,
+    // start the idle window once they're all gone.
+    pendingTimers = payload[0];
+    if(syncDone && isRunning) scheduleIdle();
+    return;
+  }
   if(kind === 'done'){
-    // Sync user code finished — start the idle window. Any further
-    // async output (setTimeout/Promise) will reset it.
+    // Sync user code finished — start the idle window (unless timers are
+    // still pending). Any further async output will reset it.
+    syncDone = true;
     consoleStatus.classList.remove('running');
     if(errorCount > 0){ consoleStatus.classList.add('error'); consoleStatus.textContent = 'Failed'; }
     else { consoleStatus.textContent = 'Done'; }
@@ -2365,6 +2732,8 @@ function runCode(){
   // Tear down any previous run, including its idle timer
   if(idleTimer){ clearTimeout(idleTimer); idleTimer = null; }
   killSandbox();
+  pendingTimers = 0;
+  syncDone = false;
   sandboxId += 1;
   runStartTime = performance.now();
   const iframe = document.createElement('iframe');
@@ -2400,5 +2769,6 @@ function toast(msg, kind){
   await activate(FILES[0].file);
 })();
 </script>
+<script src="../sidebar-toggle.js"></script>
 </body>
 </html>

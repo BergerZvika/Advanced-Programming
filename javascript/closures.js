@@ -22,15 +22,7 @@
 // console.log(shalom("Israel")); // 'Shalom, Israel!'
 // // each greeter has its own captured `greeting`
 
-// 2) closures hold *references*, not snapshots
-// let value = 1;
-// const showValue = () => console.log(value);
-
-// showValue(); // 1
-// value = 99;
-// showValue(); // 99 — the closure sees the live binding
-
-// 3) private state — the classic "counter" pattern
+// 2) private state — the classic "counter" pattern
 // function makeCounter() {
 //     let count = 0;              // not visible from outside
 //     return {
@@ -47,18 +39,15 @@
 // console.log(c.get()); // 1
 // // c.count is undefined — fully encapsulated
 
-// 4) IIFE — immediately invoked function expression
-// runs once, exposes only what you choose
-// const api = (function () {
-//     const secret = "shhh";
-//     return { reveal: () => secret };
-// })();
+// // a second counter gets its own, separate `count`
+// const c2 = makeCounter();
+// console.log(c2.inc()); // 1
+// console.log(c2.inc()); // 2
+// console.log(c2.inc()); // 3
+// console.log(c.get());  // 1 — c is unaffected
 
-// console.log(api.reveal()); // 'shhh'
-// console.log(api.secret);   // undefined
-
-// 5) the famous `var`-in-loop pitfall
-// var binds at function scope — every callback closes over the *same* i
+// 3) the famous `var`-in-loop pitfall
+// // var binds at function scope — every callback closes over the *same* i
 // for (var i = 0; i < 3; i++) {
 //     setTimeout(() => console.log("var i =", i), 0);
 // }
@@ -71,20 +60,29 @@
 // // prints: 0, 1, 2
 
 
-// 6) closure as memoization — a function that remembers past results
-function memoize(fn) {
-    const cache = new Map(); // captured by the returned function
-    return function (n) {
-        if (cache.has(n)) return cache.get(n);
-        const result = fn(n);
-        cache.set(n, result);
-        return result;
-    };
+// 4) fibonacci — naive recursion vs. memoization
+function fibonacci(n) {
+    if (n <= 1) {
+        return n;
+    } else {
+        return fibonacci(n - 1) + fibonacci(n - 2);
+    }
 }
 
-const square = (n) => n * n;
-const fastSquare = memoize(square);
+function fibonacci_dm(n, memo = {}) {
+    if (n in memo) {
+        return memo[n];
+    }
+    if (n <= 1) {
+        return BigInt(n);
+    }
+    memo[n] = fibonacci_dm(n - 1, memo) + fibonacci_dm(n - 2, memo);
+    return memo[n];
+}
 
-console.log(fastSquare(7));  // computed -> 49
-console.log(fastSquare(7));  // cached   -> 49
-console.log(fastSquare(11)); // computed -> 121
+// Example usage:
+// console.log(fibonacci(300));
+
+// Example usage:
+console.log(fibonacci_dm(300));
+// console.log(fibonacci_dm(301));
