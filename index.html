@@ -587,6 +587,37 @@ section.lab-section{ margin-top: 56px }
 .git-dag .label.main { left: 158px; top: 102px; }
 .git-dag .label.feat { left: 130px; top:   8px; color: #9be8ff; border-color: rgba(53,208,255,0.5); }
 
+/* Jira-themed featured card variant (Jira blue) */
+.featured-card.jira-theme::before{
+  background: linear-gradient(135deg, rgba(38,132,255,0.55), rgba(0,82,204,0) 40%, rgba(76,154,255,0.40));
+}
+.featured-card.jira-theme:hover{ border-color: rgba(38,132,255,0.45); box-shadow: 0 36px 90px -30px rgba(38,132,255,0.30), 0 10px 30px -15px rgba(0,0,0,0.7) }
+.featured-card.jira-theme .featured-art{
+  background:
+    radial-gradient(420px 220px at 30% 30%, rgba(38,132,255,0.30), transparent 60%),
+    radial-gradient(380px 220px at 80% 70%, rgba(0,82,204,0.22), transparent 60%),
+    linear-gradient(135deg, rgba(5,20,60,0.30), rgba(38,132,255,0.06));
+}
+.featured-card.jira-theme .tag{
+  color: #cfe2ff; background: rgba(38,132,255,0.14); border-color: rgba(38,132,255,0.35);
+}
+/* Mini Kanban board art — three columns, one card sliding across */
+.jira-board{
+  width: 210px; height: 150px; display: flex; gap: 8px; position: relative;
+  filter: drop-shadow(0 16px 36px rgba(38,132,255,0.45));
+  animation: floatY 5s ease-in-out infinite;
+}
+.jira-board .jcol{ flex: 1; border-radius: 9px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); padding: 18px 6px 6px; display: flex; flex-direction: column; gap: 6px; position: relative }
+.jira-board .jcol::before{ content: ""; position: absolute; top: 7px; left: 7px; width: 26px; height: 5px; border-radius: 3px; background: rgba(255,255,255,0.35) }
+.jira-board .jcol.ip::before{ background: #4c9aff }
+.jira-board .jcol.dn::before{ background: #38d39f }
+.jira-board .jcard{ height: 22px; border-radius: 5px; background: #1c2340; border: 1px solid rgba(255,255,255,0.14); position: relative }
+.jira-board .jcard::after{ content: ""; position: absolute; left: 5px; bottom: 5px; width: 7px; height: 7px; border-radius: 2px; background: #22a06b }
+.jira-board .jcard.bug::after{ background: #e5484d }
+.jira-board .jcard.task::after{ background: #2684ff }
+.jira-board .jcard.move{ position: absolute; left: 6px; top: 46px; width: calc((100% - 16px) / 3 - 12px); border-color: #4c9aff; box-shadow: 0 0 0 2px rgba(38,132,255,0.5); animation: jslide 5s ease-in-out infinite }
+@keyframes jslide{ 0%,15%{ transform: translateX(0) } 40%,60%{ transform: translateX(73px) } 85%,100%{ transform: translateX(146px) } }
+
 /* Docker-themed featured card variant (Docker official blue) */
 .featured-card.docker-theme::before{
   background: linear-gradient(135deg, rgba(36,150,237,0.55), rgba(14,114,197,0) 40%, rgba(91,179,255,0.40));
@@ -915,6 +946,7 @@ footer a:hover{ color: var(--text) }
   </div>
   <div class="right">
     <a class="nav-link" href="#javascript">JavaScript</a>
+    <a class="nav-link" href="#git">Git</a>
     <a class="nav-link" href="#cpp-basics">C++ Basics</a>
     <a class="nav-link" href="#cpp-oop">C++ OOP</a>
     <a class="nav-link" href="#cpp-stl">C++ STL</a>
@@ -928,7 +960,6 @@ footer a:hover{ color: var(--text) }
     <a class="nav-link" href="#react-native">React Native</a>
     <a class="nav-link" href="#csharp">C#</a>
     <a class="nav-link" href="#xml">XML</a>
-    <a class="nav-link" href="#git">Git</a>
     <a class="nav-link" href="#docker">Docker</a>
     <a class="nav-link" href="#memcached">Memcached</a>
     <a class="nav-link primary" href="home.html">Home ↗</a>
@@ -972,6 +1003,47 @@ footer a:hover{ color: var(--text) }
           <span>12 lessons</span>
           <span>CodeMirror editor</span>
           <span>three.js scene</span>
+        </div>
+        <span class="open">Open the lab <span aria-hidden="true">→</span></span>
+      </div>
+    </a>
+  </section>
+
+  <!-- Git — featured -->
+  <section class="lab-section" id="git">
+    <div class="section-head">
+      <h2>Git</h2>
+      <span class="count">26 lessons · live simulator</span>
+      <p>Learn Git from zero: what a commit is, cloning a project, the three areas, branches, merges and conflicts, through remotes, rebase, reset/revert, reflog, bisect and Git's object internals. Every lesson runs step by step in an in-browser Git simulator, with a live commit graph, the working dir / staging / repo panels and the object database updating as each command runs.</p>
+    </div>
+
+    <a class="featured-card git-theme" href="git/index.html">
+      <div class="featured-art">
+        <span class="ring r1"></span>
+        <span class="ring r2"></span>
+        <div class="git-dag">
+          <div class="dag-edge e1"></div>
+          <div class="dag-edge e2"></div>
+          <div class="dag-edge e3"></div>
+          <div class="dag-edge e4"></div>
+          <div class="dag-node n1"></div>
+          <div class="dag-node n2"></div>
+          <div class="dag-node merge n3"></div>
+          <div class="dag-node n4"></div>
+          <div class="dag-node feat n5"></div>
+          <span class="label main">main</span>
+          <span class="label feat">feature</span>
+        </div>
+      </div>
+      <div class="featured-body">
+        <span class="tag">Featured</span>
+        <h3>Git Lab</h3>
+        <p>Each lesson pairs a plain-language explanation (analogies, tables, pitfalls) with a scripted demo you can run one step at a time or play through, plus a free terminal to try your own commands and a quick quiz. Beginner: commits, clone, the three areas, diff, history, restore, .gitignore. Intermediate: branches, HEAD, fast-forward / 3-way merges, conflicts, clone / fetch / pull / push, stash, tags. Advanced: rebase, cherry-pick, reset modes, revert, amend, reflog, bisect, internals, team workflows.</p>
+        <div class="meta">
+          <span>26 lessons · beginner → advanced</span>
+          <span>live commit graph</span>
+          <span>3 areas · object DB</span>
+          <span>step-by-step · quiz</span>
         </div>
         <span class="open">Open the lab <span aria-hidden="true">→</span></span>
       </div>
@@ -1359,41 +1431,34 @@ footer a:hover{ color: var(--text) }
     </a>
   </section>
 
-  <!-- Git — featured -->
-  <section class="lab-section" id="git">
+  <!-- Jira — featured -->
+  <section class="lab-section" id="jira">
     <div class="section-head">
-      <h2>Git</h2>
-      <span class="count">3D graph · 15 steps</span>
-      <p>Walk a 15-step Git curriculum — from <code>git init</code> through <code>rebase</code>, hooks, octopus merges, and recovering lost commits — with a real Three.js 3D graph visualizing each step's commit DAG. Drag to rotate, scroll to zoom, hover commits for details; branches are color-coded, HEAD pulses, tags wear golden rings.</p>
+      <h2>Jira</h2>
+      <span class="count">21 lessons · live simulator</span>
+      <p>Learn Jira from zero: projects, issue types, workflows and boards, through Scrum sprints, story points, burndown and velocity, Kanban WIP limits, JQL search, custom workflows, automation rules, releases and Git smart commits. Every lesson runs step by step against an in-browser Jira simulator: cards slide across the board, the burndown redraws, the workflow arrows light up.</p>
     </div>
 
-    <a class="featured-card git-theme" href="git/index.html">
+    <a class="featured-card jira-theme" href="jira/index.html">
       <div class="featured-art">
         <span class="ring r1"></span>
         <span class="ring r2"></span>
-        <div class="git-dag">
-          <div class="dag-edge e1"></div>
-          <div class="dag-edge e2"></div>
-          <div class="dag-edge e3"></div>
-          <div class="dag-edge e4"></div>
-          <div class="dag-node n1"></div>
-          <div class="dag-node n2"></div>
-          <div class="dag-node merge n3"></div>
-          <div class="dag-node n4"></div>
-          <div class="dag-node feat n5"></div>
-          <span class="label main">main</span>
-          <span class="label feat">feature</span>
+        <div class="jira-board">
+          <div class="jcol"><div class="jcard"></div><div class="jcard bug"></div></div>
+          <div class="jcol ip"><div class="jcard task"></div></div>
+          <div class="jcol dn"><div class="jcard"></div></div>
+          <div class="jcard move"></div>
         </div>
       </div>
       <div class="featured-body">
         <span class="tag">Featured</span>
-        <h3>Git Lab</h3>
-        <p>Each step pairs the actual bash scripts from <code>git/step*</code> (with bash syntax highlighting + tab navigation between scripts) with a 3D commit-DAG visualizer. The 15 steps cover: init &amp; objects, branching, merging (FF + 3-way + conflicts), remotes, rebase, log/blame/bisect, stash &amp; worktree, tags &amp; releases, hooks, cherry-pick &amp; reflog &amp; sparse-checkout, gitflow / trunk-based / forking workflows, plumbing internals, octopus merges, large-repo techniques, and disaster recovery.</p>
+        <h3>Jira Lab</h3>
+        <p>Each lesson pairs a plain-language explanation (analogies, tables, pitfalls) with a scripted demo you can step through, pause or rewind, plus a console for your own actions and a quick quiz. Six live views: Board (drag cards), Backlog (drag into sprints), Issue, Workflow diagram, Reports (burndown, velocity, cycle time) and JQL Search.</p>
         <div class="meta">
-          <span>15 steps · 56 scripts</span>
-          <span>3D Three.js graph</span>
-          <span>orbit · zoom · hover</span>
-          <span>HEAD pulse · tag rings</span>
+          <span>21 lessons · beginner → advanced</span>
+          <span>board · backlog · sprints</span>
+          <span>burndown · velocity</span>
+          <span>JQL · automation</span>
         </div>
         <span class="open">Open the lab <span aria-hidden="true">→</span></span>
       </div>
@@ -1404,8 +1469,8 @@ footer a:hover{ color: var(--text) }
   <section class="lab-section" id="docker">
     <div class="section-head">
       <h2>Docker</h2>
-      <span class="count">3D layers · 15 steps</span>
-      <p>15 steps from <code>docker run hello-world</code> through multi-stage builds, Docker Compose, BuildKit secrets, Swarm replicas, and production hardening — each with a 3D visualizer that auto-detects the kind: <strong>image-layer towers</strong> for Dockerfile steps (each instruction is a colored disk in a stack, multi-stage builds get separate towers with a copy-arrow between them), or <strong>service topology</strong> for compose steps (services as 3D boxes around a circle, depends_on arrows, port labels, volume cylinders, network rings).</p>
+      <span class="count">21 lessons · live simulator</span>
+      <p>Learn Docker from zero: images vs containers, ports, <code>-it</code> and <code>exec</code>, your first Dockerfile, through layers & the build cache, volumes and bind mounts, networking with DNS, env config, Docker Compose with healthchecks and scaling, then multi-stage builds, restart policies, ENTRYPOINT vs CMD, image security, registries and a production checklist. Every lesson runs step by step against an in-browser Docker host you can also drive yourself.</p>
     </div>
 
     <a class="featured-card docker-theme" href="docker/index.html">
@@ -1423,12 +1488,12 @@ footer a:hover{ color: var(--text) }
       <div class="featured-body">
         <span class="tag">Featured</span>
         <h3>Docker Lab</h3>
-        <p>Each step opens its actual <code>Dockerfile</code> / <code>docker-compose.yml</code> from <code>docker/step*</code> with proper syntax highlighting and tab navigation between every supporting file (app.py, requirements.txt, nginx.conf, init.sql, etc.). The 15 steps cover: hello-world CLI, first Dockerfile, layers &amp; cache, volumes, networking, ENV/ARG, multi-stage (gcc → alpine), Compose with Redis, HEALTHCHECK, registry push/pull, full 3-tier stack (Nginx → Flask → Postgres with two networks), BuildKit secrets, Swarm replicas with rolling updates, ENTRYPOINT vs CMD, and production hardening (read_only, cap_drop, mem_limit).</p>
+        <p>Each lesson pairs a plain-language explanation with a scripted demo you can step through, pause or rewind, plus a real terminal (including shells <em>inside</em> containers) and a quick quiz. Four live views: the Docker host map (registry → images → containers grouped by network, ports, volumes), Layers (every Dockerfile line marked CACHED or BUILT, image sizes compared), an editable project Files tab, and a Browser for your containers' web apps.</p>
         <div class="meta">
-          <span>15 steps · 42 files</span>
-          <span>auto-parsed Dockerfiles</span>
-          <span>service topology in 3D</span>
-          <span>HEALTHCHECK pulse · network rings</span>
+          <span>21 lessons · beginner → advanced</span>
+          <span>build cache · layers</span>
+          <span>volumes · networks</span>
+          <span>compose · scaling</span>
         </div>
         <span class="open">Open the lab <span aria-hidden="true">→</span></span>
       </div>
@@ -1481,7 +1546,7 @@ footer a:hover{ color: var(--text) }
 </main>
 
 <footer>
-  <p>Advanced Programming · <a href="tools.html">BergerOverflow Tools</a> · <a href="javascript/index.html">JS Lab</a> · <a href="typescript/index.html">TS Lab</a> · <a href="html/lab.html">HTML Lab</a> · <a href="css/index.html">CSS Lab</a> · <a href="bootstrap/index.html">Bootstrap Lab</a> · <a href="mongodb/index.html">MongoDB Lab</a> · <a href="neo4j/index.html">Neo4j Lab</a> · <a href="react/index.html">React Lab</a> · <a href="react-native/index.html">React Native Lab</a> · <a href="xml/index.html">XML Lab</a> · <a href="git/index.html">Git Lab</a> · <a href="docker/index.html">Docker Lab</a> · <a href="memcached/index.html">Memcached Lab</a></p>
+  <p>Advanced Programming · <a href="tools.html">BergerOverflow Tools</a> · <a href="javascript/index.html">JS Lab</a> · <a href="typescript/index.html">TS Lab</a> · <a href="html/lab.html">HTML Lab</a> · <a href="css/index.html">CSS Lab</a> · <a href="bootstrap/index.html">Bootstrap Lab</a> · <a href="mongodb/index.html">MongoDB Lab</a> · <a href="neo4j/index.html">Neo4j Lab</a> · <a href="react/index.html">React Lab</a> · <a href="react-native/index.html">React Native Lab</a> · <a href="xml/index.html">XML Lab</a> · <a href="git/index.html">Git Lab</a> · <a href="jira/index.html">Jira Lab</a> · <a href="docker/index.html">Docker Lab</a> · <a href="memcached/index.html">Memcached Lab</a></p>
 </footer>
 
 <script>
