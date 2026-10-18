@@ -96,6 +96,8 @@ body::after{
   min-width:0; overflow-x:auto; scrollbar-width:none; padding:2px 0;
 }
 .topnav .right::-webkit-scrollbar{ display:none }
+/* Home stays pinned in the right corner, outside the scrolling link strip */
+.topnav .home-link{ flex-shrink:0 }
 .nav-link{
   flex-shrink:0; white-space:nowrap;
   padding: 8px 14px; border-radius: 999px; font-size: 12.5px; font-weight:600;
@@ -962,8 +964,8 @@ footer a:hover{ color: var(--text) }
     <a class="nav-link" href="#xml">XML</a>
     <a class="nav-link" href="#docker">Docker</a>
     <a class="nav-link" href="#memcached">Memcached</a>
-    <a class="nav-link primary" href="home.html">Home ↗</a>
   </div>
+  <a class="nav-link primary home-link" href="home.html">Home ↗</a>
 </nav>
 
 <section class="hero">
