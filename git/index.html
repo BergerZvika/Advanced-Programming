@@ -323,6 +323,12 @@ svg.graph .node.ghost circle.dot{stroke-dasharray:3 3;fill:transparent !importan
 svg.graph .node .ring{fill:none;stroke:#fff;stroke-width:2;opacity:0}
 svg.graph .node.head .ring{opacity:.9;animation:pulse 1.8s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
 @keyframes pulse{0%,100%{transform:scale(1);opacity:.85}50%{transform:scale(1.18);opacity:.35}}
+#localHost svg.graph .node{cursor:pointer}
+#localHost svg.graph .node:hover .ring{opacity:.45}
+svg.graph .node.sel .ring{opacity:1;stroke:var(--accent-2);stroke-width:3;animation:none}
+.banner.inspect{background:rgba(53,208,255,0.08);border:1px solid rgba(53,208,255,0.4);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.banner.inspect .sp{flex:1}
+.banner.inspect button{font:inherit;font-size:12px;padding:3px 10px;border-radius:7px;border:1px solid var(--border);background:rgba(255,255,255,0.06);color:inherit;cursor:pointer}
 svg.graph .node text{font-family:'JetBrains Mono',monospace;text-anchor:middle;pointer-events:none}
 svg.graph .node .h{font-size:10.5px;fill:#cfd0e6}
 svg.graph .node .m{font-size:10px;fill:var(--text-faint);font-family:'Inter',sans-serif}
@@ -549,7 +555,7 @@ body.term-dragging{user-select:none;cursor:row-resize}
       <div class="narr" id="narr"></div>
       <div class="viz" id="viz" data-view="split">
         <div class="panel p-graph">
-          <div class="panel-head"><b>Commit graph</b><span class="side-ctl" role="group" aria-label="Which repository to show"><button data-side="local" title="Your computer">💻 Local</button><button data-side="remote" title="GitHub (origin)">☁️ Remote</button><button data-side="both" title="Both">Both</button></span><span class="hint">circle = commit · labels = pointers · hover a circle for details</span></div>
+          <div class="panel-head"><b>Commit graph</b><span class="side-ctl" role="group" aria-label="Which repository to show"><button data-side="local" title="Your computer">💻 Local</button><button data-side="remote" title="GitHub (origin)">☁️ Remote</button><button data-side="both" title="Both">Both</button></span><span class="hint">circle = commit · labels = pointers · click a commit to see its areas</span></div>
           <div class="panel-body" id="graphBody">
             <div class="graph-host" id="localHost"></div>
             <div class="graph-host" id="remoteHost"></div>
@@ -854,6 +860,7 @@ class Shell {
   run(line){
     const toks = tokenize(line.trim());
     const out = []; let ok = true, clear = false;
+    const seq0 = this.world.seq;
     const groups = [[]];
     for(const t of toks){ if(t === '&&') groups.push([]); else groups[groups.length - 1].push(t); }
     for(const g of groups){
@@ -865,6 +872,9 @@ class Shell {
       out.push(...res.lines);
       if(res.err){ ok = false; break; }
     }
+    // remember the working dir + staging area right after a commit is made here, for the graph's commit inspector
+    const hid = this.repo.inited && this.repo.headId(), hc = hid && this.world.objects[hid];
+    if(hc && !hc.areas && hc.seq >= seq0) hc.areas = {work: {...this.repo.work}, index: {...this.repo.index}};
     return {lines: out, ok, clear};
   }
 
@@ -2021,7 +2031,7 @@ const LESSONS = [
   <tr><td>start a <b>new</b> empty project</td><td>copy an <b>existing</b> project</td></tr>
   <tr><td>no history, no remote</td><td>full history + <code>origin</code> remote</td></tr>
 </table>
-<div class="tip">You only clone <b>once</b> per project. After that, use <code>git pull</code> to get your teammates' new work. (Fetch, pull and push are covered in the Intermediate lessons.)</div>`,
+<div class="tip">You only clone <b>once</b> per project. After that, use <code>git pull</code> to get your teammates' new work; that's the next lesson.</div>`,
   setup: sh => makeRemote(sh, 'https://github.com/team/recipes.git', [['README.md', '# Family recipes', 'Initial commit'], ['soup.txt', 'tomato soup', 'Add soup recipe'], ['cake.txt', 'chocolate cake', 'Add cake recipe']]),
   steps: [
     {cmd: 'ls', note: 'The folder is empty. The project only exists on GitHub (the <b>remote</b> graph below).'},
@@ -2035,6 +2045,40 @@ const LESSONS = [
     {cmd: 'git push', note: '<b>Upload</b> your commit. Clone already linked <code>main</code> to <code>origin/main</code>, so a plain <code>git push</code> knows where to send it. The remote graph now has your pancake commit too. (When someone else pushed first, GitHub rejects it; see "Push & the rejected push".)'},
   ],
   quiz: {q: 'What do you get when you clone a repository?', options: ['Only the latest version of the files', 'The files plus the complete history, with a remote named origin', 'A live link: your edits appear on GitHub immediately'], answer: 1, why: 'Clone copies everything. Your changes stay local until you push them.'}
+},
+/* ------------------------------------------------------------------ */
+{
+  id: 'pull', level: 'Beginner', view: 'graph',
+  title: 'Get updates: git pull',
+  sub: 'Bring your teammates\' new commits into your copy',
+  html: `
+<p class="lead">After you clone, your teammates keep pushing new commits to GitHub. Your copy <b>never updates by itself</b>. <code>git pull</code> downloads the new commits and adds them to your current branch.</p>
+<div class="analogy"><span class="ico">📬</span><div><b>Analogy — checking your mailbox.</b> Letters (commits) pile up at the post office (GitHub) whether you look or not. Nothing reaches your desk until you go and collect them with <code>git pull</code>.</div></div>
+<h4>Push vs. pull</h4>
+<table class="tbl">
+  <tr><td><code>git push</code></td><td>send <b>your</b> commits up to GitHub</td></tr>
+  <tr><td><code>git pull</code></td><td>bring <b>their</b> commits down to your computer</td></tr>
+</table>
+<h4>The daily routine</h4>
+<div class="flow"><span>start of the day</span><i>→</i><span><code>git pull</code></span><i>→</i><span>edit, add, commit</span><i>→</i><span><code>git push</code></span></div>
+<div class="tip">Pull <b>before</b> you start working. The fresher your copy, the less likely your push gets rejected or your work collides with a teammate's.</div>
+<div class="warn">Commit (or stash) your changes before pulling. Git refuses to pull on top of uncommitted edits.</div>
+<p>Under the hood, pull is two steps: <code>git fetch</code> (download) + <code>git merge</code> (combine). The Intermediate lesson "Remotes: clone, fetch, pull" takes it apart.</p>`,
+  setup: sh => { makeRemote(sh, 'https://github.com/team/recipes.git', [['README.md', '# Family recipes', 'Initial commit'], ['soup.txt', 'tomato soup', 'Add soup recipe'], ['cake.txt', 'chocolate cake', 'Add cake recipe']]); sh.run('git clone https://github.com/team/recipes.git'); },
+  steps: [
+    {cmd: 'git log --oneline', note: 'You cloned the recipes project earlier. Your <code>main</code> and <code>origin/main</code> point at the same commit: your copy matches GitHub.'},
+    {cmd: 'teammate push "Add pasta recipe" pasta.txt', note: '<b>Simulation:</b> your teammate Sam pushes a new recipe to GitHub. The <b>remote</b> graph gets a new commit, but your local graph doesn\'t change.'},
+    {cmd: 'ls', note: 'No <code>pasta.txt</code> here yet. Your copy never updates by itself.'},
+    {cmd: 'git pull', note: '<b>Download</b> Sam\'s commit and add it to your <code>main</code>. Your local graph catches up with the remote, and <code>origin/main</code> moves with it.'},
+    {cmd: 'cat pasta.txt', note: 'Sam\'s work is now in your folder.'},
+    {cmd: 'git log --oneline', note: 'Sam\'s commit is now part of your history. Everyone has the same history again.'},
+    {cmd: 'git pull', note: 'Pulling again is harmless: nothing new on GitHub, so Git says "Already up to date."'},
+    {cmd: 'teammate push "Add salad recipe" salad.txt', note: 'Next morning: Sam pushed another recipe overnight.'},
+    {cmd: 'git pull', note: 'Start of the day: <b>pull first</b>. Now your copy includes the salad recipe.'},
+    {cmd: 'echo "pancakes" > pancakes.txt && git add . && git commit -m "Add pancake recipe"', note: 'Do your own work on top of the fresh copy.'},
+    {cmd: 'git push', note: 'Push goes through smoothly, because you started from the latest version of <code>main</code>. Both graphs match again.'},
+  ],
+  quiz: {q: 'Sam pushed a new commit to GitHub. How do you get it into your local copy?', options: ['It appears automatically', 'git push', 'git pull'], answer: 2, why: 'Your copy never updates by itself. git pull downloads the new commits and adds them to your branch; git push goes the other way.'}
 },
 /* ------------------------------------------------------------------ */
 {
@@ -2342,6 +2386,7 @@ Hola                   ← their version (branch being merged)
   <li><code>git add file</code>: tells Git "this conflict is resolved"</li>
   <li><code>git commit</code>: finishes the merge</li>
 </ol>
+<div class="tip"><b>See both sides:</b> during the conflict, click a commit in the graph. The areas panel shows its Working Directory, Staging Area and Repository as they were right after it was made. Compare "Greet in Spanish" with "Friendlier greeting" to see the two versions of <code>greeting.txt</code> that collide. Click it again, or press <b>Back to live</b>, to return.</div>
 <div class="tip">Panicking? <code>git merge --abort</code> puts everything back exactly as it was before the merge. Shortcuts: <code>git checkout --ours file</code> or <code>--theirs file</code> picks one whole side.</div>
 <p class="note">Simulator note: real Git merges line by line, so edits to <i>different</i> lines of the same file usually merge cleanly. This simulator compares whole files.</p>`,
   setup: ['git init', C('greeting.txt', 'Hello', 'Add greeting', '>'), 'git switch -c spanish', C('greeting.txt', 'Hola', 'Greet in Spanish', '>'), 'git switch main', C('greeting.txt', 'Hello, friend', 'Friendlier greeting', '>')],
@@ -2946,7 +2991,7 @@ class GraphView {
       const {x, y: cy} = pos(c.id);
       let g = this.nodes.get(c.id);
       if(!g){
-        g = svgEl('g', {class: 'node'});
+        g = svgEl('g', {class: 'node', 'data-id': c.id});
         const ring = svgEl('circle', {class: 'ring', r: 19});
         const dot = svgEl('circle', {class: 'dot', r: 13});
         const h = svgEl('text', {class: 'h', y: 30}); h.textContent = c.id.slice(0, 7);
@@ -2967,6 +3012,7 @@ class GraphView {
       dot.setAttribute('fill', col); dot.setAttribute('stroke', 'rgba(255,255,255,0.75)');
       g.classList.toggle('ghost', !reach.has(c.id));
       g.classList.toggle('head', c.id === headId);
+      g.classList.toggle('sel', !remote && c.id === S.inspect);
     }
     for(const [id, g] of this.nodes) if(!seen.has(id)){ g.remove(); this.nodes.delete(id); }
 
@@ -3007,7 +3053,55 @@ function preview(content){
   const ls = linesOf(content);
   return esc(ls.slice(0, 2).join('\n') + (ls.length > 2 ? '\n…' : '')) || '<i>(empty)</i>';
 }
+/* a commit clicked in the local graph: its three areas as they were right after it was made */
+function renderInspect(sh, id){
+  const c = sh.world.objects[id], body = $('#areasBody');
+  const tree = c.files, snap = c.areas || {work: tree, index: tree};
+  const parent = c.parents[0] ? sh.world.objects[c.parents[0]].files : {};
+  const cards = {wd: [], st: [], rp: []};
+  const card = (col, f, chip, cls, title, content, extra = '') =>
+    cards[col].push(`<div class="fcard ${extra}" title="${esc(title)}"><div class="top"><span class="name">${esc(f)}</span><span class="chip ${cls}">${chip}</span></div><div class="prev">${preview(content)}</div></div>`);
+  for(const f of union(snap.work, snap.index)){
+    const w = snap.work[f], i = snap.index[f];
+    if(w === undefined) card('wd', f, 'D', 'd', 'deleted in working directory (still tracked)', '', 'deleted');
+    else if(i === undefined) card('wd', f, 'U', 'u', 'untracked: not part of this commit', w);
+    else if(w !== i) card('wd', f, 'M', 'm', 'modified, but not staged when this commit was made', w);
+    else card('wd', f, '✓', 'ok', 'same as staging area', w);
+  }
+  for(const f of union(snap.index, tree)){
+    const i = snap.index[f], h = tree[f];
+    if(i === undefined) card('st', f, 'D', 'd', 'deletion staged', '', 'deleted');
+    else if(h === undefined) card('st', f, 'A', 'a', 'staged after this commit', i);
+    else if(i !== h) card('st', f, 'M', 'm', 'staged after this commit', i);
+    else card('st', f, '=', 'ok', 'same as this commit', i);
+  }
+  // in the repository column, mark what this commit changed compared with its (first) parent
+  for(const f of union(tree, parent)){
+    if(tree[f] === undefined) card('rp', f, 'D', 'd', 'deleted by this commit', '', 'deleted');
+    else if(parent[f] === undefined) card('rp', f, 'A', 'a', 'added by this commit', tree[f]);
+    else if(parent[f] !== tree[f]) card('rp', f, 'M', 'm', 'changed by this commit', tree[f]);
+    else card('rp', f, '●', 'ok', 'unchanged from the parent commit', tree[f]);
+  }
+  const empty = t => `<div class="empty">${t}</div>`;
+  const live = sh.repo.headId() === id ? ' (HEAD)' : '';
+  const parents = c.parents.length ? c.parents.map(p => `<b class="mono">${short(p)}</b>`).join(' + ') : 'none (first commit)';
+  let html = `<div class="areas" style="grid-template-columns:repeat(3,minmax(0,1fr));min-width:390px">`;
+  html += `<div class="banner inspect">🔍 <span>Viewing commit <b class="mono">${short(id)}</b>${live} "${esc(firstLine(c.msg))}" by ${esc(c.author.name)} · parent${c.parents.length > 1 ? 's' : ''}: ${parents}<br><small>${c.areas ? 'Your areas right after this commit was made.' : 'Made elsewhere, so you see a clean checkout of it.'}</small></span><span class="sp"></span><button data-inspect="live">✕ Back to live</button></div>`;
+  html += `<div class="area wd"><h5>📝 Working Directory</h5><div class="desc">the files on disk at that moment</div><div class="files">${cards.wd.join('') || empty('no files')}</div></div>`;
+  html += `<div class="area st"><h5>📦 Staging Area</h5><div class="desc">what was staged at that moment</div><div class="files">${cards.st.join('') || empty('empty')}</div></div>`;
+  html += `<div class="area rp"><h5>🗄️ Repository</h5><div class="desc">snapshot in commit <b class="mono">${short(id)}</b> · A/M/D = changed by it</div><div class="files">${cards.rp.join('') || empty('no files')}</div></div>`;
+  html += '</div>';
+  body.innerHTML = html;
+}
+function inspectCommit(id){
+  S.inspect = S.inspect === id ? null : id;
+  if(S.inspect && S.view === 'graph') setView('split');
+  renderAll();
+}
+$('#localHost').addEventListener('click', e => { const n = e.target.closest('.node'); if(n && S.sh.world.objects[n.dataset.id]) inspectCommit(n.dataset.id); });
+
 function renderAreas(sh){
+  if(S.inspect && sh.world.objects[S.inspect]) return renderInspect(sh, S.inspect);
   const r = sh.repo, body = $('#areasBody');
   const head = r.inited ? r.headTree() : {};
   const st = r.inited ? r.status() : null;
@@ -3201,6 +3295,7 @@ function showFile(path, focus = true){
 }
 function closeFile(){ FSV.path = null; $('#fsvBack').hidden = true; }
 $('#areasBody').addEventListener('click', e => {
+  if(e.target.closest('[data-inspect]')){ S.inspect = null; renderAll(); return; }
   const d = e.target.closest('[data-dir]');
   if(d){ const p = d.dataset.dir; FS_OPEN.has(p) ? FS_OPEN.delete(p) : FS_OPEN.add(p); renderAreas(S.sh); return; }
   const o = e.target.closest('[data-open]');
@@ -3329,6 +3424,7 @@ async function runCommand(cmd, {typed = true, token = S.token} = {}){
     await sleep(140);
     if(token !== S.token) throw 'cancel';
   } else span.textContent = cmd;
+  S.inspect = null;   // a new command: go back to the live areas
   const res = S.sh.run(cmd);
   if(res.clear) termOut.innerHTML = '';
   for(const l of res.lines) printLine(l);
@@ -3375,7 +3471,7 @@ function markCurrent(i){
 
 function setupLesson(){
   S.token++;
-  S.busy = false; S.playing = false; S.idx = 0;
+  S.busy = false; S.playing = false; S.idx = 0; S.inspect = null;
   laneColors = new Map();
   const sh = new Shell();
   const L = S.lesson;
