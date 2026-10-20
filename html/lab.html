@@ -507,7 +507,42 @@
   /* tiny entrance anim on step change */
   .fade-in { animation: fade .25s ease both; }
   @keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+  /* keep the header's own buttons clear of the floating ../home.js button */
+  header.top { padding-right: 130px; }
+
+  /* Light mode (../theme-toggle.js sets data-theme on <html>) */
+  :root[data-theme="light"] body {
+    background:
+      radial-gradient(900px 600px at 85% -10%, #e3e7ff 0%, transparent 60%),
+      radial-gradient(800px 500px at -10% 110%, #efe3ff 0%, transparent 55%),
+      var(--bg);
+  }
+  :root[data-theme="light"] header.top,
+  :root[data-theme="light"] .navbar { background: rgba(255, 255, 255, .8) !important; }
+  :root[data-theme="light"] aside.side { background: rgba(255, 255, 255, .82) !important; }
+  :root[data-theme="light"] .pill,
+  :root[data-theme="light"] .step-chip:not(.active),
+  :root[data-theme="light"] .topic-btn .num,
+  :root[data-theme="light"] .icon-btn,
+  :root[data-theme="light"] .navbar .progress { background: rgba(20, 30, 70, .05); }
+  :root[data-theme="light"] .topic-btn:hover,
+  :root[data-theme="light"] .tab:hover,
+  :root[data-theme="light"] .icon-btn:hover { background: rgba(20, 30, 70, .08); }
+  :root[data-theme="light"] .topic-btn.active .num { color: #fff; }
+  :root[data-theme="light"] .btn:not(.primary) { background: linear-gradient(180deg, #ffffff, #eef1f8); }
+  :root[data-theme="light"] .btn:not(.primary):hover { border-color: #b9c3dd; }
+  :root[data-theme="light"] .crumb h1 { background: linear-gradient(90deg, #1b2240, #4b55a8); -webkit-background-clip: text; background-clip: text; }
+  :root[data-theme="light"] .step-head code { background: rgba(20, 30, 70, .06); color: #4b3fa8; }
+  :root[data-theme="light"] .panel-head { background: linear-gradient(180deg, #ffffff, #f3f5fb) !important; }
+  :root[data-theme="light"] .editor,
+  :root[data-theme="light"] .tab-bar,
+  :root[data-theme="light"] .CodeMirror-scroll,
+  :root[data-theme="light"] .CodeMirror-gutters { background: #fbfbfe !important; color: #24292f; }
+  :root[data-theme="light"] .CodeMirror-vscrollbar::-webkit-scrollbar-thumb { border-color: #fbfbfe; }
+  :root[data-theme="light"] .steps-row::-webkit-scrollbar-thumb { background: #c9d0e4; }
 </style>
+<script src="../theme-toggle.js"></script>
 </head>
 <body>
 
