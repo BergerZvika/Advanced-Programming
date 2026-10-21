@@ -6,6 +6,8 @@
    localStorage, shared by every lab. Dark is the default.
    Adds a ☀ / ☾ button right after the lab's own "⌂ Home" link (copying its
    class so it matches), or at the start of the top bar if there is none.
+   A page can place it itself with  <button class="..." data-ap-theme-toggle>
+   (data-ap-theme-toggle="icon" shows just ☀ / ☾).
    Pages restyle themselves with  :root[data-theme="light"]  rules; this file
    already covers the shared palette variables and the common lab layout.
    Shortcut: Ctrl/⌘+Shift+L. */
@@ -147,14 +149,14 @@
 @media print{ .ap-theme-btn{ display:none } }`;
   (document.head || root).appendChild(style);
 
-  let btn = null, iconOnly = false;
+  let btn = null, iconOnly = false, symbolOnly = false;
   function label(){
     if(!btn) return;
     const light = root.dataset.theme === 'light';
     const ico = light ? '☾' : '☀', txt = light ? 'Dark' : 'Light';
     // Match a "<span class=ico>⌂</span><span class=t>Home</span>" home link,
     // so a collapsed sidebar shows just the icon here too.
-    btn.innerHTML = iconOnly ? '<span class="ico">' + ico + '</span><span class="t">' + txt + '</span>' : ico + ' ' + txt;
+    btn.innerHTML = symbolOnly ? ico : iconOnly ? '<span class="ico">' + ico + '</span><span class="t">' + txt + '</span>' : ico + ' ' + txt;
     btn.title = 'Switch to ' + (light ? 'dark' : 'light') + ' mode (Ctrl+Shift+L)';
     btn.setAttribute('aria-pressed', String(light));
   }
@@ -171,6 +173,15 @@
 
   function install(){
     if(document.querySelector('.ap-theme-btn')) return;
+    const slot = document.querySelector('[data-ap-theme-toggle]');
+    if(slot){
+      btn = slot;
+      btn.classList.add('ap-theme-btn');
+      symbolOnly = slot.dataset.apThemeToggle === 'icon';
+      btn.addEventListener('click', toggle);
+      label();
+      return;
+    }
     btn = document.createElement('button');
     btn.type = 'button';
     const home = document.querySelector('a[href="../index.html"]');
