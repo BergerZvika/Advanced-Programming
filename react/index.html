@@ -558,6 +558,7 @@ body::after{
       <label class="action-btn" id="autoLbl" style="cursor:pointer" title="Auto-render preview as you type">
         <input type="checkbox" id="autoChk" checked style="margin-right:6px;vertical-align:middle"> Auto
       </label>
+      <button class="action-btn" data-ap-theme-toggle></button>
       <button class="action-btn" id="resetBtn" title="Revert all files in this project">⟲ Reset</button>
       <button class="action-btn run-btn" id="runBtn" title="Bundle &amp; render">▶ Render <span class="k">⌘↵</span></button>
     </header>
@@ -2814,7 +2815,9 @@ function buildPreviewHtml(){
     scripts.push('https://unpkg.com/react-router@6.26.2/dist/umd/react-router.development.js');
     scripts.push('https://unpkg.com/react-router-dom@6.26.2/dist/umd/react-router-dom.development.js');
   }
-  scripts.push('https://unpkg.com/@babel/standalone/babel.min.js');
+  // Pinned: Babel 8 defaults to the automatic JSX runtime, which emits
+  // `import … from "react/jsx-runtime"` and breaks this non-module script.
+  scripts.push('https://unpkg.com/@babel/standalone@7.24.5/babel.min.js');
 
   const assets = buildAssetMap(proj.project, proj.files);
 
@@ -3083,5 +3086,6 @@ function toast(msg, kind){
 })();
 </script>
 <script src="../home.js"></script>
+<script src="../sidebar-toggle.js"></script>
 </body>
 </html>
