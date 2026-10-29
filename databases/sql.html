@@ -318,6 +318,73 @@ table.grid td.chg{background:rgba(255,181,71,0.22)!important;color:#ffe2b0}
 .ref-acts button.run{background:rgba(76,224,163,0.12);border-color:rgba(76,224,163,0.4);color:var(--sql)}
 .ref-empty{color:var(--text-faint);padding:20px 4px;font-size:13px}
 .ref-card mark{background:rgba(53,208,255,0.25);color:inherit;border-radius:3px}
+/* ---------- quiz ---------- */
+.btn.quiz-open{border-color:rgba(124,92,255,0.5);color:#d4c8ff}
+.btn.quiz-open:hover{background:rgba(124,92,255,0.14)}
+body.quiz-on .btn.quiz-open{background:rgba(124,92,255,0.2);border-color:rgba(124,92,255,0.75);color:#fff}
+.quiz{flex:1;min-height:0;overflow:auto;display:none;padding:22px 24px 60px}
+body.quiz-on .quiz{display:block}
+body.quiz-on .main{display:none}
+.quiz-in{max-width:1240px;margin:0 auto}
+.quiz,.quiz *{font-variant-ligatures:none}   /* keep >= and <> as typed: the quiz is about exactly these */
+.quiz h2{margin:0 0 6px;font-size:20px}
+.quiz .lead{color:var(--text-dim);line-height:1.65;margin:0 0 16px;max-width:900px}
+.quiz kbd{font-family:var(--mono);font-size:11px;padding:1px 6px;border-radius:5px;background:var(--surface-2);border:1px solid var(--border)}
+.quiz code{font-family:var(--mono);font-size:.92em;background:var(--surface-2);padding:0 5px;border-radius:4px;color:#dfe3ff}
+.box{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:14px}
+.box h4,.qfeed h4{margin:0 0 10px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-faint)}
+.note{font-size:12.5px;color:var(--text-dim);line-height:1.65;padding:10px 14px;border-left:3px solid var(--warn);background:rgba(255,181,71,0.06);border-radius:0 8px 8px 0;margin:0 0 14px}
+.note.good{border-color:var(--sql);background:rgba(76,224,163,0.06)}
+.note.bad{border-color:var(--err);background:rgba(255,107,122,0.06)}
+.note b{color:var(--text)}
+.qwrap{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:14px;align-items:start}
+.qkind{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-faint);font-weight:700;margin-bottom:10px}
+.qsql{font-family:var(--mono);font-size:15px;line-height:1.6;padding:16px 18px;border-radius:12px;background:var(--bg-1);border:1px solid var(--border-strong);margin:0 0 14px;white-space:pre-wrap;word-break:break-word;color:#e4e4f4}
+.qask{font-size:17px;font-weight:600;line-height:1.5;padding:16px 18px;border-radius:12px;background:var(--bg-1);border:1px solid var(--border-strong);margin-bottom:14px}
+.qans{display:flex;gap:8px;flex-wrap:wrap}
+.qans button{flex:1;min-width:100px;padding:14px;border-radius:11px;font-family:var(--mono);font-weight:700;font-size:17px;border:1px solid var(--border-strong);background:var(--surface);position:relative}
+.qans button .k{position:absolute;top:5px;left:8px;font-size:10px;font-weight:500;color:var(--text-faint)}
+.qans.code{flex-direction:column}
+.qans.code button{text-align:left;font-weight:400;font-size:12.5px;line-height:1.55;padding:11px 14px 11px 34px;white-space:pre-wrap;word-break:break-word;color:#e4e4f4}
+.qans.code button .k{top:12px;left:13px;font-size:11px}
+.qans button:hover:not([disabled]){background:var(--surface-2);border-color:rgba(124,92,255,0.6)}
+.qans button[disabled]{opacity:.35;cursor:default}
+.qans.code button[disabled]{opacity:.5}
+.qans button.ok{opacity:1;border-color:var(--sql);box-shadow:0 0 0 2px var(--sql)}
+.qans button.no{opacity:1;border-color:var(--err);box-shadow:0 0 0 2px var(--err)}
+.qfeed{margin-top:14px}
+.qfeed h4{margin-top:14px}
+.qwhy{color:var(--text-dim);line-height:1.65;margin:0 0 12px}
+.qwhy b{color:var(--text)}
+.qmist{margin:0 0 12px;padding-left:18px;color:var(--text-dim);line-height:1.6}
+.qmist li{margin-bottom:3px}
+.qmist li b{color:var(--text)}
+.qmist li b.v{font-family:var(--mono)}
+.qmist li.you{color:var(--text)}
+.qmist li.you::marker{color:var(--err)}
+.qcap{font-size:12px;color:var(--text-faint);margin:12px 0 6px}
+.qcap b{font-weight:600}
+.qtbl{max-height:380px;overflow:auto;border:1px solid var(--border);border-radius:10px;background:var(--bg-0);width:max-content;max-width:100%}
+.qtbl table.grid{min-width:0}
+.qtbl table.grid th{cursor:default}
+table.grid td.tv{font-weight:700}
+table.grid td.tv.TRUE,table.grid td.tv.kept{color:var(--sql)}
+table.grid td.tv.FALSE,table.grid td.tv.dropped{color:var(--err)}
+table.grid td.tv.UNKNOWN{color:var(--warn)}
+table.grid tr.s-drop td.tv{opacity:1;text-decoration:none}
+.qdata summary{cursor:pointer;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-faint);font-weight:700}
+.qdgrid{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start}
+.qdgrid .qcap{font-family:var(--mono);color:var(--sql)}
+.score{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.score .s{background:var(--bg-1);border:1px solid var(--border);border-radius:10px;padding:10px 12px}
+.score .s small{display:block;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-faint);margin-bottom:3px}
+.score .s b{font-family:var(--mono);font-size:20px}
+.lvls{display:flex;flex-direction:column;gap:6px}
+.lvls button{text-align:left;padding:8px 11px;border-radius:9px;border:1px solid var(--border);background:var(--surface);font-weight:600;font-size:12.5px;display:flex;flex-direction:column;gap:2px}
+.lvls button small{font-weight:400;color:var(--text-faint);font-size:11px}
+.lvls button.on{border-color:rgba(255,181,71,0.55);background:rgba(255,181,71,0.08)}
+@media (max-width:1000px){ .qwrap{grid-template-columns:1fr} }
+@media (max-width:700px){ .quiz{padding:16px 16px 50px} }
 </style>
 </head>
 <body>
@@ -330,6 +397,7 @@ table.grid td.chg{background:rgba(255,181,71,0.22)!important;color:#ffe2b0}
   <button class="btn" id="resetBtn" title="Discard all changes and reload the chosen database">↺ <span class="lbl">Reset DB</span></button>
   <span class="sep"></span>
   <button class="btn ref-open" id="refBtn" title="Every SQL command with a short example (F1)"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M2 3.2C3.8 2.4 6 2.5 8 3.6v9.6C6 12.1 3.8 12 2 12.8z M14 3.2c-1.8-.8-4-.7-6 .4v9.6c2-1.1 4.2-1.2 6-.4z" stroke-linejoin="round"/></svg> <span class="lbl">Commands</span></button>
+  <button class="btn quiz-open" id="quizBtn" title="Practice: predict what generated queries return (Esc goes back)"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="8" cy="8" r="6.2"/><path d="M5.3 8.2l1.9 1.9 3.6-3.8" stroke-linecap="round" stroke-linejoin="round"/></svg> Quiz</button>
   <span class="spacer"></span>
   <button class="btn icon" id="importBtn" title="Open a .sqlite / .db file">⤒ <span class="lbl">Open .db</span></button>
   <button class="btn icon" id="exportBtn" title="Download the database as a .sqlite file">⤓ <span class="lbl">Save .db</span></button>
@@ -380,6 +448,40 @@ table.grid td.chg{background:rgba(255,181,71,0.22)!important;color:#ffe2b0}
     </div>
   </section>
 </div>
+
+<section class="quiz" id="quiz" aria-label="Quiz">
+  <div class="quiz-in">
+    <h2>Quiz: predict what the query does</h2>
+    <p class="lead">Every question is generated from the <b>School</b> database (students, courses, enrollments) and answered by SQLite itself. It runs on a private copy, so your database, tabs and history are not touched. Keys: <kbd>1</kbd>–<kbd>4</kbd> answer, <kbd>Enter</kbd> next, <kbd>Esc</kbd> back to the lab.</p>
+    <div class="qwrap">
+      <div>
+        <div class="box">
+          <div class="qkind" id="qzKind"></div>
+          <div id="qzQ"></div>
+          <div class="qans" id="qzAns"></div>
+          <div class="qfeed" id="qzFeed"></div>
+        </div>
+        <details class="box qdata" open>
+          <summary>The School data</summary>
+          <div class="qdgrid" id="qzDataBody"></div>
+        </details>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div class="box score" style="margin:0" id="qzScore"></div>
+        <div class="box" style="margin:0">
+          <h4>Difficulty</h4>
+          <div class="lvls" id="qzLvls">
+            <button data-l="1">Easy<small>one table: WHERE, BETWEEN, DISTINCT, COUNT</small></button>
+            <button data-l="2">Medium<small>AND / OR, NULL, JOIN, GROUP BY, AVG</small></button>
+            <button data-l="3">Hard<small>LEFT JOIN traps, HAVING, NOT IN, subqueries</small></button>
+          </div>
+        </div>
+        <button class="btn" id="qzNext" style="justify-content:center">Next question →</button>
+        <button class="btn" id="qzReset" style="justify-content:center">Reset score</button>
+      </div>
+    </div>
+  </div>
+</section>
 
 <footer class="statusbar">
   <span class="live" id="sbEngine">SQLite</span>
@@ -2708,7 +2810,7 @@ $('#rbody').addEventListener('click', e => {
   if (c){ stopPlay(); stepGo(+c.dataset.sj); }
 });
 document.addEventListener('keydown', e => {
-  if (!stepsShown() || !stepper) return;
+  if (!stepsShown() || !stepper || document.body.classList.contains('quiz-on')) return;
   if (e.target.closest && (e.target.closest('.CodeMirror') || /^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName))) return;
   const k = e.key;
   if (k === 'ArrowRight'){ stopPlay(); stepGo(stepper.i + 1); }
@@ -3010,6 +3112,540 @@ $('#fileIn').addEventListener('change', async e => {
     sp.addEventListener('pointermove', move); sp.addEventListener('pointerup', up);
   });
 })();
+
+/* ================================================================
+   Quiz
+   Generated questions on a private in-memory copy of the School
+   database. Every answer and every distractor is computed by SQLite;
+   the user's database, tabs and history are never touched.
+   ================================================================ */
+const QZ = Object.assign({level:2, right:0, total:0, streak:0, best:0}, LS.get('quiz', {}));
+let qdb = null, qcur = null;
+const rnd = n => Math.floor(Math.random() * n);
+const pick = a => a[rnd(a.length)];
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--){ const j = rnd(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+function qRun(sql){
+  const st = qdb.prepare(sql);
+  try { const cols = st.getColumnNames(), rows = []; while (st.step()) rows.push(st.get()); return {cols, rows}; }
+  finally { st.free(); }
+}
+const qFmt = v => v === null || v === undefined ? 'NULL' : typeof v === 'number' && !Number.isInteger(v) ? String(Math.round(v * 100) / 100) : String(v);
+const qList = sql => qRun(sql).rows.map(r => qFmt(r[0]));
+const qVal = sql => qRun(sql).rows[0][0];
+const qSig = r => r.rows.map(keyOf).sort().join('\n');
+const CITIES = ['Tel Aviv', 'Haifa', 'Jerusalem'];
+const GRADES = [60, 65, 70, 75, 80, 85, 90, 95];
+const FLIP = {'>':'>=', '>=':'>', '<':'<=', '<=':'<'};
+const SE = 'students s\nJOIN enrollments e ON e.student_id = s.student_id';
+const SLE = 'students s\nLEFT JOIN enrollments e ON e.student_id = s.student_id';
+const CLE = 'courses c\nLEFT JOIN enrollments e ON e.course_id = c.course_id';
+const one = s => s.replace(/\s*\n\s*/g, ' ');
+const nulls = vs => vs.map(v => v === 'NULL' ? '<b style="color:var(--warn)">NULL</b>' : esc(v)).join(', ');
+
+/* Question templates. kind 'rows' / 'value': gen() returns the query, optional
+   filter / show specs for the explanation table, and vars = [sql, mistake] pairs
+   whose results become the distractors. kind 'which': ask + ok + bad queries. */
+const QT = [
+/* ---------- how many rows? ---------- */
+{lv:[1], kind:'rows', gen(){
+  const op = pick(['>', '>=', '<', '<=']), k = 19 + rnd(7), cond = `age ${op} ${k}`, f = FLIP[op];
+  return {sql:`SELECT name, age\nFROM students\nWHERE ${cond};`, filter:{from:'students', cond, cols:'name, age'},
+    why:`Compare every age with ${k}. ${code(op)} ${op.length > 1 ? 'includes' : 'leaves out'} a student who is exactly ${k}.`,
+    vars:[[`SELECT 1 FROM students WHERE age ${f} ${k}`, `read ${code(op)} as ${code(f)} (age ${k} itself ${f.length > 1 ? 'passes' : 'fails'})`],
+          [`SELECT 1 FROM students WHERE NOT (${cond})`, 'count the rows the condition rejects'],
+          ['SELECT 1 FROM students', 'ignore the WHERE and count every student']]};
+}},
+{lv:[1, 2], kind:'rows', gen(){
+  const c = pick(CITIES), op = pick(['=', '<>', '<>']), cond = `city ${op} '${c}'`;
+  return {sql:`SELECT name, city\nFROM students\nWHERE ${cond};`, filter:{from:'students', cond, cols:'name, city'},
+    why: op === '<>' ? `Ido's city is NULL. ${code(`NULL <> '${c}'`)} is not TRUE but UNKNOWN, so WHERE drops him even though he does not live in ${c}.`
+      : `Only rows whose city is exactly '${c}' make the condition TRUE. Ido's NULL city gives UNKNOWN.`,
+    vars: op === '<>'
+      ? [[`SELECT 1 FROM students WHERE ${cond} OR city IS NULL`, `count Ido too (his city is NULL, and NULL ${esc('<>')} '${c}' is UNKNOWN)`],
+         [`SELECT 1 FROM students WHERE city = '${c}'`, `count the students who do live in ${c}`],
+         ['SELECT 1 FROM students', 'ignore the WHERE']]
+      : [[`SELECT 1 FROM students WHERE city <> '${c}'`, 'count the students who live elsewhere'],
+         ['SELECT 1 FROM students', 'ignore the WHERE']]};
+}},
+{lv:[1, 2], kind:'rows', gen(){
+  const op = pick(['>=', '>', '<', '<=']), k = pick(GRADES), cond = `grade ${op} ${k}`;
+  return {sql:`SELECT student_id, course_id, grade\nFROM enrollments\nWHERE ${cond};`, filter:{from:'enrollments', cond, cols:'student_id, course_id, grade'},
+    why:`Student 6 has a NULL grade in course 2. ${code(`NULL ${op} ${k}`)} is UNKNOWN, so that row is never returned, whichever way the comparison points.`,
+    vars:[[`SELECT 1 FROM enrollments WHERE ${cond} OR grade IS NULL`, 'count the row with the NULL grade as a match'],
+          [`SELECT 1 FROM enrollments WHERE grade ${FLIP[op]} ${k}`, `read ${code(op)} as ${code(FLIP[op])}`],
+          [`SELECT 1 FROM enrollments WHERE NOT (${cond})`, 'count the rows that fail the test']]};
+}},
+{lv:[1], kind:'rows', gen(){
+  const a = 19 + rnd(4), b = a + 1 + rnd(3), cond = `age BETWEEN ${a} AND ${b}`;
+  return {sql:`SELECT name, age\nFROM students\nWHERE ${cond};`, filter:{from:'students', cond, cols:'name, age'},
+    why:`${code(cond)} means ${code(`age >= ${a} AND age <= ${b}`)}: both ends are included.`,
+    vars:[[`SELECT 1 FROM students WHERE age > ${a} AND age < ${b}`, 'treat BETWEEN as leaving out both ends'],
+          [`SELECT 1 FROM students WHERE age >= ${a} AND age < ${b}`, `leave out the upper end ${b}`],
+          [`SELECT 1 FROM students WHERE NOT (${cond})`, 'count the ages outside the range']]};
+}},
+{lv:[1, 2], kind:'rows', gen(){
+  const [col, t] = pick([['city', 'students'], ['age', 'students'], ['course_id', 'enrollments'], ['student_id', 'enrollments'], ['credits', 'courses'], ['grade', 'enrollments']]);
+  const vals = qList(`SELECT ${col} FROM ${t}`);
+  return {sql:`SELECT DISTINCT ${col}\nFROM ${t};`,
+    why:`${t} has ${vals.length} rows; their ${col} values are ${nulls(vals)}. DISTINCT keeps each value once${vals.includes('NULL') ? ', and all NULLs together count as one value' : ''}.`,
+    vars:[[`SELECT ${col} FROM ${t}`, 'forget DISTINCT and count every row'],
+          [`SELECT DISTINCT ${col} FROM ${t} WHERE ${col} IS NOT NULL`, 'leave NULL out (DISTINCT keeps it as a value of its own)']]
+      .concat(col === 'course_id' ? [['SELECT 1 FROM courses', 'count every course, but enrollments only holds the courses somebody takes']] : [])};
+}},
+{lv:[2], kind:'rows', gen(){
+  const c = pick(CITIES), conn = pick(['AND', 'OR']), other = conn === 'AND' ? 'OR' : 'AND', op = pick(['>', '>=', '<', '<=']), k = 20 + rnd(5);
+  const cond = `city = '${c}' ${conn} age ${op} ${k}`;
+  return {sql:`SELECT name, city, age\nFROM students\nWHERE ${cond};`, filter:{from:'students', cond, cols:'name, city, age'},
+    why: conn === 'AND' ? 'AND needs both sides to be TRUE. A FALSE side makes it FALSE, and Ido\'s NULL city makes it at best UNKNOWN.'
+      : `OR needs one TRUE side. For Ido (city NULL) the city test is UNKNOWN, so he is kept only if his age (22) passes ${code(`age ${op} ${k}`)}.`,
+    vars:[[`SELECT 1 FROM students WHERE city = '${c}' ${other} age ${op} ${k}`, `use ${other} instead of ${conn}`],
+          [`SELECT 1 FROM students WHERE city = '${c}'`, 'apply only the city test'],
+          [`SELECT 1 FROM students WHERE age ${op} ${k}`, 'apply only the age test']]};
+}},
+{lv:[2, 3], kind:'rows', gen(){
+  const [c1, c2] = shuffle(CITIES), k = 20 + rnd(5), cond = `city = '${c1}' OR city = '${c2}' AND age >= ${k}`;
+  return {sql:`SELECT name, city, age\nFROM students\nWHERE ${cond};`, filter:{from:'students', cond, cols:'name, city, age'},
+    why:`AND binds tighter than OR, so SQL reads it as ${code(`city = '${c1}' OR (city = '${c2}' AND age >= ${k})`)}: everyone from ${c1} is returned whatever their age.`,
+    vars:[[`SELECT 1 FROM students WHERE (city = '${c1}' OR city = '${c2}') AND age >= ${k}`, `read it as ${code(`(… OR …) AND age >= ${k}`)}`],
+          [`SELECT 1 FROM students WHERE city IN ('${c1}', '${c2}')`, 'ignore the age test'],
+          [`SELECT 1 FROM students WHERE city = '${c2}' AND age >= ${k}`, `forget the ${c1} branch`]]};
+}},
+{lv:[2], kind:'rows', gen(){
+  const list = shuffle(CITIES).slice(0, 1 + rnd(2)).map(x => `'${x}'`).join(', '), cond = `city NOT IN (${list})`;
+  return {sql:`SELECT name, city\nFROM students\nWHERE ${cond};`, filter:{from:'students', cond, cols:'name, city'},
+    why:`Ido's city is NULL: ${code(`NULL NOT IN (${list})`)} is UNKNOWN, so NOT IN never returns him.`,
+    vars:[[`SELECT 1 FROM students WHERE ${cond} OR city IS NULL`, 'count Ido, whose city is NULL'],
+          [`SELECT 1 FROM students WHERE city IN (${list})`, 'count the listed cities instead'],
+          ['SELECT 1 FROM students', 'ignore the WHERE']]};
+}},
+{lv:[2], kind:'rows', gen(){
+  const op = pick(['>=', '<']), k = pick(GRADES), cond = `e.grade ${op} ${k}`;
+  return {sql:`SELECT s.name, e.course_id, e.grade\nFROM ${SE}\nWHERE ${cond};`, filter:{from:SE, cond, cols:'s.name, e.course_id, e.grade'},
+    why:`The JOIN makes one row per enrollment (14 rows, Ido has none). WHERE then keeps the ones where ${code(cond)} is TRUE; Yossi's NULL grade is UNKNOWN.`,
+    vars:[[`SELECT DISTINCT s.name FROM ${one(SE)} WHERE ${cond}`, 'count students, but the join gives one row per enrollment, so a student can appear twice'],
+          [`SELECT 1 FROM ${one(SE)} WHERE ${cond} OR e.grade IS NULL`, 'keep the row with the NULL grade'],
+          [`SELECT 1 FROM ${one(SE)}`, 'ignore the WHERE']]};
+}},
+{lv:[2], kind:'rows', gen(){
+  const studs = rnd(2), k = studs ? 20 + rnd(4) : 3 + rnd(3);
+  const from = studs ? SLE : CLE, cols = studs ? 's.name, e.course_id, e.grade' : 'c.title, e.student_id, e.grade';
+  const w = rnd(3) ? '' : studs ? `s.age >= ${k}` : `c.credits >= ${k}`, wsql = w ? `\nWHERE ${w}` : '';
+  const who = studs ? 'student' : 'course', lone = qList(`SELECT ${studs ? 's.name' : 'c.title'} FROM ${one(from)} WHERE e.student_id IS NULL${w ? ' AND ' + w : ''}`);
+  return {sql:`SELECT ${cols}\nFROM ${from}${wsql};`,
+    why:`Every ${who} gets one row per matching enrollment. ` + (lone.length ? `${esc(lone.join(', '))} ${lone.length > 1 ? 'have' : 'has'} no enrollment and ${lone.length > 1 ? 'are' : 'is'} still kept, once, with NULL in the enrollment columns.` : `Every ${who} here has a match, so LEFT JOIN gives the same rows as JOIN.`),
+    vars:[[`SELECT 1 FROM ${one(from).replace('LEFT JOIN', 'JOIN')}${one(wsql)}`, `use an inner JOIN, which drops the ${who}s with no enrollment`],
+          [`SELECT 1 FROM ${studs ? 'students s' : 'courses c'}${one(wsql)}`, `count one row per ${who}; a ${who} with several enrollments appears several times`]]};
+}},
+{lv:[2], kind:'rows', gen(){
+  if (rnd(3) === 0) return {sql:'SELECT city, COUNT(*) AS n\nFROM students\nGROUP BY city;',
+    why:'GROUP BY makes one row per distinct city, and the NULL city (Ido) forms a group of its own.',
+    vars:[['SELECT city FROM students WHERE city IS NOT NULL GROUP BY city', 'forget that NULL forms its own group'],
+          ['SELECT 1 FROM students', 'count students instead of groups']]};
+  const key = pick(['course_id', 'student_id']), op = pick(['>=', '<']), k = pick(GRADES);
+  return {sql:`SELECT ${key}, COUNT(*) AS n\nFROM enrollments\nWHERE grade ${op} ${k}\nGROUP BY ${key};`, filter:{from:'enrollments', cond:`grade ${op} ${k}`, cols:'student_id, course_id, grade'},
+    why:`WHERE runs first and keeps the enrollments with ${code(`grade ${op} ${k}`)}. GROUP BY then makes one row per ${key} that still has at least one row; a ${key} whose rows were all dropped does not appear.`,
+    vars:[[`SELECT ${key} FROM enrollments GROUP BY ${key}`, 'group before filtering (every ' + key + ' in enrollments)'],
+          [`SELECT 1 FROM enrollments WHERE grade ${op} ${k}`, 'count the matching rows instead of the groups']]};
+}},
+{lv:[2, 3], kind:'rows', gen(){
+  const k = 70 + 5 * rnd(5), hv = `AVG(grade) >= ${k}`;
+  return {sql:`SELECT student_id, ROUND(AVG(grade), 1) AS avg_grade\nFROM enrollments\nGROUP BY student_id\nHAVING ${hv};`,
+    show:{sql:`SELECT student_id, GROUP_CONCAT(COALESCE(grade, 'NULL'), ', ') AS grades, ROUND(AVG(grade), 1) AS avg_grade, CASE WHEN ${hv} THEN 'kept' ELSE 'dropped' END AS "HAVING" FROM enrollments GROUP BY student_id`, mark:'HAVING',
+      cap:'One row per group: HAVING keeps the groups whose average passes.'},
+    why:`HAVING tests each student's average after grouping. AVG skips the NULL grade, so student 6 averages only his one real grade (100).`,
+    vars:[[`SELECT DISTINCT student_id FROM enrollments WHERE grade >= ${k}`, 'filter single grades with WHERE, which keeps any student with one high grade'],
+          [`SELECT student_id FROM enrollments GROUP BY student_id HAVING SUM(grade) * 1.0 / COUNT(*) >= ${k}`, 'average the NULL grade as 0'],
+          ['SELECT student_id FROM enrollments GROUP BY student_id', 'ignore the HAVING']]};
+}},
+{lv:[3], kind:'rows', gen(){
+  const k = pick(GRADES.slice(2)), inOn = rnd(2);
+  const onSql = `SELECT s.name, e.course_id, e.grade\nFROM students s\nLEFT JOIN enrollments e\n  ON e.student_id = s.student_id AND e.grade >= ${k};`;
+  const whSql = `SELECT s.name, e.course_id, e.grade\nFROM ${SLE}\nWHERE e.grade >= ${k};`;
+  const lone = qList(`SELECT name FROM students s WHERE NOT EXISTS (SELECT 1 FROM enrollments e WHERE e.student_id = s.student_id AND e.grade >= ${k})`);
+  return inOn
+    ? {sql:onSql, why:`The grade test is part of the ON condition, so it only decides which enrollments match. Students with no matching grade are still kept, once, with NULLs: ${esc(lone.join(', '))}.`,
+       vars:[[one(whSql).slice(0, -1), 'move the grade test to WHERE, which drops those students'],
+             ['SELECT 1 FROM students', 'expect exactly one row per student'],
+             [one(onSql).replace('LEFT JOIN', 'JOIN').slice(0, -1), 'use an inner JOIN']]}
+    : {sql:whSql, filter:{from:SLE, cond:`e.grade >= ${k}`, cols:'s.name, e.course_id, e.grade'},
+       why:`The LEFT JOIN keeps Ido with NULLs, but WHERE runs after the join: ${code(`NULL >= ${k}`)} is UNKNOWN, so the padded row is dropped. A WHERE test on the right table turns the LEFT JOIN back into an inner join.`,
+       vars:[[one(onSql).slice(0, -1), 'expect every student to stay, as if the test were in ON'],
+             [`SELECT 1 FROM ${one(SLE)} WHERE e.grade >= ${k} OR e.grade IS NULL`, 'keep the rows with a NULL grade'],
+             [`SELECT 1 FROM ${one(SLE)}`, 'ignore the WHERE']]};
+}},
+{lv:[3], kind:'rows', gen(){
+  const k = pick([19, 20, 21, 22, 22, 23, 24]), sub = `SELECT city FROM students WHERE age >= ${k}`, cond = `city NOT IN (${sub})`;
+  const vals = qList(sub), hasNull = vals.includes('NULL');
+  return {sql:`SELECT name, city\nFROM students\nWHERE city NOT IN (\n  ${sub});`, filter:{from:'students', cond, cols:'name, city'},
+    why:`The subquery returns (${nulls(vals)}). ` + (hasNull
+      ? `It contains a NULL. ${code('x NOT IN (a, b, NULL)')} means ${code('x <> a AND x <> b AND x <> NULL')}, and ${code('x <> NULL')} is UNKNOWN, so no row can be TRUE: the query returns nothing.`
+      : 'There is no NULL in it, so NOT IN works as expected. Ido is still dropped, because his own city is NULL.'),
+    vars:[[`SELECT 1 FROM students WHERE city NOT IN (${sub} AND city IS NOT NULL)`, 'ignore the NULL inside the subquery'],
+          [`SELECT 1 FROM students WHERE city NOT IN (${sub} AND city IS NOT NULL) OR city IS NULL`, 'also count Ido, whose own city is NULL'],
+          [`SELECT 1 FROM students WHERE city IN (${sub})`, 'read NOT IN as IN']]};
+}},
+{lv:[3], kind:'rows', gen(){
+  const fn = pick(['COUNT(e.student_id)', 'COUNT(*)']), [op, k] = pick([['<', 1 + rnd(4)], ['>=', 1 + rnd(4)]]);
+  const head = `SELECT c.title, ${fn} AS n\nFROM ${CLE}\nGROUP BY c.course_id\nHAVING `;
+  const alt = fn === 'COUNT(*)' ? 'COUNT(e.student_id)' : 'COUNT(*)';
+  return {sql:head + `${fn} ${op} ${k};`,
+    show:{sql:`SELECT c.title, COUNT(*) AS "COUNT(*)", COUNT(e.student_id) AS "COUNT(e.student_id)", COUNT(e.grade) AS "COUNT(e.grade)", CASE WHEN ${fn} ${op} ${k} THEN 'kept' ELSE 'dropped' END AS "HAVING" FROM ${one(CLE)} GROUP BY c.course_id`, mark:'HAVING',
+      cap:'One row per course, with every way of counting.'},
+    why:`Machine Learning has no enrollments; the LEFT JOIN keeps it as one row of NULLs. ${code('COUNT(*)')} counts that row (1), ${code('COUNT(e.student_id)')} skips the NULL (0).`,
+    vars:[[one(head) + `${alt} ${op} ${k}`, `use ${code(alt)} instead of ${code(fn)}`],
+          [one(head) + `COUNT(e.grade) ${op} ${k}`, `use ${code('COUNT(e.grade)')}, which also skips Yossi's NULL grade`],
+          [one(head).replace('LEFT JOIN', 'JOIN') + `${fn} ${op} ${k}`, 'use an inner JOIN, which loses Machine Learning']]};
+}},
+{lv:[3], kind:'rows', gen(){
+  const op = pick(['>=', '=', '<=']), k = 3 + rnd(3), cond = `c.credits ${op} ${k}`;
+  const from = `${SE}\nJOIN courses c ON c.course_id = e.course_id`;
+  return {sql:`SELECT DISTINCT s.name\nFROM ${from}\nWHERE ${cond};`, filter:{from, cond, cols:'s.name, c.title, c.credits'},
+    why:`The joins give one row per enrollment, WHERE keeps the courses with ${code(cond)}, and DISTINCT then collapses names that appear more than once.`,
+    vars:[[`SELECT s.name FROM ${one(from)} WHERE ${cond}`, 'forget DISTINCT (a student with two such courses counts twice)'],
+          [`SELECT title FROM courses c WHERE ${cond}`, 'count the courses instead of the students'],
+          ['SELECT 1 FROM students', 'count every student']]};
+}},
+{lv:[3], kind:'rows', gen(){
+  const c = pick(CITIES), sub = `SELECT AVG(age) FROM students WHERE city = '${c}'`, op = pick(['>', '<']), cond = `age ${op} (${sub})`;
+  return {sql:`SELECT name, age\nFROM students\nWHERE age ${op} (\n  ${sub});`, filter:{from:'students', cond, cols:'name, city, age'},
+    why:`The subquery runs first: the average age in ${c} is ${qFmt(qVal(sub))}. Then every student (from any city) is compared with that number.`,
+    vars:[[`SELECT 1 FROM students WHERE age ${op}= (${sub})`, `use ${code(op + '=')} instead of ${code(op)}`],
+          [`SELECT 1 FROM students WHERE age ${op} (SELECT AVG(age) FROM students)`, 'compare with the average of all students'],
+          [`SELECT 1 FROM students WHERE city = '${c}' AND ${cond}`, `only look at students from ${c}`]]};
+}},
+
+/* ---------- what value? ---------- */
+{lv:[1, 2], kind:'value', gen(){
+  const [t, col] = pick([['students', 'city'], ['enrollments', 'grade'], ['enrollments', 'course_id'], ['students', 'age']]);
+  const fns = ['COUNT(*)', `COUNT(${col})`, `COUNT(DISTINCT ${col})`], fn = pick(fns);
+  const what = {[fns[0]]:'counts every row, NULL or not', [fns[1]]:`counts the non-NULL ${col} values, duplicates included`, [fns[2]]:`counts the different non-NULL ${col} values`};
+  return {sql:`SELECT ${fn}\nFROM ${t};`, show:{sql:`SELECT ${col} FROM ${t}`, cap:`The ${col} column of ${t}.`},
+    why:`${code(fn)} ${what[fn]}. The ${col} values are ${nulls(qList(`SELECT ${col} FROM ${t}`))}.`,
+    vars: fns.filter(f => f !== fn).map(f => [`SELECT ${f} FROM ${t}`, `confuse it with ${code(f)}, which ${what[f]}`])};
+}},
+{lv:[1, 2], kind:'value', gen(){
+  const fn = pick(['MAX', 'MIN']), other = fn === 'MAX' ? 'MIN' : 'MAX';
+  if (rnd(2)){
+    const c = pick(CITIES), cond = `city = '${c}'`;
+    return {sql:`SELECT ${fn}(age)\nFROM students\nWHERE ${cond};`, filter:{from:'students', cond, cols:'name, city, age'},
+      why:`WHERE keeps the students from ${c}; ${fn} then picks the ${fn === 'MAX' ? 'largest' : 'smallest'} age among them.`,
+      vars:[[`SELECT ${other}(age) FROM students WHERE ${cond}`, `take the ${other === 'MAX' ? 'largest' : 'smallest'} age instead`],
+            [`SELECT ${fn}(age) FROM students`, 'ignore the WHERE'],
+            [`SELECT COUNT(*) FROM students WHERE ${cond}`, 'count the rows']]};
+  }
+  const cid = pick([1, 2, 2, 3, 4, 5]), cond = `course_id = ${cid}`;
+  return {sql:`SELECT ${fn}(grade)\nFROM enrollments\nWHERE ${cond};`, filter:{from:'enrollments', cond, cols:'student_id, course_id, grade'},
+    why: cid === 5 ? `No enrollment has course_id 5, so ${fn} sees no rows at all. ${fn} (like SUM and AVG) of nothing is NULL; only COUNT gives 0.`
+      : `WHERE keeps the enrollments of course ${cid}; ${fn} picks the ${fn === 'MAX' ? 'largest' : 'smallest'} grade${cid === 2 ? ' and simply skips the NULL grade' : ''}.`,
+    vars:[[`SELECT ${other}(grade) FROM enrollments WHERE ${cond}`, `take the ${other === 'MAX' ? 'largest' : 'smallest'} grade instead`],
+          [`SELECT ${fn}(grade) FROM enrollments`, 'ignore the WHERE'],
+          [`SELECT COUNT(*) FROM enrollments WHERE ${cond}`, 'count the rows']]};
+}},
+{lv:[1], kind:'value', gen(){
+  const op = pick(['>=', '>', '<=']), k = 3 + rnd(3), cond = `credits ${op} ${k}`;
+  return {sql:`SELECT SUM(credits)\nFROM courses\nWHERE ${cond};`, filter:{from:'courses', cond, cols:'title, credits'},
+    why:`WHERE keeps the courses with ${code(cond)}; SUM adds up their credits.`,
+    vars:[[`SELECT COUNT(*) FROM courses WHERE ${cond}`, 'count the courses instead of adding credits'],
+          [`SELECT SUM(credits) FROM courses WHERE credits ${FLIP[op]} ${k}`, `read ${code(op)} as ${code(FLIP[op])}`],
+          ['SELECT SUM(credits) FROM courses', 'ignore the WHERE']]};
+}},
+{lv:[2], kind:'value', gen(){
+  const cid = pick([1, 2, 2, 3, 4]), cond = `course_id = ${cid}`;
+  const [sum, n, all] = qRun(`SELECT SUM(grade), COUNT(grade), COUNT(*) FROM enrollments WHERE ${cond}`).rows[0];
+  return {sql:`SELECT ROUND(AVG(grade), 1)\nFROM enrollments\nWHERE ${cond};`, filter:{from:'enrollments', cond, cols:'student_id, course_id, grade'},
+    why:`AVG = ${sum} / ${n} = ${qFmt(sum / n)}, rounded to one decimal.` + (n !== all ? ` The NULL grade is skipped: it is not counted as 0 (that would be ${sum} / ${all}).` : ''),
+    vars:[[`SELECT ROUND(SUM(grade) * 1.0 / COUNT(*), 1) FROM enrollments WHERE ${cond}`, 'count the NULL grade as 0'],
+          ['SELECT ROUND(AVG(grade), 1) FROM enrollments', 'average every course'],
+          [`SELECT MAX(grade) FROM enrollments WHERE ${cond}`, 'take the best grade']]};
+}},
+{lv:[2], kind:'value', gen(){
+  const op = pick(['>', '>=', '<']), c = rnd(2) ? null : pick(CITIES);
+  const sub = `SELECT AVG(age) FROM students${c ? ` WHERE city = '${c}'` : ''}`, cond = `age ${op} (${sub})`;
+  return {sql:`SELECT COUNT(*)\nFROM students\nWHERE age ${op} (\n  ${sub});`, filter:{from:'students', cond, cols:'name, age'},
+    why:`The subquery returns ${qFmt(qVal(sub))}${c ? ` (the average age in ${c})` : ''}; COUNT(*) counts the students whose age is ${code(op)} that.`,
+    vars:[[`SELECT COUNT(*) FROM students WHERE age ${op.length > 1 ? op[0] : op + '='} (${sub})`, `confuse ${code(op)} with ${code(op.length > 1 ? op[0] : op + '=')}`],
+          [`SELECT COUNT(*) FROM students WHERE age ${op} (SELECT MIN(age) FROM students)`, 'compare with the youngest age'],
+          ['SELECT COUNT(*) FROM students', 'ignore the WHERE']]};
+}},
+{lv:[2], kind:'value', gen(){
+  const sid = 1 + rnd(7), from = 'enrollments e\nJOIN courses c ON c.course_id = e.course_id', cond = `e.student_id = ${sid}`;
+  return {sql:`SELECT SUM(c.credits)\nFROM ${from}\nWHERE ${cond};`, filter:{from, cond, cols:'e.student_id, c.title, c.credits'},
+    why:`The join attaches each course's credits to the enrollment; WHERE keeps student ${sid}'s rows and SUM adds their credits.`,
+    vars:[[`SELECT COUNT(*) FROM ${one(from)} WHERE ${cond}`, 'count the courses instead of the credits'],
+          ['SELECT SUM(credits) FROM courses', 'add up every course'],
+          [`SELECT MAX(c.credits) FROM ${one(from)} WHERE ${cond}`, 'take only the biggest course']]};
+}},
+{lv:[3], kind:'value', gen(){
+  const col = pick(['grade', 'grade', 'course_id']), not = rnd(3) ? '' : 'NOT ', cond = `e.${col} IS ${not}NULL`;
+  return {sql:`SELECT COUNT(*)\nFROM ${SLE}\nWHERE ${cond};`, filter:{from:SLE, cond, cols:'s.name, e.course_id, e.grade'},
+    why:"The LEFT JOIN gives 15 rows: the 14 enrollments plus one NULL-padded row for Ido. e.grade is NULL in Ido's row and in Yossi's ungraded Databases enrollment; e.course_id is NULL only in Ido's row.",
+    vars:[[`SELECT COUNT(*) FROM ${one(SLE)} WHERE e.${col === 'grade' ? 'course_id' : 'grade'} IS ${not}NULL`, `test ${code(col === 'grade' ? 'e.course_id' : 'e.grade')} instead`],
+          [`SELECT COUNT(*) FROM ${one(SE)} WHERE ${cond}`, 'forget the padded row (as with an inner JOIN)'],
+          [`SELECT COUNT(*) FROM ${one(SLE)} WHERE e.${col} ${not ? '<>' : '='} NULL`, `write ${code(not ? '<> NULL' : '= NULL')}, which is never TRUE`]]};
+}},
+{lv:[3], kind:'value', gen(){
+  const studs = rnd(2), from = studs ? SLE : CLE, key = studs ? 's.student_id' : 'c.course_id', label = studs ? 's.name' : 'c.title';
+  const inner = fn => `SELECT ROUND(AVG(n), 2) FROM (SELECT ${fn} AS n FROM ${one(from)} GROUP BY ${key})`;
+  const [sum, groups] = qRun(`SELECT SUM(n), COUNT(*) FROM (SELECT COUNT(e.student_id) AS n FROM ${one(from)} GROUP BY ${key})`).rows[0];
+  return {sql:`SELECT ROUND(AVG(n), 2)\nFROM (SELECT ${key}, COUNT(e.student_id) AS n\n      FROM ${from.replace('\n', '\n      ')}\n      GROUP BY ${key});`,
+    show:{sql:`SELECT ${label}, COUNT(*) AS "COUNT(*)", COUNT(e.student_id) AS "COUNT(e.student_id)", COUNT(e.grade) AS "COUNT(e.grade)" FROM ${one(from)} GROUP BY ${key}`, cap:`The inner query, one row per ${studs ? 'student' : 'course'}, with every way of counting.`},
+    why:`AVG(n) = ${sum} / ${groups} = ${qFmt(sum / groups)}. ${studs ? 'Ido' : 'Machine Learning'} has no enrollment, so the LEFT JOIN keeps one NULL row for it and ${code('COUNT(e.student_id)')} gives it 0, which still counts in the average.`,
+    vars:[[inner('COUNT(*)'), `use ${code('COUNT(*)')}, which counts the NULL-padded row as 1`],
+          [inner('COUNT(e.grade)'), `use ${code('COUNT(e.grade)')}, which also skips Yossi's NULL grade`],
+          [inner('COUNT(e.student_id)').replace('LEFT JOIN', 'JOIN'), `use an inner JOIN, which drops ${studs ? 'Ido' : 'Machine Learning'} from the average`]]};
+}},
+
+{lv:[3], kind:'value', gen(){
+  const k = 70 + 5 * rnd(5), hv = `AVG(grade) >= ${k}`;
+  return {sql:`SELECT COUNT(*)\nFROM (SELECT student_id\n      FROM enrollments\n      GROUP BY student_id\n      HAVING ${hv});`,
+    show:{sql:`SELECT student_id, GROUP_CONCAT(COALESCE(grade, 'NULL'), ', ') AS grades, ROUND(AVG(grade), 1) AS avg_grade, CASE WHEN ${hv} THEN 'kept' ELSE 'dropped' END AS "HAVING" FROM enrollments GROUP BY student_id`, mark:'HAVING',
+      cap:'The inner query, one row per student: HAVING keeps the groups whose average passes, COUNT(*) counts them.'},
+    why:`The inner query makes one group per student and keeps those whose average is at least ${k}; the outer COUNT(*) counts the kept groups. AVG skips the NULL grade, so student 6 averages only his 100.`,
+    vars:[[`SELECT COUNT(DISTINCT student_id) FROM enrollments WHERE grade >= ${k}`, 'filter single grades with WHERE, which keeps any student with one high grade'],
+          [`SELECT COUNT(*) FROM enrollments WHERE grade >= ${k}`, 'count the high grades instead of the students'],
+          [`SELECT COUNT(*) FROM (SELECT student_id FROM enrollments GROUP BY student_id HAVING SUM(grade) * 1.0 / COUNT(*) >= ${k})`, 'average the NULL grade as 0']]};
+}},
+{lv:[3], kind:'value', gen(){
+  const cid = pick([1, 3, 4, 1, 2]), cond = `course_id = ${cid}`;
+  const [sum, n] = qRun(`SELECT SUM(grade), COUNT(grade) FROM enrollments WHERE ${cond}`).rows[0];
+  return {sql:`SELECT SUM(grade) / COUNT(grade)\nFROM enrollments\nWHERE ${cond};`, filter:{from:'enrollments', cond, cols:'student_id, course_id, grade'},
+    why:`${sum} / ${n}: both sides are integers, so SQLite does <b>integer division</b> and drops the fraction` + (sum % n ? ` (the exact average is ${qFmt(sum / n)}). Write ${code('SUM(grade) * 1.0 / COUNT(grade)')} or ${code('AVG(grade)')} to keep it.` : '; here it divides evenly.'),
+    vars:[[`SELECT ROUND(SUM(grade) * 1.0 / COUNT(grade), 2) FROM enrollments WHERE ${cond}`, 'expect a decimal result (integer / integer stays an integer)'],
+          [`SELECT SUM(grade) / COUNT(*) FROM enrollments WHERE ${cond}`, 'divide by COUNT(*), which also counts the NULL grade'],
+          [`SELECT MAX(grade) FROM enrollments WHERE ${cond}`, 'take the best grade']]};
+}},
+
+/* ---------- which query? ---------- */
+{lv:[1], kind:'which', gen(){
+  const k = 19 + rnd(6);
+  return {ask:`Names of the students older than ${k}.`, ok:`SELECT name FROM students\nWHERE age > ${k};`,
+    bad:[[`SELECT name FROM students\nWHERE age >= ${k};`, `also returns students who are exactly ${k}`],
+         [`SELECT name FROM students\nWHERE age < ${k};`, 'returns the younger students'],
+         [`SELECT name FROM students\nWHERE age > ${k + 1};`, `starts one year too late (misses age ${k + 1})`],
+         [`SELECT name FROM students\nWHERE age <> ${k};`, `returns everyone not exactly ${k}, younger ones too`]]};
+}},
+{lv:[1], kind:'which', gen(){
+  return rnd(2)
+    ? {ask:'Names of the students whose city is unknown (NULL).', ok:'SELECT name FROM students\nWHERE city IS NULL;',
+       why:'Only IS NULL tests for a missing value. Any comparison with NULL (=, <>) is UNKNOWN, never TRUE.',
+       bad:[['SELECT name FROM students\nWHERE city = NULL;', `${code('= NULL')} is UNKNOWN for every row, so it returns nothing`],
+            ["SELECT name FROM students\nWHERE city = 'NULL';", "compares with the text 'NULL', not with a missing value"],
+            ['SELECT name FROM students\nWHERE city IS NOT NULL;', 'returns the opposite set'],
+            ["SELECT name FROM students\nWHERE city = '';", 'looks for an empty string, which is not the same as NULL']]}
+    : {ask:'Enrollments (student_id, course_id) that have no grade yet.', ok:'SELECT student_id, course_id FROM enrollments\nWHERE grade IS NULL;',
+       why:'Only IS NULL tests for a missing value. Any comparison with NULL (=, <>) is UNKNOWN, never TRUE.',
+       bad:[['SELECT student_id, course_id FROM enrollments\nWHERE grade = NULL;', `${code('= NULL')} is UNKNOWN for every row, so it returns nothing`],
+            ['SELECT student_id, course_id FROM enrollments\nWHERE grade = 0;', 'looks for a grade of 0, which is a real value, not a missing one'],
+            ['SELECT student_id, course_id FROM enrollments\nWHERE grade IS NOT NULL;', 'returns the opposite set']]};
+}},
+{lv:[1], kind:'which', gen(){
+  return {ask:'Each known city (not NULL) that appears in students, listed once.', ok:'SELECT DISTINCT city FROM students\nWHERE city IS NOT NULL;',
+    bad:[['SELECT city FROM students\nWHERE city IS NOT NULL;', 'lists a city once per student, so Tel Aviv appears three times'],
+         ['SELECT DISTINCT city FROM students;', 'also lists NULL as a city'],
+         ['SELECT COUNT(DISTINCT city) FROM students;', 'returns how many cities there are, not the cities']]};
+}},
+{lv:[2], kind:'which', gen(){
+  const [c1, c2] = shuffle(CITIES), k = 20 + rnd(5);
+  return {ask:`Students from ${c1} or ${c2} who are ${k} or older.`,
+    ok: rnd(2) ? `SELECT name FROM students\nWHERE (city = '${c1}' OR city = '${c2}') AND age >= ${k};` : `SELECT name FROM students\nWHERE city IN ('${c1}', '${c2}') AND age >= ${k};`,
+    bad:[[`SELECT name FROM students\nWHERE city = '${c1}' OR city = '${c2}' AND age >= ${k};`, `AND binds tighter than OR, so the age test only applies to ${c2}`],
+         [`SELECT name FROM students\nWHERE city = '${c1}' AND city = '${c2}' AND age >= ${k};`, 'no row has two cities at once, so it returns nothing'],
+         [`SELECT name FROM students\nWHERE city IN ('${c1}', '${c2}') OR age >= ${k};`, `OR keeps everyone ${k} or older, from any city`]]};
+}},
+{lv:[2], kind:'which', gen(){
+  const j = 'SELECT s.name, c.title\nFROM students s\n';
+  return {ask:'Every enrollment as student name + course title (students with no course are left out).',
+    ok:j + 'JOIN enrollments e ON e.student_id = s.student_id\nJOIN courses c ON c.course_id = e.course_id;',
+    bad:[[j + 'JOIN enrollments e ON e.student_id = s.student_id\nJOIN courses c ON c.course_id = s.student_id;', 'joins courses on the student id, pairing unrelated rows'],
+         ['SELECT s.name, c.title\nFROM students s, enrollments e, courses c\nWHERE e.student_id = s.student_id;', 'has no condition for courses, so each enrollment is paired with all 5 courses'],
+         [j + 'LEFT JOIN enrollments e ON e.student_id = s.student_id\nLEFT JOIN courses c ON c.course_id = e.course_id;', 'also lists Ido, who has no course, with a NULL title']]};
+}},
+{lv:[2], kind:'which', gen(){
+  return {ask:'How many students live in each known city (leave out the unknown city).', ok:'SELECT city, COUNT(*) FROM students\nWHERE city IS NOT NULL\nGROUP BY city;',
+    bad:[['SELECT city, COUNT(*) FROM students\nGROUP BY city;', 'adds a group for the NULL city'],
+         ['SELECT COUNT(*) FROM students\nWHERE city IS NOT NULL;', 'gives one total, not one count per city'],
+         ['SELECT city, COUNT(DISTINCT city) FROM students\nWHERE city IS NOT NULL\nGROUP BY city;', 'counts the different cities inside each group, which is always 1']]};
+}},
+{lv:[2], kind:'which', gen(){
+  return {ask:'The average grade of each course that has enrollments (ungraded rows do not count).', ok:'SELECT course_id, ROUND(AVG(grade), 1)\nFROM enrollments\nGROUP BY course_id;',
+    bad:[['SELECT course_id, ROUND(SUM(grade) * 1.0 / COUNT(*), 1)\nFROM enrollments\nGROUP BY course_id;', 'divides by every row, so the NULL grade counts as 0'],
+         ['SELECT ROUND(AVG(grade), 1)\nFROM enrollments;', 'gives one average for all courses together'],
+         ['SELECT student_id, ROUND(AVG(grade), 1)\nFROM enrollments\nGROUP BY student_id;', 'averages per student, not per course']]};
+}},
+{lv:[3], kind:'which', gen(){
+  if (rnd(3) === 0) return {ask:'Titles of the courses nobody is enrolled in.',
+    ok: pick(['SELECT c.title\nFROM courses c\nLEFT JOIN enrollments e ON e.course_id = c.course_id\nWHERE e.course_id IS NULL;',
+              'SELECT title FROM courses c\nWHERE NOT EXISTS (SELECT 1 FROM enrollments e\n                  WHERE e.course_id = c.course_id);']),
+    bad:[['SELECT c.title\nFROM courses c\nJOIN enrollments e ON e.course_id = c.course_id\nWHERE e.course_id IS NULL;', 'an inner JOIN never produces the NULL row, so it returns nothing'],
+         ['SELECT c.title\nFROM courses c\nLEFT JOIN enrollments e ON e.course_id = c.course_id\nWHERE e.grade IS NULL;', "also catches Databases, because of Yossi's NULL grade"],
+         ['SELECT c.title\nFROM courses c\nJOIN enrollments e ON e.course_id = c.course_id\nWHERE e.grade IS NULL;', 'finds the course with an ungraded enrollment instead']]};
+  return {ask:'Names of the students who are not enrolled in any course.',
+    ok: pick(['SELECT s.name\nFROM students s\nLEFT JOIN enrollments e ON e.student_id = s.student_id\nWHERE e.student_id IS NULL;',
+              'SELECT name FROM students s\nWHERE NOT EXISTS (SELECT 1 FROM enrollments e\n                  WHERE e.student_id = s.student_id);',
+              'SELECT name FROM students\nWHERE student_id NOT IN (SELECT student_id FROM enrollments);']),
+    bad:[['SELECT s.name\nFROM students s\nJOIN enrollments e ON e.student_id = s.student_id\nWHERE e.student_id IS NULL;', 'an inner JOIN never produces the NULL row, so it returns nothing'],
+         ['SELECT s.name\nFROM students s\nLEFT JOIN enrollments e ON e.student_id = s.student_id\nWHERE e.grade IS NULL;', "also catches Yossi, who is enrolled but has a NULL grade"],
+         ['SELECT name FROM students\nWHERE student_id NOT IN (SELECT course_id FROM enrollments);', 'compares student ids with course ids']]};
+}},
+{lv:[3], kind:'which', gen(){
+  const j = 'FROM courses c\nLEFT JOIN enrollments e ON e.course_id = c.course_id\nGROUP BY c.course_id;';
+  return {ask:'Every course with the number of students in it, including courses with nobody (they show 0).', ok:'SELECT c.title, COUNT(e.student_id)\n' + j,
+    bad:[['SELECT c.title, COUNT(*)\n' + j, `${code('COUNT(*)')} counts the NULL-padded row, so the empty course shows 1`],
+         ['SELECT c.title, COUNT(e.grade)\n' + j, "skips Yossi's NULL grade, so Databases shows one student too few"],
+         ['SELECT c.title, COUNT(e.student_id)\n' + j.replace('LEFT JOIN', 'JOIN'), 'an inner JOIN leaves out the course nobody takes']]};
+}},
+{lv:[3], kind:'which', gen(){
+  const k = pick([80, 85, 88, 90]), j = 'SELECT DISTINCT s.name\nFROM students s\n';
+  return {ask:`Names of the students with at least one grade above ${k}, each name once.`,
+    ok:`${j}JOIN enrollments e ON e.student_id = s.student_id\nWHERE e.grade > ${k};`,
+    bad:[[`SELECT s.name\nFROM ${SE}\nWHERE e.grade > ${k};`, 'without DISTINCT a student with two such grades is listed twice'],
+         [`${j}LEFT JOIN enrollments e\n  ON e.student_id = s.student_id AND e.grade > ${k};`, 'the test in ON only decides matches; LEFT JOIN still keeps every student'],
+         [`${j}JOIN enrollments e ON e.student_id = s.student_id\nWHERE e.grade >= ${k};`, `also includes a grade of exactly ${k}`],
+         [`SELECT s.name\nFROM ${SE}\nGROUP BY s.student_id\nHAVING AVG(e.grade) > ${k};`, `tests the average, not "at least one grade"`]]};
+}},
+{lv:[3], kind:'which', gen(){
+  const k = pick([75, 80, 82, 85]);
+  return {ask:`Courses (course_id) whose average grade is above ${k}.`, ok:`SELECT course_id FROM enrollments\nGROUP BY course_id\nHAVING AVG(grade) > ${k};`,
+    bad:[[`SELECT DISTINCT course_id FROM enrollments\nWHERE grade > ${k};`, `keeps a course if any single grade is above ${k}`],
+         [`SELECT course_id FROM enrollments\nGROUP BY course_id\nHAVING MAX(grade) > ${k};`, 'tests the best grade, not the average'],
+         [`SELECT course_id FROM enrollments\nGROUP BY course_id\nHAVING SUM(grade) * 1.0 / COUNT(*) > ${k};`, 'divides by every row, so the NULL grade counts as 0'],
+         [`SELECT course_id FROM enrollments\nGROUP BY course_id\nHAVING MIN(grade) > ${k};`, 'requires every grade to be above, not the average']]};
+}},
+{lv:[3], kind:'which', gen(){
+  const c = pick(CITIES), sub = `(SELECT AVG(age) FROM students WHERE city = '${c}')`;
+  return {ask:`Names of all students (from any city) older than the average age in ${c}.`, ok:`SELECT name FROM students\nWHERE age > ${sub};`,
+    bad:[['SELECT name FROM students\nWHERE age > (SELECT AVG(age) FROM students);', 'compares with the average of all students'],
+         [`SELECT name FROM students\nWHERE age >= ${sub};`, 'also includes students exactly at the average'],
+         [`SELECT name FROM students\nWHERE city = '${c}'\n  AND age > ${sub};`, `only looks at students from ${c}`],
+         [`SELECT name FROM students\nWHERE age > (SELECT MIN(age) FROM students WHERE city = '${c}');`, `compares with the youngest age in ${c}`]]};
+}}
+];
+
+/* ---------- building a question ---------- */
+const filterSql = f => `SELECT ${f.cols}, CASE WHEN (${f.cond}) THEN 'TRUE' WHEN NOT (${f.cond}) THEN 'FALSE' ELSE 'UNKNOWN' END AS "WHERE" FROM ${one(f.from)}`;
+function mkNum(kind, g){
+  const val = r => kind === 'rows' ? r.rows.length : r.rows.length ? r.rows[0][0] : null;
+  const res = qRun(g.sql), ans = val(res), opts = [{t:qFmt(ans), ok:true}];
+  for (const [sql, why] of shuffle(g.vars || [])){
+    if (opts.length >= 4) break;
+    let t; try { t = qFmt(val(qRun(sql))); } catch(e){ continue; }
+    if (!opts.some(o => o.t === t)) opts.push({t, why});
+  }
+  // pad with nearby numbers so there are always four choices
+  const n = typeof ans === 'number' ? ans : 0, step = Number.isInteger(n) ? 1 : 0.5;
+  for (const d of shuffle([1, -1, 2, -2]).concat([3, 4, 5, 6])){
+    if (opts.length >= 4) break;
+    const t = qFmt(n + d * step);
+    if (n + d * step >= 0 && !opts.some(o => o.t === t)) opts.push({t});
+  }
+  opts.sort((a, b) => a.t === 'NULL' ? -1 : b.t === 'NULL' ? 1 : +a.t - +b.t);
+  return {kind, sql:g.sql, res, opts, why:g.why || '', filter:g.filter, show:g.show, picked:null};
+}
+function mkWhich(g){
+  const res = qRun(g.ok), sig = qSig(res), bad = [];
+  for (const [sql, why] of shuffle(g.bad)){
+    if (bad.length >= 3) break;
+    let r; try { r = qRun(sql); } catch(e){ continue; }
+    if (qSig(r) !== sig) bad.push({t:sql, why, res:r});
+  }
+  if (bad.length < 2) return null;
+  return {kind:'which', ask:g.ask, sql:g.ok, res, opts:shuffle([{t:g.ok, ok:true, res}, ...bad]), why:g.why || '', picked:null};
+}
+function qGen(level){
+  const pool = QT.filter(t => t.lv.includes(level));
+  const kind = pick([...new Set(pool.map(t => t.kind))]), t = pick(pool.filter(x => x.kind === kind)), g = t.gen();
+  return kind === 'which' ? mkWhich(g) : mkNum(kind, g);
+}
+function qNew(){
+  for (let i = 0; i < 30; i++){
+    let q = null;
+    try { q = qGen(QZ.level); } catch(e){ console.error(e); }
+    if (q && (!qcur || q.sql !== qcur.sql)){ qcur = q; break; }
+  }
+  qRender();
+}
+
+/* ---------- rendering ---------- */
+function qGrid(r, mark){
+  const mi = mark ? r.cols.indexOf(mark) : -1;
+  let h = '<table class="grid"><thead><tr><th class="rn">#</th>' + r.cols.map(c => `<th>${esc(c)}</th>`).join('') + '</tr></thead><tbody>';
+  r.rows.forEach((row, i) => {
+    const cls = mi < 0 ? '' : /^(TRUE|kept)$/.test(row[mi]) ? 's-hit' : 's-drop';
+    h += `<tr class="${cls}"><td class="rn">${i + 1}</td>` + row.map((v, j) => {
+      if (j === mi) return `<td class="tv ${row[mi]}">${esc(row[mi])}</td>`;
+      const o = cellOut(v); return `<td class="${o.cls}">${esc(o.text)}</td>`;
+    }).join('') + '</tr>';
+  });
+  return h + '</tbody></table>' + (r.rows.length ? '' : '<div class="trunc" style="color:var(--text-faint)">(no rows)</div>');
+}
+const qTable = (cap, html) => `<div class="qcap">${cap}</div><div class="qtbl">${html}</div>`;
+const KIND_Q = {rows:'How many rows does this query return?', value:'What value does this query return?', which:'Which query answers this question?'};
+function qRender(){
+  $('#qzLvls').querySelectorAll('button').forEach(b => b.classList.toggle('on', +b.dataset.l === QZ.level));
+  $('#qzScore').innerHTML = `<div class="s"><small>Score</small><b>${QZ.right} / ${QZ.total}</b></div><div class="s"><small>Accuracy</small><b>${QZ.total ? Math.round(QZ.right / QZ.total * 100) + '%' : '—'}</b></div>` +
+    `<div class="s"><small>Streak</small><b>${QZ.streak}</b></div><div class="s"><small>Best</small><b>${QZ.best}</b></div>`;
+  if (!qcur) return;
+  const which = qcur.kind === 'which', done = qcur.picked !== null;
+  $('#qzKind').textContent = KIND_Q[qcur.kind];
+  $('#qzQ').innerHTML = which ? `<div class="qask">${esc(qcur.ask)}</div>` : `<pre class="qsql cm-s-default">${hlCode(qcur.sql)}</pre>`;
+  const A = $('#qzAns');
+  A.className = 'qans' + (which ? ' code' : '');
+  A.innerHTML = qcur.opts.map((o, i) => `<button data-i="${i}" class="${!done ? '' : o.ok ? 'ok' : i === qcur.picked ? 'no' : ''}"${done ? ' disabled' : ''}>` +
+    `<span class="k">${i + 1}</span>${which ? `<span class="cm-s-default">${hlCode(o.t)}</span>` : esc(o.t)}</button>`).join('');
+  if (!done){ $('#qzFeed').innerHTML = ''; return; }
+  const p = qcur.opts[qcur.picked], ok = !!p.ok, ri = qcur.opts.findIndex(o => o.ok), right = qcur.opts[ri];
+  const said = which ? `query ${qcur.picked + 1}` : esc(p.t);
+  const res = which ? `The right query is <b>${ri + 1}</b>; it returns ${plural(qcur.res.rows.length, 'row')}.`
+    : qcur.kind === 'rows' ? `The query returns ${plural(qcur.res.rows.length, 'row')}.` : `The query returns <b>${esc(right.t)}</b>.`;
+  let h = `<div class="note ${ok ? 'good' : 'bad'}">${ok ? '<b>Correct!</b>' : `<b>Not quite.</b> You picked ${said}.`} ${res} Press <b>Enter</b> or <b>Next</b> for another one.</div>`;
+  if (qcur.why) h += `<p class="qwhy">${qcur.why}</p>`;
+  const m = qcur.opts.map((o, i) => ({o, i})).filter(x => x.o.why);
+  if (m.length) h += `<h4>${which ? 'What is wrong with the others' : 'Where the other answers come from'}</h4><ul class="qmist">` + m.map(({o, i}) =>
+    `<li class="${i === qcur.picked ? 'you' : ''}">${which ? `<b>Query ${i + 1}</b> returns ${plural(o.res.rows.length, 'row')} — ${o.why}.` : `<b class="v">${esc(o.t)}</b> is what you get if you ${o.why}.`}</li>`).join('') + '</ul>';
+  if (qcur.filter) h += qTable('Row by row: WHERE keeps only the rows where the condition is <b style="color:var(--sql)">TRUE</b>; FALSE and <b style="color:var(--warn)">UNKNOWN</b> rows are dropped.', qGrid(qRun(filterSql(qcur.filter)), 'WHERE'));
+  else if (qcur.show) h += qTable(qcur.show.cap, qGrid(qRun(qcur.show.sql), qcur.show.mark));
+  else h += qTable(which ? 'What the right query returns:' : 'The result:', qGrid(qcur.res));
+  if (which && !ok) h += qTable(`What your pick (query ${qcur.picked + 1}) returns:`, qGrid(p.res));
+  $('#qzFeed').innerHTML = h;
+}
+function qAnswer(i){
+  if (!qcur || qcur.picked !== null || !qcur.opts[i]) return;
+  qcur.picked = i;
+  QZ.total++;
+  if (qcur.opts[i].ok){ QZ.right++; QZ.streak++; QZ.best = Math.max(QZ.best, QZ.streak); } else QZ.streak = 0;
+  LS.set('quiz', QZ); qRender();
+}
+function renderQData(){
+  $('#qzDataBody').innerHTML = ['students', 'courses', 'enrollments'].map(t =>
+    `<div><div class="qcap">${t}</div><div class="qtbl">${qGrid(qRun(`SELECT * FROM ${t}`))}</div></div>`).join('');
+}
+function setQuiz(on){
+  document.body.classList.toggle('quiz-on', on);
+  $('#quizBtn').innerHTML = on ? '← Back to the lab' : QUIZ_BTN;
+  if (on){
+    if (!qdb){ qdb = new SQL.Database(); qdb.exec(SCHOOL_SQL); renderQData(); }
+    if (!qcur) qNew(); else qRender();
+    if (document.activeElement) document.activeElement.blur();
+  } else { cm.refresh(); cm.focus(); }
+}
+const quizOn = () => document.body.classList.contains('quiz-on');
+const QUIZ_BTN = $('#quizBtn').innerHTML;
+$('#quizBtn').addEventListener('click', () => setQuiz(!quizOn()));
+$('#qzAns').addEventListener('click', e => { const b = e.target.closest('button'); if (b) qAnswer(+b.dataset.i); });
+$('#qzNext').onclick = qNew;
+$('#qzReset').onclick = () => { Object.assign(QZ, {right:0, total:0, streak:0, best:0}); LS.set('quiz', QZ); qRender(); };
+$('#qzLvls').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  QZ.level = +b.dataset.l; LS.set('quiz', QZ); qNew();
+});
+document.addEventListener('keydown', e => {
+  if (!quizOn() || $('#ref').classList.contains('on') || e.ctrlKey || e.metaKey || e.altKey) return;
+  if (e.target.closest && e.target.closest('input,select,textarea,[contenteditable],.CodeMirror')) return;
+  const k = e.key.toLowerCase();
+  if (k === 'escape'){ setQuiz(false); e.preventDefault(); }
+  else if (qcur && qcur.picked === null && /^[1-4]$/.test(k)){ qAnswer(+k - 1); e.preventDefault(); }
+  else if (qcur && qcur.picked !== null && (k === 'enter' || k === ' ' || k === 'n')){ qNew(); e.preventDefault(); }
+});
 
 /* ================================================================
    Boot

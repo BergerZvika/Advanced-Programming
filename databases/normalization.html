@@ -156,7 +156,38 @@ table.t tr.cur td{background:rgba(255,181,71,0.07)}
 .welcome h2{color:var(--text);font-size:24px;margin:0 0 10px}
 .welcome .flow{display:flex;flex-wrap:wrap;gap:6px;margin:16px 0}
 
+/* ---------- quiz ---------- */
+[hidden]{display:none !important}
+.btn.sm{padding:5px 10px;font-size:12px;border-radius:8px}
+.quiz{max-width:1240px;margin:0 auto}
+.qwrap{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:14px;align-items:start}
+.qhead{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.qrel{padding:14px 16px;border-radius:12px;background:var(--bg-1);border:1px solid var(--border-strong);display:flex;flex-direction:column;gap:10px}
+.qrel .rn{font-family:var(--mono);font-weight:700;font-size:15px}
+.qrel .fdlist{flex-direction:row;flex-wrap:wrap;gap:8px 22px}
+.qtext{font-size:16px;font-weight:600;margin:16px 0 12px;line-height:1.8}
+.qtext .set{margin:0 2px}
+.qans{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.qans button{display:flex;align-items:center;gap:11px;padding:12px 14px;min-height:52px;border-radius:11px;border:1px solid var(--border-strong);background:var(--surface);text-align:left;font-size:13.5px;font-weight:600}
+.qans button .k{flex:none;font-family:var(--mono);font-size:11px;color:var(--text-faint);border:1px solid var(--border-strong);border-radius:6px;padding:1px 7px}
+.qans button:hover:not([disabled]){background:var(--surface-2)}
+.qans button[disabled]{opacity:.35;cursor:default}
+.qans button.right{opacity:1;box-shadow:0 0 0 2px var(--sql);border-color:transparent}
+.qans button.wrong{opacity:1;box-shadow:0 0 0 2px var(--err);border-color:transparent}
+.qfeed{margin-top:14px}
+.qfeed .note{margin-bottom:12px}
+.qfeed .note .fd,.qfeed .note .set{vertical-align:middle}
+.score{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.score .s{background:var(--bg-1);border:1px solid var(--border);border-radius:10px;padding:10px 12px}
+.score .s small{display:block;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-faint);margin-bottom:3px}
+.score .s b{font-family:var(--mono);font-size:20px}
+.lvls{display:flex;flex-direction:column;gap:6px}
+.lvls button{text-align:left;padding:8px 11px;border-radius:9px;border:1px solid var(--border);background:var(--surface);font-weight:600;font-size:12.5px;display:flex;flex-direction:column;gap:2px}
+.lvls button small{font-weight:400;color:var(--text-faint);font-size:11px}
+.lvls button.on{border-color:rgba(76,224,163,0.55);background:rgba(76,224,163,0.08)}
+
 @media (max-width:900px){
+  .qwrap,.qans{grid-template-columns:1fr}
   .layout{grid-template-columns:1fr}
   .side{border-right:none;border-bottom:1px solid var(--border)}
   .steps-bar{position:static}
@@ -170,6 +201,7 @@ table.t tr.cur td{background:rgba(255,181,71,0.07)}
 <header class="topbar">
   <a class="brand" href="index.html" title="Back to Databases Lab"><span class="dot"></span>Normalization Lab <small>BCNF · 3NF · step by step</small></a>
   <span class="spacer"></span>
+  <button class="btn" id="quizBtn" title="Practice with generated questions">Quiz</button>
   <a class="btn" href="index.html">← Databases</a>
   <a class="btn" href="../home.html">⌂ Home</a>
 </header>
@@ -210,6 +242,34 @@ table.t tr.cur td{background:rgba(255,181,71,0.07)}
 
   <main class="viewer" id="viewer"></main>
 </div>
+
+<main class="stage quiz" id="quizView" hidden>
+  <span class="sec" style="--c:var(--s-nf)">Practice</span>
+  <h2>Quiz: keys, closures and normal forms</h2>
+  <p class="lead">Every round makes up a fresh relation and set of dependencies, and the answer is computed by the same algorithms the lab uses. After you answer, the explanation shows the computation step by step. Press <b>1</b>–<b>4</b> to answer and <b>Enter</b> for the next one.</p>
+  <div class="qwrap">
+    <div class="box" style="margin:0">
+      <div class="qhead" id="qHead"></div>
+      <div id="qRel"></div>
+      <div class="qtext" id="qText"></div>
+      <div class="qans" id="qAns"></div>
+      <div class="qfeed" id="qFeed"></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div class="box score" style="margin:0" id="qScore"></div>
+      <div class="box" style="margin:0">
+        <h4>Difficulty</h4>
+        <div class="lvls" id="qLvls">
+          <button data-l="1">Easy<small>3–4 attributes, 2–3 one-attribute left sides</small></button>
+          <button data-l="2">Medium<small>5 attributes, some two-attribute left sides</small></button>
+          <button data-l="3">Hard<small>6 attributes, composite left sides, several keys</small></button>
+        </div>
+      </div>
+      <button class="btn" id="qNext" style="justify-content:center">Next question →</button>
+      <button class="btn sm" id="qReset" style="justify-content:center">Reset score</button>
+    </div>
+  </div>
+</main>
 
 <script>
 (function(){
@@ -396,6 +456,12 @@ function nfCheck(F, K){
     const verdict = superkey ? 'bcnf' : prime ? '3nf' : partial ? 'partial' : 'transitive';
     return {fd, cl, superkey, prime, partial, verdict};
   });
+  // a partial dependency can hide in F⁺ (A → D and AD → B give A → B): test each key minus one attribute too
+  if (!rows.some(r => r.partial)) K.keys.forEach(k => members(k).forEach(i => {
+    const X = k & ~bit(i), cl = closure(X, F);
+    members(cl & ~X & ~K.prime).forEach(j => { if (X && !rows.some(r => r.fd.lhs === X && r.fd.rhs === bit(j)))
+      rows.push({fd: {lhs: X, rhs: bit(j)}, cl, superkey: false, prime: false, partial: true, verdict: 'partial', implied: true}); });
+  }));
   let nf = 'BCNF';
   if (rows.some(r => r.verdict !== 'bcnf')) nf = '3NF';
   if (rows.some(r => r.verdict === 'partial' || r.verdict === 'transitive')) nf = '2NF';
@@ -587,7 +653,7 @@ function buildSteps(mode, F){
       'Check every dependency <code>X → A</code>. <b>BCNF</b> needs X to be a superkey. <b>3NF</b> also allows it when A is prime (part of some key). ' +
       '<b>2NF</b> forbids a non-prime attribute depending on <i>part</i> of a key. The relation is in the highest form that every dependency satisfies.',
       body: `<div class="box"><table class="t"><thead><tr><th>X → A</th><th>X⁺</th><th>X superkey?</th><th>A prime?</th><th>Verdict</th></tr></thead><tbody>` +
-        NF.rows.map(r => `<tr><td>${fdH(r.fd)}</td><td>${chips(r.cl, {dim: all & ~r.cl})}</td><td>${r.superkey ? '<span class="tag ok">yes</span>' : '<span class="tag bad">no</span>'}</td><td>${r.prime ? '<span class="tag ok">yes</span>' : '<span class="tag info">no</span>'}</td><td>${lab[r.verdict]}</td></tr>`).join('') +
+        NF.rows.map(r => `<tr><td>${fdH(r.fd)}${r.implied ? ' <span class="tag info">implied by F</span>' : ''}</td><td>${chips(r.cl, {dim: all & ~r.cl})}</td><td>${r.superkey ? '<span class="tag ok">yes</span>' : '<span class="tag bad">no</span>'}</td><td>${r.prime ? '<span class="tag ok">yes</span>' : '<span class="tag info">no</span>'}</td><td>${lab[r.verdict]}</td></tr>`).join('') +
         `</tbody></table></div><div class="box"><h4>Highest normal form</h4><span class="nfbadge" style="color:${NF.nf === 'BCNF' ? 'var(--sql)' : NF.nf === '3NF' ? 'var(--warn)' : 'var(--err)'}">${NF.nf}</span></div>`});
   }
 
@@ -797,7 +863,7 @@ $('#viewer').addEventListener('click', e => {
   if (c){ stopPlay(); go(+c.dataset.j); }
 });
 document.addEventListener('keydown', e => {
-  if (!V || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
+  if (!V || quizOn || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
   const k = e.key;
   if (k === 'ArrowRight'){ stopPlay(); go(V.i + 1); }
   else if (k === 'ArrowLeft'){ stopPlay(); go(V.i - 1); }
@@ -872,7 +938,256 @@ const saved = LS.get('input', null), sp = LS.get('preset', 0);
 $('#preset').value = String(sp);
 if (saved){ $('#attrs').value = saved.attrs; $('#fds').value = saved.fds; }
 else { $('#attrs').value = PRESETS[0].attrs; $('#fds').value = PRESETS[0].fds; }
+
+/* ================================================================
+   Quiz: random relations, answered by the algorithms above
+   ================================================================ */
+const Q = Object.assign({level: 2, right: 0, total: 0, streak: 0, best: 0}, LS.get('quiz', {}));
+let cur = null, quizOn = false, lastKind = '';
+const rnd = n => Math.floor(Math.random() * n);
+const pick = a => a[rnd(a.length)];
+function shuffle(a){ for (let i = a.length - 1; i > 0; i--){ const j = rnd(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+const randSet = (from, k) => shuffle(members(from)).slice(0, k).reduce((s, i) => s | bit(i), 0);
+const LEVEL = {
+  1: {n: [3, 4], m: [2, 3], lhs: [1], rhs: [1]},
+  2: {n: [5], m: [3, 4], lhs: [1, 1, 2], rhs: [1, 1, 2]},
+  3: {n: [6], m: [4, 5, 6], lhs: [1, 2, 2, 3], rhs: [1, 1, 2]}
+};
+/* Sets ATTRS to A, B, C… and returns a random F (hard: at least one composite left side) */
+function genRel(level){
+  const L = LEVEL[level];
+  for (;;){
+    ATTRS = [...'ABCDEF'.slice(0, pick(L.n))];
+    const all = ALL(), m = pick(L.m), F = [];
+    for (let t = 0; F.length < m && t < 40; t++){
+      const lhs = randSet(all, pick(L.lhs)), rhs = randSet(all & ~lhs, pick(L.rhs));
+      if (!F.some(g => g.lhs === lhs)) F.push({lhs, rhs});
+    }
+    if (level < 3 || F.some(g => pop(g.lhs) > 1)) return F;
+  }
+}
+const isKey = (X, F) => closure(X, F) === ALL();
+const clNote = (X, F) => { const cl = closure(X, F); return `${chips(X)}⁺ = ${chips(cl, {dim: ALL() & ~cl})}`; };
+const setOpt = (m, ok, why) => ({m, html: chips(m), v: txt(m), ok, why});
+const fdOpt = (g, ok, why) => ({html: fdH(g), v: fdT(g), ok, why});
+function keyWhy(X, F, K){
+  const cl = closure(X, F);
+  if (cl !== ALL()) return `${clNote(X, F)} misses ${chips(ALL() & ~cl)}, so it is not even a superkey.`;
+  return `${chips(X)}⁺ is all of R, so it is a superkey, but it contains the candidate key ${chips(K.keys.find(k => sub(k, X)), {key: -1})}, so it is not minimal.`;
+}
+function keysBox(K, F){
+  return `<div class="box"><h4>Candidate keys (${K.keys.length})</h4><div class="fdlist">${K.keys.map(k => `<span>${chips(k, {key: k})}<span style="color:var(--text-faint)"> ⁺ = R</span></span>`).join('')}</div></div>` +
+    (K.core ? `<div class="note">${chips(K.core)} never ${pop(K.core) > 1 ? 'appear' : 'appears'} on a right side, so ${pop(K.core) > 1 ? 'they are' : 'it is'} in every key${K.onlyR ? `; ${chips(K.onlyR)} only ${pop(K.onlyR) > 1 ? 'appear' : 'appears'} on the right, so ${pop(K.onlyR) > 1 ? 'they are' : 'it is'} in none` : ''}.</div>` : '');
+}
+/* Keep distinct wrong options, most instructive first */
+function distinct(right, wrong, n){
+  const seen = new Set([right.v]), out = [];
+  for (const o of wrong) if (out.length < n && !seen.has(o.v)){ seen.add(o.v); out.push(o); }
+  return out;
+}
+
+const KINDS = {
+  /* What is X⁺ ? */
+  closure(level){
+    const F = genRel(level), all = ALL();
+    const X = randSet(all, level === 1 ? 1 : pick(level === 2 ? [1, 2] : [1, 2, 2]));
+    const trace = [], cl = closure(X, F, trace);
+    if (trace.length < Math.min(level, 2)) return null;
+    const last = trace[trace.length - 1];
+    const once = F.reduce((a, g) => sub(g.lhs, X) ? a | g.rhs : a, X);
+    const gen = m => `It ${cl & ~m ? `misses ${chips(cl & ~m)}, which the closure reaches` : ''}${(cl & ~m) && (m & ~cl) ? ', and ' : ''}${m & ~cl ? `includes ${chips(m & ~cl)}, which no chain of dependencies from ${chips(X)} reaches` : ''}.`;
+    const right = setOpt(cl, true);
+    const wrong = distinct(right, [
+      setOpt(once, false, `That is only the first round: the dependencies whose left side is inside ${chips(X)} from the start. Attributes added along the way can trigger more dependencies.`),
+      setOpt(cl & ~last.added, false, `One step too early: ${fdH(last.fd)} still applies and adds ${chips(last.added)}.`),
+      ...(all & ~cl ? [setOpt(cl | randSet(all & ~cl, 1), false)] : []),
+      setOpt(cl & ~randSet(cl & ~X, 1), false),
+      ...(cl !== all ? [setOpt(all, false)] : []),
+      setOpt(X, false)
+    ].filter(o => o.m).map(o => (o.why = o.why || gen(o.m), o)), 3);
+    return {F, X, text: `What is the closure ${chips(X)}⁺ ?`, opts: [right, ...wrong],
+      explain: `<div class="box"><h4>${esc(txt(X))}⁺ step by step</h4>${traceTable(X, trace)}</div>` +
+        `<div class="note good">${chips(X)}⁺ = ${chips(cl, {hl: cl & ~X})}${cl === all ? ': every attribute, so ' + chips(X) + ' is a superkey.' : ', and no dependency adds anything more.'}</div>`};
+  },
+  /* Which of these is a candidate key? */
+  key(level){
+    const F = genRel(level), all = ALL(), K = analyzeKeys(F);
+    if (K.keys.includes(all) || (level === 3 && K.keys.length < 2 && rnd(2))) return null;
+    const k = pick(K.keys), supers = [], nons = [];
+    members(all & ~k).forEach(i => supers.push(k | bit(i)));
+    members(k).forEach(i => {
+      if (pop(k) > 1) nons.push(k & ~bit(i));
+      members(all & ~k).forEach(j => nons.push((k & ~bit(i)) | bit(j)));
+    });
+    const cand = s => !K.keys.includes(s);
+    const right = setOpt(k, true);
+    const pool = shuffle(nons.filter(cand)).sort((a, b) => isKey(a, F) - isKey(b, F));   // non-superkeys first
+    const wrong = distinct(right, [pick(supers.filter(cand)), ...pool, ...shuffle(supers.filter(cand))].map(s => setOpt(s, false, keyWhy(s, F, K))), 3);
+    const trace = [];
+    closure(k, F, trace);
+    const mini = pop(k) > 1
+      ? `Remove any one attribute and it stops working, so ${chips(k)} is minimal:<br>${members(k).map(i => clNote(k & ~bit(i), F)).join('<br>')}`
+      : `A single attribute cannot get any smaller, so it is minimal.`;
+    return {F, text: `Which of these is a <b>candidate key</b> of R?`, opts: [right, ...wrong],
+      explain: `<div class="box"><h4>${esc(txt(k))}⁺ step by step</h4>${traceTable(k, trace)}</div>` +
+        `<div class="note good">${chips(k)}⁺ is all of R, so it is a superkey. ${mini}</div>` +
+        (K.keys.length > 1 ? keysBox(K, F) : '')};
+  },
+  /* How many candidate keys? */
+  count(level){
+    const F = genRel(level), K = analyzeKeys(F), n = K.keys.length;
+    if (n === 1 && rnd(3)) return null;
+    const vals = n <= 4 ? [1, 2, 3, 4] : [n - 1, n, n + 1, n + 2];
+    return {F, fixed: true, text: `How many <b>candidate keys</b> does R have?`,
+      opts: vals.map(v => ({html: String(v), v: String(v), ok: v === n,
+        why: v < n ? `There are more: every set in the list below has closure R and contains no smaller key.` : `Not that many: any other set either misses an attribute in its closure or contains one of the keys below (so it is not minimal).`})),
+      explain: keysBox(K, F) + (K.tested.length ? `<div class="box"><h4>Search: the core ${chips(K.core)} plus attributes from both sides</h4><table class="t"><tbody>` +
+        K.tested.slice(0, 24).map(t => t.skip
+          ? `<tr><td>${chips(t.X)}</td><td style="color:var(--text-faint)">—</td><td><span class="tag info">contains a key, skip</span></td></tr>`
+          : `<tr class="${t.isKey ? 'cur' : ''}"><td>${chips(t.X)}</td><td>${chips(t.cl, {dim: ALL() & ~t.cl})}</td><td>${t.isKey ? '<span class="tag ok">candidate key</span>' : '<span class="tag bad">not all of R</span>'}</td></tr>`).join('') +
+        (K.tested.length > 24 ? `<tr><td colspan="3" style="color:var(--text-faint)">… ${K.tested.length - 24} more</td></tr>` : '') + '</tbody></table></div>'
+        : `<div class="note good">The core ${chips(K.core)} already determines all of R, so it is the only key.</div>`)};
+  },
+  /* Highest normal form of R? */
+  nf(level){
+    const want = pick(['1NF', '2NF', '3NF', 'BCNF']);
+    let F, K, N;
+    for (let t = 0; t < 40; t++){ F = genRel(level); K = analyzeKeys(F); N = nfCheck(F, K); if (N.nf === want) break; }
+    const ORD = ['1NF', '2NF', '3NF', 'BCNF'], at = ORD.indexOf(N.nf);
+    const row = N.rows.find(r => r.verdict === {'1NF': 'partial', '2NF': 'transitive', '3NF': '3nf'}[N.nf]);
+    const A = row && chips(row.fd.rhs), X = row && chips(row.fd.lhs);
+    const reason = {
+      '1NF': () => `${fdH(row.fd)}${row.implied ? ' (implied by F, not written in it)' : ''}: ${X} is a proper part of the key ${chips(K.keys.find(k => sub(row.fd.lhs, k) && row.fd.lhs !== k), {key: -1})} and ${A} is not prime. That is a <b>partial dependency</b>, so R is not in 2NF.`,
+      '2NF': () => `${fdH(row.fd)}: ${X} is not a superkey and not part of a key, and ${A} is not prime. That is a <b>transitive dependency</b>, so R is not in 3NF. There is no partial dependency, so R is in 2NF.`,
+      '3NF': () => `${fdH(row.fd)}: ${X} is not a superkey, so R is not in BCNF. But ${A} is <b>prime</b> (part of a key), which 3NF allows, and every other dependency passes too.`,
+      BCNF: () => `Every left side is a superkey, so R is in BCNF.`
+    }[N.nf]();
+    const LAB = {bcnf: '<span class="tag ok">superkey: OK for BCNF</span>', '3nf': '<span class="tag mid">3NF only: right side is prime</span>',
+      partial: '<span class="tag bad">partial (breaks 2NF)</span>', transitive: '<span class="tag bad">transitive (breaks 3NF)</span>'};
+    return {F, fixed: true, text: `What is the <b>highest normal form</b> R is in?`,
+      opts: ORD.map((v, i) => ({html: v, v, ok: i === at, why: i > at ? `R is not in ${v} (see the highlighted dependency below).` : `R is in ${v}, but it satisfies more than that.`})),
+      explain: `<div class="note good">${reason}</div>` +
+        `<div class="box"><table class="t"><thead><tr><th>X → A</th><th>X⁺</th><th>X superkey?</th><th>A prime?</th><th>Verdict</th></tr></thead><tbody>` +
+        N.rows.map(r => `<tr class="${r === row ? 'cur' : ''}"><td>${fdH(r.fd)}${r.implied ? ' <span class="tag info">implied by F</span>' : ''}</td><td>${chips(r.cl, {dim: ALL() & ~r.cl})}</td><td>${r.superkey ? '<span class="tag ok">yes</span>' : '<span class="tag bad">no</span>'}</td><td>${r.prime ? '<span class="tag ok">yes</span>' : '<span class="tag info">no</span>'}</td><td>${LAB[r.verdict]}</td></tr>`).join('') +
+        `</tbody></table></div>` + keysBox(K, F)};
+  },
+  /* Which dependency violates BCNF (or: which one is fine)? */
+  bcnf(level){
+    const F = genRel(level), all = ALL();
+    const bad = F.filter(g => !isKey(g.lhs, F)), good = F.filter(g => isKey(g.lhs, F));
+    let flip;
+    if (bad.length === 1 && good.length >= 2) flip = false;
+    else if (good.length === 1 && bad.length >= 2) flip = true;
+    else return null;
+    const one = flip ? good[0] : bad[0];
+    const why = g => `${clNote(g.lhs, F)}${isKey(g.lhs, F) ? ': all of R, so the left side is a superkey and the dependency is fine for BCNF.' : `: not all of R, so ${chips(g.lhs)} is not a superkey and ${fdH(g)} violates BCNF.`}`;
+    const shown = [one, ...shuffle((flip ? bad : good).slice()).slice(0, 3)];
+    return {F, flip, text: flip ? `Which dependency does <b>not</b> violate BCNF?` : `Which dependency <b>violates</b> BCNF?`,
+      opts: shown.map(g => fdOpt(g, g === one, why(g))),
+      explain: `<div class="note good">BCNF needs the left side of every non-trivial dependency to be a <b>superkey</b>, so compute each left side's closure. ${why(one)}</div>` +
+        `<div class="box"><table class="t"><thead><tr><th>Dependency</th><th>Left side⁺</th><th>Superkey?</th></tr></thead><tbody>` +
+        F.map(g => { const cl = closure(g.lhs, F); return `<tr class="${g === one ? 'cur' : ''}"><td>${fdH(g)}</td><td>${chips(cl, {dim: all & ~cl})}</td><td>${cl === all ? '<span class="tag ok">yes, OK</span>' : '<span class="tag bad">no, violates</span>'}</td></tr>`; }).join('') +
+        `</tbody></table></div>`};
+  },
+  /* Which dependency is redundant (follows from the others)? */
+  redundant(level){
+    const F = genRel(level), all = ALL();
+    // plant X → A where A needs at least two steps to derive
+    const X = randSet(all, level === 3 ? pick([1, 2]) : 1);
+    const once = F.reduce((a, g) => sub(g.lhs, X) ? a | g.rhs : a, X);
+    const far = closure(X, F) & ~once;
+    if (!far) return null;
+    const plant = {lhs: X, rhs: randSet(far, 1)};
+    F.splice(rnd(F.length + 1), 0, plant);
+    const others = g => F.filter(h => h !== g);
+    const red = F.filter(g => sub(g.rhs, closure(g.lhs, others(g))));
+    if (red.length !== 1) return null;
+    const trace = [];
+    closure(X, others(plant), trace);
+    const shown = [plant, ...shuffle(F.filter(g => g !== plant)).slice(0, 3)];
+    return {F, text: `Which dependency is <b>redundant</b> (it follows from the others)?`,
+      opts: shown.map(g => fdOpt(g, g === plant, g === plant ? '' : (() => { const cl = closure(g.lhs, others(g)); return `Without ${fdH(g)}, ${chips(g.lhs)}⁺ = ${chips(cl)}, which misses ${chips(g.rhs & ~cl)}. Nothing else gives it, so it is needed.`; })())),
+      explain: `<div class="box"><h4>${esc(txt(X))}⁺ using every dependency except ${esc(fdT(plant))}</h4>${traceTable(X, trace)}</div>` +
+        `<div class="note good">${chips(X)} still reaches ${chips(plant.rhs, {hl: -1})} through the other dependencies, so ${fdH(plant)} says nothing new. A minimal cover drops it.</div>`};
+  }
+};
+
+function genQuestion(level, kind){
+  for (let t = 0; t < 400; t++){
+    const q = KINDS[kind](level);
+    if (!q || q.opts.length < 3) continue;
+    if (!q.fixed) shuffle(q.opts);
+    return Object.assign(q, {kind, level, picked: null, ans: q.opts.findIndex(o => o.ok), names: ATTRS.slice(),
+      fdText: q.F.map(fdT).join('\n'),
+      rel: `<div class="qrel"><div class="rn">R${esc(txtR(ALL()))}</div><div class="fdlist">${q.F.map(g => fdH(g)).join('')}</div></div>`});
+  }
+  return kind === 'closure' ? null : genQuestion(level, 'closure');
+}
+const KIND_TAG = {closure: 'closure', key: 'candidate key', count: 'candidate keys', nf: 'normal form', bcnf: 'BCNF', redundant: 'minimal cover'};
+function newQuestion(){
+  const keep = ATTRS;   // the lab re-reads its inputs before every run, but leave its attributes alone anyway
+  try {
+    const kind = pick(Object.keys(KINDS).filter(k => k !== lastKind && (k !== 'count' || Q.level > 1)));
+    cur = genQuestion(Q.level, lastKind = kind);
+  } finally { ATTRS = keep; }
+  renderQuiz();
+}
+function renderQuiz(){
+  $('#qLvls').querySelectorAll('button').forEach(b => b.classList.toggle('on', +b.dataset.l === Q.level));
+  $('#qScore').innerHTML = `<div class="s"><small>Score</small><b>${Q.right} / ${Q.total}</b></div><div class="s"><small>Accuracy</small><b>${Q.total ? Math.round(Q.right / Q.total * 100) + '%' : '—'}</b></div>` +
+    `<div class="s"><small>Streak</small><b>${Q.streak}</b></div><div class="s"><small>Best</small><b>${Q.best}</b></div>`;
+  if (!cur) return;
+  $('#qHead').innerHTML = `<span class="tag info">${KIND_TAG[cur.kind]}</span><span class="tag mid">${['easy', 'medium', 'hard'][cur.level - 1]}</span><span class="spacer"></span>` +
+    `<button class="btn sm" id="qOpen" title="Load this relation into the lab and run the full analysis">Open in the lab →</button>`;
+  $('#qRel').innerHTML = cur.rel;
+  $('#qText').innerHTML = cur.text;
+  const done = cur.picked != null;
+  $('#qAns').innerHTML = cur.opts.map((o, i) => `<button data-i="${i}" class="${done && i === cur.ans ? 'right' : done && i === cur.picked ? 'wrong' : ''}"${done ? ' disabled' : ''}><span class="k">${i + 1}</span><span>${o.html}</span></button>`).join('');
+  if (!done){ $('#qFeed').innerHTML = ''; return; }
+  const ok = cur.picked === cur.ans, p = cur.opts[cur.picked];
+  $('#qFeed').innerHTML = `<div class="note ${ok ? 'good' : 'bad'}">${ok ? '<b>Correct!</b>' : `<b>Not quite.</b> You picked ${p.html}: ${p.why}`} The answer is ${cur.opts[cur.ans].html}. Press <b>Enter</b> or <b>Next</b> for another one.</div>` + cur.explain;
+}
+function answer(i){
+  cur.picked = i;
+  Q.total++;
+  if (i === cur.ans){ Q.right++; Q.streak++; Q.best = Math.max(Q.best, Q.streak); } else Q.streak = 0;
+  LS.set('quiz', Q); renderQuiz();
+}
+$('#qAns').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b || !cur || cur.picked != null) return;
+  answer(+b.dataset.i);
+});
+$('#qHead').addEventListener('click', e => {
+  if (!e.target.closest('#qOpen') || !cur) return;
+  $('#attrs').value = cur.names.join(', '); $('#fds').value = cur.fdText;
+  $('#preset').value = String(PRESETS.length - 1); LS.set('preset', PRESETS.length - 1);
+  setQuiz(false); run('all');
+});
+$('#qNext').onclick = newQuestion;
+$('#qReset').onclick = () => { Object.assign(Q, {right: 0, total: 0, streak: 0, best: 0}); LS.set('quiz', Q); renderQuiz(); };
+$('#qLvls').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  Q.level = +b.dataset.l; LS.set('quiz', Q); newQuestion();
+});
+document.addEventListener('keydown', e => {
+  if (!quizOn || !cur || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.ctrlKey || e.metaKey || e.altKey) return;
+  const k = e.key.toLowerCase(), i = '1234'.includes(k) ? +k - 1 : 'abcd'.indexOf(k);
+  if (cur.picked == null && i >= 0 && i < cur.opts.length){ answer(i); e.preventDefault(); }
+  else if (cur.picked != null && (e.key === 'Enter' || e.key === ' ' || k === 'n')){ newQuestion(); e.preventDefault(); }
+});
+function setQuiz(on){
+  quizOn = on; stopPlay();
+  $('.layout').hidden = on; $('#quizView').hidden = !on;
+  $('#quizBtn').textContent = on ? '← Back to the lab' : 'Quiz';
+  try { history.replaceState(null, '', on ? '#quiz' : location.pathname + location.search); } catch(e){}
+  if (on && !cur) newQuestion();
+  scrollTo(0, 0);
+}
+$('#quizBtn').addEventListener('click', () => setQuiz(!quizOn));
+
 render();
+renderQuiz();
+if (location.hash === '#quiz') setQuiz(true);
 })();
 </script>
 </body>

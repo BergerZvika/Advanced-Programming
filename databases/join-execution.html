@@ -299,6 +299,53 @@ table.ct tr.best td.ccost::after{content:"  ★ cheapest";color:var(--sql);font-
 .tip b{color:var(--text)}
 .tip code{font-family:var(--mono);font-size:11.5px;color:var(--text)}
 
+/* ---------- quiz ---------- */
+.quiz{display:none;padding:22px 24px 70px;max-width:1220px;margin:0 auto}
+body.quizzing .algos,body.quizzing .layout{display:none}
+body.quizzing .quiz{display:block}
+#quizBtn.on{background:rgba(0,176,240,0.14);border-color:rgba(0,176,240,0.55);color:#e2f7ff}
+.quiz .sec{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#00b0f0}
+.quiz .sec::before{content:"";width:8px;height:8px;border-radius:2px;background:#00b0f0}
+.quiz h2{margin:8px 0 10px;font-size:24px;letter-spacing:-0.01em}
+.quiz .lead{color:var(--text-dim);line-height:1.7;max-width:900px;margin:0 0 20px;font-size:14px}
+.quiz .lead b{color:var(--text)}
+.box{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:14px;overflow-x:auto}
+.box h4{margin:0 0 10px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-faint)}
+.box p{color:var(--text-dim);line-height:1.65;margin:0 0 8px}
+.note{font-size:12.5px;color:var(--text-dim);line-height:1.65;padding:10px 14px;border-left:3px solid var(--warn);background:rgba(255,181,71,0.06);border-radius:0 8px 8px 0;margin:0 0 14px}
+.note.good{border-color:var(--sql);background:rgba(76,224,163,0.06)}
+.note.bad{border-color:var(--err);background:rgba(255,107,122,0.06)}
+.note b{color:var(--text)}
+.qwrap{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:14px;align-items:start}
+.qtag{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#9fdcf3;margin-bottom:10px}
+.qvars{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.qvars .v{font-family:var(--mono);font-size:13.5px;padding:6px 12px;border-radius:9px;background:var(--bg-1);border:1px solid var(--border);color:var(--text-dim)}
+.qvars .v b{color:var(--accent-2)}
+.qtext{font-size:16px;line-height:1.6;padding:16px 18px;border-radius:12px;background:var(--bg-1);border:1px solid var(--border-strong);margin-bottom:14px}
+.qtext b{color:#9fdcf3}
+.qans{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.qans button{display:flex;align-items:center;gap:10px;text-align:left;padding:13px 14px;border-radius:11px;font-family:var(--mono);font-weight:700;font-size:14px;border:1px solid var(--border-strong);background:var(--surface);color:var(--text)}
+.qans button small{font-weight:500;color:var(--text-faint);font-size:11.5px}
+.qans button kbd{flex:none;width:22px;height:22px;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;color:var(--text-faint);border:1px solid var(--border-strong)}
+.qans button:hover:not([disabled]){background:var(--surface-2);border-color:rgba(0,176,240,0.55)}
+.qans button[disabled]{opacity:.35;cursor:default}
+.qans button.right{opacity:1;color:var(--sql);border-color:var(--sql);box-shadow:0 0 0 1px var(--sql)}
+.qans button.wrong{opacity:1;color:var(--err);border-color:var(--err);box-shadow:0 0 0 1px var(--err)}
+.qfeed{margin-top:14px}
+.qcalc{font-family:var(--mono);font-size:13px;line-height:1.75;padding:10px 14px;border-radius:10px;background:var(--bg-0);border:1px solid var(--border);color:var(--text-dim);margin:0 0 10px;overflow-x:auto}
+.qcalc b{color:var(--sql)}
+.qcalc .bad{color:var(--err)}
+.qwhy{margin:0;padding-left:18px;color:var(--text-dim);font-size:12.5px;line-height:1.7}
+.qwhy b{font-family:var(--mono);color:var(--text)}
+.score{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.score .s{background:var(--bg-1);border:1px solid var(--border);border-radius:10px;padding:10px 12px}
+.score .s small{display:block;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-faint);margin-bottom:3px}
+.score .s b{font-family:var(--mono);font-size:20px}
+.lvls{display:flex;flex-direction:column;gap:6px}
+.lvls button{text-align:left;padding:8px 11px;border-radius:9px;border:1px solid var(--border);background:var(--surface);font-weight:600;font-size:12.5px;display:flex;flex-direction:column;gap:2px}
+.lvls button small{font-weight:400;color:var(--text-faint);font-size:11px}
+.lvls button.on{border-color:rgba(0,176,240,0.55);background:rgba(0,176,240,0.08)}
+
 @media (max-width:1250px){
   .stage{grid-template-columns:1fr 1fr;gap:12px}
   .stage .flow{display:none}
@@ -315,6 +362,8 @@ table.ct tr.best td.ccost::after{content:"  ★ cheapest";color:var(--sql);font-
   .main{padding:14px 16px 50px}
   .brand small{display:none}
   .bar-row{grid-template-columns:110px minmax(0,1fr) 90px}
+  .qwrap,.qans{grid-template-columns:1fr}
+  .quiz{padding:18px 16px 60px}
 }
 </style>
 </head>
@@ -322,6 +371,7 @@ table.ct tr.best td.ccost::after{content:"  ★ cheapest";color:var(--sql);font-
 <header class="topbar">
   <a class="brand" href="index.html" title="Back to Databases Lab"><span class="dot"></span>Join Execution Lab <small>R ⋈ S · pages · memory · I/O cost</small></a>
   <span class="spacer"></span>
+  <button class="btn" id="quizBtn" title="Practise the cost formulas">✎ Quiz</button>
   <a class="btn" href="index.html">← Databases</a>
   <a class="btn" href="../home.html">⌂ Home</a>
 </header>
@@ -369,6 +419,33 @@ table.ct tr.best td.ccost::after{content:"  ★ cheapest";color:var(--sql);font-
 
   <main class="main" id="main"></main>
 </div>
+<section class="quiz" id="quizView">
+  <span class="sec">practice</span>
+  <h2>Quiz: join costs</h2>
+  <p class="lead">Every round draws new statistics — <b>B</b> (pages), <b>T</b> (tuples), <b>V</b> (distinct join values), <b>M</b> (memory frames) — and asks for an I/O cost, the better outer relation, the cheapest join or the memory a join needs. The answers come from the same formulas the lab checks its I/O counter against; after you answer, the substitution and the arithmetic are shown step by step.</p>
+  <div class="qwrap">
+    <div class="box" style="margin:0">
+      <span class="qtag" id="qTag"></span>
+      <div class="qvars" id="qVars"></div>
+      <div class="qtext" id="qText"></div>
+      <div class="qans" id="qAns"></div>
+      <div class="qfeed" id="qFeed"></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div class="box score" style="margin:0" id="qScore"></div>
+      <div class="box" style="margin:0">
+        <h4>Difficulty</h4>
+        <div class="lvls" id="qLvls">
+          <button data-l="1">Easy<small>one formula, small numbers: NLJ, hash, sort-merge</small></button>
+          <button data-l="2">Medium<small>block NLJ, index NLJ, k sort passes, ceilings</small></button>
+          <button data-l="3">Hard<small>outer relation, cheapest join, minimum M</small></button>
+        </div>
+      </div>
+      <button class="btn" id="qNext" style="justify-content:center">Next question →</button>
+      <button class="btn sm" id="qReset" style="justify-content:center">Reset score</button>
+    </div>
+  </div>
+</section>
 <div class="tip" id="tip"></div>
 <div class="pc-back" id="pcBack" role="dialog" aria-modal="true" aria-labelledby="pcTitle">
   <div class="pc-modal">
@@ -1141,6 +1218,233 @@ $('#Pr').addEventListener('input', e => sliderMove('P', e.target));
 $('#Mr').addEventListener('input', e => sliderMove('M', e.target));
 
 /* ================================================================
+   Quiz: questions generated from the lab's own FORMULAS and cmpRows
+   ================================================================ */
+const QZ = Object.assign({level:2, right:0, total:0, streak:0, best:0}, (() => { try { return JSON.parse(localStorage.getItem('joinlab.quiz') || '{}'); } catch (e){ return {}; } })());
+const qSave = () => { try { localStorage.setItem('joinlab.quiz', JSON.stringify(QZ)); } catch (e) {} };
+let QC = null, quizOn = false, lastKind = '';
+const rnd = (lo, hi) => lo + Math.floor(Math.random() * (hi - lo + 1));
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+// the shape STATS() returns, so FORMULAS can be called on made-up statistics
+const qStats = o => ({BR:1, BS:1, TR:1, TS:1, M:3, VR:1, VS:1, c:1, k:2, BI:1, presorted:false, clustered:true, ...o});
+const calc = lines => `<div class="qcalc">${lines.map(l => `<div>${l}</div>`).join('')}</div>`;
+const fx = f => `Cost = ${esc(f.general)}<br>= ${esc(f.plugged)}`;
+// correct value + classic mistakes → up to 4 distinct positive options (near misses fill the gaps)
+function numOpts(ans, wrongs, unit = 'I/O'){
+  const r = Math.round(ans), seen = new Set([r]), opts = [{label:fmt(r), unit, ok:true}];
+  const add = (v, why) => { v = Math.round(v); if (opts.length < 4 && v > 0 && !seen.has(v)){ seen.add(v); opts.push({label:fmt(v), unit, why}); } };
+  shuffle(wrongs).forEach(w => add(w.v, w.why));
+  [r + 1, r * 2, r - 1, Math.round(r / 2), r + 2].forEach(v => add(v, 'An arithmetic slip.'));
+  return shuffle(opts);
+}
+
+function qNLJ(){
+  let BR, BS; do { BR = rnd(2, 12); BS = rnd(2, 12); } while (BR === BS);
+  const f = FORMULAS.nlj(qStats({BR, BS}));
+  return {kind:'nlj', tag:'Nested loop', p:{algo:'nlj', BR, BS}, ans:f.value, vars:[['B(R)', BR], ['B(S)', BS]],
+    q:`Nested loop join with <b>R as the outer</b> relation and S as the inner one. How many I/Os does it cost?`,
+    opts:numOpts(f.value, [
+      {v:BS + BS * BR, why:'B(S) + B(S)·B(R) puts S outside, but R is the outer relation.'},
+      {v:BR * BS, why:'B(R)·B(S) forgets that every page of R is also read once: + B(R).'},
+      {v:BR + BS, why:'B(R) + B(S) reads S only once; nested loop scans all of S again for every page of R.'}]),
+    explain:calc([fx(f), `= ${BR} + ${BR * BS} = <b>${fmt(f.value)}</b> I/O`]) +
+      `<p>Read each of the ${BR} pages of R once, and for every one of them scan all ${BS} pages of S: ${BR}·${BS} = ${BR * BS} reads of S.</p>`};
+}
+function qHash(){
+  const BR = rnd(3, 40), BS = rnd(3, 40), f = FORMULAS.hash(qStats({BR, BS})), B = BR + BS;
+  return {kind:'hash', tag:'Hash join', p:{algo:'hash', BR, BS}, ans:f.value, vars:[['B(R)', BR], ['B(S)', BS]],
+    q:`Hash join of R and S. Assume every partition fits in memory. How many I/Os does it cost?`,
+    opts:numOpts(f.value, [
+      {v:2 * B, why:'2·[B(R) + B(S)] is only step 1 (read and write both relations); step 2 reads every partition once more.'},
+      {v:B, why:'B(R) + B(S) is a one-pass join; it only works when one relation fits in memory.'},
+      {v:5 * B, why:'5·[B(R) + B(S)] is sort-merge with k = 2 sort passes.'},
+      {v:3 * BR + BS, why:'S is partitioned too: it is read, written and read again, just like R.'}]),
+    explain:calc([fx(f), `= 3·${B} = <b>${fmt(f.value)}</b> I/O`]) +
+      `<p>Step 1 reads and writes both relations: 2·${B} = ${2 * B}. Step 2 reads every partition once: ${B}. Total ${2 * B} + ${B} = ${3 * B}.</p>`};
+}
+function qSMJ(level){
+  const big = level > 1, BR = rnd(3, big ? 400 : 40), BS = rnd(3, big ? 400 : 40), B = BR + BS;
+  const presorted = !big && Math.random() < 0.3, k = big ? rnd(1, 3) : 2;
+  const f = FORMULAS.smj(qStats({BR, BS, k, presorted}));
+  const wrongs = presorted ? [
+      {v:5 * B, why:'5·[B(R) + B(S)] includes sorting with k = 2, but the relations are already sorted.'},
+      {v:3 * B, why:'3·[B(R) + B(S)] is the hash join cost.'},
+      {v:2 * B, why:'The merge only reads each page once; writing the output is not counted.'},
+      {v:BR * BS, why:'B(R)·B(S) is the nested loop term; the merge reads each relation once.'}]
+    : [{v:2 * k * B, why:`2k·[B(R) + B(S)] is only the sorting; the merge then reads both relations once more.`},
+      {v:(k + 1) * B, why:'Each sort pass reads and writes every page: 2k, not k.'},
+      {v:B, why:'B(R) + B(S) is only the merge, as if R and S were already sorted.'},
+      {v:(2 * k + 1) * BR + BS, why:'S has to be sorted too, not only R.'},
+      {v:3 * B, why:'3·[B(R) + B(S)] is the hash join cost.'}];
+  return {kind:'smj', tag:'Sort-merge join', p:{algo:'smj', BR, BS, k, presorted}, ans:f.value,
+    vars:[['B(R)', BR], ['B(S)', BS]].concat(presorted ? [] : [['k', k]]),
+    q:presorted ? `R and S are <b>already sorted</b> by the join column. What does sort-merge join cost?`
+      : `Sort-merge join; external sort needs <b>k = ${k}</b> pass${k > 1 ? 'es' : ''} for each relation. What is the I/O cost?`,
+    opts:numOpts(f.value, wrongs),
+    explain:presorted ? calc([fx(f), `= <b>${fmt(f.value)}</b> I/O`]) + `<p>Only phase 2 is paid: one synchronised pass reads each page of R and S once (worst case).</p>`
+      : calc([fx(f), `= ${2 * k + 1}·${B} = <b>${fmt(f.value)}</b> I/O`]) +
+        `<p>Sorting: each of the k = ${k} passes reads and writes both relations, 2·${k}·${B} = ${2 * k * B}. Merge: read both once more, ${B}. Total ${2 * k * B} + ${B} = ${f.value}.</p>`};
+}
+function qBNLJ(big){
+  const M = big ? pick([12, 22, 52, 102]) : rnd(3, 12), b = M - 2;
+  let BR, BS, i = 0;   // redraw until "M instead of M − 2" and "S outer" give different numbers
+  do { BR = big ? rnd(b + 1, 20 * b) : rnd(Math.max(5, b + 1), 60); BS = big ? rnd(50, 5000) : rnd(5, 60); }
+  while (++i < 50 && (BR === BS || ceil(BR / M) === ceil(BR / b)));
+  const f = FORMULAS.bnlj(qStats({BR, BS, M})), n = ceil(BR / b);
+  return {kind:'bnlj', tag:'Block nested loop', p:{algo:'bnlj', BR, BS, M}, ans:f.value, vars:[['B(R)', BR], ['B(S)', BS], ['M', M]],
+    q:`Block nested loop join, <b>R is the outer</b> relation, M = ${M} memory frames. How many I/Os does it cost?`,
+    opts:numOpts(f.value, [
+      {v:BR + ceil(BR / M) * BS, why:'Blocks of M pages: one frame is the input buffer for S and one the output buffer, so a block has M − 2 pages.'},
+      {v:BR + ceil(BR / (M - 1)) * BS, why:'Blocks of M − 1 pages forget the output buffer: the block is M − 2 pages.'},
+      {v:BR + Math.floor(BR / b) * BS, why:'Rounding down drops the last, partial block — it still needs its own scan of S: ⌈ ⌉.'},
+      {v:BS + ceil(BS / b) * BR, why:'That makes S the outer relation, but R is the outer one.'},
+      {v:n * BS, why:'Forgot the B(R) term: every page of R is read once.'}]),
+    explain:calc([fx(f), `⌈${BR}/${b}⌉ = ${n} block${n > 1 ? 's' : ''} of R, each costs one scan of S: ${n}·${BS} = ${n * BS}`, `= ${BR} + ${n * BS} = <b>${fmt(f.value)}</b> I/O`]) +
+      `<p>M = ${M} frames: M − 2 = ${b} for a block of R, 1 input buffer for S, 1 output buffer.</p>`};
+}
+function qINLJ(){
+  const clustered = Math.random() < 0.5, VS = rnd(2, 20), m = pick([1, 1, 2, 4]), VR = m === 1 ? rnd(2, VS) : VS * m;
+  const TR = m * rnd(5, 40), BR = ceil(TR / rnd(2, 5)), TS = rnd(40, 400), BS = ceil(TS / rnd(2, 8)), c = rnd(1, 3);
+  const s = qStats({BR, BS, TR, TS, VR, VS, c, clustered}), f = FORMULAS.inlj(s), RF = Math.min(1, VS / VR);
+  const pagesC = ceil(BS / VS), pagesU = ceil(TS / VS), pg = clustered ? pagesC : pagesU, per = c + RF * pg;
+  const other = BR + TR * (c + RF * (clustered ? pagesU : pagesC));
+  const wrongs = [
+    {v:other, why:clustered ? 'One page per matching tuple, ⌈T(S)/V(S,JC)⌉, is the unclustered index; clustered matches sit together on ⌈B(S)/V(S,JC)⌉ pages.'
+      : 'Unclustered: the matching tuples are on different pages, so count ⌈T(S)/V(S,JC)⌉ pages, not ⌈B(S)/V(S,JC)⌉.'},
+    {v:TR * per, why:'Forgot the B(R) term: R itself is read once.'},
+    {v:BR + TR * RF * pg, why:`Every lookup also pays the index search (${c} I/O).`},
+    {v:BR + BR * per, why:'The index is searched once per tuple of R: T(R), not B(R).'}];
+  if (RF < 1) wrongs.push({v:BR + TR * (c + pg), why:`Only RF = ${+RF.toFixed(2)} of the R tuples find a match in S.`});
+  return {kind:'inlj', tag:'Index nested loop', p:{algo:'inlj', ...s}, ans:f.value,
+    vars:[['B(R)', BR], ['T(R)', TR], ['V(R,JC)', VR], ['B(S)', BS], ['T(S)', TS], ['V(S,JC)', VS], ['search', c]],
+    q:`Index nested loop join, R outer, with a <b>${clustered ? 'clustered' : 'unclustered'}</b> index on S.JC; one index search costs ${c} I/O. Estimated I/O cost?`,
+    opts:numOpts(f.value, wrongs),
+    explain:calc([fx(f), `RF = min{1, V(S,JC)/V(R,JC)} = min{1, ${VS}/${VR}} = ${+RF.toFixed(2)}`,
+      `matching pages = ⌈${clustered ? BS : TS}/${VS}⌉ = ${pg}`, `per R tuple: ${c} + ${+RF.toFixed(2)}·${pg} = ${+per.toFixed(2)}`,
+      `= ${BR} + ${TR}·${+per.toFixed(2)} = <b>${fmt(f.value)}</b> I/O`]) +
+      `<p>Read R once (${BR}); for each of its ${TR} tuples search the index and read the S pages of the matches. ${clustered ? 'Clustered: the matches are adjacent, so count pages.' : 'Unclustered: count one page per matching tuple (index leaf reads are part of the search cost, as in the lab).'}</p>`};
+}
+function qOuter(){
+  const algo = pick(['nlj', 'bnlj']);
+  let BR, BS, M, cR, cS;
+  do { BR = rnd(4, 80); BS = rnd(4, 80); M = algo === 'bnlj' ? rnd(4, 12) : 3;
+    cR = FORMULAS[algo](qStats({BR, BS, M})); cS = FORMULAS[algo](qStats({BR:BS, BS:BR, M})); } while (cR.value === cS.value);
+  const best = cR.value < cS.value ? 'R' : 'S', opts = [
+    {label:`R outer`, unit:`${fmt(cR.value)} I/O`, ok:best === 'R', why:best === 'R' ? '' : `R outer costs ${fmt(cR.value)}, more than S outer.`},
+    {label:`S outer`, unit:`${fmt(cS.value)} I/O`, ok:best === 'S', why:best === 'S' ? '' : `S outer costs ${fmt(cS.value)}, more than R outer.`},
+    {label:'Either', unit:'same cost', why:'The B(outer) term is paid once but the inner relation is scanned once per page (or block) of the outer: the order matters.'}];
+  if (algo === 'bnlj'){
+    const [o, i] = best === 'R' ? [BR, BS] : [BS, BR], v = o + ceil(o / M) * i;
+    if (v !== (best === 'R' ? cR : cS).value) opts.push({label:`${best} outer`, unit:`${fmt(v)} I/O`, why:'Right relation, but that cost uses blocks of M pages instead of M − 2.'});
+  }
+  const name = algo === 'nlj' ? 'Nested loop' : 'Block nested loop';
+  return {kind:'outer', tag:name + ' · outer relation', p:{algo, BR, BS, M}, ans:Math.min(cR.value, cS.value),
+    vars:[['B(R)', BR], ['B(S)', BS]].concat(algo === 'bnlj' ? [['M', M]] : []),
+    q:`${name} join of R and S${algo === 'bnlj' ? ` with M = ${M} frames` : ''}. Which relation should be the <b>outer</b> one, and what does the join cost then?`,
+    opts:shuffle(opts),
+    explain:calc([`R outer: ${esc(cR.plugged)} = ${best === 'R' ? `<b>${fmt(cR.value)}</b>` : fmt(cR.value)}`, `S outer: ${esc(cS.plugged)} = ${best === 'S' ? `<b>${fmt(cS.value)}</b>` : fmt(cS.value)}`]) +
+      `<p>Cost = ${esc(cR.general)} with the outer relation in the R slot. The inner relation is scanned once per ${algo === 'nlj' ? 'page' : 'block'} of the outer, so put the <b>smaller</b> relation outside.</p>`};
+}
+function qCheapest(){
+  const want = pick(['Block nested loop', 'Index NL (clustered)', 'Sort-merge', 'Hash join', 'Hash join', 'Nested loop', 'Index NL (unclustered)']);
+  let v, rows, sorted;
+  for (let i = 0; i < 300; i++){
+    const BR = rnd(1, 3000), BS = rnd(1, 3000), TR = BR * rnd(1, 40), TS = BS * rnd(1, 40);
+    const c = {BR, BS, TR, TS, VR:rnd(1, Math.min(TR, 2000)), VS:rnd(1, Math.min(TS, 2000)), M:pick([3, 4, 6, 10, 52, 102, 202]), c:rnd(1, 4), BI:rnd(1, 50), k:2};
+    const r = cmpRows(c), s = [...r].sort((a, b) => a.val - b.val);
+    if (s[1].val - s[0].val < 1 || r[r.length - 1].warn) continue;
+    v = c; rows = r; sorted = s;
+    if (s[0].name === want) break;
+  }
+  const best = sorted[0], others = shuffle(rows.filter(r => r !== best)).slice(0, 3);
+  return {kind:'cheapest', tag:'Cheapest join', p:{v}, ans:best.name,
+    vars:[['B(R)', v.BR], ['T(R)', v.TR], ['V(R,JC)', v.VR], ['B(S)', v.BS], ['T(S)', v.TS], ['V(S,JC)', v.VS], ['M', v.M], ['search', v.c], ['B(I)', v.BI], ['k', v.k]],
+    q:`R is the outer relation; the index (if used) is on S.JC. Which join has the <b>lowest I/O cost</b>?`,
+    opts:shuffle([best, ...others].map(r => ({label:r.name, unit:'', ok:r === best, why:r === best ? '' : `${r.name} costs ${fmt(r.val)} I/O.`}))),
+    explain:calc(rows.map(r => `${esc(r.name)}: ${esc(r.p)} = ${r === best ? `<b>${fmt(r.val)}</b> ★` : fmt(r.val)}`)) +
+      `<p>The same formulas as the <b>Compare costs</b> tab. Loops win when one relation is tiny or fits in M − 2 frames; sort-merge and hash join are linear and win on large inputs.</p>`};
+}
+// smallest M for which hash join's 3·[B(R)+B(S)] holds: the lab's own "partitions fit" check in cmpRows
+const hashFits = (BR, BS, M) => !cmpRows({BR, BS, TR:BR, TS:BS, VR:1, VS:1, M, c:1, BI:1, k:2})[5].warn;
+const minHashM = (BR, BS) => { let M = 3; while (!hashFits(BR, BS, M)) M++; return M; };
+function qMinHash(){
+  const BR = rnd(20, 4000), BS = rnd(20, 4000), mn = Math.min(BR, BS), M = minHashM(BR, BS);
+  const line = m => `M = ${m}: ${mn}/${m - 1} = ${+(mn / (m - 1)).toFixed(2)} ${mn / (m - 1) > m - 2 ? `<span class="bad">&gt; ${m - 2} ✗</span>` : `≤ ${m - 2} ✓`}`;
+  return {kind:'minhash', tag:'Hash join · memory', p:{BR, BS}, ans:M, vars:[['B(R)', BR], ['B(S)', BS]],
+    q:`What is the <b>smallest M</b> for which hash join needs no extra partitioning pass, so it costs 3·[B(R) + B(S)]?`,
+    opts:numOpts(M, [
+      {v:M - 1, why:`With M = ${M - 1} a partition of the smaller relation does not fit in M − 2 frames.`},
+      {v:M + 1, why:'That works, but it is not the smallest M.'},
+      {v:ceil(Math.sqrt(mn)), why:'√B is the rule of thumb; with M − 1 buckets and M − 2 frames per bucket you need a little more.'},
+      {v:minHashM(Math.max(BR, BS), Math.max(BR, BS)), why:'Only the smaller relation (the one we build the hash table on) must fit; the larger one streams through one frame.'}], 'frames'),
+    explain:calc([`M − 1 buckets: each partition of the smaller relation ≈ min{B(R), B(S)}/(M − 1) pages, which must fit in M − 2 frames`, line(M - 1), line(M)]) +
+      `<p>min{${BR}, ${BS}} = ${mn}. The smallest M that passes is <b>${M}</b> — roughly √${mn} ≈ ${Math.sqrt(mn).toFixed(1)}, plus the frames for the input and output buffers.</p>`};
+}
+function qMinBNLJ(){
+  let BR, BS; do { BR = rnd(3, 40); BS = rnd(3, 40); } while (Math.abs(BR - BS) < 2);
+  let M = 3; while (FORMULAS.bnlj(qStats({BR, BS, M})).value !== BR + BS) M++;
+  const f = FORMULAS.bnlj(qStats({BR, BS, M})), g = FORMULAS.bnlj(qStats({BR, BS, M:M - 1}));
+  return {kind:'minbnlj', tag:'Block nested loop · memory', p:{BR, BS}, ans:M, vars:[['B(R)', BR], ['B(S)', BS]],
+    q:`Block nested loop join, R outer. What is the <b>smallest M</b> for which S is scanned only once, so the cost is just B(R) + B(S)?`,
+    opts:numOpts(M, [
+      {v:BR, why:'All of R must fit in the block, plus 1 input buffer for S and 1 output buffer: M − 2 ≥ B(R).'},
+      {v:BR + 1, why:'Forgot one of the two buffers: M − 2 ≥ B(R).'},
+      {v:BS + 2, why:'The block is made of pages of the outer relation R, not S.'},
+      {v:BR + 3, why:'That works, but it is not the smallest M.'}], 'frames'),
+    explain:calc([`M = ${M}: ${esc(f.plugged)} = <b>${fmt(f.value)}</b> = B(R) + B(S) ✓`, `M = ${M - 1}: ${esc(g.plugged)} = ${fmt(g.value)} ✗`]) +
+      `<p>S is scanned once per block, so we need a single block: M − 2 ≥ B(R) = ${BR}, i.e. M ≥ ${BR + 2}.</p>`};
+}
+const QKINDS = {1:[qNLJ, qHash, () => qSMJ(1)], 2:[() => qBNLJ(false), qINLJ, qINLJ, () => qSMJ(2)], 3:[qOuter, qCheapest, qMinHash, qMinBNLJ, () => qBNLJ(true)]};
+function genQuestion(level){
+  let q; for (let i = 0; i < 4; i++){ q = pick(QKINDS[level])(); if (q.kind !== lastKind) break; }
+  lastKind = q.kind; q.picked = null; return q;
+}
+function newQuestion(){ QC = genQuestion(QZ.level); renderQuiz(); }
+function renderQuiz(){
+  $('#qLvls').querySelectorAll('button').forEach(b => b.classList.toggle('on', +b.dataset.l === QZ.level));
+  $('#qScore').innerHTML = `<div class="s"><small>Score</small><b>${QZ.right} / ${QZ.total}</b></div><div class="s"><small>Accuracy</small><b>${QZ.total ? Math.round(QZ.right / QZ.total * 100) + '%' : '—'}</b></div>` +
+    `<div class="s"><small>Streak</small><b>${QZ.streak}</b></div><div class="s"><small>Best</small><b>${QZ.best}</b></div>`;
+  if (!QC) return;
+  const done = QC.picked !== null, lab = o => `${esc(o.label)}${o.unit ? ` <small>${esc(o.unit)}</small>` : ''}`;
+  $('#qTag').textContent = QC.tag;
+  $('#qVars').innerHTML = QC.vars.map(([k, v]) => `<span class="v">${esc(k)} = <b>${fmt(v)}</b></span>`).join('');
+  $('#qText').innerHTML = QC.q;
+  $('#qAns').innerHTML = QC.opts.map((o, i) => `<button data-i="${i}"${done ? ' disabled' : ''} class="${done && o.ok ? 'right' : done && QC.picked === i ? 'wrong' : ''}"><kbd>${i + 1}</kbd><span>${lab(o)}</span></button>`).join('');
+  if (!done){ $('#qFeed').innerHTML = ''; return; }
+  const p = QC.opts[QC.picked], right = QC.opts.find(o => o.ok), rest = QC.opts.filter(o => !o.ok && o !== p && o.why);
+  $('#qFeed').innerHTML = `<div class="note ${p.ok ? 'good' : 'bad'}">${p.ok ? '<b>Correct!</b>' : `<b>Not quite.</b> You picked ${lab(p)}: ${p.why}`} The answer is <b>${lab(right)}</b>. Press <b>Enter</b> or <b>Next</b> for another one.</div>` +
+    `<div class="box" style="margin:0"><h4>Why</h4>${QC.explain}` + (rest.length ? `<h4 style="margin-top:12px">The other options</h4><ul class="qwhy">${rest.map(o => `<li><b>${lab(o)}</b> — ${o.why}</li>`).join('')}</ul>` : '') + '</div>';
+}
+function answerQ(i){
+  if (!QC || QC.picked !== null) return;
+  QC.picked = i; QZ.total++;
+  if (QC.opts[i].ok){ QZ.right++; QZ.streak++; QZ.best = Math.max(QZ.best, QZ.streak); } else QZ.streak = 0;
+  qSave(); renderQuiz();
+}
+function showQuiz(on){
+  quizOn = on; stopPlay();
+  document.body.classList.toggle('quizzing', on);
+  $('#quizBtn').textContent = on ? '← Back to the lab' : '✎ Quiz';
+  $('#quizBtn').classList.toggle('on', on);
+  try { history.replaceState(null, '', on ? '#quiz' : location.pathname + location.search); } catch (e) {}
+  window.scrollTo({top:0});
+  if (on && !QC) newQuestion(); else renderQuiz();
+}
+$('#quizBtn').addEventListener('click', () => showQuiz(!quizOn));
+$('#qAns').addEventListener('click', e => { const b = e.target.closest('button'); if (b) answerQ(+b.dataset.i); });
+$('#qNext').onclick = newQuestion;
+$('#qReset').onclick = () => { Object.assign(QZ, {right:0, total:0, streak:0, best:0}); qSave(); renderQuiz(); };
+$('#qLvls').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; QZ.level = +b.dataset.l; qSave(); newQuestion(); });
+document.addEventListener('keydown', e => {
+  if (!quizOn || e.target.closest('input,textarea,select,[contenteditable]') || e.ctrlKey || e.metaKey || e.altKey) return;
+  const k = e.key.toLowerCase(), n = k.length === 1 ? Math.max('1234'.indexOf(k), 'abcd'.indexOf(k)) : -1;
+  if (e.key === 'Escape' && !$('#pcBack').classList.contains('on')){ showQuiz(false); e.preventDefault(); }
+  else if (QC && QC.picked === null && n >= 0 && n < QC.opts.length){ answerQ(n); e.preventDefault(); }
+  else if (QC && QC.picked !== null && (e.key === 'Enter' || e.key === ' ' || k === 'n')){ newQuestion(); e.preventDefault(); }
+});
+
+/* ================================================================
    Wiring
    ================================================================ */
 $('#algos').addEventListener('click', e => { const b = e.target.closest('[data-a]'); if (!b) return; stopPlay(); CFG.algo = b.dataset.a; save(); renderSide(); rebuild(); window.scrollTo({top:0}); });
@@ -1169,7 +1473,7 @@ document.querySelector('.side').addEventListener('change', e => {
   else if (e.target.dataset.o === 'sorted'){ CFG.sorted = e.target.checked; stopPlay(); save(); renderSide(); rebuild(); }
 });
 document.addEventListener('keydown', e => {
-  if (!TRACE || /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)) return;
+  if (!TRACE || quizOn || /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)) return;
   if (e.key === 'ArrowRight'){ stopPlay(); go(cur + 1); }
   else if (e.key === 'ArrowLeft'){ stopPlay(); go(cur - 1); }
   else if (e.key === 'Home'){ stopPlay(); go(0); }
@@ -1180,6 +1484,8 @@ document.addEventListener('keydown', e => {
 
 renderSide();
 rebuild();
+renderQuiz();
+if (location.hash === '#quiz') showQuiz(true);
 })();
 </script>
 </body>

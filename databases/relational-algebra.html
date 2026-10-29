@@ -214,6 +214,69 @@ details.ref summary span{font-weight:400;color:var(--text-faint);font-size:12px}
 .reft code{font-family:var(--mono);font-size:12px;color:var(--text);white-space:nowrap}
 .reft .refwrap{overflow-x:auto}
 
+/* ---------- quiz ---------- */
+[hidden]{display:none !important}
+.btn.quiz{border-color:rgba(169,139,255,0.45);color:#d9ceff}
+.quizview{display:flex;flex-direction:column;gap:16px;padding:18px 22px 60px;max-width:1240px}
+.qhead h2{margin:0 0 6px;font-size:20px}
+.qhead p{margin:0;color:var(--text-dim);line-height:1.6;max-width:860px}
+.qhead code,.qnote code,.qwhy code{font-family:var(--mono);background:var(--surface-2);padding:0 5px;border-radius:4px;color:var(--text)}
+.qwrap{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:16px;align-items:start}
+.qmain,.qside{display:flex;flex-direction:column;gap:14px;min-width:0}
+.qside .btn{justify-content:center}
+.qside h4,.qsec{margin:0 0 10px;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--text-faint);font-weight:700}
+.qtop{display:flex;align-items:center;gap:8px}
+.qtop .lv{font-size:11.5px;color:var(--text-faint)}
+.qprompt{font-size:15px;font-weight:600;margin:10px 0 12px;line-height:1.5}
+.qprompt small{display:block;font-weight:400;font-size:12px;color:var(--text-faint);margin-top:3px}
+.qexpr{font-family:var(--mono);font-size:17px;line-height:1.8;padding:14px 18px;border-radius:12px;background:var(--bg-0);border:1px solid var(--border-strong);margin-bottom:14px;overflow-x:auto}
+.qexpr sub,.qx sub{font-size:.68em;color:var(--text-dim);vertical-align:-0.45em}
+.qans sub{font-size:.8em;color:var(--text-dim);vertical-align:-0.45em}
+.qexpr pre.sql,.qans pre.sql{border:none;background:none;padding:0;font-size:13px;white-space:pre-wrap}
+.qans{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.qans.wide{grid-template-columns:1fr 1fr}
+.qans button{display:flex;align-items:flex-start;gap:10px;text-align:left;padding:12px 14px;border-radius:11px;background:var(--surface);border:1px solid var(--border-strong);font-family:var(--mono);font-size:14px;font-weight:600;min-width:0;transition:background .12s,border-color .12s}
+.qans button .qk{flex:none;font-size:10.5px;color:var(--text-faint);border:1px solid var(--border-strong);border-radius:5px;padding:1px 6px;margin-top:2px}
+.qans button .v{min-width:0;overflow-wrap:anywhere;line-height:1.6}
+.qans.wide button .v{font-size:13px}
+.qans pre.sql{font-size:11.5px;font-weight:500}
+.qans button:hover:not([disabled]){background:var(--surface-2);border-color:rgba(169,139,255,0.6)}
+.qans button[disabled]{opacity:.38;cursor:default}
+.qans button.ok{opacity:1;border-color:var(--sql);box-shadow:0 0 0 1px var(--sql);background:rgba(76,224,163,0.06)}
+.qans button.no{opacity:1;border-color:var(--err);box-shadow:0 0 0 1px var(--err);background:rgba(255,107,122,0.06)}
+.qans button.ok .qk{color:var(--sql);border-color:var(--sql)}
+.qans button.no .qk{color:var(--err);border-color:var(--err)}
+.qnull{color:var(--text-faint);font-style:italic}
+.qfeed{margin-top:14px;display:flex;flex-direction:column;gap:14px}
+.qfeed:empty{display:none}
+.qnote{padding:11px 14px;border-radius:10px;line-height:1.65;font-size:13px}
+.qnote.good{background:rgba(76,224,163,0.08);border:1px solid rgba(76,224,163,0.35)}
+.qnote.bad{background:rgba(255,107,122,0.08);border:1px solid rgba(255,107,122,0.35)}
+.qnote.good > b:first-child{color:var(--sql)}
+.qnote.bad > b:first-child{color:var(--err)}
+.qwhy{margin:0;padding-left:18px;color:var(--text-dim);line-height:1.65;font-size:12.5px;display:flex;flex-direction:column;gap:4px}
+.qwhy b{color:var(--text)}
+.qx{font-family:var(--mono);color:var(--text);white-space:nowrap}
+.qstep{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-top:1px solid var(--border)}
+.qstep:first-of-type{border-top:none;padding-top:0}
+.qstep .step-e{font-size:12.5px;white-space:normal}
+.qstep .qexp{font-size:12.5px;color:var(--text-dim);line-height:1.55;margin-top:2px}
+.qstep .qexp b{color:var(--text)}
+.qstep .qexp code{font-family:var(--mono);background:var(--surface-2);padding:0 5px;border-radius:4px;color:var(--text)}
+.qres .tw{max-height:360px;overflow:auto}
+.qres table.rt tr.pad td{background:rgba(76,224,163,0.12)}
+.qdata{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;margin-top:12px;align-items:start}
+.qdata .meta{margin-bottom:6px}
+.score{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.score .s{background:var(--bg-1);border:1px solid var(--border);border-radius:10px;padding:10px 12px}
+.score .s small{display:block;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-faint);margin-bottom:3px}
+.score .s b{font-family:var(--mono);font-size:20px}
+.lvls{display:flex;flex-direction:column;gap:6px}
+.lvls button{text-align:left;padding:8px 11px;border-radius:9px;border:1px solid var(--border);background:var(--surface);font-weight:600;font-size:12.5px;display:flex;flex-direction:column;gap:2px}
+.lvls button small{font-weight:400;color:var(--text-faint);font-size:11px}
+.lvls button:hover{border-color:var(--border-strong)}
+.lvls button.on{border-color:rgba(169,139,255,0.6);background:rgba(169,139,255,0.1)}
+
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--panel-2);border:1px solid var(--border-strong);padding:9px 16px;border-radius:10px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:60}
 .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
 
@@ -223,6 +286,8 @@ details.ref summary span{font-weight:400;color:var(--text-faint);font-size:12px}
   .main{padding:16px 16px 50px}
   .brand small{display:none}
   .exg > span{width:auto}
+  .quizview{padding:16px 16px 50px}
+  .qwrap,.qans.wide{grid-template-columns:1fr}
 }
 </style>
 </head>
@@ -230,6 +295,7 @@ details.ref summary span{font-weight:400;color:var(--text-faint);font-size:12px}
 <header class="topbar">
   <a class="brand" href="index.html" title="Back to Databases Lab"><span class="dot"></span>Relational Algebra Lab <small>σ π ⋈ ÷ γ · query trees · SQL</small></a>
   <span class="spacer"></span>
+  <button class="btn quiz" id="quizBtn" title="Practice with generated questions">✎ Quiz</button>
   <a class="btn" href="index.html">← Databases</a>
   <a class="btn" href="../home.html">⌂ Home</a>
 </header>
@@ -304,6 +370,43 @@ details.ref summary span{font-weight:400;color:var(--text-faint);font-size:12px}
     </section>
   </main>
 </div>
+
+<section class="quizview" id="quizView" hidden>
+  <div class="qhead">
+    <h2>Quiz: read the algebra</h2>
+    <p>Every question is generated at random and answered by this lab's own evaluator on the built-in <b>School</b> database — your edited relations and your expression are not used or changed. Answer with <code>1</code>–<code>4</code>, then <code>Enter</code> for the next one.</p>
+  </div>
+  <div class="qwrap">
+    <div class="qmain">
+      <section class="card">
+        <div class="qtop"><span class="tag" id="qKind"></span><span class="lv" id="qLv"></span></div>
+        <div class="qprompt" id="qPrompt"></div>
+        <div class="qexpr" id="qExpr"></div>
+        <div class="qans" id="qAns"></div>
+        <div class="qfeed" id="qFeed"></div>
+      </section>
+      <section class="card">
+        <details class="ref" open>
+          <summary>School data <span>— the relations this question uses</span></summary>
+          <div class="qdata" id="qData"></div>
+        </details>
+      </section>
+    </div>
+    <div class="qside">
+      <div class="card score" id="qScore"></div>
+      <div class="card">
+        <h4>Difficulty</h4>
+        <div class="lvls" id="qLvls">
+          <button data-l="1">Easy<small>one operator: σ, π or a single join</small></button>
+          <button data-l="2">Medium<small>two or three: σ + π, joins, ∪ ∩ −, ⋉ ▷</small></button>
+          <button data-l="3">Hard<small>outer joins, ÷, γ, self-joins and NULLs</small></button>
+        </div>
+      </div>
+      <button class="btn primary" id="qNext">Next question →</button>
+      <button class="btn sm" id="qReset">Reset score</button>
+    </div>
+  </div>
+</section>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -1611,8 +1714,386 @@ function hlSQL(s){
   return out + esc(s.slice(last));
 }
 
+/* ================================================================
+   Quiz — questions are generated from the built-in School database
+   (never the user's edited copy) and answered by the evaluator above
+   ================================================================ */
+const qstore = {
+  get(k, d){ try { const v = localStorage.getItem('ralab.' + k); return v == null ? d : JSON.parse(v); } catch (e){ return d; } },
+  set(k, v){ try { localStorage.setItem('ralab.' + k, JSON.stringify(v)); } catch (e){} }
+};
+const Q = Object.assign({level:2, right:0, total:0, streak:0, best:0}, qstore.get('quiz', {}));
+if (![1, 2, 3].includes(Q.level)) Q.level = 2;
+const QBASE = DATASETS.school.rels.map(r => ({name:r.name, attrs:r.attrs, rows:r.rows}));
+let cur = null, quizOn = false;
+const rnd = n => Math.floor(Math.random() * n);
+const pick = a => a[rnd(a.length)];
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--){ const j = rnd(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const qrun = src => { const r = evaluate(parse(src), QBASE)[0]; return {ast:r.stmt.expr, steps:r.steps, rel:r.rel, res:[r]}; };
+const relKey = rel => rel.attrs.length + '|' + rel.rows.map(key).sort().join('');
+
+/* ---------- random expressions over School ---------- */
+const CMP = ['=', '≠', '<', '>', '≤', '≥'];
+const ATOM = {
+  age: () => `age ${pick(CMP)} ${20 + rnd(5)}`,
+  city: () => rnd(4) ? `city ${pick(['=', '≠', '≠'])} '${pick(['Tel Aviv', 'Haifa', 'Jerusalem'])}'` : `city IS ${pick(['', 'NOT '])}NULL`,
+  grade: () => rnd(4) ? `grade ${pick(['<', '>', '≤', '≥', '≠'])} ${pick([60, 70, 75, 80, 84, 88, 90])}` : `grade IS ${pick(['', 'NOT '])}NULL`,
+  credits: () => `credits ${pick(CMP)} ${3 + rnd(3)}`,
+  course_id: () => `course_id ${pick(CMP)} ${1 + rnd(5)}`,
+  student_id: () => `student_id ${pick(['<', '>', '≤', '≥', '≠'])} ${2 + rnd(6)}`
+};
+const CA = {students:['age', 'city', 'city', 'student_id'], courses:['credits', 'course_id'], enrollments:['grade', 'grade', 'course_id', 'student_id']};
+const PA = {students:[['city'], ['age'], ['city', 'age'], ['name', 'city'], ['name']], courses:[['credits'], ['title', 'credits'], ['credits', 'course_id']],
+  enrollments:[['student_id'], ['course_id'], ['grade'], ['course_id', 'grade']]};
+const PJ = [['name'], ['name', 'grade'], ['city'], ['city', 'course_id'], ['course_id']];
+const R3 = ['students', 'courses', 'enrollments'];
+const P = a => `π[${pick(a).join(', ')}]`;
+const SETOP = () => pick(['∪', '∩', '−']);
+function cond(attrs, n){
+  const as = [];
+  for (const a of shuffle([...attrs])) if (!as.includes(a) && as.length < n) as.push(a);
+  const s = as.map(a => ATOM[a]()).join(` ${pick(['∧', '∨'])} `);
+  return as.length > 1 && !rnd(5) ? `¬(${s})` : s;
+}
+const DIVISOR = () => `π[course_id](σ[${pick(['credits = 4', 'credits ≥ 4', 'credits = 3', 'course_id ≤ 2', 'course_id = 1 ∨ course_id = 3', "title = 'Databases'", 'course_id ≥ 3 ∧ credits = 4'])}](courses))`;
+const AGG1 = () => pick(['COUNT(*) AS n', 'COUNT(grade) AS n', 'AVG(grade) AS avg_grade', 'MAX(grade) AS max_grade', 'MIN(grade) AS min_grade']);
+const TEMPLATES = {
+  1: [
+    () => { const r = pick(R3); return `σ[${cond(CA[r], 1)}](${r})`; },
+    () => { const r = pick(R3); return `σ[${cond(CA[r], 1)}](${r})`; },
+    () => { const r = pick(R3); return `${P(PA[r])}(${r})`; },
+    () => pick(['students ⋈ enrollments', 'enrollments ⋈ courses', 'students ⋈ courses', 'students ⋉ enrollments', 'students ▷ enrollments', 'courses ⋉ enrollments', 'courses ▷ enrollments'])
+  ],
+  2: [
+    () => { const r = pick(R3); return `${P(PA[r])}(σ[${cond(CA[r], 1 + rnd(2))}](${r}))`; },
+    () => { const r = pick(R3); return `σ[${cond(CA[r], 2)}](${r})`; },
+    () => `σ[${cond(['age', 'city', 'grade', 'course_id'], 1 + rnd(2))}](students ⋈ enrollments)`,
+    () => `${P(PJ)}(students ⋈ σ[${cond(CA.enrollments, 1)}](enrollments))`,
+    () => `π[${pick(['title', 'credits', 'title, credits'])}](courses ⋈ σ[${cond(['grade', 'student_id'], 1)}](enrollments))`,
+    () => rnd(2) ? `π[student_id](σ[${cond(CA.students, 1)}](students)) ${SETOP()} π[student_id](σ[${cond(CA.enrollments, 1)}](enrollments))`
+                 : `π[course_id](σ[${cond(CA.courses, 1)}](courses)) ${SETOP()} π[course_id](σ[${cond(['grade', 'student_id'], 1)}](enrollments))`,
+    () => `${pick(['students', 'courses'])} ${pick(['⋉', '▷'])} σ[${cond(['grade', 'grade', 'student_id', 'course_id'], 1)}](enrollments)`
+  ],
+  3: [
+    () => `π[name, course_id, grade](σ[${cond(CA.students, 1)}](students) ⟕ σ[${cond(['grade', 'course_id'], 1)}](enrollments))`,
+    () => `σ[${pick(['grade IS NULL', 'course_id IS NULL', ATOM.grade(), ATOM.course_id()])}](students ${pick(['⟕', '⟕', '⟗'])} enrollments)`,
+    () => `π[${pick(['title, student_id', 'title, grade', 'course_id, title'])}](courses ⟕ σ[${cond(['grade', 'student_id'], 1)}](enrollments))`,
+    () => `π[${pick(['name, course_id', 'name, grade', 'city, grade'])}](σ[${cond(['grade', 'course_id'], 1)}](enrollments) ⟖ students)`,
+    () => pick([`π[name](students ⋈ (π[student_id, course_id](enrollments) ÷ ${DIVISOR()}))`,
+                `π[student_id, course_id](σ[${ATOM.grade()}](enrollments)) ÷ ${DIVISOR()}`,
+                `π[student_id, course_id](enrollments) ÷ ${DIVISOR()}`]),
+    () => pick([`γ[${pick(['course_id', 'student_id'])}; ${AGG1()}](enrollments)`,
+                `γ[${pick(['city', 'age'])}; ${pick(['COUNT(*) AS n', 'COUNT(city) AS n', 'MIN(age) AS youngest'])}](students)`,
+                `σ[n ${pick(['≥', '>', '<'])} ${1 + rnd(3)}](γ[${pick(['student_id', 'course_id'])}; ${pick(['COUNT(*)', 'COUNT(grade)'])} AS n](enrollments))`,
+                `γ[${pick(['COUNT(*) AS n', 'COUNT(grade) AS n', 'SUM(grade) AS total'])}](σ[${cond(['course_id', 'student_id'], 1)}](enrollments))`,
+                `γ[city; ${pick(['COUNT(*) AS n', 'COUNT(grade) AS n', 'AVG(grade) AS avg_grade'])}](students ⋈ enrollments)`]),
+    () => { const a = pick(['city', 'city', 'age']); return `π[s1.name, s2.name](ρ[s1](students) ⋈[s1.${a} = s2.${a} ∧ s1.student_id < s2.student_id] ρ[s2](students))`; },
+    () => `σ[${cond(CA.students, 1)}](students) ${pick(['⋉', '▷'])} σ[${cond(['grade', 'course_id'], 1)}](enrollments)`
+  ]
+};
+
+/* ---------- common mistakes = small edits of the expression ---------- */
+const W = {
+  inner: '⋈ drops tuples that have no partner — only an outer join keeps them, padded with NULL.',
+  left: '⟕ also keeps the left tuples that have no partner, padded with NULL.',
+  right: '⟖ also keeps the right tuples that have no partner, padded with NULL.',
+  full: '⟗ keeps the tuples without a partner from both sides.',
+  side: '⟕ keeps the unmatched tuples of the left side, ⟖ those of the right side.',
+  semi: '⋉ keeps the left tuples that have a match on the right; ▷ keeps the ones that have none.',
+  semijoin: '⋉ is a filter, not a join: it keeps only the left attributes, and each left tuple once.',
+  div: '÷ means “paired with every tuple of the divisor”, not “with at least one”.',
+  set: '∪ keeps the tuples in either side, ∩ those in both, − those only in the left side.',
+  minus: '− is not symmetric: R − S keeps the tuples of R that are not in S.',
+  unknown: 'a comparison with NULL is UNKNOWN, and σ keeps only the tuples where the condition is TRUE.',
+  andor: '∧ needs both conditions to be TRUE, ∨ just one of them.',
+  count: 'COUNT(*) counts every tuple of the group, COUNT(attr) skips the NULLs.',
+  bag: 'π removes duplicate tuples — a relation is a set (in SQL that takes DISTINCT).'
+};
+const FLIP = {'<':'≤', '≤':'<', '>':'≥', '≥':'>', '=':'≠', '≠':'='}, REV = {'<':'>', '>':'<', '≤':'≥', '≥':'≤'};
+const atomsOf = p => p.type === 'cmp' || p.type === 'isnull' ? [p] : p.type === 'not' ? atomsOf(p.child) : [...atomsOf(p.left), ...atomsOf(p.right)];
+const hasNot = p => p.type === 'not' || ((p.type === 'and' || p.type === 'or') && (hasNot(p.left) || hasNot(p.right)));
+const wr = (x, r) => isBinary(x) ? `(${r(x)})` : r(x);
+const gText = (n, aggs, r) => `γ[${n.groups.join(', ')}${n.groups.length && aggs.length ? '; ' : ''}${aggs.map(a => `${a.fn}(${a.arg || '*'})${a.as ? ' AS ' + a.as : ''}`).join(', ')}](${r(n.child)})`;
+// Prints an AST back as parseable algebra; over = {node, f} replaces one node's text (that is how a mistake is made).
+function raText(n, over){
+  if (over && over.node === n) return over.f(x => raText(x, over));
+  const r = x => raText(x, over);
+  switch (n.type){
+    case 'rel': return n.name;
+    case 'sigma': return `σ[${predText(n.pred)}](${r(n.child)})`;
+    case 'pi': return `π[${n.attrs.join(', ')}](${r(n.child)})`;
+    case 'rename': return `ρ[${n.spec.relName ? n.spec.relName + (n.spec.attrs ? `(${n.spec.attrs.join(', ')})` : '') : n.spec.map.map(m => `${m.from} → ${m.to}`).join(', ')}](${r(n.child)})`;
+    case 'gamma': return gText(n, n.aggs, r);
+  }
+  return `${wr(n.left, r)} ${SYM[n.type]}${n.pred ? `[${predText(n.pred)}]` : ''} ${wr(n.right, r)}`;
+}
+function predMuts(P){
+  const out = [], atoms = atomsOf(P);
+  if (!hasNot(P) && atoms.some(a => a.type === 'cmp')){
+    const q = clone(P);
+    atomsOf(q).forEach(a => {
+      if (a.type !== 'cmp' || a.left.kind !== 'ident') return;
+      const c = {...a}; Object.keys(a).forEach(k => delete a[k]);
+      Object.assign(a, {type:'or', left:c, right:{type:'isnull', neg:false, term:c.left}});
+    });
+    out.push({p:q, why:W.unknown});
+  }
+  atoms.forEach((a, i) => {
+    if (a.type !== 'cmp' || !FLIP[a.op]) return;
+    const q = clone(P), f = FLIP[a.op]; atomsOf(q)[i].op = f;
+    out.push({p:q, why: '=≠'.includes(a.op) ? '= and ≠ pick opposite tuples (and a NULL satisfies neither).'
+      : `<code>${a.op}</code> and <code>${f}</code> differ exactly at the boundary value ${esc(termText(a.right))}.`});
+  });
+  if (P.type === 'and' || P.type === 'or') out.push({p:{...P, type:P.type === 'and' ? 'or' : 'and'}, why:W.andor});
+  // weaker mistakes: only used when the stronger ones run out
+  atoms.forEach((a, i) => {
+    if (a.type !== 'cmp' || !REV[a.op]) return;
+    const q = clone(P); atomsOf(q)[i].op = REV[a.op];
+    out.push({p:q, weak:true, why:`<code>${a.op}</code> and <code>${REV[a.op]}</code> point in opposite directions.`});
+  });
+  out.push({p:P.type === 'not' ? P.child : {type:'not', child:P}, weak:true, why:'¬ selects the opposite tuples — and ¬UNKNOWN is still UNKNOWN, so NULLs drop out either way.'});
+  return out;
+}
+function mutations(ast){
+  const out = [], add = (node, f, why, weak) => out.push({node, f, why, weak});
+  const sw = (n, type, why, pred = n.pred) => add(n, r => `${wr(n.left, r)} ${SYM[type]}${pred ? `[${predText(pred)}]` : ''} ${wr(n.right, r)}`, why);
+  walkNodes(ast, n => {
+    switch (n.type){
+      case 'sigma':
+        add(n, r => r(n.child), `the selection σ[${esc(predText(n.pred))}] still has to filter the tuples.`, true);
+        for (const m of predMuts(n.pred)) add(n, r => `σ[${predText(m.p)}](${r(n.child)})`, m.why, m.weak);
+        break;
+      case 'join': sw(n, 'ljoin', W.inner); break;
+      case 'ljoin': sw(n, 'join', W.left); sw(n, 'rjoin', W.side); break;
+      case 'rjoin': sw(n, 'join', W.right); sw(n, 'ljoin', W.side); break;
+      case 'fjoin': sw(n, 'join', W.full); sw(n, 'ljoin', W.full); break;
+      case 'semi': sw(n, 'anti', W.semi); sw(n, 'join', W.semijoin); break;
+      case 'anti': sw(n, 'semi', W.semi); break;
+      case 'divide': add(n, r => `π[${n.res.attrs.join(', ')}](${wr(n.left, r)} ⋈ ${wr(n.right, r)})`, W.div); break;
+      case 'union': case 'intersect': case 'minus':
+        for (const t of ['union', 'intersect', 'minus']) if (t !== n.type) sw(n, t, W.set);
+        if (n.type === 'minus') add(n, r => `${wr(n.right, r)} − ${wr(n.left, r)}`, W.minus);
+        break;
+      case 'gamma': n.aggs.forEach((a, i) => {
+        const alt = a.fn !== 'COUNT' ? null : a.arg ? null : ['grade', 'city', 'course_id'].find(x => n.child.res.attrs.includes(x));
+        if (a.fn === 'COUNT' && (a.arg || alt)) add(n, r => gText(n, n.aggs.map((b, j) => j === i ? {...b, arg:a.arg ? null : alt} : b), r), W.count);
+      }); break;
+    }
+    if (n.pred && n.type !== 'sigma') for (const m of predMuts(n.pred)) sw(n, n.type, m.why.replace('σ keeps', 'a join keeps'), m.p);
+  });
+  return out;
+}
+function variants(q){
+  const seen = new Set([raText(q.ast)]), out = [];
+  for (const m of mutations(q.ast)){
+    const src = raText(q.ast, m);
+    if (seen.has(src)) continue;
+    seen.add(src);
+    try { out.push(Object.assign(qrun(src), {why:m.why, weak:m.weak})); } catch (e){}
+  }
+  return out;
+}
+
+/* ---------- question kinds ---------- */
+// options: the correct one first, then distractors (common mistakes before random filler), 4 distinct in the end
+function mkOpts(first, cands, fill, keyOf){
+  const used = new Set([keyOf(first.val)]), opts = [{...first, ok:true}];
+  for (const c of cands){ const k = keyOf(c.val); if (opts.length < 4 && !used.has(k)){ used.add(k); opts.push(c); } }
+  for (const v of shuffle([...fill])){ const k = keyOf(v); if (opts.length < 4 && !used.has(k)){ used.add(k); opts.push({val:v}); } }
+  return opts.length === 4 ? shuffle(opts) : null;
+}
+// the telling mistakes (NULLs, outer joins, ÷ …) come first, the weak ones only fill up
+const fromVariants = vs => [...shuffle(vs.filter(v => !v.weak)), ...shuffle(vs.filter(v => v.weak))].map(v => ({why:v.why, alt:v}));
+function qCount(q, vs){
+  const n = q.rel.rows.length, root = q.ast, c = fromVariants(vs).map(o => ({...o, val:o.alt.rel.rows.length})), sp = [];
+  if (root.type === 'pi' && root.dropped) sp.push({val:root.child.res.rows.length, lead:'counts the tuples before π removes the duplicates', why:W.bag});
+  if (root.type === 'cross' || (root.type === 'join' && !root.pred && !root.common.length))
+    sp.push({val:root.left.res.rows.length + root.right.res.rows.length, lead:'adds the two sizes', why:'with no common attribute every tuple pairs with every tuple, so the sizes multiply.'});
+  if (root.type === 'gamma' && root.meta.gAttrs.length) sp.push({val:root.child.res.rows.length, lead:'counts the input tuples', why:'γ returns one tuple per group.'});
+  if (root.type === 'union') sp.push({val:root.left.res.rows.length + root.right.res.rows.length, lead:'adds the two sides', why:'∪ keeps a tuple that is in both sides only once.'});
+  const opts = mkOpts({val:n}, [...sp, ...c], [n + 1, n - 1, n + 2, n - 2, n + 3, n * 2].filter(x => x >= 0), String);
+  return opts && {kind:'count', opts:opts.sort((a, b) => a.val - b.val)};
+}
+function qTuple(q, vs){
+  const A = q.rel.attrs, rows = q.rel.rows, K = new Set(rows.map(key)), outs = [], seen = new Set(), root = q.ast;
+  const out = (r, o) => { const k = key(r); if (!K.has(k) && !seen.has(k)){ seen.add(k); outs.push({val:r, ...o}); } };
+  if (root.type === 'sigma') shuffle(root.child.res.rows.map((r, i) => [r, root.marks[i]])).forEach(([r, m]) => out(r, {lead:'fails the selection',
+    why: `<code>${esc(predText(root.pred))}</code> is ${m === null ? 'UNKNOWN for it (it compares a NULL), and σ keeps only TRUE' : 'FALSE for it'}.`}));
+  for (const o of fromVariants(vs)) if (o.alt.rel.attrs.length === A.length) shuffle([...o.alt.rel.rows]).forEach(r => out(r, o));
+  const dom = i => {
+    const b = baseName(A[i]), vals = rows.map(r => r[i]);
+    QBASE.forEach(R => { const j = R.attrs.indexOf(b); if (j >= 0) R.rows.forEach(r => vals.push(r[j])); });
+    return [...new Set(vals.filter(v => v != null))];
+  };
+  const fill = [];
+  for (let t = 0; t < 80 && rows.length && fill.length < 6; t++){
+    const r = [...pick(rows)], i = rnd(A.length), d = dom(i);
+    r[i] = pick(d);
+    if (!K.has(key(r))) fill.push(r);
+  }
+  if (rows.length >= 3 && outs.length && Math.random() < 0.35){
+    const pool = outs.filter(o => o.why);
+    const opts = mkOpts(pick(pool.length ? pool : outs), shuffle(rows.map(r => ({val:r, inRes:true}))), [], key);
+    return opts && {kind:'notin', opts};
+  }
+  if (!rows.length) return null;
+  const opts = mkOpts({val:pick(rows), inRes:true}, outs.slice(0, 12), fill, key);
+  return opts && {kind:'tuple', opts};
+}
+function qSchema(q, vs){
+  const root = q.ast;
+  if (!['join', 'ljoin', 'rjoin', 'fjoin', 'cross', 'semi', 'anti', 'divide', 'gamma'].includes(root.type)) return null;
+  const A = q.rel.attrs, L = root.left ? root.left.res.attrs : [], R = root.right ? root.right.res.attrs : [];
+  const sp = [], c = fromVariants(vs).map(o => ({...o, val:o.alt.rel.attrs}));
+  if (root.common && root.common.length && !root.pred) sp.push({val:[...L, ...R], lead:'repeats the common attributes', why:`a natural join keeps each common attribute (${esc(root.common.join(', '))}) once.`});
+  if (root.type === 'divide') sp.push({val:L, lead:'is the schema of the dividend', why:'÷ removes the divisor’s attributes.'});
+  if (root.type === 'semi' || root.type === 'anti') sp.push({val:[...new Set([...L, ...R])], lead:'combines both sides', why:W.semijoin});
+  if (root.type === 'gamma') sp.push({val:root.meta.aggs.map(a => a.name), lead:'leaves out the grouping attributes', why:'γ returns the grouping attributes followed by the aggregates.'},
+    {val:[...root.child.res.attrs, ...root.meta.aggs.map(a => a.name)], lead:'keeps every input attribute', why:'after grouping, only the grouping attributes and the aggregates are left.'});
+  const all = [...new Set([...L, ...R, ...(root.child ? root.child.res.attrs : [])])];
+  const fill = [...A.map((_, i) => A.filter((_, j) => j !== i)).filter(a => a.length), ...all.filter(a => !A.includes(a)).map(a => [...A, a])];
+  const opts = mkOpts({val:A}, [...sp, ...c], fill, a => [...a].sort().join(','));
+  return opts && {kind:'schema', opts};
+}
+function qSql(q, vs){
+  const sqlOf = x => toSQL(x.res, []).replace(/;$/, '');
+  let s0; try { s0 = sqlOf(q); } catch (e){ return null; }
+  const toRA = Math.random() < 0.4, c = [];
+  for (const o of fromVariants(vs)) if (relKey(o.alt.rel) !== relKey(q.rel)) try { c.push({...o, val:toRA ? raText(o.alt.ast) : sqlOf(o.alt)}); } catch (e){}
+  if (!toRA && q.ast.type === 'pi' && q.ast.dropped)
+    c.unshift({val:s0.replace(/^SELECT DISTINCT/, 'SELECT'), lead:`has no DISTINCT, so it returns ${q.ast.child.res.rows.length} rows instead of ${q.rel.rows.length}`, why:W.bag});
+  const opts = mkOpts({val:toRA ? raText(q.ast) : s0, alt:q}, c, [], String);
+  return opts && {kind:toRA ? 'ra' : 'sql', sql:s0, opts};
+}
+const BUILD = {count:qCount, tuple:qTuple, schema:qSchema, sql:qSql};
+const KW = {count:7, tuple:6, sql:4, schema:3};
+function genQuestion(level){
+  for (let t = 0; t < 60; t++){
+    let q; try { q = qrun(pick(TEMPLATES[level])()); } catch (e){ continue; }
+    const vs = variants(q);
+    // weighted first choice, then the other kinds as fallbacks
+    let x = Math.random() * 20, first = 'count';
+    for (const k in KW){ if ((x -= KW[k]) < 0){ first = k; break; } }
+    for (const k of [first, ...shuffle(Object.keys(KW).filter(k => k !== first))]){
+      const r = BUILD[k](q, vs);
+      if (r) return Object.assign(r, {q, level, picked:null, answer:r.opts.findIndex(o => o.ok)});
+    }
+  }
+  return null;
+}
+
+/* ---------- rendering ---------- */
+const KLABEL = {count:'count the tuples', tuple:'find the tuple', notin:'find the outsider', schema:'result schema', sql:'algebra → SQL', ra:'SQL → algebra'};
+const SQLMAP = {sigma:'σ → WHERE', pi:'π → SELECT DISTINCT', rename:'ρ → AS', gamma:'γ → GROUP BY', join:'⋈ → NATURAL JOIN / JOIN … ON', ljoin:'⟕ → LEFT JOIN',
+  rjoin:'⟖ → RIGHT JOIN', fjoin:'⟗ → FULL JOIN', cross:'× → CROSS JOIN', semi:'⋉ → WHERE EXISTS', anti:'▷ → WHERE NOT EXISTS', union:'∪ → UNION',
+  intersect:'∩ → INTERSECT', minus:'− → EXCEPT', divide:'÷ → a double NOT EXISTS'};
+const tupHTML = r => '(' + r.map(v => v == null ? '<span class="qnull">NULL</span>' : esc(fmtVal(v))).join(', ') + ')';
+const attrsHTML = a => '(' + a.map(attrHTML).join(', ') + ')';
+const exHTML = v => `<span class="qx">${exprHTML(v.ast, false)}</span>`;
+const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
+const differs = v => { const a = v.rel, b = cur.q.rel;
+  return a.rows.length !== b.rows.length ? `${plural(a.rows.length, 'tuple')}, not ${b.rows.length}` : a.attrs.length !== b.attrs.length ? `attributes ${attrsHTML(a.attrs)} instead of ${attrsHTML(b.attrs)}` : 'other tuples on this data'; };
+function optHTML(o){
+  switch (cur.kind){
+    case 'count': return String(o.val);
+    case 'tuple': case 'notin': return tupHTML(o.val);
+    case 'schema': return attrsHTML(o.val);
+    case 'sql': return `<pre class="sql">${hlSQL(o.val)}</pre>`;
+    case 'ra': return exprHTML(o.alt.ast, false);
+  }
+}
+function promptHTML(){
+  const A = cur.q.rel.attrs;
+  switch (cur.kind){
+    case 'count': return 'How many tuples does this expression return?';
+    case 'tuple': return `Which tuple is in the result?<small>Tuples are written in the result’s attribute order: ${attrsHTML(A)}</small>`;
+    case 'notin': return `Which tuple is <u>not</u> in the result?<small>Tuples are written in the result’s attribute order: ${attrsHTML(A)}</small>`;
+    case 'schema': return 'What is the schema (the list of attributes) of the result?';
+    case 'sql': return 'Which SQL query computes this expression?<small>SQLite dialect, as the lab’s SQL tab writes it.</small>';
+    case 'ra': return 'Which relational algebra expression does this SQL query compute?';
+  }
+}
+function feedHTML(){
+  const q = cur.q, O = cur.opts, A = O[cur.answer], n = q.rel.rows.length, ok = cur.picked === cur.answer;
+  const lbl = i => `<b>${i + 1}</b>`, val = o => cur.kind === 'count' ? `<b>${o.val}</b>` : cur.kind === 'tuple' || cur.kind === 'notin' ? `<b>${tupHTML(o.val)}</b>` : cur.kind === 'schema' ? `<b>${attrsHTML(o.val)}</b>` : '';
+  const ops = [...new Set(q.steps.map(s => s.type))].map(t => `<code>${SQLMAP[t]}</code>`).join(' · ');
+  let main;
+  switch (cur.kind){
+    case 'count': main = `The result has <b>${plural(n, 'tuple')}</b> — every step is below.`; break;
+    case 'tuple': main = `${val(A)} is one of the ${plural(n, 'tuple')} of the result (highlighted below).`; break;
+    case 'notin': main = `${val(A)} is not in the result: ` + (A.alt ? `it shows up only in ${exHTML(A.alt)} — ${A.why}` : A.lead ? `it ${A.lead} — ${A.why}` : `it is not among the ${plural(n, 'tuple')} below.`); break;
+    case 'schema': main = `The result is ${val(A)}. ${explain(q.ast)}`; break;
+    default: main = `Option ${lbl(cur.answer)} is the translation — read it operator by operator: ${ops}. It returns ${plural(n, 'tuple')}.`;
+  }
+  const why = O.map((o, i) => {
+    if (o.ok) return '';
+    const mine = i === cur.picked ? ' <i>(your answer)</i>' : '';
+    if (o.inRes) return `<li>${lbl(i)}${mine} ${val(o)} is in the result.</li>`;
+    if (!o.why) return cur.kind === 'count' ? `<li>${lbl(i)}${mine} ${val(o)} does not match any step.</li>` : `<li>${lbl(i)}${mine} ${val(o)} is not in the result.</li>`;
+    const lead = o.lead ? o.lead : {count:`is the count for ${exHTML(o.alt)}`, tuple:`comes from ${exHTML(o.alt)}`, notin:`comes from ${exHTML(o.alt)}`, schema:`is the schema of ${exHTML(o.alt)}`,
+      sql:`computes ${exHTML(o.alt)} (${differs(o.alt)})`, ra:`gives ${differs(o.alt)}`}[cur.kind];
+    return `<li>${lbl(i)}${mine} ${val(o)} ${lead} — ${o.why}</li>`;
+  }).join('');
+  const hl = new Set(cur.kind === 'tuple' ? [key(A.val)] : cur.kind === 'notin' ? O.filter(o => o.inRes).map(o => key(o.val)) : []);
+  return `<div class="qnote ${ok ? 'good' : 'bad'}">${ok ? '<b>Correct!</b>' : `<b>Not quite.</b> The answer is option ${lbl(cur.answer)}.`} ${main}</div>` +
+    (why ? `<div><div class="qsec">The other options</div><ul class="qwhy">${why}</ul></div>` : '') +
+    `<div><div class="qsec">How it evaluates</div>${q.steps.map(s => `<div class="qstep"><span class="badge" style="--c:${color(s)}">${SYM[s.type]}</span>` +
+      `<div style="min-width:0"><div class="step-e">${exprHTML(s, false)}</div><div class="qexp">${explain(s)}</div></div></div>`).join('')}</div>` +
+    `<div class="qres"><div class="qsec">The result</div>${relMeta(q.rel)}${tableHTML(q.rel.attrs, q.rel.rows, {pad: hl.size ? r => hl.has(key(r)) : null})}</div>` +
+    `<div class="hint">Press <code>Enter</code> or <b>Next question</b> for another one.</div>`;
+}
+function renderQuiz(){
+  $('#qLvls').querySelectorAll('button').forEach(b => b.classList.toggle('on', +b.dataset.l === Q.level));
+  $('#qScore').innerHTML = `<div class="s"><small>Score</small><b>${Q.right} / ${Q.total}</b></div><div class="s"><small>Accuracy</small><b>${Q.total ? Math.round(Q.right / Q.total * 100) + '%' : '—'}</b></div>` +
+    `<div class="s"><small>Streak</small><b>${Q.streak}</b></div><div class="s"><small>Best</small><b>${Q.best}</b></div>`;
+  if (!cur) return;
+  const used = new Set(); walkNodes(cur.q.ast, n => { if (n.type === 'rel') used.add(n.name); });
+  $('#qKind').textContent = KLABEL[cur.kind];
+  $('#qLv').textContent = ['', 'easy', 'medium', 'hard'][cur.level];
+  $('#qPrompt').innerHTML = promptHTML();
+  $('#qExpr').innerHTML = cur.kind === 'ra' ? `<pre class="sql">${hlSQL(cur.sql)}</pre>` : exprHTML(cur.q.ast, false);
+  $('#qAns').className = 'qans' + (cur.kind === 'sql' || cur.kind === 'ra' ? ' wide' : '');
+  $('#qAns').innerHTML = cur.opts.map((o, i) => `<button data-i="${i}" class="${cur.picked == null ? '' : o.ok ? 'ok' : i === cur.picked ? 'no' : ''}"${cur.picked == null ? '' : ' disabled'}>` +
+    `<span class="qk">${i + 1}</span><span class="v">${optHTML(o)}</span></button>`).join('');
+  $('#qFeed').innerHTML = cur.picked == null ? '' : feedHTML();
+  $('#qData').innerHTML = QBASE.filter(r => used.has(r.name)).map(r => `<div><div class="meta"><b style="font-family:var(--mono)">${esc(r.name)}</b>${relMeta(r).replace(/^<div class="meta">|<\/div>$/g, '')}</div>${tableHTML(r.attrs, r.rows)}</div>`).join('');
+}
+function newQuestion(){ cur = genQuestion(Q.level); renderQuiz(); }
+function answer(i){
+  if (!cur || cur.picked != null || !cur.opts[i]) return;
+  cur.picked = i;
+  Q.total++;
+  if (i === cur.answer){ Q.right++; Q.streak++; Q.best = Math.max(Q.best, Q.streak); } else Q.streak = 0;
+  qstore.set('quiz', Q); renderQuiz();
+}
+$('#qAns').addEventListener('click', e => { const b = e.target.closest('button'); if (b) answer(+b.dataset.i); });
+$('#qNext').onclick = newQuestion;
+$('#qReset').onclick = () => { Object.assign(Q, {right:0, total:0, streak:0, best:0}); qstore.set('quiz', Q); renderQuiz(); toast('Score reset'); };
+$('#qLvls').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  Q.level = +b.dataset.l; qstore.set('quiz', Q); newQuestion();
+});
+document.addEventListener('keydown', e => {
+  if (!quizOn || e.target.closest('input,textarea,select,[contenteditable]') || e.ctrlKey || e.metaKey || e.altKey) return;
+  const k = e.key.toLowerCase(), i = '1234'.indexOf(k) >= 0 ? '1234'.indexOf(k) : 'abcd'.indexOf(k);
+  if (cur && cur.picked == null && k.length === 1 && i >= 0){ answer(i); e.preventDefault(); }
+  else if (cur && cur.picked != null && (e.key === 'Enter' || e.key === ' ' || k === 'n')){ newQuestion(); e.preventDefault(); }
+});
+function showQuiz(on){
+  quizOn = on;
+  $('.layout').hidden = on;
+  $('#quizView').hidden = !on;
+  $('#quizBtn').textContent = on ? '← Back to the lab' : '✎ Quiz';
+  try { history.replaceState(null, '', on ? '#quiz' : location.pathname + location.search); } catch (e) {}
+  if (on && !cur) newQuestion();
+  window.scrollTo(0, 0);
+}
+$('#quizBtn').addEventListener('click', () => showQuiz(!quizOn));
+
 renderDataset();
 loadExpr();
+renderQuiz();
+if (location.hash === '#quiz') showQuiz(true);
 })();
 </script>
 </body>

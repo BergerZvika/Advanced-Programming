@@ -166,6 +166,50 @@ pre.sql .t{color:#ffd59a}
 .check b{color:var(--text)}
 .ok{padding:14px;border-radius:10px;background:rgba(76,224,163,0.08);border:1px solid rgba(76,224,163,0.3);color:var(--sql);font-size:13px}
 
+/* ---------- quiz ---------- */
+.qview{display:none;flex:1;min-height:0;overflow-y:auto}
+body.quiz .qview{display:block}
+body.quiz .toolbar,body.quiz .work{display:none}
+.qpage{max-width:1240px;margin:0 auto;padding:22px 24px 60px}
+.qpage h2{margin:0 0 6px;font-size:22px;letter-spacing:-.01em}
+.qpage .lead{color:var(--text-dim);line-height:1.65;margin:0 0 18px;max-width:860px}
+.qpage kbd{font-family:var(--mono);font-size:11px;background:var(--surface-2);padding:1px 5px;border-radius:4px;color:var(--text-dim)}
+.box{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px 16px}
+.box h4{margin:0 0 10px}
+.note{font-size:12.5px;color:var(--text-dim);line-height:1.65;padding:10px 14px;border-left:3px solid var(--warn);background:rgba(255,181,71,0.06);border-radius:0 8px 8px 0;margin:0 0 12px}
+.note.good{border-color:var(--sql);background:rgba(76,224,163,0.06)}
+.note.bad{border-color:var(--err);background:rgba(255,107,122,0.06)}
+.note b{color:var(--text)}
+.qwrap{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:14px;align-items:start}
+.qask{font-size:15px;line-height:1.6;margin-bottom:12px}
+.qask code,.qans code,.qx code{font-family:var(--mono);font-size:12px;color:#ffd59a}
+.qdia{border:1px solid var(--border);border-radius:12px;padding:10px;margin-bottom:14px;background-color:var(--bg-0);
+  background-image:radial-gradient(circle,rgba(255,255,255,0.07) 1px,transparent 1.2px);background-size:22px 22px}
+.qdia svg{display:block;width:100%;height:auto;max-height:380px;margin:0 auto}
+.qans{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.qans button{display:flex;gap:10px;align-items:flex-start;text-align:left;padding:11px 13px;border-radius:11px;border:1px solid var(--border);background:var(--surface);font-size:13px;line-height:1.5;min-width:0}
+.qans button > span:last-child{min-width:0;flex:1}
+.qans button:hover:not([disabled]){background:var(--surface-2);border-color:var(--border-strong)}
+.qans button[disabled]{opacity:.4;cursor:default}
+.qans button.right{opacity:1;border-color:rgba(76,224,163,0.6);box-shadow:0 0 0 2px rgba(76,224,163,0.55)}
+.qans button.wrong{opacity:1;border-color:rgba(255,107,122,0.6);box-shadow:0 0 0 2px rgba(255,107,122,0.55)}
+.qans .qk{flex:none;font-family:var(--mono);font-size:11px;font-weight:700;color:var(--text-faint);border:1px solid var(--border-strong);border-radius:5px;padding:0 5px;margin-top:1px}
+.qans.code{grid-template-columns:1fr}
+.qans pre.sql{font-size:11px;padding:8px 10px;line-height:1.5}
+.qfeed{margin-top:14px}
+.qx{font-size:12.5px;color:var(--text-dim);line-height:1.65;margin:0 0 8px}
+.qx b{color:var(--text)}
+.score{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.score .s{background:var(--bg-1);border:1px solid var(--border);border-radius:10px;padding:10px 12px}
+.score .s small{display:block;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-faint);margin-bottom:3px}
+.score .s b{font-family:var(--mono);font-size:20px}
+.lvls{display:flex;flex-direction:column;gap:6px}
+.lvls button{text-align:left;padding:8px 11px;border-radius:9px;border:1px solid var(--border);background:var(--surface);font-weight:600;font-size:12.5px;display:flex;flex-direction:column;gap:2px}
+.lvls button small{font-weight:400;color:var(--text-faint);font-size:11px}
+.lvls button.on{border-color:rgba(255,181,71,0.55);background:rgba(255,181,71,0.08)}
+@media (max-width:1000px){ .qwrap{grid-template-columns:1fr} }
+@media (max-width:700px){ .qans{grid-template-columns:1fr} .qpage{padding:18px 16px 60px} }
+
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--panel-2);border:1px solid var(--border-strong);padding:9px 16px;border-radius:10px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:60}
 .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
 
@@ -183,6 +227,7 @@ pre.sql .t{color:#ffd59a}
 <header class="topbar">
   <a class="brand" href="index.html" title="Back to Databases Lab"><span class="dot"></span>ERD Lab <small>Chen · crow's foot · ER → relations → SQL</small></a>
   <span class="spacer"></span>
+  <button class="btn" id="quizBtn" title="Practice on random ER diagrams (Esc comes back)">✎ Quiz</button>
   <a class="btn" href="index.html">← Databases</a>
   <a class="btn" href="../home.html">⌂ Home</a>
 </header>
@@ -237,6 +282,34 @@ pre.sql .t{color:#ffd59a}
     <div class="pbody" id="pbody"></div>
   </aside>
 </div>
+<main class="qview" id="qview">
+  <div class="qpage">
+    <h2>Quiz: from ER diagram to tables</h2>
+    <p class="lead">Each round draws a small random ER diagram. The answers are computed by the same ER → relational mapping the <b>Relational schema</b> and <b>SQL</b> tabs use, and the explanation shows the tables it produces. Your own diagram is left untouched.
+      Keys: <kbd>1</kbd>–<kbd>4</kbd> answer, <kbd>Enter</kbd> next, <kbd>Esc</kbd> back to the lab.</p>
+    <div class="qwrap">
+      <div class="box">
+        <div class="qask" id="qAsk"></div>
+        <div class="qdia" id="qDia"></div>
+        <div class="qans" id="qAns"></div>
+        <div class="qfeed" id="qFeed"></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div class="box score" id="qScore"></div>
+        <div class="box">
+          <h4>Difficulty</h4>
+          <div class="lvls" id="qLvls">
+            <button data-l="1">Easy<small>two entities, Chen notation</small></button>
+            <button data-l="2">Medium<small>weak entities, 1:1, crow's foot too</small></button>
+            <button data-l="3">Hard<small>three or four entities, CREATE TABLE</small></button>
+          </div>
+        </div>
+        <button class="btn" id="qNext" style="justify-content:center">Next question →</button>
+        <button class="btn sm" id="qReset" style="justify-content:center">Reset score</button>
+      </div>
+    </div>
+  </div>
+</main>
 <datalist id="types"><option value="INTEGER"><option value="TEXT"><option value="VARCHAR(50)"><option value="REAL"><option value="DECIMAL(10,2)"><option value="DATE"><option value="BOOLEAN"></datalist>
 <div class="toast" id="toast"></div>
 
@@ -1183,7 +1256,8 @@ function deleteSelection(){
   renderAll();
 }
 document.addEventListener('keydown', e => {
-  const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
+  if (quizOn) return;   // the quiz has its own keys; never edit the hidden diagram
+  const typing =/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !typing){ e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y' && !typing){ e.preventDefault(); redo(); return; }
   if (typing) return;
@@ -1293,6 +1367,13 @@ function hlSQL(s){
       (com ? `<span class="c">${esc(com)}</span>` : '');
   }).join('\n');
 }
+// A table as name(cols): underlined = primary key, italic → table = foreign key.
+const relHTML = t => `<div class="tbl"><span class="tn">${esc(t.name)}</span>(${t.cols.map(c => {
+  const fk = t.fks.find(f => f.cols.includes(c.name));
+  let s = esc(c.name);
+  if (fk) s = `<span class="fk">${s}</span><span class="ref">→${esc(fk.ref)}</span>`;
+  return t.pk.includes(c.name) ? `<u>${s}</u>` : s;
+}).join(', ')})</div>`;
 function renderPanel(){
   const C = checks();
   const errs = C.filter(c => c.level === 'err').length, warns = C.filter(c => c.level === 'warn').length;
@@ -1306,12 +1387,7 @@ function renderPanel(){
     if (!M.entities.length){ body.innerHTML = '<p class="hint">Add some entities to see the relational schema.</p>'; return; }
     const {tables, steps} = mapToRelational();
     body.innerHTML = `<p class="hint" style="margin:0 0 10px">Underlined = primary key, <span style="color:#ffd59a;font-style:italic">italic</span> = foreign key.</p>` +
-      tables.map(t => `<div class="tbl"><span class="tn">${esc(t.name)}</span>(${t.cols.map(c => {
-        const fk = t.fks.find(f => f.cols.includes(c.name));
-        let s = esc(c.name);
-        if (fk) s = `<span class="fk">${s}</span><span class="ref">→${esc(fk.ref)}</span>`;
-        return t.pk.includes(c.name) ? `<u>${s}</u>` : s;
-      }).join(', ')})</div>`).join('') +
+      tables.map(relHTML).join('') +
       `<h4>How it was mapped</h4><ol class="steps">${[...steps].sort((x, y) => x.r - y.r).map(s => `<li data-r="${s.r}">${s.html}</li>`).join('')}</ol>` +
       `<p class="hint" style="margin-top:10px">Numbers follow the ER-to-relational mapping algorithm: 1 strong entities, 2 weak entities, 3 one-to-one, 4 one-to-many, 5 many-to-many, 6 multivalued attributes, 7 multi-way relationships, 8 subclasses (isa).</p>`;
   }
@@ -1501,6 +1577,341 @@ $('#tpl').addEventListener('change', e => {
 });
 
 /* ================================================================
+   Quiz: small random ER diagrams. The answers come from the lab's own
+   mapToRelational() / toDDL() / sentence(), run on the quiz model.
+   ================================================================ */
+// strong entities: name, key, plain attributes, a multivalued and a derived candidate
+const QE = [
+  ['Student', 'sid', ['name', 'email'], 'phone', 'age'], ['Course', 'course_id', ['title', 'credits'], 'topic', null],
+  ['Department', 'dno', ['dname', 'budget'], 'location', 'num_staff'], ['Employee', 'ssn', ['name', 'salary'], 'skill', 'age'],
+  ['Project', 'pno', ['pname', 'deadline'], 'tag', null], ['Author', 'author_id', ['name', 'country'], 'pen_name', null],
+  ['Book', 'isbn', ['title', 'year'], 'keyword', null], ['Member', 'member_id', ['name', 'joined'], 'phone', 'years'],
+  ['Customer', 'cust_id', ['name', 'city'], 'email', 'total_spent'], ['Product', 'sku', ['pname', 'price'], 'color', null],
+  ['Supplier', 'sup_id', ['sname', 'city'], 'phone', null], ['Doctor', 'doc_id', ['name', 'room'], 'specialty', null],
+  ['Patient', 'patient_id', ['name', 'birth'], 'allergy', 'age'], ['Building', 'bcode', ['bname', 'floors'], 'entrance', null]
+];
+// weak entities: name, partial key, attributes, owner, identifying relationship
+const QW = [
+  ['Dependent', 'dep_name', ['relationship'], 'Employee', 'dependent_of'], ['Room', 'room_no', ['capacity'], 'Building', 'room_in'],
+  ['Section', 'sec_no', ['semester'], 'Course', 'section_of'], ['Copy', 'copy_no', ['shelf'], 'Book', 'copy_of'],
+  ['Payment', 'pay_no', ['amount'], 'Customer', 'paid_by'], ['Visit', 'visit_no', ['reason'], 'Patient', 'visit_of'],
+  ['Task', 'task_no', ['status'], 'Project', 'task_of']
+];
+const QV = ['works_on', 'owns', 'takes', 'manages', 'supplies', 'belongs_to', 'assigned', 'uses', 'leads', 'serves', 'holds', 'visits'];
+const QRA = ['since', 'hours', 'role', 'grade', 'start_date'];
+const kty = k => /_name$|^(isbn|sku|bcode|ssn)$/.test(k) ? 'VARCHAR(20)' : 'INTEGER';
+const aty = a => /^(credits|budget|salary|year|price|floors|capacity|amount|hours|age|years|num_staff|total_spent|grade)$/.test(a) ? 'INTEGER'
+  : /date|deadline|joined|birth|since/.test(a) ? 'DATE' : 'TEXT';
+const LEVELS = {
+  1: {n:[2], weak:0.2, kinds:['1:N', 'N:1', 'M:N'], total:0.3, multi:0.3, derived:0.2, relAttr:0.2, attrs:1},
+  2: {n:[2, 3], weak:0.4, kinds:['1:N', 'N:1', '1:1', 'M:N'], total:0.4, multi:0.35, derived:0.3, relAttr:0.3, attrs:2},
+  3: {n:[3, 4], weak:0.6, kinds:['1:N', 'N:1', '1:1', 'M:N'], total:0.5, multi:0.45, derived:0.3, relAttr:0.4, attrs:2}
+};
+const rnd = n => Math.floor(Math.random() * n);
+const pick = a => a[rnd(a.length)];
+const chance = p => Math.random() < p;
+const shuffle = a => { a = [...a]; for (let i = a.length - 1; i > 0; i--){ const j = rnd(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+// Run fn with the quiz model swapped in for the user's diagram, then put the diagram back.
+function withModel(m, fn){ const keep = M; M = m; try { return fn(); } finally { M = keep; } }
+
+function genModel(level, force = {}){
+  const o = {...LEVELS[level], ...force};
+  const n = pick(o.n), w = chance(o.weak) ? pick(QW) : null;
+  const oi = !w ? -1 : n === 2 ? 0 : n === 3 ? 1 : pick([1, 2]);   // the weak entity's owner slot; the weak entity is last
+  const pool = shuffle(QE.filter(e => !w || e[0] !== w[3]));
+  const strong = Array.from({length:n - (w ? 1 : 0)}, (_, i) => i === oi ? QE.find(e => e[0] === w[3]) : pool.pop());
+  const at = i => n <= 3 ? [i * 400, 0] : [(i % 2) * 440, Math.floor(i / 2) * 320];
+  const entities = strong.map(([name, key, plain, mv, dv], i) => [name, ...at(i), false, [[key, kty(key), 'k'], ...plain.slice(0, o.attrs).map(a => [a, aty(a)]),
+    ...(mv && chance(o.multi) ? [[mv, aty(mv), 'm']] : []), ...(dv && chance(o.derived) ? [[dv, aty(dv), 'd']] : [])]]);
+  if (w) entities.push([w[0], ...at(n - 1), true, [[w[1], kty(w[1]), 'k'], ...w[2].map(a => [a, aty(a)])]]);
+  // neighbours only, so every diamond sits alone between its two entities
+  const edges = w && n === 4 ? [[0, 1], [2, 0], [oi, 3]] : n === 2 ? [[0, 1]] : n === 3 ? [[0, 1], [1, 2]]
+    : shuffle([[0, 1], [1, 3], [3, 2], [2, 0]]).slice(0, pick([3, 4]));
+  const verbs = shuffle(QV);
+  const rels = edges.map(([i, j], k) => {
+    const [x1, y1] = at(i), [x2, y2] = at(j), A = entities[i][0], B = entities[j][0], mid = [(x1 + x2) / 2, (y1 + y2) / 2];
+    if (w && j === n - 1) return [w[4], ...mid, [A, '1', false], [B, 'N', true], true, []];
+    const r = pick(o.kinds), ta = chance(o.total), tb = r === '1:1' ? !ta : chance(o.total);   // 1:1: exactly one side total
+    const ra = chance(o.relAttr) ? pick(QRA) : null;
+    return [verbs[k], ...mid, [A, r[0] === '1' ? '1' : 'N', ta], [B, r[2], tb], false, ra ? [[ra, aty(ra)]] : []];
+  });
+  return build({entities, rels});
+}
+
+const qc = s => `<code>${esc(s)}</code>`;
+const keyTxt = cs => `(${cs.map(esc).join(', ')})`;
+const nameOf = (m, id) => m.entities.find(e => e.id === id).name;
+const tblOf = (R, n) => R.tables.find(t => t.name === n);
+const stepsOf = (R, rs, needle) => R.steps.filter(s => rs.includes(s.r) && s.html.includes(needle));
+const stepsHTML = ss => ss.length ? `<ol class="steps">${[...ss].sort((x, y) => x.r - y.r).map(s => `<li data-r="${s.r}">${s.html}</li>`).join('')}</ol>` : '';
+const mapOf = m => withModel(m, mapToRelational);
+const ntFor = level => level === 1 ? 'chen' : chance(level === 2 ? 0.3 : 0.5) ? 'crow' : 'chen';
+function diagram(m, nt, sel){
+  return withModel(m, () => {
+    const G = layout(nt), b = bbox(G);
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${f1(b.x)} ${f1(b.y)} ${f1(b.w)} ${f1(b.h)}" style="max-width:${Math.ceil(b.w)}px">${draw(G, PAL.dark, sel, null)}</svg>`;
+  });
+}
+// right: html of the correct option; wrongs: [{html, why}] in order of preference (duplicates dropped)
+function mkQ(kind, m, nt, sel, ask, right, wrongs, explain, o = {}){
+  const seen = new Set([right]), ws = [];
+  for (const w of wrongs) if (w && !seen.has(w.html)){ seen.add(w.html); ws.push(w); }
+  if (ws.length < 2) return null;
+  let opts = [{html:right, ok:true}, ...ws.slice(0, 3)];
+  opts = o.order ? opts.sort(o.order) : shuffle(opts);
+  return {kind, svg:diagram(m, nt, sel), ask, opts, explain, code:!!o.code, picked:-1};
+}
+
+// 1 · how many tables
+function qCount(level){
+  const m = genModel(level), R = mapOf(m), n = R.tables.length, nt = ntFor(level);
+  const nE = m.entities.length, nM = m.entities.reduce((s, e) => s + e.attrs.filter(a => a.multi).length, 0);
+  const nR = m.rels.filter(r => !r.identifying).length, nI = m.rels.length - nR;
+  const W = (v, why) => v > 0 && v !== n ? {html:String(v), v, why} : null;
+  const cand = [
+    W(nE + nR + nI + nM, 'That gives every relationship its own table, the identifying one too. Only M:N relationships need one; 1:1, 1:N and identifying relationships become a foreign key.'),
+    W(nE + nR + nM, 'That gives 1:1 and 1:N relationships their own table. They don\'t need one: a foreign key on the right side holds the link.'),
+    nM ? W(n - nM, 'That keeps each multivalued attribute inside its entity\'s table. A column holds one value, so every multivalued attribute gets a table of its own.') : null,
+    W(nE, 'That counts only the entities. M:N relationships and multivalued attributes get tables too.'),
+    ...[1, -1, 2, -2, 3, -3].map(d => W(n + d, 'Count again with the steps below.'))
+  ].filter(Boolean).filter((w, i, a) => a.findIndex(x => x.v === w.v) === i);
+  // the usual mistakes first, but put the right answer at a random rank so "second smallest" isn't a tell
+  const lo = cand.filter(w => w.v < n), hi = cand.filter(w => w.v > n), p = Math.min(rnd(4), lo.length);
+  const wrongs = [...lo.slice(0, p), ...hi.slice(0, 3 - p)];
+  return mkQ('count', m, nt, null, 'How many tables does this ER diagram map to?', String(n), wrongs,
+    `<p class="qx">The mapping produces <b>${n} tables</b> (underlined = primary key, <i>italic</i> = foreign key):</p>${R.tables.map(relHTML).join('')}${stepsHTML(R.steps)}`,
+    {order:(x, y) => +x.html - +y.html});
+}
+
+// 2 · where does the foreign key go
+function qFK(level){
+  const m = genModel(level), cand = m.rels.filter(r => !r.identifying);
+  if (!cand.length) return null;
+  const r = pick(cand), R = mapOf(m), [ea, eb] = r.ends, A = nameOf(m, ea.entity), B = nameOf(m, eb.entity);
+  const tA = tblOf(R, A), tB = tblOf(R, B), own = tblOf(R, r.name), k = kind(r);
+  if (!tA || !tB || !tA.pk.length || !tB.pk.length) return null;
+  const fkTo = (t, ref) => t.fks.find(f => f.ref === ref);
+  const right = own ? 'new' : fkTo(tA, B) ? 'a' : fkTo(tB, A) ? 'b' : null;
+  if (!right) return null;
+  const colsA = right === 'a' ? fkTo(tA, B).cols : tB.pk, colsB = right === 'b' ? fkTo(tB, A).cols : tA.pk;
+  const html = {
+    a:`<b>${esc(A)}</b> gets a foreign key ${qc(colsA.join(', '))} → ${esc(B)}`,
+    b:`<b>${esc(B)}</b> gets a foreign key ${qc(colsB.join(', '))} → ${esc(A)}`,
+    new:`A new table <b>${esc(r.name)}</b>${own ? keyTxt(own.cols.map(c => c.name)) : keyTxt([...tA.pk, ...tB.pk])}`,
+    both:`Both: ${esc(A)} gets ${qc(tB.pk.join(', '))} and ${esc(B)} gets ${qc(tA.pk.join(', '))}`
+  };
+  const one = k === '1:N' ? (ea.max === '1' ? A : B) : null, many = one && (one === A ? B : A);
+  const host = right === 'a' ? A : B, other = host === A ? B : A;
+  const why = {
+    '1:N':{side:`One ${esc(one)} would need a list of ${esc(many)} keys, and a column holds one value. The foreign key goes on the N side, in ${esc(many)}.`,
+      new:`A separate table would work, but it isn't needed: each ${esc(many)} has at most one ${esc(one)}, so one column in ${esc(many)} holds the link.`},
+    '1:1':{side:`${esc(other)} doesn't have to take part (single line), so that column would be NULL in many rows. Put it on the total-participation side, ${esc(host)}, where it can be NOT NULL.`,
+      new:'A 1:1 relationship never needs its own table: one UNIQUE foreign key in either table is enough.'},
+    'M:N':{side:`Each ${esc(A)} can be linked to many ${esc(B)}s and vice versa, but a column holds one value. An M:N relationship needs its own table.`}
+  }[k];
+  const wrongs = ['a', 'b', 'new', 'both'].filter(x => x !== right).map(x => ({html:html[x],
+    why:x === 'both' ? 'Storing the link twice is redundant and the two copies can disagree.' + (k === 'M:N' ? ' Neither side can hold a list anyway: M:N needs its own table.' : '') : x === 'new' ? why.new : why.side}));
+  return mkQ('fk', m, ntFor(level), {id:r.id},
+    `Where does the relationship <b>${esc(r.name)}</b> (highlighted) between <b>${esc(A)}</b> and <b>${esc(B)}</b> end up in the tables?`, html[right], wrongs,
+    `<p class="qx">The tables involved:</p>${[tA, tB, own].filter(Boolean).map(relHTML).join('')}${stepsHTML(stepsOf(R, [3, 4, 5], `<b>${esc(r.name)}</b>`))}`);
+}
+
+// 3 · primary key of a weak entity / M:N / multivalued table, and 5 · which CREATE TABLE
+function keyTargets(m, R){
+  const out = [];
+  for (const e of m.entities.filter(e => e.weak)){ const t = tblOf(R, e.name); if (t && t.fks.length) out.push({type:'weak', e, t, sel:{id:e.id}}); }
+  for (const r of m.rels.filter(r => kind(r) === 'M:N')){ const t = tblOf(R, r.name); if (t && t.fks.length === 2) out.push({type:'mn', r, t, sel:{id:r.id}}); }
+  for (const e of m.entities) for (const a of e.attrs.filter(a => a.multi)){ const t = tblOf(R, e.name + '_' + a.name); if (t && t.fks.length) out.push({type:'multi', e, a, t, sel:{id:e.id, attr:a.id}}); }
+  if (!out.length) return null;
+  const g = pick(out), t = g.t, fk = t.fks.map(f => f.cols), fkAll = fk.flat();
+  g.own = t.pk.filter(c => !fkAll.includes(c));   // the partial key / the value column
+  g.extra = t.cols.map(c => c.name).filter(c => !t.pk.includes(c));
+  g.fk = fk;
+  g.what = g.type === 'weak' ? `the weak entity <b>${esc(g.e.name)}</b>` : g.type === 'mn' ? `the M:N relationship <b>${esc(g.r.name)}</b>`
+    : `the multivalued attribute <b>${esc(g.e.name)}.${esc(g.a.name)}</b>`;
+  g.steps = g.type === 'weak' ? stepsOf(R, [2], `<b>${esc(g.e.name)}</b>`) : g.type === 'mn' ? stepsOf(R, [5], `<b>${esc(g.r.name)}</b>`)
+    : stepsOf(R, [6], `<b>${esc(g.e.name)}.${esc(g.a.name)}</b>`);
+  return g;
+}
+// The usual mistakes for each kind of table, as {pk or fks change, why}.
+function keyMistakes(g, m){
+  const t = g.t, [f0, f1x] = g.fk, x = g.extra[0];
+  if (g.type === 'weak'){
+    const W = esc(g.e.name), O = esc(t.fks[0].ref), p = g.own.map(esc).join(', ');
+    return [
+      {pk:g.own, why:`${p} only tells ${W}s apart within one ${O}: two different ${O}s can both have ${p} = 1. The owner's key ${esc(f0.join(', '))} must be part of the key.`},
+      {pk:f0, why:`One ${O} has many ${W}s, so the owner's key alone repeats. Add the partial key ${p}.`},
+      x && {pk:[...t.pk, x], why:`That identifies a row, but it isn't minimal: ${esc(x)} isn't needed.`},
+      x && {pk:[...g.own, x], why:`Without the owner's key, ${W}s of different ${O}s can collide.`}
+    ];
+  }
+  if (g.type === 'mn'){
+    const [A, B] = t.fks.map(f => esc(f.ref));
+    return [
+      {pk:f0, why:`One ${A} can be linked to many ${B}s, so ${esc(f0.join(', '))} alone repeats. The key needs both sides.`},
+      {pk:f1x, why:`One ${B} can be linked to many ${A}s, so ${esc(f1x.join(', '))} alone repeats. The key needs both sides.`},
+      x && {pk:[...t.pk, x], why:`Not minimal: the two foreign keys already identify a row; ${esc(x)} is just data about the link.`}
+    ];
+  }
+  const E = esc(g.e.name), a = esc(g.a.name);
+  return [
+    {pk:f0, why:`One ${E} can have several ${a} values, so its key repeats: one row per value.`},
+    {pk:g.own, why:`Two ${E}s can share the same ${a}, so the value alone repeats.`}
+  ];
+}
+function qPK(level){
+  const m = genModel(level), R = mapOf(m), g = keyTargets(m, R);
+  if (!g) return null;
+  const wrongs = keyMistakes(g, m).filter(Boolean).map(w => ({html:`<code>${keyTxt(w.pk)}</code>`, why:w.why}));
+  return mkQ('pk', m, ntFor(level), g.sel, `What is the primary key of the table for ${g.what}?`, `<code>${keyTxt(g.t.pk)}</code>`, wrongs,
+    `<p class="qx">The table (underlined = primary key, <i>italic</i> = foreign key):</p>${relHTML(g.t)}${stepsHTML(g.steps)}`);
+}
+function qDDL(level){
+  const m = genModel(level), R = mapOf(m), g = keyTargets(m, R);
+  if (!g) return null;
+  const sql = t => `<pre class="sql">${hlSQL(toDDL([t]))}</pre>`;
+  const mut = (f, why) => { const c = JSON.parse(JSON.stringify(g.t)); f(c); return {html:sql(c), why}; };
+  const wrongs = shuffle([
+    ...keyMistakes(g, m).filter(Boolean).map(w => mut(c => { c.pk = [...w.pk]; }, w.why)),
+    mut(c => { c.fks = []; }, 'The columns are there but there is no FOREIGN KEY … REFERENCES: nothing stops a row pointing at a row that doesn\'t exist, and deleting it leaves orphans behind.')
+  ]);
+  return mkQ('ddl', m, ntFor(level), g.sel, `Which <code>CREATE TABLE</code> is right for ${g.what}?`, sql(g.t), wrongs,
+    `<p class="qx">The table (underlined = primary key, <i>italic</i> = foreign key):</p>${relHTML(g.t)}${stepsHTML(g.steps)}`, {code:true});
+}
+
+// 4 · what does this Chen symbol mean
+const MEAN = {
+  weak:'A weak entity: no key of its own, identified through its owner',
+  ident:'An identifying relationship: ties a weak entity to its owner',
+  multi:'A multivalued attribute: one instance can hold several values',
+  derived:'A derived attribute: computed from other data, not stored',
+  key:'A key attribute: its value identifies each instance',
+  partial:'A partial key: tells weak-entity instances apart within one owner only',
+  total:'Total participation: every instance must take part in the relationship',
+  strong:'A strong entity with a key of its own',
+  plain:'A simple attribute, stored as one column'
+};
+const SHAPE = {weak:'double rectangle', ident:'double diamond', multi:'double oval', derived:'dashed oval', key:'underlined attribute',
+  partial:'attribute with a dashed underline', total:'double line', strong:'single rectangle', plain:'plain oval'};
+const DOUBLE = ['weak', 'ident', 'multi', 'total'];   // the look-alike "double" symbols
+function qSymbol(level){
+  const m = genModel(level, {weak:0.6, multi:0.6, derived:0.5}), R = mapOf(m), T = [];
+  for (const e of m.entities){
+    if (e.weak) T.push({k:'weak', sel:{id:e.id}, e});
+    for (const a of e.attrs){
+      const k = a.multi ? 'multi' : a.derived ? 'derived' : a.pk ? (e.weak ? 'partial' : 'key') : null;
+      if (k) T.push({k, sel:{id:e.id, attr:a.id}, e, a});
+    }
+  }
+  for (const r of m.rels){
+    if (r.identifying) T.push({k:'ident', sel:{id:r.id}, r});
+    r.ends.forEach(x => { if (x.total) T.push({k:'total', sel:null, r, x, e:m.entities.find(e => e.id === x.entity)}); });
+  }
+  const k = pick([...new Set(T.map(t => t.k))]), g = pick(T.filter(t => t.k === k));
+  const pool = shuffle(Object.keys(MEAN).filter(x => x !== k && !(x === 'plain' && (k === 'key' || k === 'partial'))))
+    .sort((x, y) => DOUBLE.includes(k) || k === 'derived' ? DOUBLE.includes(y) - DOUBLE.includes(x) : 0);
+  const wrongs = pool.map(x => ({html:MEAN[x], why:`That would be a ${SHAPE[x]}.`}));
+  const ask = k === 'total' ? `What does the <b>double line</b> between <b>${esc(g.e.name)}</b> and <b>${esc(g.r.name)}</b> mean?`
+    : `What does the <b style="color:var(--pink)">highlighted</b> ${SHAPE[k]} mean?`;
+  // what the symbol does to the tables
+  const weakE = k === 'ident' ? m.entities.find(e => e.weak && touches(g.r, e.id)) : g.e;
+  const show = k === 'multi' ? [tblOf(R, g.e.name), tblOf(R, g.e.name + '_' + g.a.name)] : k === 'total' ? g.r.ends.map(x => tblOf(R, nameOf(m, x.entity))).concat(tblOf(R, g.r.name))
+    : [tblOf(R, weakE.name)];
+  const steps = k === 'weak' || k === 'partial' || k === 'ident' ? stepsOf(R, [2], `<b>${esc(weakE.name)}</b>`)
+    : k === 'multi' ? stepsOf(R, [6], `<b>${esc(g.e.name)}.${esc(g.a.name)}</b>`)
+    : k === 'total' ? stepsOf(R, [2, 3, 4, 5], `<b>${esc(g.r.name)}</b>`) : stepsOf(R, [1], `<b>${esc(g.e.name)}</b>`);
+  const note = k === 'total' ? ' In the tables it shows up as NOT NULL only when the foreign key sits in that entity\'s own table; otherwise the schema alone can\'t enforce it.' : '';
+  return mkQ('symbol', m, 'chen', g.sel, ask, MEAN[k], wrongs,
+    `<p class="qx">In Chen notation ${/^[aeiou]/.test(SHAPE[k]) ? 'an' : 'a'} <b>${SHAPE[k]}</b> is ${MEAN[k].replace(/^A /, 'a ').replace(/^An /, 'an ').replace(/^Total/, 'total')}.${note} In the tables:</p>` +
+    [...new Set(show.filter(Boolean))].map(relHTML).join('') + stepsHTML(steps));
+}
+
+// 4b · read a cardinality / participation off the diagram (Chen or crow's foot)
+const QTY = {'exactly one':'exactly one', 'at most one':'at most one (zero or one)', 'one or more':'one or more', 'zero or more':'zero or more'};
+function qRead(level){
+  const nt = level === 1 ? 'chen' : chance(level === 2 ? 0.5 : 0.75) ? 'crow' : 'chen';
+  const m = genModel(level), r = pick(m.rels), flip = chance(0.5), from = r.ends[flip ? 1 : 0], to = r.ends[flip ? 0 : 1];
+  const right = (withModel(m, () => sentence(r, from, to)).match(/<b>(exactly one|at most one|one or more|zero or more)<\/b>/) || [])[1];
+  if (!right) return null;
+  const X = esc(nameOf(m, from.entity)), Y = esc(nameOf(m, to.entity)), crow = nt === 'crow';
+  const lbl = to.max === '1' ? '1' : kind(r) === 'M:N' && to === r.ends[0] ? 'M' : 'N';
+  const maxWhy = crow ? `The mark right next to ${Y}'s box is ${to.max === '1' ? 'a single bar, so the maximum is one' : 'a crow\'s foot, so the maximum is many'}.`
+    : `The label at ${Y}'s end is <b>${lbl}</b>, so the maximum is ${to.max === '1' ? 'one' : 'many'}.`;
+  const minWhy = crow ? `The outer mark at ${Y}'s end is ${from.total ? 'a bar: every ' + X + ' must take part, so the minimum is one' : 'a circle: a ' + X + ' may have none, so the minimum is zero'}.`
+    : `The line between ${X} and ${esc(r.name)} is ${from.total ? 'double: every ' + X + ' takes part, so the minimum is one' : 'single: a ' + X + ' need not take part, so the minimum is zero'}.`;
+  const isMax = q => q === 'exactly one' || q === 'at most one', isMin1 = q => q === 'exactly one' || q === 'one or more';
+  const wrongs = Object.keys(QTY).filter(q => q !== right).map(q => ({html:QTY[q],
+    why:[isMax(q) !== isMax(right) ? maxWhy : '', isMin1(q) !== isMin1(right) ? minWhy : ''].filter(Boolean).join(' ')}));
+  const how = crow ? 'In crow\'s foot, the mark next to a box is the <b>maximum</b> (crow\'s foot = many, bar = one) and the outer mark is the <b>minimum</b> (circle = zero, bar = one). Read it from the far side: each ' + X + ' → the symbols at ' + Y + '\'s end.'
+    : 'In Chen notation, the <b>1 / N</b> next to an entity says how many of it one instance on the other side can have (the maximum); a <b>double line</b> from an entity means every instance of it takes part (minimum one), a single line means it may take part zero times.';
+  return mkQ('read', m, nt, {id:r.id}, `Reading the diagram: through <b>${esc(r.name)}</b>, each <b>${X}</b> is related to how many <b>${Y}</b>?`, QTY[right], wrongs,
+    `<p class="qx">${how}</p><div class="sentences">${withModel(m, () => sentencesHTML(r))}</div>`,
+    {order:(a, b) => Object.values(QTY).indexOf(a.html) - Object.values(QTY).indexOf(b.html)});
+}
+
+const QGEN = {count:qCount, fk:qFK, pk:qPK, ddl:qDDL, symbol:qSymbol, read:qRead};
+const QKINDS = {1:['count', 'fk', 'pk', 'symbol', 'read'], 2:['count', 'fk', 'pk', 'symbol', 'read'], 3:['count', 'fk', 'pk', 'ddl', 'ddl', 'read', 'symbol']};
+const QSTORE = 'erdlab.quiz';
+const Q = Object.assign({level:1, right:0, total:0, streak:0, best:0}, (() => { try { return JSON.parse(localStorage.getItem(QSTORE)) || {}; } catch (e){ return {}; } })());
+if (!LEVELS[Q.level]) Q.level = 1;
+const qsave = () => { try { localStorage.setItem(QSTORE, JSON.stringify(Q)); } catch (e) {} };
+let cur = null, quizOn = false;
+function genQuestion(level, k){
+  for (let i = 0; i < 80; i++){ const q = QGEN[k](level); if (q) return q; }
+  return null;
+}
+function newQuestion(){
+  const ks = QKINDS[Q.level].filter(k => !cur || k !== cur.kind);
+  let q = null;
+  for (let i = 0; i < 10 && !q; i++) q = genQuestion(Q.level, pick(ks));
+  cur = q || genQuestion(Q.level, 'count');
+  renderQuiz();
+}
+function renderQuiz(){
+  $('#qLvls').querySelectorAll('button').forEach(b => b.classList.toggle('on', +b.dataset.l === Q.level));
+  $('#qScore').innerHTML = `<div class="s"><small>Score</small><b>${Q.right} / ${Q.total}</b></div><div class="s"><small>Accuracy</small><b>${Q.total ? Math.round(Q.right / Q.total * 100) + '%' : '—'}</b></div>` +
+    `<div class="s"><small>Streak</small><b>${Q.streak}</b></div><div class="s"><small>Best</small><b>${Q.best}</b></div>`;
+  if (!cur) return;
+  const done = cur.picked >= 0;
+  $('#qAsk').innerHTML = cur.ask;
+  $('#qDia').innerHTML = cur.svg;
+  $('#qAns').classList.toggle('code', cur.code);
+  $('#qAns').innerHTML = cur.opts.map((o, i) => `<button data-i="${i}"${done ? ' disabled' : ''} class="${done && o.ok ? 'right' : cur.picked === i ? 'wrong' : ''}">` +
+    `<span class="qk">${i + 1}</span><span>${o.html}</span></button>`).join('');
+  if (!done){ $('#qFeed').innerHTML = ''; return; }
+  const o = cur.opts[cur.picked];
+  $('#qFeed').innerHTML = `<div class="note ${o.ok ? 'good' : 'bad'}">${o.ok ? '<b>Correct!</b>' : `<b>Not quite.</b> ${o.why || ''}`} Press <b>Enter</b> or <b>Next</b> for another one.</div>` + cur.explain;
+}
+function answer(i){
+  if (!cur || cur.picked >= 0 || !cur.opts[i]) return;
+  cur.picked = i; Q.total++;
+  if (cur.opts[i].ok){ Q.right++; Q.streak++; Q.best = Math.max(Q.best, Q.streak); } else Q.streak = 0;
+  qsave(); renderQuiz();
+}
+$('#qAns').addEventListener('click', e => { const b = e.target.closest('button[data-i]'); if (b) answer(+b.dataset.i); });
+$('#qNext').onclick = newQuestion;
+$('#qReset').onclick = () => { Object.assign(Q, {right:0, total:0, streak:0, best:0}); qsave(); renderQuiz(); toast('Score reset'); };
+$('#qLvls').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  Q.level = +b.dataset.l; qsave(); newQuestion();
+});
+function showQuiz(on){
+  quizOn = on; document.body.classList.toggle('quiz', on);
+  const b = $('#quizBtn'); b.textContent = on ? '← Back to the lab' : '✎ Quiz'; b.classList.toggle('on', on);
+  try { history.replaceState(null, '', on ? '#quiz' : location.pathname + location.search); } catch (e) {}
+  if (on){ if (connect) stopConnect(); if (!cur) newQuestion(); else renderQuiz(); }
+  else renderCanvas();
+}
+$('#quizBtn').onclick = () => showQuiz(!quizOn);
+document.addEventListener('keydown', e => {
+  if (!quizOn || e.target.closest('input,textarea,select,[contenteditable]') || e.ctrlKey || e.metaKey || e.altKey) return;
+  const k = e.key.toLowerCase(), i = '1234'.includes(k) ? +k - 1 : 'abcd'.indexOf(k);
+  if (e.key === 'Escape'){ showQuiz(false); e.preventDefault(); }
+  else if (cur && cur.picked < 0 && k.length === 1 && i >= 0){ answer(i); e.preventDefault(); }
+  else if (cur && cur.picked >= 0 && (e.key === 'Enter' || e.key === ' ' || k === 'n')){ newQuestion(); e.preventDefault(); }
+});
+
+/* ================================================================
    Boot
    ================================================================ */
 (function boot(){
@@ -1517,6 +1928,8 @@ $('#tpl').addEventListener('change', e => {
     requestAnimationFrame(fit);
   }
   window.addEventListener('resize', () => applyView());
+  renderQuiz();
+  if (location.hash === '#quiz') requestAnimationFrame(() => showQuiz(true));   // after the first fit()
 })();
 })();
 </script>
