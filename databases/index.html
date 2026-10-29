@@ -113,8 +113,25 @@ a{color:inherit;text-decoration:none}
       <div class="cta"><span>Open lab</span><span class="arrow">→</span></div>
     </a>
 
+    <a class="lab" href="three-valued-logic.html">
+      <span class="idx">01 · LOGIC</span>
+      <div class="glyph"><pre><span class="k">TRUE</span>  AND <span class="n">UNKNOWN</span> = <span class="n">UNKNOWN</span>
+<span class="k">FALSE</span> AND <span class="n">UNKNOWN</span> = <span class="k">FALSE</span>
+<span class="t">NULL</span>  =   <span class="t">NULL</span>    = <span class="n">UNKNOWN</span>
+<span class="c">-- WHERE keeps TRUE only</span></pre></div>
+      <h3>Three-Valued Logic <span class="pill">NULL</span></h3>
+      <p>TRUE, FALSE and UNKNOWN. Interactive truth tables that explain every cell, a WHERE evaluator that traces any condition row by row, eleven classic NULL traps with their fixes, and a quiz to practice.</p>
+      <div class="meta">
+        <span>AND · OR · NOT</span>
+        <span>IS NULL · NOT IN</span>
+        <span>evaluation tree</span>
+        <span>traps · quiz</span>
+      </div>
+      <div class="cta"><span>Open lab</span><span class="arrow">→</span></div>
+    </a>
+
     <a class="lab" href="relational-algebra.html">
-      <span class="idx">01 · THEORY</span>
+      <span class="idx">02 · THEORY</span>
       <div class="glyph"><pre><span class="k">π</span><span class="sub">name, title</span> (
   <span class="k">σ</span><span class="sub">salary &gt; 25000</span> (
     <span class="t">Employees</span> <span class="k">⋈</span> <span class="t">Departments</span>
@@ -132,7 +149,7 @@ a{color:inherit;text-decoration:none}
     </a>
 
     <a class="lab" href="normalization.html">
-      <span class="idx">02 · DESIGN</span>
+      <span class="idx">03 · DESIGN</span>
       <div class="glyph"><pre><span class="t">R</span>(A,B,C,D)   <span class="c">A→B  B→C</span>
   <span class="k">⇓</span> BCNF
 <span class="t">R1</span>(<u>B</u>,C)  <span class="t">R2</span>(<u>A</u>,B)  <span class="t">R3</span>(<u>A,D</u>)</pre></div>
@@ -148,7 +165,7 @@ a{color:inherit;text-decoration:none}
     </a>
 
     <a class="lab" href="erd.html">
-      <span class="idx">03 · MODELING</span>
+      <span class="idx">04 · MODELING</span>
       <div class="glyph"><pre><span class="t">[Employee]</span>━<span class="n">N</span>━<span class="k">◇works_for◇</span>━<span class="n">1</span>━<span class="t">[Dept]</span>
    (<u>ssn</u>)              (<u>dno</u>)
   <span class="k">⇓</span> <span class="c">Employee(<u>ssn</u>, dno→Dept)</span></pre></div>
@@ -163,7 +180,7 @@ a{color:inherit;text-decoration:none}
       <div class="cta"><span>Open lab</span><span class="arrow">→</span></div>
     </a>
     <a class="lab" href="join-execution.html">
-      <span class="idx">04 · ENGINE</span>
+      <span class="idx">05 · ENGINE</span>
       <div class="glyph"><pre><span class="k">for</span> page p <span class="k">in</span> <span class="t">R</span>:        <span class="c">-- B(R)</span>
   <span class="k">for</span> page q <span class="k">in</span> <span class="t">S</span>:      <span class="c">-- B(R)·B(S)</span>
     <span class="k">if</span> r.JC = s.JC → out

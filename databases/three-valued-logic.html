@@ -1,0 +1,1173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Three-Valued Logic Lab</title>
+<meta name="description" content="SQL's TRUE / FALSE / UNKNOWN logic: truth tables, a row-by-row WHERE evaluator, NULL traps and a quiz." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg-0:#07070e;
+  --bg-1:#0c0c18;
+  --panel:#0f0f1d;
+  --panel-2:#14142a;
+  --surface:rgba(255,255,255,0.04);
+  --surface-2:rgba(255,255,255,0.08);
+  --border:rgba(255,255,255,0.09);
+  --border-strong:rgba(255,255,255,0.18);
+  --text:#eaeaf5;
+  --text-dim:#9a9ab0;
+  --text-faint:#666680;
+  --accent:#7c5cff;
+  --accent-2:#35d0ff;
+  --sql:#4ce0a3;
+  --warn:#ffb547;
+  --err:#ff6b7a;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+  /* the three truth values */
+  --T:#4ce0a3; --F:#ff6b7a; --U:#ffb547;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:var(--bg-0)}
+body{font-family:'Inter',system-ui,sans-serif;color:var(--text);font-size:13.5px}
+/* keep <> and <= as typed: no ≠ / ≤ ligatures in the code font */
+[class],code,pre,input{font-variant-ligatures:none}
+a{color:inherit;text-decoration:none}
+button,select,input,textarea{font-family:inherit;color:inherit}
+button{cursor:pointer}
+code{font-family:var(--mono);font-size:.92em;background:var(--surface-2);padding:0 5px;border-radius:4px;color:#dfe3ff}
+
+.topbar{display:flex;align-items:center;gap:10px;padding:10px 16px;flex-wrap:wrap;background:linear-gradient(180deg,#0e0e1c,#0a0a15);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:20}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;white-space:nowrap}
+.brand .dot{width:10px;height:10px;border-radius:50%;background:conic-gradient(var(--T) 0 33%,var(--U) 0 66%,var(--F) 0);box-shadow:0 0 14px var(--U)}
+.brand small{font-family:var(--mono);font-weight:500;font-size:11px;color:var(--text-faint)}
+.spacer{flex:1}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:7px 12px;border-radius:9px;font-size:12.5px;font-weight:600;background:var(--surface);border:1px solid var(--border);transition:background .15s,border-color .15s;white-space:nowrap}
+.btn:hover{background:var(--surface-2);border-color:var(--border-strong)}
+.btn.primary{background:linear-gradient(135deg,#2bbf86,#1f9d6b);border-color:rgba(76,224,163,0.5);color:#04140d}
+.btn.primary:hover{background:linear-gradient(135deg,#4ce0a3,#25b07a)}
+.btn.sm{padding:5px 10px;font-size:12px;border-radius:8px}
+
+.tabs{display:flex;gap:4px;padding:8px 16px;border-bottom:1px solid var(--border);background:var(--bg-1);position:sticky;top:53px;z-index:15;overflow-x:auto;scrollbar-width:thin}
+.tab{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:9px;border:1px solid transparent;background:none;font-weight:600;font-size:13px;color:var(--text-dim);white-space:nowrap}
+.tab .n{font-family:var(--mono);font-size:10.5px;color:var(--text-faint)}
+.tab:hover{color:var(--text);background:var(--surface)}
+.tab.on{color:var(--text);background:var(--surface-2);border-color:var(--border-strong)}
+.tab.on .n{color:var(--U)}
+
+.page{display:none;padding:24px 24px 70px;max-width:1220px;margin:0 auto}
+.page.on{display:block}
+.sec{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--U)}
+.sec::before{content:"";width:8px;height:8px;border-radius:2px;background:var(--U)}
+.page h2{margin:8px 0 10px;font-size:24px;letter-spacing:-0.01em}
+.lead{color:var(--text-dim);line-height:1.7;max-width:900px;margin:0 0 20px;font-size:14px}
+.lead b{color:var(--text)}
+.box{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:14px;overflow-x:auto}
+.box h4{margin:0 0 10px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-faint)}
+.box p{color:var(--text-dim);line-height:1.65;margin:0 0 8px}
+.box p:last-child{margin-bottom:0}
+.note{font-size:12.5px;color:var(--text-dim);line-height:1.65;padding:10px 14px;border-left:3px solid var(--warn);background:rgba(255,181,71,0.06);border-radius:0 8px 8px 0;margin:0 0 14px}
+.note.good{border-color:var(--sql);background:rgba(76,224,163,0.06)}
+.note.bad{border-color:var(--err);background:rgba(255,107,122,0.06)}
+.note b{color:var(--text)}
+.hint{font-size:11.5px;color:var(--text-faint);line-height:1.55}
+.err{color:var(--err);font-size:12px;font-family:var(--mono);white-space:pre-wrap;padding:8px 10px;border-radius:8px;background:rgba(255,107,122,0.08);border:1px solid rgba(255,107,122,0.3);margin:0 0 12px}
+.cols2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.cols3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+
+/* truth value badges */
+.tv{display:inline-flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.04em;padding:2px 8px;border-radius:999px;white-space:nowrap;border:1px solid}
+.tv.T{color:var(--T);background:rgba(76,224,163,0.12);border-color:rgba(76,224,163,0.4)}
+.tv.F{color:var(--F);background:rgba(255,107,122,0.12);border-color:rgba(255,107,122,0.4)}
+.tv.U{color:var(--U);background:rgba(255,181,71,0.12);border-color:rgba(255,181,71,0.45)}
+.val{font-family:var(--mono);font-size:11.5px;padding:2px 7px;border-radius:6px;background:var(--surface-2);border:1px solid var(--border);color:#dfe3ff;white-space:nowrap}
+.val.null{color:var(--U);font-style:italic;border-color:rgba(255,181,71,0.35)}
+
+/* ---------- truth tables ---------- */
+.pick{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.pick .lbl{font-family:var(--mono);font-weight:700;width:18px}
+.seg{display:inline-flex;border:1px solid var(--border);border-radius:9px;overflow:hidden}
+.seg button{padding:6px 12px;background:var(--surface);border:none;border-right:1px solid var(--border);font-family:var(--mono);font-size:12px;font-weight:700;color:var(--text-dim)}
+.seg button:last-child{border-right:none}
+.seg button:hover{background:var(--surface-2)}
+.seg button.on.T{background:rgba(76,224,163,0.2);color:var(--T)}
+.seg button.on.F{background:rgba(255,107,122,0.2);color:var(--F)}
+.seg button.on.U{background:rgba(255,181,71,0.2);color:var(--U)}
+.seg button.on.x{background:var(--surface-2);color:var(--text)}
+table.tt{border-collapse:separate;border-spacing:4px;margin:0 auto}
+table.tt th{font-family:var(--mono);font-size:11px;color:var(--text-faint);font-weight:700;padding:4px 6px;text-align:center}
+table.tt th.op{color:var(--text);font-size:12.5px}
+table.tt td{text-align:center;padding:7px 4px;border-radius:8px;background:var(--surface);border:1px solid var(--border);min-width:84px;transition:box-shadow .15s,transform .15s}
+table.tt td.hl{box-shadow:0 0 0 2px var(--accent-2);transform:scale(1.05)}
+table.tt td.dimc{opacity:.45}
+table.tt td.num{font-family:var(--mono);font-size:12px;color:var(--text-dim)}
+.ttcard{display:flex;flex-direction:column;gap:10px}
+.ttcard h3{margin:0;font-family:var(--mono);font-size:15px}
+.ttcard .rule{font-size:12px;color:var(--text-faint);text-align:center;font-family:var(--mono)}
+.why{font-size:13px;line-height:1.75;color:var(--text-dim)}
+.why .line{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:3px 0}
+.why .concl{padding:4px 0}
+.why .res{font-size:15px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;font-family:var(--mono)}
+table.plain{border-collapse:collapse;width:100%;font-size:12.5px}
+table.plain th{text-align:left;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-faint);font-weight:700;padding:6px 10px;border-bottom:1px solid var(--border-strong);white-space:nowrap}
+table.plain td{padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:middle}
+table.plain td.c{text-align:center}
+table.plain td code{white-space:nowrap}
+.where3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.where3 .cls{background:var(--bg-1);border:1px solid var(--border);border-radius:10px;padding:11px 13px}
+.where3 .cls b{display:block;font-family:var(--mono);font-size:12.5px;margin-bottom:6px}
+.where3 .cls p{margin:0 0 8px;font-size:12px;color:var(--text-faint);line-height:1.5}
+.where3 .cls .tvs{display:flex;gap:5px;flex-wrap:wrap}
+.tv.off{opacity:.25;text-decoration:line-through}
+
+/* ---------- evaluator ---------- */
+.evtop{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:14px;align-items:start}
+.condwrap{display:flex;flex-direction:column;gap:8px}
+.condline{display:flex;align-items:stretch;gap:0;border:1px solid var(--border-strong);border-radius:10px;overflow:hidden;background:var(--bg-1)}
+.condline .kw{font-family:var(--mono);font-weight:700;color:#c792ea;padding:10px 12px;background:var(--surface);border-right:1px solid var(--border);display:flex;align-items:center;white-space:nowrap}
+.condline input{flex:1;min-width:0;border:none;outline:none;background:none;padding:10px 12px;font-family:var(--mono);font-size:14px}
+.condline:focus-within{border-color:rgba(255,181,71,0.6)}
+.presets{display:flex;flex-wrap:wrap;gap:5px}
+.presets button{font-family:var(--mono);font-size:11.5px;padding:4px 9px;border-radius:7px;background:var(--surface);border:1px solid var(--border);color:var(--text-dim)}
+.presets button:hover{border-color:var(--border-strong);color:var(--text)}
+.presets button.on{border-color:rgba(255,181,71,0.55);color:var(--U);background:rgba(255,181,71,0.08)}
+.split{display:flex;flex-direction:column;gap:8px}
+.split .bar{display:flex;height:12px;border-radius:999px;overflow:hidden;background:var(--surface)}
+.split .bar span{display:block;height:100%;transition:width .25s}
+.split .row{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12.5px;color:var(--text-dim)}
+.split .row b{font-family:var(--mono);color:var(--text)}
+.split .sum{font-size:12px;color:var(--text-faint);line-height:1.55;border-top:1px solid var(--border);padding-top:8px}
+
+table.data{border-collapse:collapse;width:100%;font-size:12.5px}
+table.data th{text-align:left;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-faint);font-weight:700;padding:7px 10px;border-bottom:1px solid var(--border-strong);white-space:nowrap}
+table.data th.res{text-align:center}
+table.data th.sep,table.data td.sep{border-left:1px solid var(--border-strong)}
+table.data td{padding:0 10px;height:36px;border-bottom:1px solid var(--border);vertical-align:middle;font-family:var(--mono);font-size:12.5px}
+table.data td.c{text-align:center}
+table.data td[contenteditable]{outline:none;cursor:text;min-width:60px}
+table.data td[contenteditable]:focus{background:rgba(53,208,255,0.08);box-shadow:inset 0 0 0 1px rgba(53,208,255,0.5)}
+table.data td.isnull{color:var(--U);font-style:italic;opacity:.85}
+table.data tbody tr{cursor:pointer;transition:background .12s}
+table.data tbody tr:hover{background:var(--surface)}
+table.data tbody tr.sel{background:rgba(53,208,255,0.07)}
+table.data tbody tr.sel td:first-child{box-shadow:inset 3px 0 0 var(--accent-2)}
+.keep{font-size:11px;font-weight:700;font-family:var(--mono)}
+.keep.y{color:var(--T)}
+.keep.n{color:var(--text-faint)}
+.rowdel{width:24px;height:24px;border-radius:6px;border:1px solid transparent;background:none;color:var(--text-faint);font-size:14px;line-height:1}
+.rowdel:hover{border-color:var(--border-strong);color:var(--err)}
+.tabletools{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:10px}
+
+/* evaluation tree */
+.tree{font-family:var(--mono)}
+.tree ul{list-style:none;margin:0;padding-left:28px;position:relative}
+.tree > ul{padding-left:0}
+.tree li{position:relative;padding:5px 0}
+.tree ul ul li::before{content:"";position:absolute;left:-18px;top:0;bottom:50%;width:16px;border-left:1px solid var(--border-strong);border-bottom:1px solid var(--border-strong);border-bottom-left-radius:6px}
+.tree ul ul li:not(:last-child)::after{content:"";position:absolute;left:-18px;top:50%;bottom:0;border-left:1px solid var(--border-strong)}
+.node{display:inline-flex;align-items:center;gap:10px;flex-wrap:wrap;padding:7px 11px;border-radius:10px;border:1px solid var(--border);background:var(--bg-1);font-size:12.5px}
+.node .ex{color:var(--text)}
+.node .sub{color:var(--text-faint)}
+.node .sub::before{content:"→ ";color:var(--text-faint)}
+.node .nnote{font-family:'Inter',system-ui,sans-serif;font-size:11.5px;color:var(--text-faint)}
+.node.T{border-color:rgba(76,224,163,0.35)}
+.node.F{border-color:rgba(255,107,122,0.35)}
+.node.U{border-color:rgba(255,181,71,0.45)}
+.node.root{box-shadow:0 0 0 2px rgba(53,208,255,0.25)}
+
+/* SQL code */
+pre.sql{margin:0;padding:12px 14px;border-radius:10px;background:var(--bg-1);border:1px solid var(--border);font-family:var(--mono);font-size:12px;line-height:1.6;overflow-x:auto;white-space:pre}
+.sql .k{color:#c792ea}.sql .s{color:#c3e88d}.sql .n{color:#f78c6c}.sql .c{color:var(--text-faint);font-style:italic}.sql .nl{color:var(--U);font-weight:600}
+
+/* ---------- traps ---------- */
+.traps{display:flex;flex-direction:column;gap:16px}
+.trap{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px 18px}
+.trap .th{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+.trap .th .num{font-family:var(--mono);font-size:11px;color:var(--text-faint)}
+.trap .th h3{margin:0;font-size:17px}
+.trap .tag{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:2px 8px;border-radius:6px;color:var(--accent-2);background:rgba(53,208,255,0.1);border:1px solid rgba(53,208,255,0.3)}
+.trap .why{margin:0 0 12px;max-width:940px}
+.trap .why b{color:var(--text)}
+.trap .pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.trap .side h5{margin:0 0 7px;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;display:flex;align-items:center;gap:8px}
+.trap .side.bad h5{color:var(--F)}
+.trap .side.good h5{color:var(--T)}
+.trap .side h5 .sp{flex:1}
+.trap .out{margin-top:8px}
+.trap .expect{font-size:12px;color:var(--text-faint);margin-top:8px;line-height:1.5}
+.trap .expect b{color:var(--text-dim)}
+table.res{border-collapse:collapse;font-size:12px;font-family:var(--mono);min-width:50%}
+table.res th{text-align:left;color:var(--text-faint);font-weight:600;padding:4px 10px;border-bottom:1px solid var(--border-strong);font-size:11px}
+table.res td{padding:4px 10px;border-bottom:1px solid var(--border)}
+table.res td.null{color:var(--U);font-style:italic}
+.norows{font-family:var(--mono);font-size:12px;color:var(--F);padding:6px 0}
+.trapnav{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:16px}
+.trapnav a{font-size:12px;padding:4px 10px;border-radius:999px;border:1px solid var(--border);color:var(--text-dim);background:var(--surface)}
+.trapnav a:hover{color:var(--text);border-color:var(--border-strong)}
+
+/* ---------- quiz ---------- */
+.qwrap{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:14px;align-items:start}
+.qvars{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.qvars .v{font-family:var(--mono);font-size:14px;padding:6px 12px;border-radius:9px;background:var(--bg-1);border:1px solid var(--border)}
+.qvars .v b{color:var(--accent-2)}
+.qexpr{font-family:var(--mono);font-size:19px;line-height:1.6;padding:18px;border-radius:12px;background:var(--bg-1);border:1px solid var(--border-strong);margin-bottom:14px;word-break:break-word}
+.qans{display:flex;gap:8px;flex-wrap:wrap}
+.qans button{flex:1;min-width:120px;padding:14px;border-radius:11px;font-family:var(--mono);font-weight:700;font-size:14px;letter-spacing:.04em;border:1px solid;background:var(--surface)}
+.qans button.T{color:var(--T);border-color:rgba(76,224,163,0.4)}
+.qans button.F{color:var(--F);border-color:rgba(255,107,122,0.4)}
+.qans button.U{color:var(--U);border-color:rgba(255,181,71,0.45)}
+.qans button:hover:not([disabled]){background:var(--surface-2)}
+.qans button[disabled]{opacity:.35;cursor:default}
+.qans button.pick{opacity:1;box-shadow:0 0 0 2px currentColor}
+.qfeed{margin-top:14px}
+.score{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.score .s{background:var(--bg-1);border:1px solid var(--border);border-radius:10px;padding:10px 12px}
+.score .s small{display:block;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-faint);margin-bottom:3px}
+.score .s b{font-family:var(--mono);font-size:20px}
+.lvls{display:flex;flex-direction:column;gap:6px}
+.lvls button{text-align:left;padding:8px 11px;border-radius:9px;border:1px solid var(--border);background:var(--surface);font-weight:600;font-size:12.5px;display:flex;flex-direction:column;gap:2px}
+.lvls button small{font-weight:400;color:var(--text-faint);font-size:11px}
+.lvls button.on{border-color:rgba(255,181,71,0.55);background:rgba(255,181,71,0.08)}
+
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);opacity:0;padding:9px 16px;border-radius:10px;background:var(--panel-2);border:1px solid var(--border-strong);font-size:13px;transition:all .2s;pointer-events:none;z-index:50}
+.toast.on{opacity:1;transform:translateX(-50%)}
+
+@media (max-width:1000px){
+  .cols3{grid-template-columns:1fr}
+  .evtop,.qwrap{grid-template-columns:1fr}
+}
+@media (max-width:760px){
+  .page{padding:18px 16px 60px}
+  .cols2,.where3,.trap .pair{grid-template-columns:1fr}
+  .brand small{display:none}
+  .tabs{position:static}
+}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="index.html" title="Back to Databases Lab"><span class="dot"></span>Three-Valued Logic Lab <small>TRUE · FALSE · UNKNOWN</small></a>
+  <span class="spacer"></span>
+  <a class="btn" href="index.html">← Databases</a>
+  <a class="btn" href="../home.html">⌂ Home</a>
+</header>
+
+<nav class="tabs" id="tabs">
+  <button class="tab" data-t="tables"><span class="n">01</span>Truth tables</button>
+  <button class="tab" data-t="eval"><span class="n">02</span>WHERE evaluator</button>
+  <button class="tab" data-t="traps"><span class="n">03</span>NULL traps</button>
+  <button class="tab" data-t="quiz"><span class="n">04</span>Quiz</button>
+</nav>
+
+<!-- ============ 01 truth tables ============ -->
+<section class="page" id="p-tables">
+  <span class="sec">01 · the logic</span>
+  <h2>TRUE, FALSE and UNKNOWN</h2>
+  <p class="lead">SQL uses <b>NULL</b> for a value that is missing. Any comparison with a missing value cannot be decided, so its result is the third truth value, <b>UNKNOWN</b>. Read UNKNOWN as <b>“TRUE or FALSE, we just don't know which”</b>: an operator gives a definite answer only when both possibilities lead to the same result.</p>
+
+  <div class="box">
+    <h4>Pick the operands</h4>
+    <div class="pick"><span class="lbl">p</span><div class="seg" data-v="p"></div></div>
+    <div class="pick"><span class="lbl">q</span><div class="seg" data-v="q"></div></div>
+    <div class="pick" style="margin-bottom:0"><span class="lbl" style="width:auto;font-family:inherit;font-weight:600;color:var(--text-dim)">Show values as</span><div class="seg" id="numMode"><button data-m="0" class="on x">words</button><button data-m="1">numbers 0 · ½ · 1</button></div></div>
+  </div>
+
+  <div class="cols3" id="ttGrid"></div>
+
+  <div class="box" style="margin-top:14px">
+    <h4>Why? Replace each UNKNOWN by TRUE and by FALSE</h4>
+    <div class="why" id="ttWhy"></div>
+  </div>
+
+  <div class="cols2">
+    <div class="box">
+      <h4>Comparing with NULL</h4>
+      <table class="plain" id="cmpTable"></table>
+    </div>
+    <div class="box">
+      <h4>The IS tests never answer UNKNOWN</h4>
+      <table class="plain" id="isTable"></table>
+    </div>
+  </div>
+
+  <div class="box">
+    <h4>Who keeps a row?</h4>
+    <div class="where3">
+      <div class="cls"><b>WHERE · ON · HAVING</b><p>A row survives only if the condition is TRUE. UNKNOWN is treated like FALSE.</p><div class="tvs"><span class="tv T">TRUE ✓</span><span class="tv F off">FALSE</span><span class="tv U off">UNKNOWN</span></div></div>
+      <div class="cls"><b>CASE WHEN … THEN</b><p>A branch fires only if its condition is TRUE; UNKNOWN falls through to the next WHEN or the ELSE.</p><div class="tvs"><span class="tv T">TRUE ✓</span><span class="tv F off">FALSE</span><span class="tv U off">UNKNOWN</span></div></div>
+      <div class="cls"><b>CHECK constraint</b><p>A row is rejected only if the condition is FALSE. UNKNOWN passes, so a CHECK alone does not keep NULLs out.</p><div class="tvs"><span class="tv T">TRUE ✓</span><span class="tv F off">FALSE</span><span class="tv U">UNKNOWN ✓</span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 02 evaluator ============ -->
+<section class="page" id="p-eval">
+  <span class="sec">02 · row by row</span>
+  <h2>WHERE evaluator</h2>
+  <p class="lead">Type a condition and see what it evaluates to on <b>every row</b>. Click a row to see the evaluation tree for that row. Notice that <code>WHERE c</code> and <code>WHERE NOT c</code> together usually do <b>not</b> return the whole table: the UNKNOWN rows are in neither. Cells are editable: clear a cell or type <code>NULL</code> to make it missing.</p>
+
+  <div class="evtop">
+    <div class="box condwrap" style="margin:0">
+      <div class="condline"><span class="kw">SELECT * FROM students WHERE</span><input id="cond" spellcheck="false" autocomplete="off"></div>
+      <div class="presets" id="presets"></div>
+      <div class="hint">Supports <code>= &lt;&gt; != &lt; &gt; &lt;= &gt;=</code>, <code>AND OR NOT</code>, <code>IS [NOT] NULL</code>, <code>IS [NOT] TRUE / FALSE / UNKNOWN</code>, <code>IS [NOT] DISTINCT FROM</code>, <code>[NOT] IN (…)</code>, <code>[NOT] BETWEEN … AND …</code>, <code>[NOT] LIKE</code>, <code>+ - * / ||</code>, <code>COALESCE</code>, <code>NULLIF</code>, <code>CASE</code>.</div>
+    </div>
+    <div class="box split" style="margin:0" id="split"></div>
+  </div>
+  <div id="evErr"></div>
+
+  <div class="box" style="margin-top:14px">
+    <table class="data" id="dataTable"></table>
+    <div class="tabletools">
+      <button class="btn sm" id="addRow">+ Row</button>
+      <button class="btn sm" id="resetRows">Reset data</button>
+      <span class="spacer"></span>
+      <button class="btn sm primary" id="evToSql">Run in SQL Lab →</button>
+    </div>
+  </div>
+
+  <div class="box">
+    <h4 id="treeTitle">Evaluation tree</h4>
+    <div class="tree" id="tree"></div>
+  </div>
+</section>
+
+<!-- ============ 03 traps ============ -->
+<section class="page" id="p-traps">
+  <span class="sec">03 · in practice</span>
+  <h2>NULL traps in SQL</h2>
+  <p class="lead">Eleven places where three-valued logic gives a result that looks wrong at first. Every query runs on the same five students (<b>Omer</b> has no age, <b>Noa</b> and <b>Ido</b> have no city) and the results below are what SQLite returns. Press <b>Run</b> to open any query in the SQL Lab.</p>
+  <div class="trapnav" id="trapNav"></div>
+  <div class="box" style="max-width:560px">
+    <h4>students · used by every query below</h4>
+    <table class="res" id="trapData"></table>
+  </div>
+  <div class="traps" id="trapList"></div>
+</section>
+
+<!-- ============ 04 quiz ============ -->
+<section class="page" id="p-quiz">
+  <span class="sec">04 · practice</span>
+  <h2>Quiz: TRUE, FALSE or UNKNOWN?</h2>
+  <p class="lead">Each round gives values for <code>a</code>, <code>b</code> and <code>c</code> (some are NULL) and a condition. Decide what the condition evaluates to. After you answer, the evaluation tree shows every step.</p>
+  <div class="qwrap">
+    <div class="box" style="margin:0">
+      <div class="qvars" id="qVars"></div>
+      <div class="qexpr" id="qExpr"></div>
+      <div class="qans" id="qAns">
+        <button class="T" data-a="T">TRUE</button>
+        <button class="F" data-a="F">FALSE</button>
+        <button class="U" data-a="U">UNKNOWN</button>
+      </div>
+      <div class="qfeed" id="qFeed"></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div class="box score" style="margin:0" id="qScore"></div>
+      <div class="box" style="margin:0">
+        <h4>Difficulty</h4>
+        <div class="lvls" id="qLvls">
+          <button data-l="1">Easy<small>one comparison, maybe a NOT</small></button>
+          <button data-l="2">Medium<small>two conditions with AND / OR</small></button>
+          <button data-l="3">Hard<small>three or four, IN, BETWEEN, IS</small></button>
+        </div>
+      </div>
+      <button class="btn" id="qNext" style="justify-content:center">Next question →</button>
+      <button class="btn sm" id="qReset" style="justify-content:center">Reset score</button>
+    </div>
+  </div>
+</section>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const store = {
+  get(k, d){ try { const v = localStorage.getItem('tvl.' + k); return v == null ? d : JSON.parse(v); } catch (e){ return d; } },
+  set(k, v){ try { localStorage.setItem('tvl.' + k, JSON.stringify(v)); } catch (e){} }
+};
+let toastT;
+function toast(msg){ const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 1800); }
+
+/* ================================================================
+   Truth values: JS true / false / null  ↔  'T' / 'F' / 'U'
+   ================================================================ */
+const toTV = v => v === true ? 'T' : v === false ? 'F' : 'U';
+const fromTV = t => t === 'T' ? true : t === 'F' ? false : null;
+const TVNAME = {T:'TRUE', F:'FALSE', U:'UNKNOWN'};
+let numMode = false;
+const tvText = t => numMode ? ({T:'1', F:'0', U:'½'})[t] : TVNAME[t];
+const badge = (t, txt) => `<span class="tv ${t}">${txt || TVNAME[t]}</span>`;
+const not3 = v => v === null ? null : !v;
+function and3(vs){ if (vs.some(v => v === false)) return false; if (vs.some(v => v === null)) return null; return true; }
+function or3(vs){ if (vs.some(v => v === true)) return true; if (vs.some(v => v === null)) return null; return false; }
+
+/* ================================================================
+   Parser for SQL conditions
+   ================================================================ */
+const KW = new Set(['AND','OR','NOT','IS','NULL','TRUE','FALSE','UNKNOWN','IN','BETWEEN','LIKE','DISTINCT','FROM','CASE','WHEN','THEN','ELSE','END']);
+class SqlError extends Error {}
+
+function tokenize(src){
+  const toks = []; let i = 0;
+  while (i < src.length){
+    const c = src[i];
+    if (/\s/.test(c)){ i++; continue; }
+    if (src.startsWith('--', i)){ while (i < src.length && src[i] !== '\n') i++; continue; }
+    if (/[0-9]/.test(c) || (c === '.' && /[0-9]/.test(src[i+1] || ''))){
+      const m = /^[0-9]*\.?[0-9]+(?:[eE][-+]?[0-9]+)?|^[0-9]+\.?/.exec(src.slice(i));
+      toks.push({t:'num', v:parseFloat(m[0]), raw:m[0], pos:i}); i += m[0].length; continue;
+    }
+    if (c === "'"){
+      let j = i + 1, s = '';
+      for (;;){
+        if (j >= src.length) throw new SqlError(`Unclosed string starting at position ${i + 1}. Strings use single quotes: 'Haifa'.`);
+        if (src[j] === "'"){ if (src[j+1] === "'"){ s += "'"; j += 2; continue; } break; }
+        s += src[j++];
+      }
+      toks.push({t:'str', v:s, pos:i}); i = j + 1; continue;
+    }
+    if (c === '"'){
+      const j = src.indexOf('"', i + 1);
+      if (j < 0) throw new SqlError('Unclosed "quoted name". Text values use single quotes: \'Haifa\'.');
+      toks.push({t:'id', v:src.slice(i + 1, j).toLowerCase(), pos:i}); i = j + 1; continue;
+    }
+    if (/[A-Za-z_]/.test(c)){
+      const m = /^[A-Za-z_][A-Za-z0-9_]*/.exec(src.slice(i));
+      const up = m[0].toUpperCase();
+      toks.push(KW.has(up) ? {t:'kw', v:up, pos:i} : {t:'id', v:m[0].toLowerCase(), pos:i});
+      i += m[0].length; continue;
+    }
+    const two = src.slice(i, i + 2);
+    if (['<=','>=','<>','!=','==','||'].includes(two)){ toks.push({t:'op', v: two === '!=' ? '<>' : two === '==' ? '=' : two, pos:i}); i += 2; continue; }
+    const uni = {'≠':'<>','≤':'<=','≥':'>=','∧':'AND','∨':'OR','¬':'NOT'}[c];
+    if (uni){ toks.push(uni.length > 2 ? {t:'kw', v:uni, pos:i} : {t:'op', v:uni, pos:i}); i++; continue; }
+    if ('=<>+-*/%(),'.includes(c)){ toks.push({t:'op', v:c, pos:i}); i++; continue; }
+    throw new SqlError(`Unexpected character "${c}" at position ${i + 1}.`);
+  }
+  toks.push({t:'eof', pos:src.length});
+  return toks;
+}
+
+function parse(src){
+  const toks = tokenize(src); let p = 0;
+  const peek = (o = 0) => toks[p + o];
+  const isKw = (v, o = 0) => peek(o).t === 'kw' && peek(o).v === v;
+  const isOp = (v, o = 0) => peek(o).t === 'op' && peek(o).v === v;
+  const desc = t => t.t === 'eof' ? 'the end' : t.t === 'str' ? `'${t.v}'` : `"${t.raw || t.v}"`;
+  const fail = (what) => { throw new SqlError(`Expected ${what} but found ${desc(peek())} at position ${peek().pos + 1}.`); };
+  const kw = v => { if (!isKw(v)) fail(v); p++; };
+  const op = v => { if (!isOp(v)) fail(`"${v}"`); p++; };
+
+  function orE(){
+    const xs = [andE()];
+    while (isKw('OR')){ p++; xs.push(andE()); }
+    return xs.length > 1 ? {k:'or', xs} : xs[0];
+  }
+  function andE(){
+    const xs = [notE()];
+    while (isKw('AND')){ p++; xs.push(notE()); }
+    return xs.length > 1 ? {k:'and', xs} : xs[0];
+  }
+  function notE(){
+    if (isKw('NOT')){ p++; return {k:'not', a:notE()}; }
+    return pred();
+  }
+  function pred(){
+    let a = addE();
+    for (;;){
+      const t = peek();
+      if (t.t === 'op' && ['=','<>','<','>','<=','>='].includes(t.v)){ p++; a = {k:'cmp', op:t.v, a, b:addE()}; continue; }
+      if (isKw('IS')){
+        p++;
+        let neg = false; if (isKw('NOT')){ neg = true; p++; }
+        if (isKw('NULL')){ p++; a = {k:'isnull', a, neg}; continue; }
+        if (isKw('TRUE') || isKw('FALSE') || isKw('UNKNOWN')){ const tv = peek().v; p++; a = {k:'istv', a, tv, neg}; continue; }
+        if (isKw('DISTINCT')){ p++; kw('FROM'); a = {k:'distinct', a, b:addE(), neg}; continue; }
+        fail('NULL, TRUE, FALSE, UNKNOWN or DISTINCT FROM after IS');
+      }
+      let neg = false;
+      if (isKw('NOT') && (isKw('IN', 1) || isKw('BETWEEN', 1) || isKw('LIKE', 1))){ neg = true; p++; }
+      if (isKw('IN')){
+        p++; op('(');
+        const list = [];
+        if (!isOp(')')) for (;;){ list.push(addE()); if (isOp(',')){ p++; continue; } break; }
+        op(')');
+        a = {k:'in', a, list, neg}; continue;
+      }
+      if (isKw('BETWEEN')){ p++; const lo = addE(); kw('AND'); const hi = addE(); a = {k:'between', a, lo, hi, neg}; continue; }
+      if (isKw('LIKE')){ p++; a = {k:'like', a, b:addE(), neg}; continue; }
+      if (neg) fail('IN, BETWEEN or LIKE');
+      return a;
+    }
+  }
+  function addE(){
+    let a = mulE();
+    while (isOp('+') || isOp('-')){ const o = peek().v; p++; a = {k:'bin', op:o, a, b:mulE()}; }
+    return a;
+  }
+  function mulE(){
+    let a = catE();
+    while (isOp('*') || isOp('/') || isOp('%')){ const o = peek().v; p++; a = {k:'bin', op:o, a, b:catE()}; }
+    return a;
+  }
+  function catE(){
+    let a = unary();
+    while (isOp('||')){ p++; a = {k:'bin', op:'||', a, b:unary()}; }
+    return a;
+  }
+  function unary(){
+    if (isOp('-')){ p++; const a = unary(); return a.k === 'lit' && typeof a.v === 'number' ? {k:'lit', v:-a.v} : {k:'neg', a}; }
+    if (isOp('+')){ p++; return unary(); }
+    return primary();
+  }
+  function primary(){
+    const t = peek();
+    if (t.t === 'num'){ p++; return {k:'lit', v:t.v}; }
+    if (t.t === 'str'){ p++; return {k:'lit', v:t.v}; }
+    if (isKw('NULL')){ p++; return {k:'lit', v:null}; }
+    if (isKw('UNKNOWN')){ p++; return {k:'lit', v:null, unk:true}; }
+    if (isKw('TRUE')){ p++; return {k:'lit', v:true}; }
+    if (isKw('FALSE')){ p++; return {k:'lit', v:false}; }
+    if (isOp('(')){ p++; const e = orE(); op(')'); return e; }
+    if (isKw('CASE')){
+      p++;
+      let subject = null;
+      if (!isKw('WHEN')) subject = addE();
+      const whens = [];
+      while (isKw('WHEN')){ p++; const w = subject ? addE() : orE(); kw('THEN'); whens.push([w, orE()]); }
+      if (!whens.length) fail('WHEN');
+      let els = null; if (isKw('ELSE')){ p++; els = orE(); }
+      kw('END');
+      return {k:'case', subject, whens, els};
+    }
+    if (t.t === 'id'){
+      p++;
+      if (isOp('(')){
+        p++;
+        const args = [];
+        if (!isOp(')')) for (;;){ args.push(orE()); if (isOp(',')){ p++; continue; } break; }
+        op(')');
+        const name = t.v.toUpperCase();
+        if (!FN[name]) throw new SqlError(`Unknown function ${name}(). Available: ${Object.keys(FN).join(', ')}.`);
+        return {k:'fn', name, args};
+      }
+      return {k:'col', name:t.v};
+    }
+    fail('a value, a column or "("');
+  }
+  if (peek().t === 'eof') throw new SqlError('Type a condition, for example  city = \'Haifa\'');
+  const e = orE();
+  if (peek().t !== 'eof') fail('AND, OR or the end of the condition');
+  return e;
+}
+
+/* ================================================================
+   SQL text of an AST (with parentheses by precedence).
+   row: substitute column values.  sqlite: SQLite dialect for export.
+   ================================================================ */
+const PREC = {or:1, and:2, not:3, cmp:4, isnull:4, istv:4, distinct:4, in:4, between:4, like:4, add:5, mul:6, cat:7, neg:8, prim:9};
+const binPrec = o => o === '||' ? PREC.cat : '+-'.includes(o) ? PREC.add : PREC.mul;
+const precOf = n => n.k === 'bin' ? binPrec(n.op) : PREC[n.k] || PREC.prim;
+function lit(v, unk){
+  if (v === null) return unk ? 'UNKNOWN' : 'NULL';
+  if (v === true) return 'TRUE';
+  if (v === false) return 'FALSE';
+  if (typeof v === 'number') return String(v);
+  return "'" + String(v).replace(/'/g, "''") + "'";
+}
+function sql(n, o = {}, need = 0){
+  const s = sqlRaw(n, o);
+  return precOf(n) < need ? '(' + s + ')' : s;
+}
+function sqlRaw(n, o){
+  const S = (x, need) => sql(x, o, need);
+  const N = neg => neg ? 'NOT ' : '';
+  switch (n.k){
+    case 'lit': return o.sqlite && n.unk ? 'NULL' : lit(n.v, n.unk);
+    case 'col': return o.row ? lit(o.row[n.name]) : n.name;
+    case 'or': return n.xs.map(x => S(x, 2)).join(' OR ');
+    case 'and': return n.xs.map(x => S(x, 3)).join(' AND ');
+    case 'not': return 'NOT ' + (['lit','col','fn','not'].includes(n.a.k) ? S(n.a, 3) : '(' + sqlRaw(n.a, o) + ')');
+    case 'cmp': return S(n.a, 5) + ' ' + n.op + ' ' + S(n.b, 5);
+    case 'isnull': return S(n.a, 5) + ' IS ' + N(n.neg) + 'NULL';
+    case 'istv':
+      if (o.sqlite && n.tv === 'UNKNOWN') return S(n.a, 5) + ' IS ' + N(n.neg) + 'NULL';
+      return S(n.a, 5) + ' IS ' + N(n.neg) + n.tv;
+    case 'distinct':
+      if (o.sqlite) return S(n.a, 5) + (n.neg ? ' IS ' : ' IS NOT ') + S(n.b, 5);
+      return S(n.a, 5) + ' IS ' + N(n.neg) + 'DISTINCT FROM ' + S(n.b, 5);
+    case 'in': return S(n.a, 5) + ' ' + N(n.neg) + 'IN (' + n.list.map(x => S(x, 0)).join(', ') + ')';
+    case 'between': return S(n.a, 5) + ' ' + N(n.neg) + 'BETWEEN ' + S(n.lo, 5) + ' AND ' + S(n.hi, 5);
+    case 'like': return S(n.a, 5) + ' ' + N(n.neg) + 'LIKE ' + S(n.b, 5);
+    case 'bin': { const pr = binPrec(n.op); return S(n.a, pr) + ' ' + n.op + ' ' + S(n.b, pr + 1); }
+    case 'neg': return '-' + S(n.a, 8);
+    case 'fn': return n.name + '(' + n.args.map(x => S(x, 0)).join(', ') + ')';
+    case 'case':
+      return 'CASE ' + (n.subject ? S(n.subject, 0) + ' ' : '') + n.whens.map(([w, t]) => 'WHEN ' + S(w, 0) + ' THEN ' + S(t, 0)).join(' ') +
+        (n.els ? ' ELSE ' + S(n.els, 0) : '') + ' END';
+  }
+}
+
+/* ================================================================
+   Evaluator: returns a trace tree {n, v, kids, note}
+   ================================================================ */
+const BOOL_KINDS = new Set(['or','and','not','cmp','isnull','istv','distinct','in','between','like']);
+const isBoolNode = n => BOOL_KINDS.has(n.k) || (n.k === 'lit' && typeof n.v === 'boolean') || (n.k === 'lit' && n.unk);
+const showVal = v => v === null ? 'NULL' : lit(v);
+function asLogic(tr, opName){
+  const v = tr.v;
+  if (v === null || typeof v === 'boolean') return v;
+  throw new SqlError(`${opName} works on conditions (TRUE / FALSE / UNKNOWN), but ${sql(tr.n)} is the value ${showVal(v)}.`);
+}
+function compare(a, b){
+  if (typeof a === 'boolean') a = +a;
+  if (typeof b === 'boolean') b = +b;
+  if (typeof a !== typeof b) return typeof a === 'number' ? -1 : 1;   // SQLite: numbers sort before text
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+function cmp3(op, a, b){
+  if (a === null || b === null) return null;
+  const c = compare(a, b);
+  return {'=':c === 0, '<>':c !== 0, '<':c < 0, '>':c > 0, '<=':c <= 0, '>=':c >= 0}[op];
+}
+const num = (v, what) => {
+  if (typeof v === 'boolean') return +v;
+  if (typeof v === 'number') return v;
+  if (typeof v === 'string' && v.trim() !== '' && !isNaN(+v)) return +v;
+  throw new SqlError(`${what} needs numbers, but got ${showVal(v)}.`);
+};
+const FN = {
+  COALESCE: args => { for (const v of args) if (v !== null) return v; return null; },
+  NULLIF: args => { if (args.length !== 2) throw new SqlError('NULLIF takes two arguments.'); return cmp3('=', args[0], args[1]) === true ? null : args[0]; },
+  IFNULL: args => { if (args.length !== 2) throw new SqlError('IFNULL takes two arguments.'); return args[0] !== null ? args[0] : args[1]; },
+  ABS: args => args[0] === null ? null : Math.abs(num(args[0], 'ABS')),
+  UPPER: args => args[0] === null ? null : String(args[0]).toUpperCase(),
+  LOWER: args => args[0] === null ? null : String(args[0]).toLowerCase(),
+  LENGTH: args => args[0] === null ? null : String(args[0]).length
+};
+function likeRe(pat){
+  return new RegExp('^' + String(pat).replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/%/g, '.*').replace(/_/g, '.') + '$', 'is');
+}
+
+function ev(n, row){
+  const T = (v, kids = [], note = '') => ({n, v, kids, note});
+  switch (n.k){
+    case 'lit': return T(n.v);
+    case 'col':
+      if (!(n.name in row)) throw new SqlError(`There is no column "${n.name}". Columns: ${Object.keys(row).join(', ')}.`);
+      return T(row[n.name]);
+    case 'or': case 'and': {
+      const kids = n.xs.map(x => ev(x, row));
+      const vs = kids.map(k => asLogic(k, n.k.toUpperCase()));
+      const v = n.k === 'and' ? and3(vs) : or3(vs);
+      let note;
+      if (n.k === 'and') note = v === false ? 'one part is FALSE → FALSE' : v === null ? 'no part is FALSE, some are UNKNOWN → UNKNOWN' : 'every part is TRUE';
+      else note = v === true ? 'one part is TRUE → TRUE' : v === null ? 'no part is TRUE, some are UNKNOWN → UNKNOWN' : 'every part is FALSE';
+      return T(v, kids, note);
+    }
+    case 'not': {
+      const k = ev(n.a, row); const v = not3(asLogic(k, 'NOT'));
+      return T(v, [k], v === null ? 'NOT UNKNOWN is still UNKNOWN' : '');
+    }
+    case 'cmp': {
+      const a = ev(n.a, row), b = ev(n.b, row);
+      const v = cmp3(n.op, a.v, b.v);
+      return T(v, [a, b], v === null ? 'a comparison with NULL is UNKNOWN' : '');
+    }
+    case 'isnull': {
+      const a = ev(n.a, row); const isN = a.v === null;
+      return T(n.neg ? !isN : isN, [a], 'IS NULL never returns UNKNOWN');
+    }
+    case 'istv': {
+      const a = ev(n.a, row); const t = toTV(asLogic(a, 'IS ' + n.tv));
+      const hit = TVNAME[t] === n.tv;
+      return T(n.neg ? !hit : hit, [a], `the value is ${TVNAME[t]}`);
+    }
+    case 'distinct': {
+      const a = ev(n.a, row), b = ev(n.b, row);
+      const same = a.v === null && b.v === null ? true : a.v === null || b.v === null ? false : compare(a.v, b.v) === 0;
+      return T(n.neg ? same : !same, [a, b], 'null-safe: two NULLs count as the same');
+    }
+    case 'in': {
+      if (!n.list.length) return T(n.neg, [], 'empty list');
+      const kids = n.list.map(item => ev({k:'cmp', op:'=', a:n.a, b:item}, row));
+      const any = or3(kids.map(k => k.v));
+      const v = n.neg ? not3(any) : any;
+      const note = n.neg ? 'NOT IN = NOT (… = … OR … = …): a NULL in the list makes it never TRUE' : 'IN = (… = … OR … = …)';
+      return T(v, kids, note);
+    }
+    case 'between': {
+      const kids = [ev({k:'cmp', op:'>=', a:n.a, b:n.lo}, row), ev({k:'cmp', op:'<=', a:n.a, b:n.hi}, row)];
+      const both = and3(kids.map(k => k.v));
+      return T(n.neg ? not3(both) : both, kids, 'BETWEEN = (… >= low AND … <= high)');
+    }
+    case 'like': {
+      const a = ev(n.a, row), b = ev(n.b, row);
+      const m = a.v === null || b.v === null ? null : likeRe(b.v).test(String(a.v));
+      return T(n.neg ? not3(m) : m, [a, b], m === null ? 'LIKE with NULL is UNKNOWN' : '');
+    }
+    case 'bin': {
+      const a = ev(n.a, row), b = ev(n.b, row);
+      let v;
+      if (a.v === null || b.v === null) v = null;
+      else if (n.op === '||') v = String(typeof a.v === 'boolean' ? +a.v : a.v) + String(typeof b.v === 'boolean' ? +b.v : b.v);
+      else {
+        const x = num(a.v, n.op), y = num(b.v, n.op);
+        const ints = Number.isInteger(x) && Number.isInteger(y);
+        if (n.op === '+') v = x + y;
+        else if (n.op === '-') v = x - y;
+        else if (n.op === '*') v = x * y;
+        else if (y === 0) v = null;                              // SQLite: division by zero is NULL
+        else if (n.op === '/') v = ints ? Math.trunc(x / y) : x / y;
+        else v = ints ? x % y : x % y;
+      }
+      return T(v, [a, b], v === null && (a.v === null || b.v === null) ? 'arithmetic with NULL is NULL' : '');
+    }
+    case 'neg': { const a = ev(n.a, row); return T(a.v === null ? null : -num(a.v, '-'), [a]); }
+    case 'fn': {
+      const kids = n.args.map(x => ev(x, row));
+      return T(FN[n.name](kids.map(k => k.v)), kids);
+    }
+    case 'case': {
+      const kids = [];
+      let subj = null;
+      if (n.subject){ subj = ev(n.subject, row); kids.push(subj); }
+      for (const [w, t] of n.whens){
+        const cond = n.subject ? ev({k:'cmp', op:'=', a:n.subject, b:w}, row) : ev(w, row);
+        kids.push(cond);
+        if (asLogic(cond, 'WHEN') === true){ const r = ev(t, row); kids.push(r); return T(r.v, kids, 'first WHEN that is TRUE'); }
+      }
+      if (n.els){ const r = ev(n.els, row); kids.push(r); return T(r.v, kids, 'no WHEN was TRUE → ELSE'); }
+      return T(null, kids, 'no WHEN was TRUE and no ELSE → NULL');
+    }
+  }
+}
+
+/* trace tree → HTML. Plain columns and literals are folded into their parent's substituted text. */
+function treeHTML(tr, row, root = true){
+  const n = tr.n;
+  const boolish = isBoolNode(n) || (tr.v === true || tr.v === false);
+  const t = boolish ? toTV(tr.v) : null;
+  const ex = sql(n);
+  const sub = sql(n, {row});
+  const out = boolish ? badge(t) : `<span class="val${tr.v === null ? ' null' : ''}">${esc(showVal(tr.v))}</span>`;
+  const kids = tr.kids.filter(k => !(k.n.k === 'lit' || k.n.k === 'col'));
+  let h = `<li><span class="node${t ? ' ' + t : ''}${root ? ' root' : ''}"><span class="ex">${esc(ex)}</span>` +
+    (sub !== ex ? `<span class="sub">${esc(sub)}</span>` : '') + out +
+    (tr.note ? `<span class="nnote">${esc(tr.note)}</span>` : '') + '</span>';
+  if (kids.length) h += '<ul>' + kids.map(k => treeHTML(k, row, false)).join('') + '</ul>';
+  return h + '</li>';
+}
+const treeBlock = (tr, row) => '<ul>' + treeHTML(tr, row) + '</ul>';
+
+/* very small SQL highlighter for the code blocks */
+function hl(src){
+  const KWS = /\b(SELECT|FROM|WHERE|AND|OR|NOT|IS|NULL|IN|AS|WITH|VALUES|JOIN|ON|GROUP|BY|ORDER|COUNT|AVG|SUM|MAX|MIN|COALESCE|CASE|WHEN|THEN|ELSE|END|DISTINCT|EXISTS|CREATE|TEMP|TABLE|INSERT|INTO|DROP|IF|INTEGER|TEXT|CHECK|NULLS|LAST|LIMIT|TRUE|FALSE|UNKNOWN|BETWEEN|LIKE)\b/g;
+  return src.split('\n').map(line => {
+    let code = line, cm = '';
+    const ci = line.indexOf('--');
+    if (ci >= 0){ code = line.slice(0, ci); cm = line.slice(ci); }
+    const parts = code.split(/('(?:[^']|'')*')/);
+    const body = parts.map((p, i) => i % 2 ? `<span class="s">${esc(p)}</span>` :
+      esc(p).replace(/\b(\d+(?:\.\d+)?)\b/g, '<span class="n">$1</span>').replace(KWS, m => m === 'NULL' ? '<span class="nl">NULL</span>' : `<span class="k">${m}</span>`)).join('');
+    return body + (cm ? `<span class="c">${esc(cm)}</span>` : '');
+  }).join('\n');
+}
+
+function openInSql(name, sqlText, note){
+  try {
+    localStorage.setItem('sqllab.handoff', JSON.stringify({name, sql:sqlText, note:note || 'Opened from the Three-Valued Logic Lab in a new tab. Press Run: the data is inlined with WITH, so your tables are not changed.'}));
+    location.href = 'sql.html';
+  } catch (e){
+    navigator.clipboard.writeText(sqlText).then(() => toast('Storage is blocked — SQL copied instead'), () => toast('Could not open the SQL Lab'));
+  }
+}
+
+/* ================================================================
+   01 · Truth tables
+   ================================================================ */
+const TT = {p: store.get('p', 'U'), q: store.get('q', 'F')};
+const VALS = ['T', 'F', 'U'];
+function renderTables(){
+  document.querySelectorAll('.seg[data-v]').forEach(seg => {
+    const k = seg.dataset.v;
+    seg.innerHTML = VALS.map(v => `<button class="${v}${TT[k] === v ? ' on' : ''}" data-x="${v}">${TVNAME[v]}</button>`).join('');
+  });
+  const {p, q} = TT;
+  const cell = (t, on, dim) => `<td class="${on ? 'hl' : ''}${dim ? ' dimc' : ''}">${badge(t, tvText(t))}</td>`;
+  const bin = (name, f, rule) => {
+    let h = `<div class="box ttcard" style="margin:0"><h3>p ${name} q</h3><table class="tt"><tr><th class="op">${name}</th>` +
+      VALS.map(v => `<th>q = ${tvText(v)}</th>`).join('') + '</tr>';
+    for (const a of VALS){
+      h += `<tr><th>p = ${tvText(a)}</th>` + VALS.map(b => cell(toTV(f([fromTV(a), fromTV(b)])), a === p && b === q, a !== p && b !== q)).join('') + '</tr>';
+    }
+    return h + `</table><div class="rule">${rule}</div></div>`;
+  };
+  let notH = `<div class="box ttcard" style="margin:0"><h3>NOT p</h3><table class="tt"><tr><th>p</th><th class="op">NOT p</th></tr>`;
+  for (const a of VALS) notH += `<tr><th>${tvText(a)}</th>${cell(toTV(not3(fromTV(a))), a === p, a !== p)}</tr>`;
+  notH += `</table><div class="rule">${numMode ? 'NOT p = 1 − p' : 'swaps TRUE and FALSE, UNKNOWN stays'}</div></div>`;
+  $('#ttGrid').innerHTML = notH +
+    bin('AND', and3, numMode ? 'p AND q = min(p, q)' : 'FALSE wins, then UNKNOWN') +
+    bin('OR', or3, numMode ? 'p OR q = max(p, q)' : 'TRUE wins, then UNKNOWN');
+  $('#numMode').querySelectorAll('button').forEach(b => b.className = (+b.dataset.m === +numMode) ? 'on x' : '');
+
+  // the "why" panel: replace every UNKNOWN by TRUE and by FALSE
+  const opts = t => t === 'U' ? [true, false] : [fromTV(t)];
+  const nm = v => v ? 'TRUE' : 'FALSE';
+  const explain = (label, f, args) => {
+    const combos = args.length === 1 ? opts(args[0]).map(x => [x]) : opts(args[0]).flatMap(x => opts(args[1]).map(y => [x, y]));
+    const res = combos.map(c => f(c));
+    const real = toTV(args.length === 1 ? not3(fromTV(args[0])) : f(args.map(fromTV)));
+    let h = `<div class="res">${label(args.map(a => TVNAME[a]))} = ${badge(real)}</div>`;
+    if (combos.length === 1){ h += `<div class="line">No UNKNOWN involved: ordinary two-valued logic.</div>`; return h; }
+    combos.forEach((c, i) => {
+      h += `<div class="line">if it were <code>${label(c.map(nm))}</code> → ${badge(toTV(res[i]))}</div>`;
+    });
+    const same = res.every(r => r === res[0]);
+    h += `<div class="concl">${same ? `Every possibility gives <b>${nm(res[0])}</b>, so the answer is ${nm(res[0])} even though something is unknown.` :
+      'The possibilities disagree, so the answer is <b>UNKNOWN</b>.'}</div>`;
+    return h;
+  };
+  $('#ttWhy').innerHTML = `<div class="cols3">` +
+    `<div>${explain(a => `NOT ${a[0]}`, c => !c[0], [p])}</div>` +
+    `<div>${explain(a => `${a[0]} AND ${a[1]}`, c => c[0] && c[1], [p, q])}</div>` +
+    `<div>${explain(a => `${a[0]} OR ${a[1]}`, c => c[0] || c[1], [p, q])}</div></div>`;
+}
+document.querySelectorAll('.seg[data-v]').forEach(seg => seg.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  TT[seg.dataset.v] = b.dataset.x; store.set(seg.dataset.v, b.dataset.x); renderTables();
+}));
+$('#numMode').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  numMode = b.dataset.m === '1'; renderTables();
+});
+
+function renderStaticTables(){
+  const rowOf = src => { const tr = ev(parse(src), {}); return `<tr><td><code>${esc(src)}</code></td><td class="c">${isBoolNode(tr.n) ? badge(toTV(tr.v)) : esc(showVal(tr.v))}</td></tr>`; };
+  $('#cmpTable').innerHTML = '<tr><th>Expression</th><th style="text-align:center">Result</th></tr>' +
+    ["5 = NULL", "NULL = NULL", "NULL <> NULL", "NULL > 3 OR NULL <= 3", "NULL IN (1, 2)", "1 IN (1, NULL)", "2 NOT IN (1, NULL)", "NULL IS NULL", "NULL IS NOT DISTINCT FROM NULL"].map(rowOf).join('');
+  const tests = ['IS TRUE', 'IS FALSE', 'IS UNKNOWN', 'IS NOT TRUE', 'IS NULL'];
+  $('#isTable').innerHTML = '<tr><th>x</th>' + tests.map(t => `<th style="text-align:center">x ${t}</th>`).join('') + '</tr>' +
+    VALS.map(v => `<tr><td>${badge(v)}</td>` + tests.map(t => {
+      const r = ev(parse(`${TVNAME[v]} ${t}`), {});
+      return `<td class="c">${badge(toTV(r.v))}</td>`;
+    }).join('') + '</tr>').join('');
+}
+
+/* ================================================================
+   02 · WHERE evaluator
+   ================================================================ */
+const COLS = ['id', 'name', 'age', 'city', 'grade'];
+const DEFAULT_ROWS = [
+  [1, 'Dana', 21, 'Tel Aviv', 92],
+  [2, 'Omer', null, 'Haifa', 75],
+  [3, 'Noa', 20, null, 95],
+  [4, 'Avi', 25, 'Haifa', 58],
+  [5, 'Ido', 22, null, null],
+  [6, 'Maya', 22, 'Haifa', null]
+];
+const PRESETS = [
+  ["city = 'Haifa'", 'equals'],
+  ["city <> 'Haifa'", 'not equal'],
+  ['city = NULL', '= NULL'],
+  ['city IS NULL', 'IS NULL'],
+  ["age > 21 OR city = 'Haifa'", 'OR'],
+  ['age > 21 AND grade >= 80', 'AND'],
+  ['grade >= 60 OR grade < 60', 'not a tautology'],
+  ['city = city', 'x = x'],
+  ["city NOT IN ('Haifa', NULL)", 'NOT IN + NULL'],
+  ['NOT (grade >= 60)', 'NOT'],
+  ['grade BETWEEN 60 AND 100', 'BETWEEN'],
+  ['(age > 21) IS UNKNOWN', 'IS UNKNOWN'],
+  ["city IS DISTINCT FROM 'Haifa'", 'null-safe ≠'],
+  ['COALESCE(grade, 0) >= 60', 'COALESCE']
+];
+const EV = store.get('eval', null) || {};
+let rows = Array.isArray(EV.rows) ? EV.rows : DEFAULT_ROWS.map(r => r.slice());
+let cond = typeof EV.cond === 'string' ? EV.cond : "city <> 'Haifa'";
+let selRow = Number.isInteger(EV.sel) ? EV.sel : 2;
+const saveEval = () => store.set('eval', {rows, cond, sel:selRow});
+const rowObj = r => Object.fromEntries(COLS.map((c, i) => [c, r[i] === undefined ? null : r[i]]));
+function parseCell(s){
+  s = s.replace(/\u00a0/g, ' ').trim();
+  if (s === '' || s.toUpperCase() === 'NULL') return null;
+  if (/^-?\d+(\.\d+)?$/.test(s)) return +s;
+  return s.replace(/^'(.*)'$/, '$1');
+}
+
+function renderEval(){
+  $('#presets').innerHTML = PRESETS.map(([c, l]) => `<button title="${esc(c)}" class="${c === cond ? 'on' : ''}" data-c="${esc(c)}">${esc(l)}</button>`).join('');
+  let ast = null, err = null, results = [];
+  try {
+    ast = parse(cond);
+    results = rows.map(r => { try { const tr = ev(ast, rowObj(r)); asLogic(tr, 'WHERE'); return {tr}; } catch (e){ if (e instanceof SqlError) return {err:e.message}; throw e; } });
+  } catch (e){ if (!(e instanceof SqlError)) throw e; err = e.message; }
+  const rowErr = results.find(r => r.err);
+  const msg = err || (rowErr && rowErr.err);
+  $('#evErr').innerHTML = msg ? `<div class="err" style="margin-top:14px">⚠ ${esc(msg)}</div>` : '';
+
+  const tvs = results.map(r => r.tr ? toTV(r.tr.v) : null);
+  let h = '<thead><tr>' + COLS.map(c => `<th>${c}</th>`).join('') +
+    '<th class="res sep">condition</th><th class="res">WHERE c</th><th class="res">WHERE NOT c</th><th class="res">CHECK (c)</th><th></th></tr></thead><tbody>';
+  rows.forEach((r, i) => {
+    const t = tvs[i];
+    h += `<tr data-i="${i}" class="${i === selRow ? 'sel' : ''}">` +
+      COLS.map((c, j) => `<td contenteditable="plaintext-only" spellcheck="false" data-j="${j}" class="${r[j] === null ? 'isnull' : ''}">${r[j] === null ? 'NULL' : esc(r[j])}</td>`).join('') +
+      (t ? `<td class="c sep">${badge(t)}</td>` +
+        `<td class="c"><span class="keep ${t === 'T' ? 'y">kept' : 'n">—'}</span></td>` +
+        `<td class="c"><span class="keep ${t === 'F' ? 'y">kept' : 'n">—'}</span></td>` +
+        `<td class="c"><span class="keep ${t !== 'F' ? 'y">accepted' : 'n">rejected'}</span></td>`
+        : '<td class="c sep">—</td><td></td><td></td><td></td>') +
+      `<td class="c"><button class="rowdel" title="Delete row" data-del="${i}">×</button></td></tr>`;
+  });
+  $('#dataTable').innerHTML = h + '</tbody>';
+
+  const cnt = {T:0, F:0, U:0};
+  tvs.forEach(t => { if (t) cnt[t]++; });
+  const tot = rows.length || 1;
+  const bar = t => `<span style="width:${cnt[t] / tot * 100}%;background:var(--${t})"></span>`;
+  $('#split').innerHTML = `<h4 style="margin:0">Where do the ${rows.length} rows go?</h4>` +
+    `<div class="bar">${bar('T')}${bar('U')}${bar('F')}</div>` +
+    `<div class="row"><span>${badge('T')} WHERE c</span><b>${cnt.T}</b></div>` +
+    `<div class="row"><span>${badge('F')} WHERE NOT c</span><b>${cnt.F}</b></div>` +
+    `<div class="row"><span>${badge('U')} in neither</span><b>${cnt.U}</b></div>` +
+    `<div class="sum">${err ? 'Fix the condition to see the split.' : cnt.U ? `<b style="color:var(--U)">${cnt.U} row${cnt.U > 1 ? 's' : ''}</b> vanish from both queries: in three-valued logic “c OR NOT c” is not always TRUE.` : 'No UNKNOWN rows: here WHERE c and WHERE NOT c split the table exactly.'}</div>`;
+
+  if (selRow >= rows.length) selRow = rows.length - 1;
+  const sel = results[selRow];
+  const r = rows[selRow];
+  $('#treeTitle').textContent = r ? `Evaluation tree · row ${selRow + 1}${r[1] != null ? ' (' + r[1] + ')' : ''}` : 'Evaluation tree';
+  $('#tree').innerHTML = sel && sel.tr ? treeBlock(sel.tr, rowObj(r)) +
+    `<div class="hint" style="margin-top:10px">Each box shows the sub-expression, the same expression with this row's values filled in, and its result. Click another row to trace it.</div>`
+    : '<div class="hint">' + (rows.length ? 'Fix the condition to see the evaluation tree.' : 'Add a row to evaluate.') + '</div>';
+  saveEval();
+}
+$('#cond').value = cond;
+$('#cond').addEventListener('input', e => { cond = e.target.value; renderEval(); });
+$('#presets').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  cond = b.dataset.c; $('#cond').value = cond; renderEval();
+});
+$('#dataTable').addEventListener('click', e => {
+  const del = e.target.closest('[data-del]');
+  if (del){ rows.splice(+del.dataset.del, 1); renderEval(); return; }
+  const tr = e.target.closest('tbody tr'); if (!tr) return;
+  const i = +tr.dataset.i;
+  if (i !== selRow){
+    selRow = i;
+    const keep = e.target.closest('td[contenteditable]');
+    const j = keep ? keep.dataset.j : null;
+    renderEval();
+    if (j != null){ const td = $(`#dataTable tr[data-i="${i}"] td[data-j="${j}"]`); td.focus(); placeCaretEnd(td); }
+  }
+});
+function placeCaretEnd(el){ const r = document.createRange(); r.selectNodeContents(el); r.collapse(false); const s = getSelection(); s.removeAllRanges(); s.addRange(r); }
+$('#dataTable').addEventListener('focusin', e => {
+  const td = e.target.closest('td[contenteditable]');
+  if (td && td.classList.contains('isnull')){ td.textContent = ''; td.classList.remove('isnull'); }
+});
+$('#dataTable').addEventListener('focusout', e => {
+  const td = e.target.closest('td[contenteditable]'); if (!td) return;
+  const i = +td.closest('tr').dataset.i, j = +td.dataset.j;
+  if (!rows[i]) return;
+  rows[i][j] = parseCell(td.textContent);
+  renderEval();
+});
+$('#dataTable').addEventListener('keydown', e => {
+  const td = e.target.closest('td[contenteditable]'); if (!td) return;
+  if (e.key === 'Enter'){ e.preventDefault(); td.blur(); }
+  if (e.key === 'Escape'){ const i = +td.closest('tr').dataset.i, j = +td.dataset.j; const v = rows[i][j]; td.textContent = v === null ? 'NULL' : v; td.blur(); }
+});
+$('#addRow').onclick = () => {
+  const id = rows.reduce((m, r) => Math.max(m, typeof r[0] === 'number' ? r[0] : 0), 0) + 1;
+  rows.push([id, 'New', null, null, null]); selRow = rows.length - 1; renderEval();
+};
+$('#resetRows').onclick = () => { rows = DEFAULT_ROWS.map(r => r.slice()); selRow = 2; renderEval(); toast('Data reset'); };
+$('#evToSql').onclick = () => {
+  let ast;
+  try { ast = parse(cond); } catch (e){ toast('Fix the condition first'); return; }
+  const c = sql(ast, {sqlite:true});
+  const values = rows.map(r => '  (' + COLS.map((_, j) => lit(r[j] === undefined ? null : r[j])).join(', ') + ')').join(',\n');
+  const text = `-- From the Three-Valued Logic Lab.  WHERE ${sql(ast)}\n` +
+    `-- The verdict column shows what the condition evaluates to on each row.\n` +
+    `WITH students(${COLS.join(', ')}) AS (VALUES\n${values})\n` +
+    `SELECT *,\n       CASE WHEN ${c} THEN 'TRUE'\n            WHEN NOT (${c}) THEN 'FALSE'\n            ELSE 'UNKNOWN' END AS verdict\nFROM students;`;
+  openInSql('3VL evaluator', text);
+};
+
+/* ================================================================
+   03 · NULL traps (results verified against SQLite)
+   ================================================================ */
+const TRAPS = [{"id": "eqnull", "title": "= NULL matches nothing", "tag": "WHERE", "bad": "WITH students(id, name, city, age) AS (VALUES\n  (1, 'Dana', 'Tel Aviv', 21),\n  (2, 'Omer', 'Haifa',    NULL),\n  (3, 'Noa',  NULL,       20),\n  (4, 'Avi',  'Haifa',    25),\n  (5, 'Ido',  NULL,       22))\nSELECT name, city FROM students\nWHERE city = NULL;", "good": "WITH students(id, name, city, age) AS (VALUES\n  (1, 'Dana', 'Tel Aviv', 21),\n  (2, 'Omer', 'Haifa',    NULL),\n  (3, 'Noa',  NULL,       20),\n  (4, 'Avi',  'Haifa',    25),\n  (5, 'Ido',  NULL,       22))\nSELECT name, city FROM students\nWHERE city IS NULL;", "badRes": {"cols": ["name", "city"], "rows": []}, "goodRes": {"cols": ["name", "city"], "rows": [["Noa", null], ["Ido", null]]}}, {"id": "neq", "title": "<> silently drops the NULL rows", "tag": "WHERE", "bad": "WITH students(id, name, city, age) AS (VALUES\n  (1, 'Dana', 'Tel Aviv', 21),\n  (2, 'Omer', 'Haifa',    NULL),\n  (3, 'Noa',  NULL,       20),\n  (4, 'Avi',  'Haifa',    25),\n  (5, 'Ido',  NULL,       22))\nSELECT name, city FROM students\nWHERE city <> 'Haifa';", "good": "WITH students(id, name, city, age) AS (VALUES\n  (1, 'Dana', 'Tel Aviv', 21),\n  (2, 'Omer', 'Haifa',    NULL),\n  (3, 'Noa',  NULL,       20),\n  (4, 'Avi',  'Haifa',    25),\n  (5, 'Ido',  NULL,       22))\nSELECT name, city FROM students\nWHERE city <> 'Haifa' OR city IS NULL;\n-- SQLite shortcut: WHERE city IS NOT 'Haifa'\n-- SQL standard:   WHERE city IS DISTINCT FROM 'Haifa'", "badRes": {"cols": ["name", "city"], "rows": [["Dana", "Tel Aviv"]]}, "goodRes": {"cols": ["name", "city"], "rows": [["Dana", "Tel Aviv"], ["Noa", null], ["Ido", null]]}}, {"id": "notin", "title": "NOT IN with a NULL returns nothing", "tag": "subquery", "bad": "WITH students(id, name, city, age) AS (VALUES\n  (1, 'Dana', 'Tel Aviv', 21),\n  (2, 'Omer', 'Haifa',    NULL),\n  (3, 'Noa',  NULL,       20),\n  (4, 'Avi',  'Haifa',    25),\n  (5, 'Ido',  NULL,       22))\nSELECT name, city FROM students\nWHERE city NOT IN (SELECT city FROM students WHERE age > 21);", "good": "WITH students(id, name, city, age) AS (VALUES\n  (1, 'Dana', 'Tel Aviv', 21),\n  (2, 'Omer', 'Haifa',    NULL),\n  (3, 'Noa',  NULL,       20),\n  (4, 'Avi',  'Haifa',    25),\n  (5, 'Ido',  NULL,       22))\nSELECT s.name, s.city FROM students s\nWHERE NOT EXISTS (SELECT 1 FROM students t\n                  WHERE t.age > 21 AND t.city = s.city);", "badRes": {"cols": ["name", "city"], "rows": []}, "goodRes": {"cols": ["name", "city"], "rows": [["Dana", "Tel Aviv"], ["Noa", null], ["Ido", null]]}}, {"id": "count", "title": "COUNT(*), COUNT(col) and AVG disagree", "tag": "aggregates", "bad": "WITH students(id, name, city, age) AS (VALUES\n  (1, 'Dana', 'Tel Aviv', 21),\n  (2, 'Omer', 'Haifa',    NULL),\n  (3, 'Noa',  NULL,       20),\n  (4, 'Avi',  'Haifa',    25),\n  (5, 'Ido',  NULL,       22))\nSELECT COUNT(*)       AS all_rows,\n       COUNT(age)     AS known_ages,\n       AVG(age)       AS avg_age,\n       SUM(age) * 1.0 / COUNT(*) AS sum_over_rows\nFROM students;", "good": "WITH students(id, name, city, age) AS (VALUES\n  (1, 'Dana', 'Tel Aviv', 21),\n  (2, 'Omer', 'Haifa',    NULL),\n  (3, 'Noa',  NULL,       20),\n  (4, 'Avi',  'Haifa',    25),\n  (5, 'Ido',  NULL,       22))\nSELECT AVG(age)              AS known_ages_only,\n       AVG(COALESCE(age, 0)) AS missing_as_zero\nFROM students;", "badRes": {"cols": ["all_rows", "known_ages", "avg_age", "sum_over_rows"], "rows": [[5, 4, 22.0, 17.6]]}, "goodRes": {"cols": ["known_ages_only", "missing_as_zero"], "rows": [[22.0, 17.6]]}}, {"id": "arith", "title": "NULL spreads through arithmetic and ||", "tag": "expressions", "bad": "WITH students(id, name, city, age) AS (VALUES\n  (1, 'Dana', 'Tel Aviv', 21),\n  (2, 'Omer', 'Haifa',    NULL),\n  (3, 'Noa',  NULL,       20),\n  (4, 'Avi',  'Haifa',    25),\n  (5, 'Ido',  NULL,       22))\nSELECT name, age + 1 AS next_year, name || ' from ' || city AS label\nFROM students;", "good": "WITH students(id, name, city, age) AS (VALUES\n  (1, 'Dana', 'Tel Aviv', 21),\n  (2, 'Omer', 'Haifa',    NULL),\n  (3, 'Noa',  NULL,       20),\n  (4, 'Avi',  'Haifa',    25),\n  (5, 'Ido',  NULL,       22))\nSELECT name, age + 1 AS next_year,\n       name || ' from ' || COALESCE(city, 'somewhere') AS label\nFROM students;", "badRes": {"cols": ["name", "next_year", "label"], "rows": [["Dana", 22, "Dana from Tel Aviv"], ["Omer", null, "Omer from Haifa"], ["Noa", 21, null], ["Avi", 26, "Avi from Haifa"], ["Ido", 23, null]]}, "goodRes": {"cols": ["name", "next_year", "label"], "rows": [["Dana", 22, "Dana from Tel Aviv"], ["Omer", null, "Omer from Haifa"], ["Noa", 21, "Noa from somewhere"], ["Avi", 26, "Avi from Haifa"], ["Ido", 23, "Ido from somewhere"]]}}, {"id": "emptyagg", "title": "SUM of nothing is NULL, not 0", "tag": "aggregates", "bad": "WITH students(id, name, city, age) AS (VALUES\n  (1, 'Dana', 'Tel Aviv', 21),\n  (2, 'Omer', 'Haifa',    NULL),\n  (3, 'Noa',  NULL,       20),\n  (4, 'Avi',  'Haifa',    25),\n  (5, 'Ido',  NULL,       22))\nSELECT COUNT(age) AS n, SUM(age) AS total, MAX(age) AS oldest\nFROM students WHERE city = 'Eilat';", "good": "WITH students(id, name, city, age) AS (VALUES\n  (1, 'Dana', 'Tel Aviv', 21),\n  (2, 'Omer', 'Haifa',    NULL),\n  (3, 'Noa',  NULL,       20),\n  (4, 'Avi',  'Haifa',    25),\n  (5, 'Ido',  NULL,       22))\nSELECT COUNT(age) AS n, COALESCE(SUM(age), 0) AS total, MAX(age) AS oldest\nFROM students WHERE city = 'Eilat';", "badRes": {"cols": ["n", "total", "oldest"], "rows": [[0, null, null]]}, "goodRes": {"cols": ["n", "total", "oldest"], "rows": [[0, 0, null]]}}, {"id": "group", "title": "GROUP BY and DISTINCT treat NULLs as equal", "tag": "grouping", "bad": "WITH students(id, name, city, age) AS (VALUES\n  (1, 'Dana', 'Tel Aviv', 21),\n  (2, 'Omer', 'Haifa',    NULL),\n  (3, 'Noa',  NULL,       20),\n  (4, 'Avi',  'Haifa',    25),\n  (5, 'Ido',  NULL,       22))\nSELECT city, COUNT(*) AS n FROM students\nGROUP BY city ORDER BY city;", "good": "WITH students(id, name, city, age) AS (VALUES\n  (1, 'Dana', 'Tel Aviv', 21),\n  (2, 'Omer', 'Haifa',    NULL),\n  (3, 'Noa',  NULL,       20),\n  (4, 'Avi',  'Haifa',    25),\n  (5, 'Ido',  NULL,       22))\nSELECT COUNT(DISTINCT city) AS distinct_cities,\n       (SELECT COUNT(*) FROM (SELECT DISTINCT city FROM students)) AS distinct_rows\nFROM students LIMIT 1;", "badRes": {"cols": ["city", "n"], "rows": [[null, 2], ["Haifa", 2], ["Tel Aviv", 1]]}, "goodRes": {"cols": ["distinct_cities", "distinct_rows"], "rows": [[2, 3]]}}, {"id": "case", "title": "CASE x WHEN NULL never fires", "tag": "CASE", "bad": "WITH students(id, name, city, age) AS (VALUES\n  (1, 'Dana', 'Tel Aviv', 21),\n  (2, 'Omer', 'Haifa',    NULL),\n  (3, 'Noa',  NULL,       20),\n  (4, 'Avi',  'Haifa',    25),\n  (5, 'Ido',  NULL,       22))\nSELECT name, CASE city WHEN NULL THEN 'no city'\n                 ELSE city END AS place\nFROM students;", "good": "WITH students(id, name, city, age) AS (VALUES\n  (1, 'Dana', 'Tel Aviv', 21),\n  (2, 'Omer', 'Haifa',    NULL),\n  (3, 'Noa',  NULL,       20),\n  (4, 'Avi',  'Haifa',    25),\n  (5, 'Ido',  NULL,       22))\nSELECT name, CASE WHEN city IS NULL THEN 'no city'\n                 ELSE city END AS place\nFROM students;", "badRes": {"cols": ["name", "place"], "rows": [["Dana", "Tel Aviv"], ["Omer", "Haifa"], ["Noa", null], ["Avi", "Haifa"], ["Ido", null]]}, "goodRes": {"cols": ["name", "place"], "rows": [["Dana", "Tel Aviv"], ["Omer", "Haifa"], ["Noa", "no city"], ["Avi", "Haifa"], ["Ido", "no city"]]}}, {"id": "join", "title": "NULL keys never join", "tag": "JOIN", "bad": "WITH a(k, x) AS (VALUES (1, 'a1'), (NULL, 'a2')),\n     b(k, y) AS (VALUES (1, 'b1'), (NULL, 'b2'))\nSELECT x, y FROM a JOIN b ON a.k = b.k;", "good": "WITH a(k, x) AS (VALUES (1, 'a1'), (NULL, 'a2')),\n     b(k, y) AS (VALUES (1, 'b1'), (NULL, 'b2'))\nSELECT x, y FROM a JOIN b ON a.k IS b.k;\n-- SQL standard: ON a.k IS NOT DISTINCT FROM b.k", "badRes": {"cols": ["x", "y"], "rows": [["a1", "b1"]]}, "goodRes": {"cols": ["x", "y"], "rows": [["a1", "b1"], ["a2", "b2"]]}}, {"id": "check", "title": "CHECK lets UNKNOWN through", "tag": "constraints", "bad": "DROP TABLE IF EXISTS temp.signup;\nCREATE TEMP TABLE signup (name TEXT, age INTEGER CHECK (age >= 18));\nINSERT INTO signup VALUES ('Lior', 30);\nINSERT INTO signup VALUES ('Tal', NULL);   -- accepted: NULL >= 18 is UNKNOWN\n-- INSERT INTO signup VALUES ('Gil', 15);  -- rejected: 15 >= 18 is FALSE\nSELECT * FROM signup;", "good": "DROP TABLE IF EXISTS temp.signup;\nCREATE TEMP TABLE signup (name TEXT, age INTEGER NOT NULL CHECK (age >= 18));\nINSERT INTO signup VALUES ('Lior', 30);\n-- INSERT INTO signup VALUES ('Tal', NULL);  -- now rejected by NOT NULL\nSELECT * FROM signup;", "badRes": {"cols": ["name", "age"], "rows": [["Lior", 30], ["Tal", null]]}, "goodRes": {"cols": ["name", "age"], "rows": [["Lior", 30]]}}, {"id": "order", "title": "Where do NULLs sort?", "tag": "ORDER BY", "bad": "WITH students(id, name, city, age) AS (VALUES\n  (1, 'Dana', 'Tel Aviv', 21),\n  (2, 'Omer', 'Haifa',    NULL),\n  (3, 'Noa',  NULL,       20),\n  (4, 'Avi',  'Haifa',    25),\n  (5, 'Ido',  NULL,       22))\nSELECT name, age FROM students ORDER BY age;", "good": "WITH students(id, name, city, age) AS (VALUES\n  (1, 'Dana', 'Tel Aviv', 21),\n  (2, 'Omer', 'Haifa',    NULL),\n  (3, 'Noa',  NULL,       20),\n  (4, 'Avi',  'Haifa',    25),\n  (5, 'Ido',  NULL,       22))\nSELECT name, age FROM students ORDER BY age NULLS LAST;", "badRes": {"cols": ["name", "age"], "rows": [["Omer", null], ["Noa", 20], ["Dana", 21], ["Ido", 22], ["Avi", 25]]}, "goodRes": {"cols": ["name", "age"], "rows": [["Noa", 20], ["Dana", 21], ["Ido", 22], ["Avi", 25], ["Omer", null]]}}];
+const TRAP_TEXT = {
+  eqnull: {why:"<code>city = NULL</code> asks “is the city equal to a value we don't know?”. The answer is UNKNOWN on every row, even on the rows whose city is NULL, and WHERE keeps only TRUE rows.",
+    expect:'Noa and Ido, who have no city.', fix:'Test for a missing value with <code>IS NULL</code> / <code>IS NOT NULL</code>, never with = or &lt;&gt;.'},
+  neq: {why:"For Noa and Ido, <code>NULL &lt;&gt; 'Haifa'</code> is UNKNOWN, so they are dropped. <code>WHERE city = 'Haifa'</code> returns 2 rows and <code>WHERE city &lt;&gt; 'Haifa'</code> returns 1: together only 3 of the 5 students.",
+    expect:'Everyone not in Haifa: Dana, Noa and Ido.', fix:'Add <code>OR city IS NULL</code>, or use null-safe inequality: <code>IS DISTINCT FROM</code> (standard) or <code>IS NOT</code> (SQLite).'},
+  notin: {why:"The subquery returns <code>{'Haifa', NULL}</code>, because Ido is over 21 and has no city. <code>x NOT IN ('Haifa', NULL)</code> means <code>x &lt;&gt; 'Haifa' AND x &lt;&gt; NULL</code>; the second part is always UNKNOWN, so the condition is never TRUE for anyone.",
+    expect:'At least Dana: nobody over 21 lives in Tel Aviv.', fix:'Use <code>NOT EXISTS</code>. It only asks whether a matching row exists; a comparison with NULL simply does not match, so the NULL does no harm. (Or filter the NULLs out of the subquery.)'},
+  count: {why:'<code>COUNT(*)</code> counts rows; <code>COUNT(age)</code> and every other aggregate skip NULLs. So <code>AVG(age)</code> is 88 / 4 = 22, not 88 / 5 = 17.6.',
+    expect:'One “average age”.', fix:'Neither number is wrong; they answer different questions. Say which one you mean: the average of the known ages, or missing ages counted as 0 with <code>COALESCE</code>.'},
+  arith: {why:"Arithmetic and <code>||</code> with a NULL operand give NULL: Omer's <code>next_year</code> and the whole label of Noa and Ido disappear.",
+    expect:"“Noa from …” for every student.", fix:"Decide what a missing value should become with <code>COALESCE(x, default)</code>. NULL is not 0 and not ''."},
+  emptyagg: {why:'Nobody lives in Eilat. <code>COUNT</code> of no rows is 0, but <code>SUM</code>, <code>MAX</code>, <code>MIN</code> and <code>AVG</code> of no values are NULL.',
+    expect:'total = 0.', fix:'<code>COALESCE(SUM(x), 0)</code>. SQLite also has <code>TOTAL(x)</code>, which returns 0.0.'},
+  group: {why:'In a WHERE, <code>NULL = NULL</code> is UNKNOWN, yet <code>GROUP BY</code> puts both NULL cities into one group and <code>DISTINCT</code> keeps a single NULL. Grouping and DISTINCT use “not distinct”, not =. <code>COUNT(DISTINCT city)</code> then skips the NULL: 2, while <code>SELECT DISTINCT city</code> returns 3 rows.',
+    expect:'Two separate NULL groups, since NULL = NULL is not TRUE.', fix:'Remember the rule: comparisons treat NULLs as unknown; GROUP BY, DISTINCT, UNION and INTERSECT treat NULLs as the same value.'},
+  case: {why:"The simple form <code>CASE city WHEN NULL</code> compares <code>city = NULL</code>, which is never TRUE, so it falls through to <code>ELSE city</code>, which is NULL.",
+    expect:"'no city' for Noa and Ido.", fix:'Use the searched form <code>CASE WHEN city IS NULL THEN …</code>, or <code>COALESCE(city, \'no city\')</code>.'},
+  join: {why:'The join condition <code>a.k = b.k</code> is UNKNOWN for the two NULL keys, so a2 and b2 never meet. Two NULLs are not equal to each other.',
+    expect:'Both pairs: a1–b1 and a2–b2.', fix:'Use null-safe equality: <code>IS NOT DISTINCT FROM</code> (standard) or <code>IS</code> (SQLite). Usually the real fix is not to join on nullable keys.'},
+  check: {why:'WHERE keeps a row only if the condition is TRUE, but CHECK rejects a row only if it is FALSE. <code>NULL &gt;= 18</code> is UNKNOWN, so Tal is accepted.',
+    expect:'Tal rejected: we did not prove Tal is 18.', fix:'Add <code>NOT NULL</code> when the value is required. CHECK alone does not keep NULLs out.'},
+  order: {why:'NULL is neither smaller nor larger than anything, so where it sorts is a choice of the database. SQLite, MySQL and SQL Server put NULLs first in ascending order; PostgreSQL and Oracle put them last.',
+    expect:'It depends on the database.', fix:'Say it explicitly: <code>ORDER BY age NULLS LAST</code> (or <code>NULLS FIRST</code>).'}
+};
+function resTable(r){
+  if (!r.rows.length) return `<div class="norows">∅ no rows</div>`;
+  return '<table class="res"><tr>' + r.cols.map(c => `<th>${esc(c)}</th>`).join('') + '</tr>' +
+    r.rows.map(row => '<tr>' + row.map(v => v === null ? '<td class="null">NULL</td>' : `<td>${esc(v)}</td>`).join('') + '</tr>').join('') + '</table>';
+}
+// The shared WITH students(...) prefix is shown once above the cards, not in each query.
+const TRAP_DATA_SQL = TRAPS[0].bad.slice(0, TRAPS[0].bad.indexOf('SELECT'));
+const shown = src => src.startsWith(TRAP_DATA_SQL) ? '-- WITH students(...) AS (VALUES ...)  -- the 5 rows above\n' + src.slice(TRAP_DATA_SQL.length) : src;
+function renderTraps(){
+  const dataRows = [...TRAP_DATA_SQL.matchAll(/\(([^()]*'[^()]*)\)/g)].map(m => m[1].split(',').map(x => x.trim()).map(x => x === 'NULL' ? null : /^\d+$/.test(x) ? +x : x.replace(/^'|'$/g, '')));
+  $('#trapData').innerHTML = resTable({cols:['id', 'name', 'city', 'age'], rows:dataRows}).replace(/^<table class="res">|<\/table>$/g, '');
+  $('#trapNav').innerHTML = TRAPS.map((t, i) => `<a href="#trap-${t.id}">${i + 1}. ${esc(t.title)}</a>`).join('');
+  $('#trapList').innerHTML = TRAPS.map((t, i) => {
+    const x = TRAP_TEXT[t.id];
+    const side = (cls, title, src, res, which) => `<div class="side ${cls}"><h5>${title}<span class="sp"></span><button class="btn sm" data-run="${i}" data-w="${which}">Run →</button></h5>` +
+      `<pre class="sql">${hl(shown(src))}</pre><div class="out">${resTable(res)}</div></div>`;
+    return `<article class="trap" id="trap-${t.id}"><div class="th"><span class="num">${String(i + 1).padStart(2, '0')}</span><h3>${esc(t.title)}</h3><span class="tag">${esc(t.tag)}</span></div>` +
+      `<p class="why">${x.why}</p><div class="pair">` +
+      side('bad', '✗ The trap', t.bad, t.badRes, 'bad') + side('good', '✓ The fix', t.good, t.goodRes, 'good') +
+      `</div><div class="expect"><b>You might expect:</b> ${x.expect} &nbsp;·&nbsp; <b>Fix:</b> ${x.fix}</div></article>`;
+  }).join('');
+}
+$('#trapList').addEventListener('click', e => {
+  const b = e.target.closest('[data-run]'); if (!b) return;
+  const t = TRAPS[+b.dataset.run];
+  openInSql('3VL: ' + t.title.slice(0, 30), `-- Three-Valued Logic Lab · ${t.title} (${b.dataset.w === 'bad' ? 'the trap' : 'the fix'})\n` + t[b.dataset.w]);
+});
+
+/* ================================================================
+   04 · Quiz
+   ================================================================ */
+const Q = Object.assign({level:2, right:0, total:0, streak:0, best:0}, store.get('quiz', {}));
+let cur = null;
+const rnd = n => Math.floor(Math.random() * n);
+const pick = a => a[rnd(a.length)];
+function genLeaf(hard){
+  const v = pick(['a', 'b', 'c']), w = pick(['a', 'b', 'c'].filter(x => x !== v)), k = 1 + rnd(5);
+  const op = pick(['=', '<>', '<', '>', '<=', '>=']);
+  const forms = [
+    () => `${v} ${op} ${k}`,
+    () => `${v} ${op} ${k}`,
+    () => `${v} ${op} ${w}`,
+    () => `${v} IS ${pick(['', 'NOT '])}NULL`,
+    () => `${v} ${pick(['=', '<>'])} NULL`
+  ];
+  if (hard) forms.push(
+    () => `${v} ${pick(['', 'NOT '])}IN (${[k, 1 + rnd(5)].concat(rnd(2) ? ['NULL'] : []).join(', ')})`,
+    () => { const lo = 1 + rnd(3); return `${v} ${pick(['', 'NOT '])}BETWEEN ${lo} AND ${lo + 1 + rnd(3)}`; },
+    () => `(${v} ${op} ${k}) IS ${pick(['UNKNOWN', 'NOT TRUE', 'FALSE'])}`
+  );
+  return pick(forms)();
+}
+function genQuestion(level){
+  const vars = {};
+  for (const x of ['a', 'b', 'c']) vars[x] = Math.random() < 0.38 ? null : 1 + rnd(5);
+  if (Object.values(vars).every(v => v !== null)) vars[pick(['a', 'b', 'c'])] = null;   // always at least one NULL
+  let src;
+  const maybeNot = s => Math.random() < 0.3 ? `NOT (${s})` : s;
+  if (level === 1) src = maybeNot(genLeaf(false));
+  else if (level === 2) src = `${maybeNot(genLeaf(false))} ${pick(['AND', 'OR'])} ${genLeaf(false)}`;
+  else {
+    const n = 3 + rnd(2);
+    const parts = Array.from({length:n}, () => genLeaf(true));
+    const ops = Array.from({length:n - 1}, () => pick(['AND', 'OR']));
+    // group the first two so precedence questions come up too
+    src = (Math.random() < 0.5 ? `(${parts[0]} ${ops[0]} ${parts[1]})` : `${parts[0]} ${ops[0]} ${parts[1]}`);
+    for (let i = 2; i < n; i++) src += ` ${ops[i - 1]} ${i === n - 1 ? maybeNot(parts[i]) : parts[i]}`;
+  }
+  const ast = parse(src);
+  const tr = ev(ast, vars);
+  return {vars, src: sql(ast), tr, answer: toTV(tr.v), picked: null};
+}
+function newQuestion(){
+  // nudge the answers towards an even mix of TRUE / FALSE / UNKNOWN
+  const want = pick(VALS);
+  for (let i = 0; i < 12; i++){ cur = genQuestion(Q.level); if (cur.answer === want) break; }
+  renderQuiz();
+}
+function renderQuiz(){
+  $('#qLvls').querySelectorAll('button').forEach(b => b.classList.toggle('on', +b.dataset.l === Q.level));
+  $('#qScore').innerHTML = `<div class="s"><small>Score</small><b>${Q.right} / ${Q.total}</b></div><div class="s"><small>Accuracy</small><b>${Q.total ? Math.round(Q.right / Q.total * 100) + '%' : '—'}</b></div>` +
+    `<div class="s"><small>Streak</small><b>${Q.streak}</b></div><div class="s"><small>Best</small><b>${Q.best}</b></div>`;
+  if (!cur) return;
+  $('#qVars').innerHTML = Object.entries(cur.vars).map(([k, v]) => `<span class="v"><b>${k}</b> = ${v === null ? '<span style="color:var(--U)">NULL</span>' : v}</span>`).join('');
+  $('#qExpr').innerHTML = hl(cur.src);
+  $('#qAns').querySelectorAll('button').forEach(b => {
+    b.disabled = !!cur.picked;
+    b.classList.toggle('pick', cur.picked === b.dataset.a || (cur.picked && b.dataset.a === cur.answer));
+  });
+  if (!cur.picked){ $('#qFeed').innerHTML = ''; return; }
+  const ok = cur.picked === cur.answer;
+  $('#qFeed').innerHTML = `<div class="note ${ok ? 'good' : 'bad'}">${ok ? '<b>Correct!</b>' : `<b>Not quite.</b> You said ${TVNAME[cur.picked]}.`} The condition is ${badge(cur.answer)}. Press <b>Enter</b> or <b>Next</b> for another one.</div>` +
+    `<div class="tree">${treeBlock(cur.tr, cur.vars)}</div>`;
+}
+$('#qAns').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b || !cur || cur.picked) return;
+  answer(b.dataset.a);
+});
+function answer(a){
+  cur.picked = a;
+  Q.total++;
+  if (a === cur.answer){ Q.right++; Q.streak++; Q.best = Math.max(Q.best, Q.streak); } else Q.streak = 0;
+  store.set('quiz', Q); renderQuiz();
+}
+$('#qNext').onclick = newQuestion;
+$('#qReset').onclick = () => { Object.assign(Q, {right:0, total:0, streak:0, best:0}); store.set('quiz', Q); renderQuiz(); toast('Score reset'); };
+$('#qLvls').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  Q.level = +b.dataset.l; store.set('quiz', Q); newQuestion();
+});
+document.addEventListener('keydown', e => {
+  if (tab !== 'quiz' || e.target.closest('input,textarea,[contenteditable]') || e.ctrlKey || e.metaKey || e.altKey) return;
+  const k = e.key.toLowerCase();
+  if (cur && !cur.picked && ({t:'T', f:'F', u:'U'})[k]){ answer(({t:'T', f:'F', u:'U'})[k]); e.preventDefault(); }
+  else if (cur && cur.picked && (e.key === 'Enter' || e.key === ' ' || k === 'n')){ newQuestion(); e.preventDefault(); }
+});
+
+/* ================================================================
+   Tabs
+   ================================================================ */
+const TABS = ['tables', 'eval', 'traps', 'quiz'];
+let tab = TABS.includes(store.get('tab', '')) ? store.get('tab') : 'tables';
+const hashTab = location.hash.slice(1);
+if (TABS.includes(hashTab)) tab = hashTab;
+function showTab(t){
+  tab = t; store.set('tab', t);
+  document.querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.t === t));
+  document.querySelectorAll('.page').forEach(p => p.classList.toggle('on', p.id === 'p-' + t));
+  if (t === 'quiz' && !cur) newQuestion();
+}
+$('#tabs').addEventListener('click', e => { const b = e.target.closest('.tab'); if (b){ showTab(b.dataset.t); history.replaceState(null, '', '#' + b.dataset.t); } });
+
+renderTables();
+renderStaticTables();
+renderEval();
+renderTraps();
+renderQuiz();
+showTab(tab);
+})();
+</script>
+</body>
+</html>
