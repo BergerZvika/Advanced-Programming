@@ -245,7 +245,73 @@ table.res td.null{color:var(--U);font-style:italic}
   .brand small{display:none}
   .tabs{position:static}
 }
+
+/* Light mode (../theme-toggle.js sets data-theme on <html>) */
+:root[data-theme="light"]{
+  --panel:#ffffff; --panel-2:#f0f2f8;
+  --accent:#6a4ce0; --accent-2:#0a86b8;
+  --sql:#0e8f63; --warn:#b36b00; --err:#d02f4c;
+  --T:#0e8f63; --F:#d02f4c; --U:#b36b00;
+}
+:root[data-theme="light"] code{color:#2b2f55;background:rgba(20,20,60,0.06)}
+:root[data-theme="light"] .topbar{background:linear-gradient(180deg,#ffffff,#f7f8fc)}
+:root[data-theme="light"] .tabs{background:#fbfbfe}
+:root[data-theme="light"] .tab.on{background:#fff;box-shadow:0 1px 3px rgba(20,20,60,0.08)}
+:root[data-theme="light"] .brand .dot{box-shadow:0 0 8px rgba(179,107,0,0.45)}
+:root[data-theme="light"] .box,
+:root[data-theme="light"] .trap{box-shadow:0 1px 3px rgba(20,20,60,0.05)}
+:root[data-theme="light"] .note{background:rgba(179,107,0,0.07)}
+:root[data-theme="light"] .note.good{background:rgba(14,143,99,0.07)}
+:root[data-theme="light"] .note.bad{background:rgba(208,47,76,0.06)}
+:root[data-theme="light"] .err{background:rgba(208,47,76,0.06);border-color:rgba(208,47,76,0.3)}
+/* truth value badges and value chips */
+:root[data-theme="light"] .tv.T{background:rgba(14,143,99,0.10);border-color:rgba(14,143,99,0.38)}
+:root[data-theme="light"] .tv.F{background:rgba(208,47,76,0.08);border-color:rgba(208,47,76,0.35)}
+:root[data-theme="light"] .tv.U{background:rgba(179,107,0,0.10);border-color:rgba(179,107,0,0.40)}
+:root[data-theme="light"] .val{color:#2b2f55;background:#f3f4f9}
+:root[data-theme="light"] .val.null{color:var(--U);border-color:rgba(179,107,0,0.35);background:rgba(179,107,0,0.06)}
+/* truth tables */
+:root[data-theme="light"] .seg button.on.T{background:rgba(14,143,99,0.14)}
+:root[data-theme="light"] .seg button.on.F{background:rgba(208,47,76,0.12)}
+:root[data-theme="light"] .seg button.on.U{background:rgba(179,107,0,0.14)}
+:root[data-theme="light"] table.tt td{background:#f7f8fc}
+:root[data-theme="light"] table.tt td.dimc{opacity:.6}
+:root[data-theme="light"] table.tt td.hl{background:#fff;box-shadow:0 0 0 2px var(--accent-2),0 4px 12px -4px rgba(10,134,184,0.35)}
+:root[data-theme="light"] .where3 .cls{background:#f7f8fc}
+/* evaluator */
+:root[data-theme="light"] .condline .kw{color:#8250df}
+:root[data-theme="light"] .condline:focus-within{border-color:rgba(179,107,0,0.6)}
+:root[data-theme="light"] .presets button.on{border-color:rgba(179,107,0,0.5);background:rgba(179,107,0,0.08)}
+:root[data-theme="light"] .split .bar{background:rgba(20,20,60,0.07)}
+:root[data-theme="light"] table.data td[contenteditable]:focus{background:rgba(10,134,184,0.07);box-shadow:inset 0 0 0 1px rgba(10,134,184,0.5)}
+:root[data-theme="light"] table.data td.isnull{opacity:1}
+:root[data-theme="light"] table.data tbody tr.sel{background:rgba(10,134,184,0.08)}
+:root[data-theme="light"] .node{background:#fff}
+:root[data-theme="light"] .node.T{border-color:rgba(14,143,99,0.4)}
+:root[data-theme="light"] .node.F{border-color:rgba(208,47,76,0.38)}
+:root[data-theme="light"] .node.U{border-color:rgba(179,107,0,0.45)}
+:root[data-theme="light"] .node.root{box-shadow:0 0 0 2px rgba(10,134,184,0.25)}
+/* SQL code: a light code block with darker tokens */
+:root[data-theme="light"] pre.sql{background:#f7f8fc;color:#24292f}
+:root[data-theme="light"] .sql .k{color:#8250df}
+:root[data-theme="light"] .sql .s{color:#116329}
+:root[data-theme="light"] .sql .n{color:#953800}
+:root[data-theme="light"] .sql .c{color:#6e7781}
+/* traps */
+:root[data-theme="light"] .trap .tag{background:rgba(10,134,184,0.08);border-color:rgba(10,134,184,0.3)}
+/* quiz */
+:root[data-theme="light"] .qvars .v,
+:root[data-theme="light"] .qexpr,
+:root[data-theme="light"] .score .s{background:#f7f8fc}
+:root[data-theme="light"] .qans button{background:#fff}
+:root[data-theme="light"] .qans button.T{border-color:rgba(14,143,99,0.4)}
+:root[data-theme="light"] .qans button.F{border-color:rgba(208,47,76,0.38)}
+:root[data-theme="light"] .qans button.U{border-color:rgba(179,107,0,0.45)}
+:root[data-theme="light"] .qans button:hover:not([disabled]){background:#f3f4f9}
+:root[data-theme="light"] .lvls button.on{border-color:rgba(179,107,0,0.5);background:rgba(179,107,0,0.08)}
+:root[data-theme="light"] .toast{background:#fff;box-shadow:0 8px 24px -10px rgba(20,20,60,0.3)}
 </style>
+<script src="../theme-toggle.js"></script>
 </head>
 <body>
 <header class="topbar">
@@ -253,6 +319,7 @@ table.res td.null{color:var(--U);font-style:italic}
   <span class="spacer"></span>
   <a class="btn" href="index.html">← Databases</a>
   <a class="btn" href="../home.html">⌂ Home</a>
+  <button class="btn" data-ap-theme-toggle></button>
 </header>
 
 <nav class="tabs" id="tabs">

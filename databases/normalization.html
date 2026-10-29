@@ -195,7 +195,46 @@ table.t tr.cur td{background:rgba(255,181,71,0.07)}
   .grid4{grid-template-columns:1fr 1fr}
   .brand small{display:none}
 }
+
+/* Light mode (../theme-toggle.js sets data-theme on <html>) */
+:root[data-theme="light"]{
+  --panel:#ffffff; --panel-2:#f0f2f8;
+  --accent:#6a4ae0; --accent-2:#0a86b8; --sql:#0e9a68; --warn:#b86a00; --err:#d63356; --pink:#c8329a;
+  --s-input:#6a6c85; --s-keys:#0a86b8; --s-nf:#6a4ae0; --s-cover:#b86a00; --s-3nf:#0e9a68; --s-bcnf:#c8329a; --s-sum:#1b1b2f;
+}
+:root[data-theme="light"] .topbar{background:linear-gradient(180deg,#ffffff,#f7f8fc);box-shadow:0 2px 10px -6px rgba(20,20,60,0.15)}
+:root[data-theme="light"] .brand .dot{box-shadow:0 0 8px rgba(200,50,154,0.35)}
+:root[data-theme="light"] .btn{background:#fff}
+:root[data-theme="light"] .btn:hover{background:var(--bg-2)}
+:root[data-theme="light"] .inp{background:#fbfbfe}
+:root[data-theme="light"] .inp:focus{border-color:rgba(14,154,104,0.6);box-shadow:0 0 0 3px rgba(14,154,104,0.12)}
+:root[data-theme="light"] :is(.ins button, .modes button, .lvls button, .sbtn, .qans button){background:#fff}
+:root[data-theme="light"] :is(.ins button, .modes button, .lvls button, .sbtn, .qans button:not([disabled])):hover{background:var(--bg-2)}
+:root[data-theme="light"] .modes button.main{background:linear-gradient(135deg,rgba(14,154,104,0.12),rgba(200,50,154,0.08));border-color:rgba(14,154,104,0.45)}
+:root[data-theme="light"] .err{background:rgba(214,51,86,0.06);border-color:rgba(214,51,86,0.35)}
+:root[data-theme="light"] .steps-bar{background:rgba(255,255,255,0.92)}
+:root[data-theme="light"] .sbtn.play{border-color:rgba(14,154,104,0.5)}
+:root[data-theme="light"] .chip{border-color:color-mix(in srgb,var(--c) 45%,transparent)}
+:root[data-theme="light"] .chip.on{color:#fff;border-color:var(--c)}
+:root[data-theme="light"] .box{box-shadow:0 1px 3px rgba(20,20,60,0.05)}
+:root[data-theme="light"] .note{background:rgba(184,106,0,0.07);color:#45475e}
+:root[data-theme="light"] .note.good{background:rgba(14,154,104,0.07)}
+:root[data-theme="light"] .note.bad{background:rgba(214,51,86,0.06)}
+:root[data-theme="light"] .a{background:#f1f2f9;border-color:rgba(20,20,60,0.14);color:#25274a}
+:root[data-theme="light"] .a.hl{background:rgba(14,154,104,0.13);border-color:rgba(14,154,104,0.55);color:#08613f}
+:root[data-theme="light"] .a.rm{background:rgba(214,51,86,0.09);border-color:rgba(214,51,86,0.45);color:#b02344}
+:root[data-theme="light"] table.t tr.cur td{background:rgba(184,106,0,0.08)}
+:root[data-theme="light"] .tag.ok{background:rgba(14,154,104,0.1);border-color:rgba(14,154,104,0.4)}
+:root[data-theme="light"] .tag.bad{background:rgba(214,51,86,0.08);border-color:rgba(214,51,86,0.4)}
+:root[data-theme="light"] .tag.mid{background:rgba(184,106,0,0.09);border-color:rgba(184,106,0,0.4)}
+:root[data-theme="light"] .tag.info{background:rgba(10,134,184,0.08);border-color:rgba(10,134,184,0.4)}
+:root[data-theme="light"] .rel.new{border-color:rgba(14,154,104,0.6);box-shadow:0 0 0 1px rgba(14,154,104,0.2)}
+:root[data-theme="light"] .node.cur{box-shadow:0 0 0 2px rgba(200,50,154,0.2)}
+:root[data-theme="light"] .node.leaf{border-color:rgba(14,154,104,0.5)}
+:root[data-theme="light"] :is(.qrel, .score .s){background:var(--bg-0)}
+:root[data-theme="light"] .lvls button.on{border-color:rgba(14,154,104,0.55);background:rgba(14,154,104,0.08)}
 </style>
+<script src="../theme-toggle.js"></script>
 </head>
 <body>
 <header class="topbar">
@@ -204,6 +243,7 @@ table.t tr.cur td{background:rgba(255,181,71,0.07)}
   <button class="btn" id="quizBtn" title="Practice with generated questions">Quiz</button>
   <a class="btn" href="index.html">← Databases</a>
   <a class="btn" href="../home.html">⌂ Home</a>
+  <button class="btn" data-ap-theme-toggle></button>
 </header>
 
 <div class="layout">

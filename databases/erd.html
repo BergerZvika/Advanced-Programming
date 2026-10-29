@@ -28,6 +28,7 @@
   --err:#ff6b7a;
   --pink:#ff6ec7;
   --ent:#8aa2ff;
+  --fk:#ffd59a;
   --mono:'JetBrains Mono',ui-monospace,monospace;
 }
 *{box-sizing:border-box}
@@ -142,7 +143,7 @@ table.at tr.hl td input[type=text]{border-color:var(--pink)}
 .tbl{border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px;background:var(--bg-1);font-family:var(--mono);font-size:12.5px;line-height:1.7;overflow-x:auto}
 .tbl .tn{font-weight:700;color:var(--ent)}
 .tbl u{text-decoration-color:var(--warn);text-decoration-thickness:2px;text-underline-offset:3px}
-.tbl .fk{font-style:italic;color:#ffd59a}
+.tbl .fk{font-style:italic;color:var(--fk)}
 .tbl .ref{color:var(--text-faint);font-size:11px}
 .tbl .origin{display:block;font-family:'Inter',sans-serif;font-size:11px;color:var(--text-faint)}
 .steps{counter-reset:s;display:flex;flex-direction:column;gap:8px;margin:0;padding:0;list-style:none}
@@ -154,7 +155,7 @@ table.at tr.hl td input[type=text]{border-color:var(--pink)}
 pre.sql{margin:0;padding:12px 14px;border-radius:10px;background:var(--bg-0);border:1px solid var(--border);font-family:var(--mono);font-size:12px;line-height:1.6;overflow-x:auto;color:var(--text)}
 pre.sql .k{color:#c4b2ff;font-weight:600}
 pre.sql .c{color:var(--text-faint);font-style:italic}
-pre.sql .t{color:#ffd59a}
+pre.sql .t{color:var(--fk)}
 .sqlbar{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
 
 .check{display:flex;gap:10px;align-items:flex-start;padding:9px 11px;border-radius:9px;background:var(--surface);border:1px solid var(--border);margin-bottom:7px;font-size:12.5px;line-height:1.55;color:var(--text-dim);cursor:pointer;width:100%;text-align:left}
@@ -182,7 +183,7 @@ body.quiz .toolbar,body.quiz .work{display:none}
 .note b{color:var(--text)}
 .qwrap{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:14px;align-items:start}
 .qask{font-size:15px;line-height:1.6;margin-bottom:12px}
-.qask code,.qans code,.qx code{font-family:var(--mono);font-size:12px;color:#ffd59a}
+.qask code,.qans code,.qx code{font-family:var(--mono);font-size:12px;color:var(--fk)}
 .qdia{border:1px solid var(--border);border-radius:12px;padding:10px;margin-bottom:14px;background-color:var(--bg-0);
   background-image:radial-gradient(circle,rgba(255,255,255,0.07) 1px,transparent 1.2px);background-size:22px 22px}
 .qdia svg{display:block;width:100%;height:auto;max-height:380px;margin:0 auto}
@@ -221,7 +222,33 @@ body.quiz .toolbar,body.quiz .work{display:none}
   .pbody{overflow:visible}
   .brand small,.legend{display:none}
 }
+
+/* Light mode (../theme-toggle.js sets data-theme on <html>) */
+:root[data-theme="light"]{
+  --accent:#5b3fd6; --accent-2:#0b7fab; --sql:#12865c; --err:#d63356; --pink:#d63384; --ent:#3346c4; --fk:#8a5a00;
+}
+:root[data-theme="light"] .topbar{background:linear-gradient(180deg,#ffffff,#f3f5fb)}
+:root[data-theme="light"] .btn.on,
+:root[data-theme="light"] .seg button.on{background:rgba(51,70,196,0.10);border-color:rgba(51,70,196,0.45);color:#26359c}
+:root[data-theme="light"] .canvas-wrap,
+:root[data-theme="light"] .qdia{background-color:#ffffff;background-image:radial-gradient(circle,rgba(20,20,60,0.13) 1px,transparent 1.2px)}
+:root[data-theme="light"] .banner{background:rgba(255,255,255,0.96);border-color:rgba(51,70,196,0.4);box-shadow:0 10px 30px rgba(30,40,90,0.16)}
+:root[data-theme="light"] .zoomctl,
+:root[data-theme="light"] .legend{background:rgba(255,255,255,0.92);box-shadow:0 4px 14px rgba(30,40,90,0.08)}
+:root[data-theme="light"] .fab{box-shadow:0 8px 20px rgba(91,108,255,0.32)}
+:root[data-theme="light"] .tbl .tn,
+:root[data-theme="light"] .kind.ent{color:var(--ent)}
+:root[data-theme="light"] pre.sql .k{color:#6a3fc8}
+:root[data-theme="light"] .sentences{background:rgba(199,119,0,0.07)}
+:root[data-theme="light"] .note{background:rgba(199,119,0,0.07)}
+:root[data-theme="light"] .note.good{background:rgba(18,134,92,0.07)}
+:root[data-theme="light"] .note.bad{background:rgba(214,51,86,0.06)}
+:root[data-theme="light"] .ok{background:rgba(18,134,92,0.07);border-color:rgba(18,134,92,0.35)}
+:root[data-theme="light"] .qans button.right{border-color:rgba(18,134,92,0.7);box-shadow:0 0 0 2px rgba(18,134,92,0.5)}
+:root[data-theme="light"] .qans button.wrong{border-color:rgba(214,51,86,0.7);box-shadow:0 0 0 2px rgba(214,51,86,0.45)}
+:root[data-theme="light"] .toast{background:#ffffff;box-shadow:0 10px 30px rgba(30,40,90,0.16)}
 </style>
+<script src="../theme-toggle.js"></script>
 </head>
 <body>
 <header class="topbar">
@@ -230,6 +257,7 @@ body.quiz .toolbar,body.quiz .work{display:none}
   <button class="btn" id="quizBtn" title="Practice on random ER diagrams (Esc comes back)">✎ Quiz</button>
   <a class="btn" href="index.html">← Databases</a>
   <a class="btn" href="../home.html">⌂ Home</a>
+  <button class="btn" data-ap-theme-toggle></button>
 </header>
 
 <div class="toolbar">
@@ -594,6 +622,9 @@ const PAL = {
   erDark: {bg:'#07070e', text:'#111111', dim:'#b4b4cc', line:'#d2d2e6', ent:'#0b0b16', entFill:'#ccccff', rel:'#0b0b16', relFill:'#b3b3b3',
        attr:'#0b0b16', attrFill:'#33ee33', sel:'#ff6ec7', hdr:'#ccccff', key:'#111111', pending:'#35d0ff', isaFill:'#b3b3b3', isa:'#0b0b16'}
 };
+// the on-screen palette follows the page theme (../theme-toggle.js); exports always use the light ones
+const lightTheme = () => document.documentElement.dataset.theme === 'light';
+const screenPal = nt => lightTheme() ? (nt === 'er' ? PAL.er : PAL.light) : (nt === 'er' ? PAL.erDark : PAL.dark);
 const ln = (a, b, c, w = 1.6, extra = '') => `<line x1="${f1(a.x)}" y1="${f1(a.y)}" x2="${f1(b.x)}" y2="${f1(b.y)}" stroke="${c}" stroke-width="${w}"${extra}/>`;
 const txt = (x, y, s, c, font, extra = '') => `<text x="${f1(x)}" y="${f1(y)}" fill="${c}" style="font:${font}" text-anchor="middle" dominant-baseline="central"${extra}>${esc(s)}</text>`;
 const diamondPts = (s, k = 1) => `${f1(s.x)},${f1(s.y - s.h / 2 * k)} ${f1(s.x + s.w / 2 * k)},${f1(s.y)} ${f1(s.x)},${f1(s.y + s.h / 2 * k)} ${f1(s.x - s.w / 2 * k)},${f1(s.y)}`;
@@ -1078,7 +1109,7 @@ const svg = $('#svg'), world = $('#world'), cw = $('#cw');
 let G = null;
 function renderCanvas(){
   G = layout(notation);
-  world.innerHTML = draw(G, notation === 'er' ? PAL.erDark : PAL.dark, sel, connect && connect.from);
+  world.innerHTML = draw(G, screenPal(notation), sel, connect && connect.from);
   applyView();
   $('#legend').innerHTML = notation === 'er'
     ? '<b>E/R</b> · ▭ entity · ◇ relationship · ⬭ attribute · <u>key</u> · → arrow = at most one · rounded ➜ = exactly one · no arrow = many · △ isa = subclass'
@@ -1386,7 +1417,7 @@ function renderPanel(){
   else if (tab === 'schema'){
     if (!M.entities.length){ body.innerHTML = '<p class="hint">Add some entities to see the relational schema.</p>'; return; }
     const {tables, steps} = mapToRelational();
-    body.innerHTML = `<p class="hint" style="margin:0 0 10px">Underlined = primary key, <span style="color:#ffd59a;font-style:italic">italic</span> = foreign key.</p>` +
+    body.innerHTML = `<p class="hint" style="margin:0 0 10px">Underlined = primary key, <span style="color:var(--fk);font-style:italic">italic</span> = foreign key.</p>` +
       tables.map(relHTML).join('') +
       `<h4>How it was mapped</h4><ol class="steps">${[...steps].sort((x, y) => x.r - y.r).map(s => `<li data-r="${s.r}">${s.html}</li>`).join('')}</ol>` +
       `<p class="hint" style="margin-top:10px">Numbers follow the ER-to-relational mapping algorithm: 1 strong entities, 2 weak entities, 3 one-to-one, 4 one-to-many, 5 many-to-many, 6 multivalued attributes, 7 multi-way relationships, 8 subclasses (isa).</p>`;
@@ -1649,7 +1680,7 @@ const ntFor = level => level === 1 ? 'chen' : chance(level === 2 ? 0.3 : 0.5) ? 
 function diagram(m, nt, sel){
   return withModel(m, () => {
     const G = layout(nt), b = bbox(G);
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${f1(b.x)} ${f1(b.y)} ${f1(b.w)} ${f1(b.h)}" style="max-width:${Math.ceil(b.w)}px">${draw(G, PAL.dark, sel, null)}</svg>`;
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${f1(b.x)} ${f1(b.y)} ${f1(b.w)} ${f1(b.h)}" style="max-width:${Math.ceil(b.w)}px">${draw(G, screenPal(nt), sel, null)}</svg>`;
   });
 }
 // right: html of the correct option; wrongs: [{html, why}] in order of preference (duplicates dropped)
@@ -1659,7 +1690,7 @@ function mkQ(kind, m, nt, sel, ask, right, wrongs, explain, o = {}){
   if (ws.length < 2) return null;
   let opts = [{html:right, ok:true}, ...ws.slice(0, 3)];
   opts = o.order ? opts.sort(o.order) : shuffle(opts);
-  return {kind, svg:diagram(m, nt, sel), ask, opts, explain, code:!!o.code, picked:-1};
+  return {kind, svg:() => diagram(m, nt, sel), ask, opts, explain, code:!!o.code, picked:-1};
 }
 
 // 1 · how many tables
@@ -1874,7 +1905,7 @@ function renderQuiz(){
   if (!cur) return;
   const done = cur.picked >= 0;
   $('#qAsk').innerHTML = cur.ask;
-  $('#qDia').innerHTML = cur.svg;
+  $('#qDia').innerHTML = cur.svg();
   $('#qAns').classList.toggle('code', cur.code);
   $('#qAns').innerHTML = cur.opts.map((o, i) => `<button data-i="${i}"${done ? ' disabled' : ''} class="${done && o.ok ? 'right' : cur.picked === i ? 'wrong' : ''}">` +
     `<span class="qk">${i + 1}</span><span>${o.html}</span></button>`).join('');
@@ -1928,6 +1959,7 @@ document.addEventListener('keydown', e => {
     requestAnimationFrame(fit);
   }
   window.addEventListener('resize', () => applyView());
+  window.addEventListener('ap-themechange', () => { renderCanvas(); if (cur) $('#qDia').innerHTML = cur.svg(); });
   renderQuiz();
   if (location.hash === '#quiz') requestAnimationFrame(() => showQuiz(true));   // after the first fit()
 })();

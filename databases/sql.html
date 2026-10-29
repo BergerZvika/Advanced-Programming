@@ -213,6 +213,16 @@ table.grid td.blob{color:#c792ea}
 .cm-variable-2{color:#ffcb6b}
 .cm-bracket{color:#a6accd}
 .cm-err-line{background:rgba(255,107,122,0.14)}
+/* the same palette for highlighted SQL outside the editor (Commands examples, quiz), which
+   codemirror.css would otherwise colour with its light-theme .cm-s-default rules */
+.cm-s-default .cm-keyword{color:#c792ea}
+.cm-s-default :is(.cm-builtin,.cm-type,.cm-variable-3,.cm-def){color:#82aaff}
+.cm-s-default :is(.cm-atom,.cm-number){color:#f78c6c}
+.cm-s-default :is(.cm-string,.cm-string-2){color:#c3e88d}
+.cm-s-default .cm-comment{color:#5d6285}
+.cm-s-default .cm-operator{color:#89ddff}
+.cm-s-default .cm-variable-2{color:#ffcb6b}
+.cm-s-default :is(.cm-bracket,.cm-variable,.cm-qualifier){color:#a6accd}
 .cm-run-flash{background:rgba(76,224,163,0.22);transition:background .6s}
 .CodeMirror-hints{background:#14142a;border:1px solid var(--border-strong);border-radius:8px;box-shadow:0 14px 40px -10px rgba(0,0,0,0.7);font-family:var(--mono);font-size:12.5px;padding:4px;z-index:60}
 .CodeMirror-hint{color:#d6d6ea;border-radius:5px;padding:3px 8px}
@@ -385,7 +395,113 @@ table.grid tr.s-drop td.tv{opacity:1;text-decoration:none}
 .lvls button.on{border-color:rgba(255,181,71,0.55);background:rgba(255,181,71,0.08)}
 @media (max-width:1000px){ .qwrap{grid-template-columns:1fr} }
 @media (max-width:700px){ .quiz{padding:16px 16px 50px} }
+
+/* Light mode (../theme-toggle.js sets data-theme on <html>) */
+:root[data-theme="light"]{
+  --accent:#6a4ae0;
+  --accent-2:#0a84b8;
+  --sql:#0c8a5c;
+  --warn:#b86e00;
+  --err:#d63356;
+  --plan-ink:#3b3f6e;
+}
+:root[data-theme="light"] .topbar{background:linear-gradient(180deg,#ffffff,#f3f4fa)}
+:root[data-theme="light"] .brand .dot{box-shadow:0 0 8px rgba(12,138,92,0.45)}
+:root[data-theme="light"] .btn.primary{background:linear-gradient(135deg,#22b07a,#16915f);border-color:#14855a;color:#fff}
+:root[data-theme="light"] .btn.primary:hover{background:linear-gradient(135deg,#2bc488,#18a06a)}
+:root[data-theme="light"] .btn kbd{background:rgba(20,20,60,0.07)}
+:root[data-theme="light"] .btn.primary kbd{background:rgba(255,255,255,0.22)}
+:root[data-theme="light"] .sel{background:#fff}
+:root[data-theme="light"] .sidebar{background:#fbfbfe !important}
+:root[data-theme="light"] .col .cn,
+:root[data-theme="light"] .hist code{color:#2c2f4a}
+:root[data-theme="light"] .col .k.pk{color:#9a6a00;border-color:rgba(154,106,0,0.45)}
+:root[data-theme="light"] .col .k.fk{border-color:rgba(10,132,184,0.45)}
+:root[data-theme="light"] .about-ds{background:rgba(12,138,92,0.06);border-color:rgba(12,138,92,0.25)}
+:root[data-theme="light"] .etab.on,
+:root[data-theme="light"] .editor{background:#fbfbfe}
+:root[data-theme="light"] .CodeMirror-hints{background:#fff;box-shadow:0 14px 40px -12px rgba(30,40,90,0.3)}
+:root[data-theme="light"] .CodeMirror-hint{color:#24292f}
+:root[data-theme="light"] li.CodeMirror-hint-active{background:rgba(12,138,92,0.16);color:#0b3d29}
+:root[data-theme="light"] .cm-err-line{background:rgba(214,51,86,0.10)}
+:root[data-theme="light"] .cm-run-flash{background:rgba(12,138,92,0.16)}
+:root[data-theme="light"] .cm-step-mark{background:rgba(199,119,0,0.16)}
+/* runmode highlighting outside the editor (Commands examples, quiz SQL) */
+:root[data-theme="light"] .cm-s-default .cm-keyword{color:#cf222e}
+:root[data-theme="light"] .cm-s-default :is(.cm-builtin,.cm-type){color:#953800}
+:root[data-theme="light"] .cm-s-default :is(.cm-atom,.cm-number){color:#0550ae}
+:root[data-theme="light"] .cm-s-default :is(.cm-string,.cm-string-2){color:#0a3069}
+:root[data-theme="light"] .cm-s-default .cm-comment{color:#6e7781}
+:root[data-theme="light"] .cm-s-default .cm-operator{color:#cf222e}
+:root[data-theme="light"] .cm-s-default .cm-variable-2{color:#0550ae}
+:root[data-theme="light"] .cm-s-default :is(.cm-bracket,.cm-variable,.cm-qualifier){color:#24292f}
+:root[data-theme="light"] .cm-s-default :is(.cm-variable-3,.cm-def){color:#953800}
+
+:root[data-theme="light"] .results{background:#f7f8fc}
+:root[data-theme="light"] table.grid th,
+:root[data-theme="light"] table.grid th.rn{background:#eceff8;color:#2f3460}
+:root[data-theme="light"] table.grid th:hover{background:#e2e6f4}
+:root[data-theme="light"] table.grid td{background:#fff;border-bottom-color:rgba(20,20,60,0.07);border-right-color:rgba(20,20,60,0.05)}
+:root[data-theme="light"] table.grid td.rn{background:#f3f4f9}
+:root[data-theme="light"] table.grid tr:hover td{background:rgba(124,92,255,0.06)}
+:root[data-theme="light"] table.grid td.num{color:#a14f00}
+:root[data-theme="light"] table.grid td.blob{color:#8250df}
+:root[data-theme="light"] .msg{border-bottom-color:rgba(20,20,60,0.08)}
+:root[data-theme="light"] .statusbar{background:#eef0f7}
+:root[data-theme="light"] .loading{background:rgba(245,246,251,0.92)}
+
+/* step-by-step */
+:root[data-theme="light"] .btn.step{border-color:rgba(184,110,0,0.45);color:#9a5c00}
+:root[data-theme="light"] .btn.step:hover{background:rgba(199,119,0,0.10)}
+:root[data-theme="light"] .sbtn.play{border-color:rgba(12,138,92,0.45)}
+:root[data-theme="light"] .chip.done{border-color:rgba(12,138,92,0.35)}
+:root[data-theme="light"] .chip.on{background:#e08a00;border-color:#e08a00;color:#fff}
+:root[data-theme="light"] .step-info{background:linear-gradient(180deg,rgba(199,119,0,0.06),transparent)}
+:root[data-theme="light"] .step-title .clause{background:rgba(199,119,0,0.12);border-color:rgba(184,110,0,0.45);color:#8a5200}
+:root[data-theme="light"] .step-info code{color:#24292f}
+:root[data-theme="light"] .step-meta .scode{color:#5b3fc4}
+:root[data-theme="light"] table.grid tr.s-drop td:not(.rn){text-decoration-color:rgba(214,51,86,0.8)}
+:root[data-theme="light"] table.grid tr.s-new td{background:rgba(12,138,92,0.09)}
+:root[data-theme="light"] table.grid tr.s-hit td{background:rgba(10,132,184,0.09)}
+:root[data-theme="light"] table.grid tr.grp td{background:hsla(var(--gh),70%,50%,0.10)}
+:root[data-theme="light"] table.grid td.gcell{color:hsl(var(--gh),75%,32%);box-shadow:inset 3px 0 0 hsl(var(--gh),65%,48%)}
+:root[data-theme="light"] table.grid td.chg{background:rgba(255,181,71,0.28)!important;color:#7a4300}
+
+/* Commands reference */
+:root[data-theme="light"] .btn.ref-open{border-color:rgba(10,132,184,0.45);color:#0a6f9c}
+:root[data-theme="light"] .ref-back{background:rgba(30,30,60,0.28)}
+:root[data-theme="light"] .ref{box-shadow:-30px 0 60px rgba(30,40,90,0.18)}
+:root[data-theme="light"] .ref-search{background:#fff}
+:root[data-theme="light"] .ref-search:focus{border-color:rgba(10,132,184,0.55)}
+:root[data-theme="light"] .ref-cats button.on{background:rgba(10,132,184,0.12);border-color:rgba(10,132,184,0.5);color:#075f86}
+:root[data-theme="light"] .ref-note button,
+:root[data-theme="light"] .ref-acts button.run{background:rgba(12,138,92,0.08);border-color:rgba(12,138,92,0.4)}
+:root[data-theme="light"] .ref-card{background:#fff}
+:root[data-theme="light"] .ref-card h3{color:#8250df}
+:root[data-theme="light"] .ref-card h3 .mod{background:rgba(199,119,0,0.10);border-color:rgba(184,110,0,0.4)}
+:root[data-theme="light"] .ref-ex{background:#f6f7fb}
+:root[data-theme="light"] .ref-card mark{background:rgba(10,132,184,0.18)}
+
+/* quiz */
+:root[data-theme="light"] .btn.quiz-open{border-color:rgba(106,74,224,0.5);color:#5b3fc4}
+:root[data-theme="light"] .btn.quiz-open:hover{background:rgba(106,74,224,0.10)}
+:root[data-theme="light"] body.quiz-on .btn.quiz-open{background:#6a4ae0;border-color:#6a4ae0;color:#fff}
+:root[data-theme="light"] .quiz code{color:#2f3460}
+:root[data-theme="light"] .box{background:#fff;box-shadow:0 6px 20px -14px rgba(30,40,90,0.25)}
+:root[data-theme="light"] .note{background:rgba(199,119,0,0.07)}
+:root[data-theme="light"] .note.good{background:rgba(12,138,92,0.07)}
+:root[data-theme="light"] .note.bad{background:rgba(214,51,86,0.06)}
+:root[data-theme="light"] .qsql{background:#f6f7fb;color:#24292f}
+:root[data-theme="light"] .qask{background:#f6f7fb}
+:root[data-theme="light"] .qans button{background:#fbfbfe}
+:root[data-theme="light"] .qans.code button{color:#24292f}
+:root[data-theme="light"] .qans.code button[disabled]{opacity:.62}
+:root[data-theme="light"] .qans button:hover:not([disabled]){background:#f1effc;border-color:rgba(106,74,224,0.55)}
+:root[data-theme="light"] .qtbl{background:#fff}
+:root[data-theme="light"] .score .s{background:#f6f7fb}
+:root[data-theme="light"] .lvls button.on{border-color:rgba(184,110,0,0.55);background:rgba(199,119,0,0.08)}
 </style>
+<script src="../theme-toggle.js"></script>
 </head>
 <body>
 <div class="loading" id="loading"><div class="spin"></div><div id="loadingMsg">loading SQLite (WebAssembly)…</div></div>
@@ -403,6 +519,7 @@ table.grid tr.s-drop td.tv{opacity:1;text-decoration:none}
   <button class="btn icon" id="exportBtn" title="Download the database as a .sqlite file">⤓ <span class="lbl">Save .db</span></button>
   <a class="btn icon" href="index.html" title="Back to Databases Lab">← <span class="lbl">Databases</span></a>
   <a class="btn icon" href="../home.html" title="Home">⌂ <span class="lbl">Home</span></a>
+  <button class="btn icon" data-ap-theme-toggle></button>
   <input type="file" id="fileIn" accept=".sqlite,.sqlite3,.db,.db3,application/x-sqlite3,application/vnd.sqlite3" hidden>
 </header>
 
@@ -1893,7 +2010,7 @@ function renderPlan(r){
   let out = '';
   const walk = (pid, depth) => (kids.get(pid) || []).forEach(row => {
     const d = String(row[cd]);
-    const color = /^SCAN/.test(d) ? 'var(--warn)' : /^SEARCH/.test(d) ? 'var(--sql)' : '#cfd3ff';
+    const color = /^SCAN/.test(d) ? 'var(--warn)' : /^SEARCH/.test(d) ? 'var(--sql)' : 'var(--plan-ink, #cfd3ff)';
     out += `<div style="padding:3px 0 3px ${depth * 22}px;color:${color}">${depth ? '└─ ' : ''}${esc(d)}</div>`;
     walk(row[ci], depth + 1);
   });

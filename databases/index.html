@@ -78,8 +78,30 @@ a{color:inherit;text-decoration:none}
 .lab:hover .cta .arrow{transform:translateX(4px);background:rgba(76,224,163,0.18)}
 
 
+button.btn-home{color:inherit;font-family:inherit;cursor:pointer}
+
+/* Light mode (../theme-toggle.js sets data-theme on <html>) */
+:root[data-theme="light"]{ --sql:#0f9a68; --accent-2:#0a84b8 }
+:root[data-theme="light"] body{
+  background:
+    radial-gradient(1100px 650px at 5% -10%, rgba(124,92,255,0.14), transparent 60%),
+    radial-gradient(900px 600px at 105% 10%, rgba(76,224,163,0.14), transparent 60%),
+    #f5f6fb;
+  background-attachment:fixed;
+}
+:root[data-theme="light"] .btn-home{background:rgba(255,255,255,0.85)}
+:root[data-theme="light"] .btn-home:hover{color:#fff}
+:root[data-theme="light"] .lab{background:rgba(255,255,255,0.8)}
+:root[data-theme="light"] .lab:hover{box-shadow:0 26px 60px -30px rgba(15,154,104,0.35)}
+:root[data-theme="light"] .lab .glyph{background:#f3f4fa;color:#2b2d42}
+:root[data-theme="light"] .lab .glyph .k{color:#8250df}
+:root[data-theme="light"] .lab .glyph .n{color:#c2410c}
+:root[data-theme="light"] .lab .glyph .sub{color:#4b5f8a}
+:root[data-theme="light"] .lab .pill{background:rgba(15,154,104,0.1);border-color:rgba(15,154,104,0.35)}
+
 @media (max-width:600px){ .shell{padding:16px 16px 60px} .grid{grid-template-columns:1fr} }
 </style>
+<script src="../theme-toggle.js"></script>
 </head>
 <body>
 <div class="shell">
@@ -87,6 +109,7 @@ a{color:inherit;text-decoration:none}
     <div class="brand"><span class="dot"></span>Databases · Lab</div>
     <div class="spacer"></div>
     <a class="btn-home" href="../home.html"><span aria-hidden="true">&#8962;</span> home</a>
+    <button class="btn-home" data-ap-theme-toggle></button>
   </header>
 
   <section class="hero">

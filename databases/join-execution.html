@@ -365,7 +365,69 @@ body.quizzing .quiz{display:block}
   .qwrap,.qans{grid-template-columns:1fr}
   .quiz{padding:18px 16px 60px}
 }
+
+/* Light mode (../theme-toggle.js sets data-theme on <html>) */
+:root[data-theme="light"]{--sql:#0e9467;--err:#d63356;--accent:#6a4fe0;--accent-2:#0a84b8;--pink:#d6338f;--bar:#5b7cf0}
+:root[data-theme="light"] .topbar{background:rgba(255,255,255,0.9);box-shadow:0 1px 0 rgba(20,20,60,0.04)}
+:root[data-theme="light"] .brand .dot{box-shadow:0 0 8px rgba(0,176,240,0.55)}
+:root[data-theme="light"] .algos button.on,
+:root[data-theme="light"] #quizBtn.on{background:rgba(0,176,240,0.12);border-color:rgba(0,150,210,0.55);color:#075e85}
+:root[data-theme="light"] .algos button.on small{color:#0a7fb0}
+:root[data-theme="light"] .seg button.on{background:rgba(0,176,240,0.14);color:#075e85}
+:root[data-theme="light"] .gen-go,
+:root[data-theme="light"] .pc-btn{color:#075e85}
+:root[data-theme="light"] .ed-h .rel,
+:root[data-theme="light"] .fhead .rel{color:#fff}
+:root[data-theme="light"] .ed-row .x:hover{background:rgba(214,51,86,0.1)}
+:root[data-theme="light"] .sl-h b,
+:root[data-theme="light"] .ht div b,
+:root[data-theme="light"] .qtag,
+:root[data-theme="light"] .qtext b,
+:root[data-theme="light"] .narr > b[style]{color:#0a7fb0 !important}
+:root[data-theme="light"] .pv-blocks i.fr{border-color:rgba(106,79,224,0.55);color:#5a3fc9}
+:root[data-theme="light"] .narr code{filter:none}
+:root[data-theme="light"] .pc-back{background:rgba(30,30,70,0.32)}
+:root[data-theme="light"] .pc-modal{box-shadow:0 30px 80px rgba(30,30,90,0.28)}
+:root[data-theme="light"] .pc-code{background:#f8f9fd}
+:root[data-theme="light"] .pc-code .kw{color:#8a2fc4}
+:root[data-theme="light"] .pc-code .cm{color:#6b7394}
+:root[data-theme="light"] .pc-code .io{color:#b45309}
+:root[data-theme="light"] .cbtn.play{border-color:rgba(14,148,103,0.45)}
+:root[data-theme="light"] .col.disk{--ac:#0098d4}
+:root[data-theme="light"] .col.memc{--ac:#7c5ce6}
+:root[data-theme="light"] .col.outc{--ac:#12a073}
+:root[data-theme="light"] .colh .badge{color:color-mix(in srgb,var(--ac) 70%,black)}
+:root[data-theme="light"] .flow.on svg{color:#fff;box-shadow:0 0 10px color-mix(in srgb,var(--fc) 60%,transparent)}
+:root[data-theme="light"] .flow.read{--fc:#0098d4}
+:root[data-theme="light"] .flow.write{--fc:#12a073}
+:root[data-theme="light"] .page{background:color-mix(in srgb,var(--pc) 13%,var(--bg-1));border-color:color-mix(in srgb,var(--pc) 60%,transparent)}
+:root[data-theme="light"] .page .ph{color:color-mix(in srgb,var(--pc) 55%,black)}
+:root[data-theme="light"] .page .ph .st.rd{background:#1b1b2f;color:#fff}
+:root[data-theme="light"] .page .ph .st.im{border-color:color-mix(in srgb,var(--pc) 70%,black);color:color-mix(in srgb,var(--pc) 60%,black)}
+:root[data-theme="light"] .page.reading{box-shadow:0 0 0 2px #1b1b2f,0 0 18px color-mix(in srgb,var(--pc) 70%,transparent)}
+:root[data-theme="light"] .page.inmem{box-shadow:0 0 0 1px color-mix(in srgb,var(--pc) 75%,black)}
+:root[data-theme="light"] .rec{border-top-color:color-mix(in srgb,var(--pc) 22%,transparent)}
+:root[data-theme="light"] .rec.hot{background:rgba(20,20,60,0.1);box-shadow:inset 3px 0 0 #1b1b2f}
+:root[data-theme="light"] .rec.hit{background:rgba(18,160,115,0.22)}
+:root[data-theme="light"] .rec.hit span{color:#064e3b}
+:root[data-theme="light"] .rec.miss{background:rgba(214,51,86,0.14)}
+:root[data-theme="light"] .frame.used{background:color-mix(in srgb,var(--fc,#a98bff) 6%,var(--bg-1))}
+:root[data-theme="light"] .frame.outf{--fc:#12a073}
+:root[data-theme="light"] .frame .outbuf{color:#0b6b4a}
+:root[data-theme="light"] .memnote{border-left-color:#7c5ce6}
+:root[data-theme="light"] table.out tr:nth-child(even) td{background:rgba(20,20,60,0.025)}
+:root[data-theme="light"] table.out tr.new td{background:rgba(18,160,115,0.16);color:#064e3b}
+:root[data-theme="light"] table.out th{background:rgba(18,160,115,0.1);border-bottom-color:rgba(18,160,115,0.3)}
+:root[data-theme="light"] .tip{background:#fff;box-shadow:0 10px 30px rgba(30,30,90,0.18)}
+:root[data-theme="light"] .quiz .sec{color:#0a7fb0}
+:root[data-theme="light"] .qans button.right{background:rgba(18,160,115,0.08)}
+:root[data-theme="light"] .qans button.wrong{background:rgba(214,51,86,0.07)}
+:root[data-theme="light"] .qcalc{background:#f8f9fd}
+:root[data-theme="light"] .note{background:rgba(199,119,0,0.07)}
+:root[data-theme="light"] .note.good{background:rgba(18,160,115,0.07)}
+:root[data-theme="light"] .note.bad{background:rgba(214,51,86,0.06)}
 </style>
+<script src="../theme-toggle.js"></script>
 </head>
 <body>
 <header class="topbar">
@@ -374,6 +436,7 @@ body.quizzing .quiz{display:block}
   <button class="btn" id="quizBtn" title="Practise the cost formulas">✎ Quiz</button>
   <a class="btn" href="index.html">← Databases</a>
   <a class="btn" href="../home.html">⌂ Home</a>
+  <button class="btn" data-ap-theme-toggle></button>
 </header>
 
 <nav class="algos" id="algos"></nav>
